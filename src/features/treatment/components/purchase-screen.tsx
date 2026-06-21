@@ -1,68 +1,35 @@
 "use client";
 
 import { useState } from "react";
-import { ArrowLeft, ShoppingBag, CreditCard } from "lucide-react";
+import {
+  ArrowLeft,
+  ShoppingBag,
+  CreditCard,
+  AlertTriangle,
+  ShieldCheck,
+} from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useTreatment } from "../context/treatment-context";
 
-type SkincareProduct = {
-  name: string;
-  category: string;
-  price: number;
-  originalPrice?: number;
-  brand: string;
-};
-
-const RECOMMENDED_PRODUCTS: SkincareProduct[] = [
-  {
-    name: "Sữa rửa mặt Salicylic Acid (BHA) 2%",
-    category: "Làm sạch sâu & Kiềm dầu",
-    brand: "GlowScan Derm",
-    price: 210000,
-    originalPrice: 250000,
-  },
-  {
-    name: "Tinh chất phục hồi Niacinamide 10% + Zinc 1%",
-    category: "Trị thâm mụn & Làm dịu",
-    brand: "GlowScan Active",
-    price: 390000,
-  },
-  {
-    name: "Gel dưỡng ẩm Hydrating Gel không chứa dầu",
-    category: "Cấp nước thông thoáng",
-    brand: "GlowScan Aqua",
-    price: 280000,
-  },
-  {
-    name: "Kem dưỡng ẩm ban đêm phục hồi lipid mỏng nhẹ",
-    category: "Khóa ẩm ban đêm",
-    brand: "GlowScan Barrier",
-    price: 320000,
-  },
-  {
-    name: "Kem chống nắng phổ rộng bảo vệ tối ưu SPF 50",
-    category: "Bảo vệ ban ngày",
-    brand: "GlowScan Sun",
-    price: 420000,
-    originalPrice: 480000,
-  },
-];
-
 export function PurchaseScreen() {
-  const { setFlowState } = useTreatment();
+  const { state, setFlowState, getRecommendedProducts } = useTreatment();
   const [isProcessing, setIsProcessing] = useState(false);
   const [paymentStep, setPaymentStep] = useState<"checkout" | "processing">(
     "checkout",
   );
 
-  const totalOriginal = RECOMMENDED_PRODUCTS.reduce(
+  const answers = state.surveyAnswers;
+  const isPregnant = answers.pregnancy === "yes";
+  const isLowHydration = answers.hydration !== "" && answers.hydration <= 25;
+
+  // Retrieve dynamic recommended products based on survey rules
+  const dynamicProducts = getRecommendedProducts();
+
+  const totalOriginal = dynamicProducts.reduce(
     (acc, p) => acc + (p.originalPrice || p.price),
     0,
   );
-  const totalDiscounted = RECOMMENDED_PRODUCTS.reduce(
-    (acc, p) => acc + p.price,
-    0,
-  );
+  const totalDiscounted = dynamicProducts.reduce((acc, p) => acc + p.price, 0);
   const totalSavings = totalOriginal - totalDiscounted;
 
   const handleCheckout = () => {
@@ -110,76 +77,109 @@ export function PurchaseScreen() {
   return (
     <div className="animate-in fade-in slide-in-from-right-4 flex flex-1 flex-col justify-between px-4 duration-300">
       {/* Header */}
-      <div className="space-y-3.5">
+      <div className="shrink-0 space-y-3">
         <div className="flex items-center justify-between">
           <Button
             variant="ghost"
             size="icon"
             onClick={() => setFlowState("plan")}
-            className="border-border/40 hover:bg-secondary/40 h-9 w-9 rounded-xl border"
+            className="border-border/40 hover:bg-secondary/40 h-8 w-8 shrink-0 rounded-xl border"
           >
-            <ArrowLeft className="h-5 w-5" />
+            <ArrowLeft className="h-4.5 w-4.5" />
           </Button>
-          <span className="text-muted-foreground text-xs font-semibold tracking-wider uppercase">
-            Mua Hàng Phác Đồ (Happy Case)
+          <span className="text-muted-foreground text-[10px] font-semibold tracking-wider uppercase">
+            Mua Hàng Phác Đồ (Combo Ưu Đãi)
           </span>
-          <div className="h-9 w-9" />
+          <div className="h-8 w-8 shrink-0" />
         </div>
 
         <div className="space-y-1 text-center">
-          <h3 className="font-heading text-foreground text-xl font-extrabold">
+          <h3 className="font-heading text-foreground text-lg font-extrabold">
             Sản Phẩm Khuyến Nghị Theo Phác Đồ
           </h3>
-          <p className="text-muted-foreground text-[11px]">
+          <p className="text-muted-foreground text-[10px]">
             Sản phẩm được tự động map từ các hoạt chất khuyên dùng trong Routine
             của bạn.
           </p>
         </div>
       </div>
 
-      {/* Product List */}
-      <div className="my-4 grid max-h-[290px] gap-2.5 overflow-y-auto pr-1">
-        {RECOMMENDED_PRODUCTS.map((prod, idx) => (
+      {/* Safety / Hydration Special Badges */}
+      <div className="my-2 shrink-0 space-y-1.5">
+        {isPregnant && (
+          <div className="flex items-center gap-1.5 rounded-xl border border-emerald-200 bg-emerald-50 px-3 py-2 text-[9px] font-semibold text-emerald-800">
+            <ShieldCheck className="h-4 w-4 shrink-0 text-emerald-600" />
+            <span>Đã loại trừ hoạt chất mạnh không an toàn cho thai kỳ.</span>
+          </div>
+        )}
+        {isLowHydration && (
+          <div className="flex items-center gap-1.5 rounded-xl border border-blue-200 bg-blue-50 px-3 py-2 text-[9px] font-semibold text-blue-800">
+            <ShieldCheck className="h-4 w-4 shrink-0 text-blue-600" />
+            <span>
+              Tự động nâng cấp kem dưỡng phục hồi lipid sâu (độ ẩm &le; 25%).
+            </span>
+          </div>
+        )}
+      </div>
+
+      {/* Product List (Scrollable) */}
+      <div className="my-2 grid max-h-[220px] flex-1 gap-2 overflow-y-auto py-1 pr-1">
+        {dynamicProducts.map((prod) => (
           <div
-            key={idx}
-            className="border-border/50 shadow-inner-sm hover:border-primary/20 flex items-center justify-between rounded-2xl border bg-white/60 p-3 transition-all"
+            key={prod.id}
+            className="border-border/50 shadow-inner-sm hover:border-primary/20 flex flex-col gap-2 rounded-2xl border bg-white/60 p-3 transition-all"
           >
-            <div className="flex items-center gap-3">
-              {/* Mock product thumbnail */}
-              <div className="bg-primary/5 border-primary/10 text-primary relative flex h-12 w-12 shrink-0 items-center justify-center rounded-xl border">
-                <ShoppingBag className="h-5 w-5 opacity-70" />
-                <span className="bg-primary absolute -top-1.5 -right-1.5 flex h-4 w-4 items-center justify-center rounded-full text-[8px] font-bold text-white">
-                  1
-                </span>
+            <div className="flex items-start justify-between gap-3">
+              <div className="flex items-center gap-3">
+                {/* Mock product thumbnail */}
+                <div className="bg-primary/5 border-primary/10 text-primary relative flex h-10 w-10 shrink-0 items-center justify-center rounded-xl border">
+                  <ShoppingBag className="h-4.5 w-4.5 opacity-70" />
+                  <span className="bg-primary absolute -top-1.5 -right-1.5 flex h-4 w-4 items-center justify-center rounded-full text-[8px] font-bold text-white">
+                    1
+                  </span>
+                </div>
+                <div className="flex max-w-[190px] flex-col gap-0.5">
+                  <span className="text-foreground text-xs leading-tight font-bold">
+                    {prod.name}
+                  </span>
+                  <span className="text-muted-foreground text-[9px] font-semibold">
+                    {prod.brand} • {prod.category}
+                  </span>
+                </div>
               </div>
-              <div className="flex max-w-[190px] flex-col gap-0.5">
-                <span className="text-foreground truncate text-xs font-extrabold">
-                  {prod.name}
+              <div className="shrink-0 text-right">
+                <span className="text-foreground block text-xs font-extrabold">
+                  {formatPrice(prod.price)}
                 </span>
-                <span className="text-muted-foreground truncate text-[9px]">
-                  {prod.brand} • {prod.category}
-                </span>
+                {prod.originalPrice && (
+                  <span className="text-muted-foreground block text-[9px] line-through">
+                    {formatPrice(prod.originalPrice)}
+                  </span>
+                )}
               </div>
             </div>
-            <div className="text-right">
-              <span className="text-foreground block text-xs font-extrabold">
-                {formatPrice(prod.price)}
-              </span>
-              {prod.originalPrice && (
-                <span className="text-muted-foreground block text-[9px] line-through">
-                  {formatPrice(prod.originalPrice)}
-                </span>
-              )}
+
+            {/* Reason for recommendation */}
+            <div className="text-muted-foreground pl-1 text-[9px] leading-relaxed">
+              <strong>Lý do kê đơn:</strong> {prod.reason}
             </div>
+
+            {/* Active ingredient conflict warning */}
+            {prod.conflict && prod.conflictWarning && (
+              <div className="mt-1 flex items-start gap-1.5 rounded-xl border border-amber-200 bg-amber-50 p-2 text-[9px] leading-relaxed text-amber-800">
+                <AlertTriangle className="mt-0.5 h-3.5 w-3.5 shrink-0 text-amber-600" />
+                <span>{prod.conflictWarning}</span>
+              </div>
+            )}
           </div>
         ))}
       </div>
 
       {/* Total Breakdown and checkout */}
-      <div className="border-border/60 space-y-4 border-t pt-3">
-        <div className="space-y-1.5 rounded-2xl border border-white/50 bg-white/40 p-3.5 text-xs shadow-sm">
+      <div className="border-border/60 shrink-0 space-y-3 border-t pt-3">
+        <div className="space-y-1.5 rounded-2xl border border-white/50 bg-white/40 p-3 text-[10px] shadow-sm">
           <div className="text-muted-foreground flex justify-between">
-            <span>Tạm tính (5 sản phẩm):</span>
+            <span>Tạm tính ({dynamicProducts.length} sản phẩm):</span>
             <span>{formatPrice(totalOriginal)}</span>
           </div>
           <div className="flex justify-between font-semibold text-emerald-600">
@@ -191,9 +191,9 @@ export function PurchaseScreen() {
             <span className="font-semibold text-emerald-600">Miễn phí</span>
           </div>
           <div className="bg-border/50 my-1 h-[1px]" />
-          <div className="text-foreground flex justify-between text-sm font-bold">
+          <div className="text-foreground flex justify-between text-xs font-bold">
             <span>Tổng thanh toán:</span>
-            <span className="text-primary text-base font-black">
+            <span className="text-primary text-sm font-black">
               {formatPrice(totalDiscounted)}
             </span>
           </div>

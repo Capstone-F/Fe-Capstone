@@ -32,7 +32,8 @@ export function DashboardScreen() {
     morningList.filter((item) => item.completed).length +
     eveningList.filter((item) => item.completed).length;
 
-  const progressPercentage = Math.round((completedItems / totalItems) * 100);
+  const progressPercentage =
+    totalItems > 0 ? Math.round((completedItems / totalItems) * 100) : 0;
 
   // SVG Gauge calculations
   const radius = 45;
@@ -400,10 +401,20 @@ export function DashboardScreen() {
                 </div>
                 <div>
                   <h4 className="text-foreground text-xs font-extrabold">
-                    Loại da: Oily Sensitive (OS)
+                    Loại da:{" "}
+                    {(state.surveyAnswers.baumannOilyDry || "O") +
+                      (state.surveyAnswers.baumannSensitiveResistant || "S") +
+                      (state.surveyAnswers.baumannPigmentNon || "P") +
+                      (state.surveyAnswers.baumannWrinkleTight || "T")}
                   </h4>
                   <span className="text-primary text-[10px] font-bold">
-                    Da dầu nhạy cảm
+                    {state.surveyAnswers.baumannOilyDry === "O"
+                      ? "Da dầu (Oily)"
+                      : "Da khô (Dry)"}{" "}
+                    •{" "}
+                    {state.surveyAnswers.baumannSensitiveResistant === "S"
+                      ? "Nhạy cảm (Sensitive)"
+                      : "Đề kháng (Resistant)"}
                   </span>
                 </div>
               </div>
@@ -414,8 +425,9 @@ export function DashboardScreen() {
                     Đặc tính tuyến bã nhờn:
                   </span>
                   <span>
-                    Hoạt động quá mức gây thừa dầu và lỗ chân lông to, cần làm
-                    sạch đúng cách bằng các hoạt chất như Salicylic Acid.
+                    {state.surveyAnswers.baumannOilyDry === "O"
+                      ? "Da của bạn thuộc nhóm tiết nhiều bã nhờn, dễ gây bít tắc lỗ chân lông. Cần chú trọng các sản phẩm làm sạch kiềm dầu nhẹ như Glycerin, Niacinamide."
+                      : "Da của bạn thuộc nhóm da khô, tuyến dầu hoạt động kém. Cần bù ẩm khóa ẩm lipid để duy trì sự mượt mà."}
                   </span>
                 </div>
                 <div>
@@ -423,10 +435,41 @@ export function DashboardScreen() {
                     Mức độ nhạy cảm:
                   </span>
                   <span>
-                    Màng bảo vệ mỏng nhẹ, dễ đỏ ửng nhẹ, cần bổ sung phục hồi
-                    Niacinamide để giảm kích ứng và mờ thâm mụn.
+                    {state.surveyAnswers.baumannSensitiveResistant === "S"
+                      ? "Lớp sừng bảo vệ mỏng yếu, dễ đỏ ửng hoặc kích ứng nhẹ. Cần sử dụng Niacinamide phục hồi để củng cố hàng rào lipid bảo vệ da."
+                      : "Da khỏe mạnh đề kháng tốt, dung nạp tốt hầu hết các thành phần hoạt chất mà ít bị đỏ rát."}
                   </span>
                 </div>
+
+                <div className="bg-border/40 h-[1px]" />
+
+                <div>
+                  <span className="text-foreground block font-bold">
+                    Thông tin an toàn thai kỳ:
+                  </span>
+                  <span
+                    className={
+                      state.surveyAnswers.pregnancy === "yes"
+                        ? "font-bold text-red-500"
+                        : ""
+                    }
+                  >
+                    {state.surveyAnswers.pregnancy === "yes"
+                      ? "Đang mang thai - Chế độ an toàn thai kỳ hoạt động (Đã loại trừ Retinol và BHA liều cao khỏi phác đồ)."
+                      : "Bình thường - Không mang thai."}
+                  </span>
+                </div>
+
+                {state.surveyAnswers.currentActiveIngredients.length > 0 && (
+                  <div>
+                    <span className="text-foreground block font-bold">
+                      Hoạt chất cũ đang sử dụng:
+                    </span>
+                    <span>
+                      {state.surveyAnswers.currentActiveIngredients.join(", ")}
+                    </span>
+                  </div>
+                )}
               </div>
             </div>
 
