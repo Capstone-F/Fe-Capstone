@@ -1,6 +1,5 @@
 "use client";
 
-import { SessionGuard } from "@/features/auth/components/session-guard";
 import { TreatmentProvider } from "@/features/treatment/context/treatment-context";
 import { TreatmentFlow } from "@/features/treatment/components/treatment-flow";
 import { Sparkles } from "lucide-react";
@@ -8,43 +7,41 @@ import Link from "next/link";
 
 export default function ScanPage() {
   return (
-    <SessionGuard>
-      <TreatmentProvider>
-        <div className="from-background via-secondary/10 to-background flex min-h-screen w-full flex-col items-center justify-center bg-gradient-to-b p-4 sm:p-6">
-          {/* Decorative Background Elements */}
-          <div className="bg-primary/5 pointer-events-none absolute top-10 left-1/2 -z-10 h-[500px] w-full max-w-7xl -translate-x-1/2 rounded-full opacity-40 blur-3xl filter" />
+    <TreatmentProvider>
+      <div className="from-background via-secondary/10 to-background flex min-h-screen w-full flex-col items-center justify-center bg-gradient-to-b p-4 sm:p-6">
+        {/* Decorative Background Elements */}
+        <div className="bg-primary/5 pointer-events-none absolute top-10 left-1/2 -z-10 h-[500px] w-full max-w-7xl -translate-x-1/2 rounded-full opacity-40 blur-3xl filter" />
 
-          {/* Simple header */}
-          <div className="mb-6 flex w-full max-w-md items-center justify-between px-2">
-            <Link
-              href="/"
-              className="group flex items-center gap-1.5 select-none"
-            >
-              <div className="bg-primary flex h-7 w-7 items-center justify-center rounded-lg text-white shadow-md transition-transform duration-300 group-hover:scale-105">
-                <Sparkles className="h-4 w-4" />
-              </div>
-              <span className="font-heading text-foreground text-base font-bold tracking-tight">
-                Glow<span className="text-primary">Scan</span>
-              </span>
-            </Link>
-            <span className="text-muted-foreground bg-secondary/60 border-border/40 rounded border px-2 py-0.5 text-[10px] font-bold tracking-widest uppercase">
-              Chế độ thẩm mỹ
+        {/* Simple header */}
+        <div className="mb-6 flex w-full max-w-md items-center justify-between px-2">
+          <Link
+            href="/"
+            className="group flex items-center gap-1.5 select-none"
+          >
+            <div className="bg-primary flex h-7 w-7 items-center justify-center rounded-lg text-white shadow-md transition-transform duration-300 group-hover:scale-105">
+              <Sparkles className="h-4 w-4" />
+            </div>
+            <span className="font-heading text-foreground text-base font-bold tracking-tight">
+              Glow<span className="text-primary">Scan</span>
             </span>
-          </div>
-
-          {/* Main frame: center card frame that matches a premium device or card view */}
-          <main className="surface-glass relative flex min-h-[580px] w-full max-w-md flex-col overflow-hidden rounded-[32px] border border-white/70 bg-white/70 p-2 shadow-2xl backdrop-blur-md">
-            <TreatmentFlow />
-          </main>
-
-          {/* Medical disclaimer at bottom */}
-          <footer className="text-muted-foreground/80 mt-6 w-full max-w-xs px-4 text-center text-[10px] leading-relaxed">
-            * Khảo sát & phác đồ này được tự động hóa bởi thuật toán AI GlowScan
-            dựa trên lý thuyết Baumann. Vui lòng tham khảo ý kiến bác sĩ da liễu
-            trước khi bắt đầu bất kỳ phác đồ điều trị chuyên sâu nào.
-          </footer>
+          </Link>
+          <span className="text-muted-foreground bg-secondary/60 border-border/40 rounded border px-2 py-0.5 text-[10px] font-bold tracking-widest uppercase">
+            Chế độ thẩm mỹ
+          </span>
         </div>
-      </TreatmentProvider>
-    </SessionGuard>
+
+        {/* Main frame: center card frame that matches a premium device or card view */}
+        <main className="surface-glass relative flex min-h-[580px] w-full max-w-md flex-col overflow-hidden rounded-[32px] border border-white/70 bg-white/70 p-2 shadow-2xl backdrop-blur-md">
+          <TreatmentFlow />
+        </main>
+
+        {/* Medical disclaimer at bottom */}
+        <footer className="text-muted-foreground/80 mt-6 w-full max-w-xs px-4 text-center text-[10px] leading-relaxed">
+          * Khảo sát & phác đồ này được tự động hóa bởi thuật toán AI GlowScan
+          dựa trên lý thuyết Baumann. Vui lòng tham khảo ý kiến bác sĩ da liễu
+          trước khi bắt đầu bất kỳ phác đồ điều trị chuyên sâu nào.
+        </footer>
+      </div>
+    </TreatmentProvider>
   );
 }

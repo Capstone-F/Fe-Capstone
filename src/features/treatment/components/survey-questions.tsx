@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import {
   ArrowLeft,
   ArrowRight,
@@ -12,6 +12,11 @@ import {
   HelpCircle,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { useRouter, usePathname } from "next/navigation";
+import type { Route } from "next";
+import { useSession } from "@/features/auth/hooks/use-session";
+import { ApiError } from "@/lib/api/client";
+import { appConfig } from "@/lib/env";
 import { useTreatment, SurveyAnswers } from "../context/treatment-context";
 
 export function SurveyQuestions() {
@@ -23,6 +28,22 @@ export function SurveyQuestions() {
     generateRoutines,
   } = useTreatment();
   const step = state.surveyStep;
+
+  const sessionQuery = useSession();
+  const router = useRouter();
+  const pathname = usePathname();
+
+  useEffect(() => {
+    if (step === 7 && !appConfig.devBypassAuth) {
+      if (
+        sessionQuery.error instanceof ApiError &&
+        sessionQuery.error.status === 401
+      ) {
+        const loginTarget = `/login?redirectTo=${encodeURIComponent(pathname)}`;
+        router.replace(loginTarget as Route);
+      }
+    }
+  }, [step, sessionQuery.error, router, pathname]);
 
   // Local validation error state
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
@@ -113,6 +134,33 @@ export function SurveyQuestions() {
     generateRoutines();
     setFlowState("analyzing");
   };
+
+  if (step === 7 && !appConfig.devBypassAuth) {
+    if (sessionQuery.isLoading) {
+      return (
+        <div className="animate-in fade-in flex min-h-[400px] flex-1 flex-col items-center justify-center space-y-4 p-6 text-center duration-300">
+          <div className="border-primary/20 border-t-primary h-10 w-10 animate-spin rounded-full border-4" />
+          <p className="text-muted-foreground text-xs font-bold">
+            Đang xác thực phiên làm việc của bạn...
+          </p>
+        </div>
+      );
+    }
+
+    if (
+      sessionQuery.error instanceof ApiError &&
+      sessionQuery.error.status === 401
+    ) {
+      return (
+        <div className="animate-in fade-in flex min-h-[400px] flex-1 flex-col items-center justify-center space-y-4 p-6 text-center duration-300">
+          <div className="border-primary/20 border-t-primary h-10 w-10 animate-spin rounded-full border-4" />
+          <p className="text-muted-foreground text-xs font-bold">
+            Bạn chưa đăng nhập. Đang chuyển hướng đến trang đăng nhập...
+          </p>
+        </div>
+      );
+    }
+  }
 
   return (
     <div className="animate-in fade-in slide-in-from-right-4 flex flex-1 flex-col justify-between px-4 duration-300">
