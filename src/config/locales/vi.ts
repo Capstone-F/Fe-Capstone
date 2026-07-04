@@ -42,4 +42,13 @@ export const vi = {
     violet: "Tím cẩm chạch",
     rose: "Hồng nhạt",
   },
+  userPortal: {
+    dashboard: "Bảng điều khiển & Soi da",
+    experts: "Danh sách Bác sĩ",
+    appointments: "Lịch hẹn của tôi",
+    profile: "Hồ sơ cá nhân",
+    products: "Cửa hàng sản phẩm",
+    cart: "Giỏ hàng",
+    orders: "Đơn hàng đã đặt",
+  },
 };

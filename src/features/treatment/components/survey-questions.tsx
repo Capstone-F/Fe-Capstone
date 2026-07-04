@@ -47,6 +47,7 @@ export function SurveyQuestions() {
 
   // Local validation error state
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
+  const [isBaumannInfoOpen, setIsBaumannInfoOpen] = useState(false);
 
   // Mock photo selection options
   const MOCK_PHOTOS = [
@@ -218,12 +219,29 @@ export function SurveyQuestions() {
         {step === 1 && (
           <div className="space-y-4">
             <div className="space-y-1">
-              <h3 className="font-heading text-foreground text-lg font-extrabold tracking-tight">
-                Đánh giá hồ sơ da Baumann
-              </h3>
+              <div className="flex items-center gap-1.5">
+                <h3 className="font-heading text-foreground text-lg font-extrabold tracking-tight">
+                  Đánh giá hồ sơ da Baumann
+                </h3>
+                <button
+                  type="button"
+                  onClick={() => setIsBaumannInfoOpen(true)}
+                  className="text-primary hover:text-primary/80 transition-colors"
+                  title="Tìm hiểu về hệ thống Baumann"
+                >
+                  <HelpCircle className="h-4.5 w-4.5" />
+                </button>
+              </div>
               <p className="text-muted-foreground text-[11px] leading-relaxed">
                 Chọn các đặc tính bên dưới để xác định mã loại da gồm 4 ký tự
-                của bạn.
+                của bạn.{" "}
+                <button
+                  type="button"
+                  onClick={() => setIsBaumannInfoOpen(true)}
+                  className="text-primary font-bold hover:underline"
+                >
+                  Tìm hiểu Baumann là gì?
+                </button>
               </p>
             </div>
 
@@ -1053,6 +1071,150 @@ export function SurveyQuestions() {
           </Button>
         )}
       </div>
+
+      {/* Baumann explanation popup */}
+      {isBaumannInfoOpen && (
+        <div className="animate-in fade-in fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4 backdrop-blur-sm transition-all duration-300">
+          <div
+            onClick={(e) => e.stopPropagation()}
+            className="animate-in zoom-in-95 relative flex max-h-[90vh] w-full max-w-lg flex-col overflow-y-auto rounded-[2rem] border border-white/50 bg-white/80 p-6 shadow-2xl backdrop-blur-md"
+          >
+            {/* Header */}
+            <div className="border-border/40 flex items-center justify-between border-b pb-4">
+              <div className="flex items-center gap-2">
+                <div className="bg-primary/10 text-primary rounded-xl p-2.5">
+                  <HelpCircle className="h-5 w-5" />
+                </div>
+                <div>
+                  <h3 className="font-heading text-foreground text-lg font-extrabold tracking-tight">
+                    Hệ Thống Phân Loại Da Baumann
+                  </h3>
+                  <p className="text-muted-foreground text-[10px]">
+                    Baumann Skin Typing System
+                  </p>
+                </div>
+              </div>
+              <button
+                type="button"
+                onClick={() => setIsBaumannInfoOpen(false)}
+                className="text-muted-foreground hover:text-foreground hover:bg-secondary/60 rounded-full p-1.5 transition-colors"
+              >
+                <svg
+                  className="h-5 w-5"
+                  fill="none"
+                  viewBox="0 0 24 24"
+                  stroke="currentColor"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2.5}
+                    d="M6 18L18 6M6 6l12 12"
+                  />
+                </svg>
+              </button>
+            </div>
+
+            {/* Content */}
+            <div className="text-foreground/90 space-y-4 py-4 text-xs leading-relaxed">
+              <p>
+                Hệ thống phân loại da <strong>Baumann</strong> là phương pháp
+                khoa học nổi tiếng được phát triển bởi Tiến sĩ Leslie Baumann.
+                Hệ thống này chia làn da thành{" "}
+                <strong>16 loại da khác nhau</strong> bằng cách đánh giá 4 thuộc
+                tính (quang phổ) cốt lõi:
+              </p>
+
+              <div className="space-y-3">
+                {/* 1. Oily vs Dry */}
+                <div className="border-border/50 space-y-1 rounded-2xl border bg-white/50 p-3">
+                  <div className="flex items-center justify-between">
+                    <span className="text-primary font-extrabold">
+                      1. Oily (O) vs Dry (D)
+                    </span>
+                    <span className="text-muted-foreground text-[9px] font-bold">
+                      Dầu hay Khô
+                    </span>
+                  </div>
+                  <p className="text-muted-foreground text-[10px]">
+                    Đo lường lượng bã nhờn và khả năng giữ nước của da. Da dầu
+                    thường bóng và lỗ chân lông to; da khô thường thô ráp và
+                    căng rát.
+                  </p>
+                </div>
+
+                {/* 2. Sensitive vs Resistant */}
+                <div className="border-border/50 space-y-1 rounded-2xl border bg-white/50 p-3">
+                  <div className="flex items-center justify-between">
+                    <span className="text-primary font-extrabold">
+                      2. Sensitive (S) vs Resistant (R)
+                    </span>
+                    <span className="text-muted-foreground text-[9px] font-bold">
+                      Nhạy cảm hay Đề kháng
+                    </span>
+                  </div>
+                  <p className="text-muted-foreground text-[10px]">
+                    Đo mức độ phản ứng với các yếu tố bên ngoài. Da nhạy cảm dễ
+                    ửng đỏ, ngứa rát và kích ứng; da đề kháng có lớp hàng rào
+                    bảo vệ vững chắc, ít khi phản ứng phụ với mỹ phẩm.
+                  </p>
+                </div>
+
+                {/* 3. Pigmented vs Non-pigmented */}
+                <div className="border-border/50 space-y-1 rounded-2xl border bg-white/50 p-3">
+                  <div className="flex items-center justify-between">
+                    <span className="text-primary font-extrabold">
+                      3. Pigmented (P) vs Non-pigmented (N)
+                    </span>
+                    <span className="text-muted-foreground text-[9px] font-bold">
+                      Sắc tố hay Không sắc tố
+                    </span>
+                  </div>
+                  <p className="text-muted-foreground text-[10px]">
+                    Khả năng sản sinh melanin gây thâm sạm, tàn nhang, đốm nâu
+                    hoặc tình trạng da không đều màu.
+                  </p>
+                </div>
+
+                {/* 4. Wrinkled vs Tight */}
+                <div className="border-border/50 space-y-1 rounded-2xl border bg-white/50 p-3">
+                  <div className="flex items-center justify-between">
+                    <span className="text-primary font-extrabold">
+                      4. Wrinkled (W) vs Tight (T)
+                    </span>
+                    <span className="text-muted-foreground text-[9px] font-bold">
+                      Nhăn hay Căng mịn
+                    </span>
+                  </div>
+                  <p className="text-muted-foreground text-[10px]">
+                    Đánh giá nguy cơ lão hóa và nếp nhăn. Nhóm W cần các hoạt
+                    chất chống oxy hóa mạnh; nhóm T tập trung duy trì sự săn
+                    chắc trẻ trung vốn có.
+                  </p>
+                </div>
+              </div>
+
+              <div className="bg-primary/5 border-primary/20 text-primary rounded-2xl border p-3 text-[11px]">
+                <strong>💡 Cách hoạt động trong GlowScan:</strong> Bằng cách kết
+                hợp 4 chữ cái lại với nhau, bạn sẽ nhận được mã loại da riêng
+                của mình (ví dụ: <strong>OSPW</strong>, <strong>DRNT</strong>).
+                Hệ thống AI của chúng tôi sẽ dựa vào bộ mã này kết hợp với phân
+                tích hình ảnh để đưa ra phác đồ sản phẩm tối ưu nhất cho bạn.
+              </div>
+            </div>
+
+            {/* Footer button */}
+            <div className="border-border/40 border-t pt-3">
+              <Button
+                onClick={() => setIsBaumannInfoOpen(false)}
+                className="bg-primary hover:bg-primary/95 w-full rounded-2xl text-xs font-bold text-white shadow-md"
+              >
+                Đã Hiểu
+              </Button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

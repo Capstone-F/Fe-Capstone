@@ -36,12 +36,16 @@ async function proxyRequest(
     headers.delete(header);
   }
 
+  const body = ["GET", "HEAD"].includes(request.method)
+    ? undefined
+    : await request.arrayBuffer();
+
   const response = await fetch(
     buildUpstreamUrl(path ?? [], request.nextUrl.search),
     {
       method: request.method,
       headers,
-      body: ["GET", "HEAD"].includes(request.method) ? undefined : request.body,
+      body,
       cache: "no-store",
       redirect: "manual",
     },

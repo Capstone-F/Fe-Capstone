@@ -775,7 +775,7 @@ export default function HomePage() {
                       {expert.price}
                     </span>
                   </div>
-                  <a href="/login?redirectTo=/experts">
+                  <Link href="/experts" passHref>
                     <Button
                       variant="outline"
                       size="sm"
@@ -783,7 +783,7 @@ export default function HomePage() {
                     >
                       Đặt lịch hẹn
                     </Button>
-                  </a>
+                  </Link>
                 </div>
               </div>
             ))}

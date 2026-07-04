@@ -1,6 +1,7 @@
 "use client";
 
 import React, { createContext, useContext, useState, useEffect } from "react";
+import { SurveyRecord } from "@/types/domain";
 
 export type SurveyAnswers = {
   // Baumann
@@ -67,6 +68,7 @@ export type TreatmentData = {
   morningRoutine: RoutineItem[];
   eveningRoutine: RoutineItem[];
   aiObservation: AiObservation | null;
+  surveyHistory?: SurveyRecord[];
 };
 
 export type SkincareProduct = {
@@ -132,6 +134,7 @@ export function TreatmentProvider({ children }: { children: React.ReactNode }) {
       morningRoutine: [],
       eveningRoutine: [],
       aiObservation: null,
+      surveyHistory: [],
     };
     if (typeof window === "undefined") return defaultState;
     try {
@@ -313,12 +316,25 @@ export function TreatmentProvider({ children }: { children: React.ReactNode }) {
       });
     }
 
-    setState((prev) => ({
-      ...prev,
-      morningRoutine: morning,
-      eveningRoutine: evening,
-      aiObservation: aiObs,
-    }));
+    const baumannCode = `${answers.baumannOilyDry || "O"}${answers.baumannSensitiveResistant || "S"}${answers.baumannPigmentNon || "N"}${answers.baumannWrinkleTight || "T"}`;
+    const newHistoryRecord: SurveyRecord = {
+      id: `surv_${Math.random().toString(36).substring(2, 9)}`,
+      userId: "dev-bypass-id",
+      baumannCode,
+      answers: JSON.parse(JSON.stringify(answers)),
+      createdAt: new Date().toISOString(),
+    };
+
+    setState((prev) => {
+      const currentHistory = prev.surveyHistory || [];
+      return {
+        ...prev,
+        morningRoutine: morning,
+        eveningRoutine: evening,
+        aiObservation: aiObs,
+        surveyHistory: [newHistoryRecord, ...currentHistory],
+      };
+    });
   };
 
   // Helper to generate recommended products dynamically for the checkout cart
@@ -433,6 +449,7 @@ export function TreatmentProvider({ children }: { children: React.ReactNode }) {
       morningRoutine: [],
       eveningRoutine: [],
       aiObservation: null,
+      surveyHistory: [],
     });
   };
 

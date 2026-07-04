@@ -7,6 +7,7 @@ import {
   CreditCard,
   AlertTriangle,
   ShieldCheck,
+  Check,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useTreatment } from "../context/treatment-context";
@@ -25,11 +26,28 @@ export function PurchaseScreen() {
   // Retrieve dynamic recommended products based on survey rules
   const dynamicProducts = getRecommendedProducts();
 
-  const totalOriginal = dynamicProducts.reduce(
+  // State to track selected product IDs
+  const [selectedProductIds, setSelectedProductIds] = useState<string[]>(() =>
+    dynamicProducts.map((p) => p.id),
+  );
+
+  const toggleProduct = (productId: string) => {
+    setSelectedProductIds((prev) =>
+      prev.includes(productId)
+        ? prev.filter((id) => id !== productId)
+        : [...prev, productId],
+    );
+  };
+
+  const selectedProducts = dynamicProducts.filter((p) =>
+    selectedProductIds.includes(p.id),
+  );
+
+  const totalOriginal = selectedProducts.reduce(
     (acc, p) => acc + (p.originalPrice || p.price),
     0,
   );
-  const totalDiscounted = dynamicProducts.reduce((acc, p) => acc + p.price, 0);
+  const totalDiscounted = selectedProducts.reduce((acc, p) => acc + p.price, 0);
   const totalSavings = totalOriginal - totalDiscounted;
 
   const handleCheckout = () => {
@@ -124,62 +142,92 @@ export function PurchaseScreen() {
 
       {/* Product List (Scrollable) */}
       <div className="my-2 grid max-h-[220px] flex-1 gap-2 overflow-y-auto py-1 pr-1">
-        {dynamicProducts.map((prod) => (
-          <div
-            key={prod.id}
-            className="border-border/50 shadow-inner-sm hover:border-primary/20 flex flex-col gap-2 rounded-2xl border bg-white/60 p-3 transition-all"
-          >
-            <div className="flex items-start justify-between gap-3">
-              <div className="flex items-center gap-3">
-                {/* Mock product thumbnail */}
-                <div className="bg-primary/5 border-primary/10 text-primary relative flex h-10 w-10 shrink-0 items-center justify-center rounded-xl border">
-                  <ShoppingBag className="h-4.5 w-4.5 opacity-70" />
-                  <span className="bg-primary absolute -top-1.5 -right-1.5 flex h-4 w-4 items-center justify-center rounded-full text-[8px] font-bold text-white">
-                    1
-                  </span>
-                </div>
-                <div className="flex max-w-[190px] flex-col gap-0.5">
-                  <span className="text-foreground text-xs leading-tight font-bold">
-                    {prod.name}
-                  </span>
-                  <span className="text-muted-foreground text-[9px] font-semibold">
-                    {prod.brand} • {prod.category}
-                  </span>
-                </div>
-              </div>
-              <div className="shrink-0 text-right">
-                <span className="text-foreground block text-xs font-extrabold">
-                  {formatPrice(prod.price)}
-                </span>
-                {prod.originalPrice && (
-                  <span className="text-muted-foreground block text-[9px] line-through">
-                    {formatPrice(prod.originalPrice)}
-                  </span>
-                )}
-              </div>
-            </div>
+        {dynamicProducts.map((prod) => {
+          const isSelected = selectedProductIds.includes(prod.id);
+          return (
+            <div
+              key={prod.id}
+              onClick={() => toggleProduct(prod.id)}
+              className={`border-border/50 shadow-inner-sm flex cursor-pointer flex-col gap-2 rounded-2xl border p-3 transition-all duration-200 select-none ${
+                isSelected
+                  ? "border-primary/40 ring-primary/10 bg-white/90 shadow-md ring-1"
+                  : "border-border/30 bg-white/30 opacity-70 hover:opacity-90"
+              }`}
+            >
+              <div className="flex items-start justify-between gap-3">
+                <div className="flex items-center gap-3">
+                  {/* Custom checkbox indicator */}
+                  <div
+                    className={`flex h-4.5 w-4.5 shrink-0 items-center justify-center rounded-lg border transition-all ${
+                      isSelected
+                        ? "border-primary bg-primary text-white"
+                        : "border-muted-foreground/30 bg-transparent"
+                    }`}
+                  >
+                    {isSelected && <Check className="h-3 w-3 stroke-[3]" />}
+                  </div>
 
-            {/* Reason for recommendation */}
-            <div className="text-muted-foreground pl-1 text-[9px] leading-relaxed">
-              <strong>Lý do kê đơn:</strong> {prod.reason}
-            </div>
-
-            {/* Active ingredient conflict warning */}
-            {prod.conflict && prod.conflictWarning && (
-              <div className="mt-1 flex items-start gap-1.5 rounded-xl border border-amber-200 bg-amber-50 p-2 text-[9px] leading-relaxed text-amber-800">
-                <AlertTriangle className="mt-0.5 h-3.5 w-3.5 shrink-0 text-amber-600" />
-                <span>{prod.conflictWarning}</span>
+                  {/* Mock product thumbnail */}
+                  <div
+                    className={`relative flex h-10 w-10 shrink-0 items-center justify-center rounded-xl border transition-all ${
+                      isSelected
+                        ? "bg-primary/5 border-primary/10 text-primary"
+                        : "bg-muted border-border/20 text-muted-foreground"
+                    }`}
+                  >
+                    <ShoppingBag className="h-4.5 w-4.5 opacity-70" />
+                  </div>
+                  <div className="flex max-w-[190px] flex-col gap-0.5">
+                    <span
+                      className={`text-xs leading-tight font-bold transition-all ${
+                        isSelected ? "text-foreground" : "text-muted-foreground"
+                      }`}
+                    >
+                      {prod.name}
+                    </span>
+                    <span className="text-muted-foreground text-[9px] font-semibold">
+                      {prod.brand} • {prod.category}
+                    </span>
+                  </div>
+                </div>
+                <div className="shrink-0 text-right">
+                  <span
+                    className={`text-xs font-extrabold transition-all ${
+                      isSelected ? "text-foreground" : "text-muted-foreground"
+                    }`}
+                  >
+                    {formatPrice(prod.price)}
+                  </span>
+                  {prod.originalPrice && (
+                    <span className="text-muted-foreground block text-[9px] line-through">
+                      {formatPrice(prod.originalPrice)}
+                    </span>
+                  )}
+                </div>
               </div>
-            )}
-          </div>
-        ))}
+
+              {/* Reason for recommendation */}
+              <div className="text-muted-foreground pl-7 text-[9px] leading-relaxed">
+                <strong>Lý do kê đơn:</strong> {prod.reason}
+              </div>
+
+              {/* Active ingredient conflict warning */}
+              {prod.conflict && prod.conflictWarning && (
+                <div className="mt-1 ml-7 flex items-start gap-1.5 rounded-xl border border-amber-200 bg-amber-50 p-2 text-[9px] leading-relaxed text-amber-800">
+                  <AlertTriangle className="mt-0.5 h-3.5 w-3.5 shrink-0 text-amber-600" />
+                  <span>{prod.conflictWarning}</span>
+                </div>
+              )}
+            </div>
+          );
+        })}
       </div>
 
       {/* Total Breakdown and checkout */}
       <div className="border-border/60 shrink-0 space-y-3 border-t pt-3">
         <div className="space-y-1.5 rounded-2xl border border-white/50 bg-white/40 p-3 text-[10px] shadow-sm">
           <div className="text-muted-foreground flex justify-between">
-            <span>Tạm tính ({dynamicProducts.length} sản phẩm):</span>
+            <span>Tạm tính ({selectedProducts.length} sản phẩm):</span>
             <span>{formatPrice(totalOriginal)}</span>
           </div>
           <div className="flex justify-between font-semibold text-emerald-600">
@@ -205,7 +253,9 @@ export function PurchaseScreen() {
           className="shadow-primary/20 hover:shadow-primary/30 bg-primary hover:bg-primary/95 flex w-full items-center justify-center gap-2 rounded-2xl py-6 text-base font-bold text-white shadow-lg transition-all duration-300"
         >
           <CreditCard className="h-5 w-5" />
-          Đặt Mua & Kích Hoạt Tracker
+          {selectedProductIds.length > 0
+            ? `Đặt Mua (${selectedProductIds.length} sp) & Kích Hoạt Tracker`
+            : "Kích Hoạt Tracker"}
         </Button>
       </div>
     </div>

@@ -29,6 +29,8 @@ import {
   FileIcon,
   CommandIcon,
   LucideIcon,
+  ShoppingBagIcon,
+  CalendarIcon,
 } from "lucide-react";
 import { vi } from "@/config/locales/vi";
 
@@ -45,6 +47,8 @@ const IconMap: Record<string, LucideIcon> = {
   Database: DatabaseIcon,
   FileChartColumn: FileChartColumnIcon,
   File: FileIcon,
+  ShoppingBag: ShoppingBagIcon,
+  Calendar: CalendarIcon,
 };
 
 // Temporary static user for UI mock

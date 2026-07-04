@@ -73,9 +73,49 @@ export const siteConfig = {
     ],
   },
 
-  // Future Configs:
-  // admin: { ... },
-  // staff: { ... }
+  // Config for user portal
+  userPortal: {
+    navMain: [
+      {
+        title: vi.userPortal.dashboard,
+        url: "/scan",
+        icon: "LayoutDashboard",
+      },
+      {
+        title: vi.userPortal.experts,
+        url: "/experts",
+        icon: "Users",
+      },
+      {
+        title: vi.userPortal.appointments,
+        url: "/appointments",
+        icon: "Calendar",
+      },
+      {
+        title: vi.userPortal.profile,
+        url: "/profile",
+        icon: "Settings2",
+      },
+    ],
+    navSecondary: [
+      {
+        title: vi.userPortal.products,
+        url: "/products",
+        icon: "ShoppingBag",
+      },
+      {
+        title: vi.userPortal.cart,
+        url: "/cart",
+        icon: "ShoppingBag",
+      },
+      {
+        title: vi.userPortal.orders,
+        url: "/orders",
+        icon: "List",
+      },
+    ],
+    documents: [],
+  },
 };
 
 export type SiteConfig = typeof siteConfig;
