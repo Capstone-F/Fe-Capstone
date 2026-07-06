@@ -16,16 +16,38 @@
   --color-popover-foreground: var(--popover-foreground);
   --color-primary: var(--primary);
   --color-primary-foreground: var(--primary-foreground);
+  --color-primary-hover: var(--primary-hover);
+  --color-primary-mid: var(--primary-mid);
+  --color-primary-soft: var(--primary-soft);
+  --color-primary-subtle: var(--primary-subtle);
+  --color-primary-light: var(--primary-light);
   --color-secondary: var(--secondary);
   --color-secondary-foreground: var(--secondary-foreground);
+  --color-success: var(--success);
+  --color-success-foreground: var(--success-foreground);
+  --color-success-soft: var(--success-soft);
+  --color-warning: var(--warning);
+  --color-warning-foreground: var(--warning-foreground);
+  --color-warning-soft: var(--warning-soft);
   --color-muted: var(--muted);
   --color-muted-foreground: var(--muted-foreground);
   --color-accent: var(--accent);
   --color-accent-foreground: var(--accent-foreground);
   --color-destructive: var(--destructive);
+  --color-destructive-foreground: var(--destructive-foreground);
+  --color-destructive-soft: var(--destructive-soft);
   --color-border: var(--border);
   --color-input: var(--input);
   --color-ring: var(--ring);
+  --color-navy: var(--navy);
+  --color-peach: var(--peach);
+  --color-rose: var(--rose);
+  --color-mint: var(--mint);
+  --color-lavender: var(--lavender);
+  --color-sky: var(--sky);
+  --color-yellow: var(--yellow);
+  --color-cream: var(--cream);
+  --color-indigo: var(--indigo);
   --color-chart-1: var(--chart-1);
   --color-chart-2: var(--chart-2);
   --color-chart-3: var(--chart-3);
@@ -38,29 +60,57 @@
 }
 
 :root {
-  --background: oklch(0.985 0.007 84);
-  --foreground: oklch(0.245 0.028 250);
-  --card: oklch(0.995 0.003 80);
-  --card-foreground: oklch(0.245 0.028 250);
-  --popover: oklch(0.995 0.003 80);
-  --popover-foreground: oklch(0.245 0.028 250);
-  --primary: oklch(0.53 0.105 205);
-  --primary-foreground: oklch(0.985 0.004 95);
-  --secondary: oklch(0.944 0.016 191);
-  --secondary-foreground: oklch(0.283 0.029 248);
-  --muted: oklch(0.957 0.006 82);
-  --muted-foreground: oklch(0.51 0.025 248);
-  --accent: oklch(0.952 0.02 76);
-  --accent-foreground: oklch(0.27 0.028 246);
-  --destructive: oklch(0.61 0.21 27);
-  --border: oklch(0.91 0.01 84);
-  --input: oklch(0.91 0.01 84);
-  --ring: oklch(0.69 0.07 205);
-  --chart-1: oklch(0.69 0.14 190);
-  --chart-2: oklch(0.63 0.11 232);
-  --chart-3: oklch(0.75 0.11 144);
-  --chart-4: oklch(0.78 0.1 92);
-  --chart-5: oklch(0.62 0.16 29);
+  /* Surface */
+  --background: #f8fafc;
+  --foreground: #1e293b;
+  --card: #ffffff;
+  --card-foreground: #1e293b;
+  --popover: #ffffff;
+  --popover-foreground: #1e293b;
+  /* Brand */
+  --primary: #5b8def;
+  --primary-foreground: #ffffff;
+  --primary-hover: #4070d4;
+  --primary-mid: #4070d4;
+  --primary-soft: #eef3fd;
+  --primary-subtle: #eef3fd;
+  --primary-light: #d6e4ff;
+  --secondary: #f1f5f9;
+  --secondary-foreground: #1e293b;
+  /* Status */
+  --success: #2bb673;
+  --success-foreground: #ffffff;
+  --success-soft: #e8f8f1;
+  --warning: #f59e0b;
+  --warning-foreground: #ffffff;
+  --warning-soft: #fef3c7;
+  --destructive: #ef4444;
+  --destructive-foreground: #ffffff;
+  --destructive-soft: #fef2f2;
+  /* Neutrals */
+  --muted: #f9fafb;
+  --muted-foreground: #64748b;
+  --accent: #f1f5f9;
+  --accent-foreground: #1e293b;
+  --border: #e2e8f0;
+  --input: #f1f5f9;
+  --ring: #5b8def;
+  /* Utility */
+  --navy: #1e293b;
+  --peach: #fed7d7;
+  --rose: #fce7f3;
+  --mint: #d1fae5;
+  --lavender: #e9d5ff;
+  --sky: #dbeafe;
+  --yellow: #fef3c7;
+  --cream: #fef5e7;
+  --indigo: #6366f1;
+  /* Chart */
+  --chart-1: #5b8def;
+  --chart-2: #3b82f6;
+  --chart-3: #2bb673;
+  --chart-4: #f59e0b;
+  --chart-5: #ef4444;
   --radius: 1rem;
 }
 
@@ -76,12 +126,8 @@
   body {
     @apply bg-background text-foreground;
     background-image:
-      radial-gradient(
-        circle at top,
-        oklch(0.93 0.03 186 / 0.45),
-        transparent 36%
-      ),
-      linear-gradient(180deg, oklch(0.992 0.004 90), oklch(0.976 0.007 84));
+      radial-gradient(circle at top, rgb(91 141 239 / 0.1), transparent 36%),
+      linear-gradient(180deg, #ffffff, #f8fafc);
   }
 
   h1,
