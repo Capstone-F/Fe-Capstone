@@ -78,6 +78,8 @@ export const vi = {
       emptyHint: "Thử nới lỏng bộ lọc của bạn.",
       matchesSkin: "Hợp da bạn",
       previouslyPurchased: "Đã mua trước đây",
+      perPage: "sản phẩm/trang",
+      pageLabel: "Trang",
     },
     stock: {
       in_stock: "Còn hàng",
@@ -145,6 +147,10 @@ export const vi = {
       orderCode: "Mã đơn hàng",
       tracking: "Mã vận đơn",
       viewOrders: "Xem đơn hàng của tôi",
+    },
+    nav: {
+      products: "Sản phẩm",
+      cart: "Giỏ hàng",
     },
   },
 };

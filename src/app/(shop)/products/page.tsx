@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import {
   Filter,
   RefreshCw,
@@ -20,6 +20,7 @@ import { useAddToCart } from "@/features/commerce/hooks/use-cart";
 import { ProductSort } from "@/features/commerce/api/products-client";
 import { ProductCard } from "@/features/commerce/components/product-card";
 import { ProductCardSkeleton } from "@/features/commerce/components/product-card-skeleton";
+import { ProductPagination } from "@/features/commerce/components/product-pagination";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -57,6 +58,22 @@ export default function ProductsPage() {
   const { data: recommended } = useRecommended();
   const { data: meta } = useFilterMeta();
   const addToCart = useAddToCart();
+
+  const [page, setPage] = useState(1);
+  const [pageSize, setPageSize] = useState(8);
+
+  const filterKey = `${search}|${category}|${brand}|${skinType}|${concern}|${maxPrice}|${sort}|${pageSize}`;
+  const [prevFilterKey, setPrevFilterKey] = useState(filterKey);
+  if (filterKey !== prevFilterKey) {
+    setPrevFilterKey(filterKey);
+    setPage(1);
+  }
+
+  const totalPages = Math.max(1, Math.ceil((products?.length ?? 0) / pageSize));
+  const pageItems = useMemo(
+    () => (products ?? []).slice((page - 1) * pageSize, page * pageSize),
+    [products, page, pageSize],
+  );
 
   const handleReset = () => {
     setSearch("");
@@ -205,15 +222,24 @@ export default function ProductsPage() {
               ))}
             </div>
           ) : products && products.length > 0 ? (
-            <div className="grid grid-cols-2 gap-4 lg:grid-cols-3">
-              {products.map((product) => (
-                <ProductCard
-                  key={product.id}
-                  product={product}
-                  onAddToCart={handleAdd}
-                  isAdding={addToCart.isPending}
-                />
-              ))}
+            <div className="flex flex-col gap-4">
+              <div className="grid grid-cols-2 gap-4 lg:grid-cols-3">
+                {pageItems.map((product) => (
+                  <ProductCard
+                    key={product.id}
+                    product={product}
+                    onAddToCart={handleAdd}
+                    isAdding={addToCart.isPending}
+                  />
+                ))}
+              </div>
+              <ProductPagination
+                page={page}
+                totalPages={totalPages}
+                pageSize={pageSize}
+                onPageChange={setPage}
+                onPageSizeChange={setPageSize}
+              />
             </div>
           ) : (
             <div className="text-muted-foreground flex flex-col items-center justify-center rounded-2xl border border-dashed border-slate-200 bg-white p-12 text-center">
