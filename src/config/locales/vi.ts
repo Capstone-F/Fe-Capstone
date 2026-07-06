@@ -47,9 +47,6 @@ export const vi = {
     experts: "Danh sách Bác sĩ",
     appointments: "Lịch hẹn của tôi",
     profile: "Hồ sơ cá nhân",
-    products: "Cửa hàng sản phẩm",
-    cart: "Giỏ hàng",
-    orders: "Đơn hàng đã đặt",
   },
   commerce: {
     products: {
@@ -151,6 +148,7 @@ export const vi = {
     nav: {
       products: "Sản phẩm",
       cart: "Giỏ hàng",
+      orders: "Đơn hàng",
     },
   },
 };
