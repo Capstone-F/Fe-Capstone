@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { ShoppingCart, Sparkles } from "lucide-react";
+import { ClipboardList, ShoppingCart, Sparkles } from "lucide-react";
 import { useCart } from "@/features/commerce/hooks/use-cart";
 import { Badge } from "@/components/ui/badge";
 import { vi } from "@/config/locales/vi";
@@ -29,6 +29,13 @@ export function ShopNavbar() {
             className="text-muted-foreground hover:text-primary text-sm font-medium transition-colors"
           >
             {n.products}
+          </Link>
+          <Link
+            href="/orders"
+            className="text-muted-foreground hover:text-primary flex items-center gap-1.5 text-sm font-medium transition-colors"
+          >
+            <ClipboardList className="h-4 w-4" />
+            {n.orders}
           </Link>
           <Link
             href="/cart"

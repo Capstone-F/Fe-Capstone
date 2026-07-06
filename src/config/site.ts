@@ -97,23 +97,7 @@ export const siteConfig = {
         icon: "Settings2",
       },
     ],
-    navSecondary: [
-      {
-        title: vi.userPortal.products,
-        url: "/products",
-        icon: "ShoppingBag",
-      },
-      {
-        title: vi.userPortal.cart,
-        url: "/cart",
-        icon: "ShoppingBag",
-      },
-      {
-        title: vi.userPortal.orders,
-        url: "/orders",
-        icon: "List",
-      },
-    ],
+    navSecondary: [],
     documents: [],
   },
 };
