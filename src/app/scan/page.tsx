@@ -13,7 +13,7 @@ export default function ScanPage() {
         <div className="bg-primary/5 pointer-events-none absolute top-10 left-1/2 -z-10 h-[500px] w-full max-w-7xl -translate-x-1/2 rounded-full opacity-40 blur-3xl filter" />
 
         {/* Simple header */}
-        <div className="mb-6 flex w-full max-w-md items-center justify-between px-2">
+        <div className="mb-6 flex w-full max-w-md items-center justify-between px-2 sm:max-w-lg md:max-w-2xl">
           <Link
             href="/"
             className="group flex items-center gap-1.5 select-none"
@@ -31,7 +31,7 @@ export default function ScanPage() {
         </div>
 
         {/* Main frame: center card frame that matches a premium device or card view */}
-        <main className="surface-glass relative flex min-h-[580px] w-full max-w-md flex-col overflow-hidden rounded-[32px] border border-white/70 bg-white/70 p-2 shadow-2xl backdrop-blur-md">
+        <main className="surface-glass relative flex min-h-[580px] w-full max-w-md flex-col overflow-hidden rounded-[32px] border border-white/70 bg-white/70 p-2 shadow-2xl backdrop-blur-md sm:max-w-lg md:max-w-2xl">
           <TreatmentFlow />
         </main>
 

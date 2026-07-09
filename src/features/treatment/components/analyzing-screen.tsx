@@ -50,7 +50,7 @@ export function AnalyzingScreen() {
 
   return (
     <div className="animate-in fade-in flex flex-1 flex-col items-center justify-center px-6 text-center duration-500">
-      <div className="w-full max-w-sm space-y-6">
+      <div className="w-full max-w-sm space-y-6 sm:max-w-md md:max-w-xl">
         {/* Dynamic Scan Area */}
         {isPhotoUploaded ? (
           <div className="border-primary relative mx-auto h-40 w-40 overflow-hidden rounded-3xl border-2 bg-black shadow-lg">

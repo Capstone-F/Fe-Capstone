@@ -71,7 +71,7 @@ export function PurchaseScreen() {
   if (paymentStep === "processing") {
     return (
       <div className="animate-in fade-in flex flex-1 flex-col items-center justify-center px-6 text-center duration-300">
-        <div className="max-w-sm space-y-6">
+        <div className="max-w-sm space-y-6 sm:max-w-md md:max-w-xl">
           <div className="relative mx-auto flex h-24 w-24 items-center justify-center">
             <div className="absolute inset-0 animate-spin rounded-full border-4 border-emerald-100 border-t-emerald-500" />
             <div className="flex h-12 w-12 items-center justify-center rounded-full bg-emerald-50 text-emerald-500">

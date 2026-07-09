@@ -1,6 +1,6 @@
 "use client";
 
-import { CheckCircle2, LayoutDashboard } from "lucide-react";
+import { ArrowLeft, CheckCircle2, LayoutDashboard } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useTreatment } from "../context/treatment-context";
 
@@ -9,7 +9,17 @@ export function SuccessScreen() {
 
   return (
     <div className="animate-in fade-in zoom-in-95 flex flex-1 flex-col justify-center px-4 text-center duration-500">
-      <div className="mx-auto max-w-sm space-y-8 py-8">
+      <div className="mb-2 flex items-center">
+        <Button
+          variant="ghost"
+          size="icon"
+          onClick={() => setFlowState("purchase")}
+          className="border-border/40 hover:bg-secondary/40 h-8 w-8 shrink-0 rounded-xl border"
+        >
+          <ArrowLeft className="h-4.5 w-4.5" />
+        </Button>
+      </div>
+      <div className="mx-auto max-w-sm space-y-8 py-8 sm:max-w-md md:max-w-xl">
         {/* Animated Check circle */}
         <div className="relative mx-auto flex h-24 w-24 items-center justify-center rounded-full bg-emerald-100 text-emerald-500 shadow-inner">
           <CheckCircle2 className="h-14 w-14 animate-bounce" />
