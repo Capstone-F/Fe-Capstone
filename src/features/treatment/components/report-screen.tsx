@@ -1,6 +1,7 @@
 "use client";
 
 import {
+  ArrowLeft,
   Droplet,
   Heart,
   AlertTriangle,
@@ -11,7 +12,7 @@ import { Button } from "@/components/ui/button";
 import { useTreatment } from "../context/treatment-context";
 
 export function ReportScreen() {
-  const { state, setFlowState } = useTreatment();
+  const { state, setFlowState, setSurveyStep } = useTreatment();
   const answers = state.surveyAnswers;
   const aiObs = state.aiObservation;
 
@@ -56,6 +57,19 @@ export function ReportScreen() {
   return (
     <div className="animate-in fade-in slide-in-from-bottom-4 flex flex-1 flex-col justify-between px-4 duration-500">
       <div className="space-y-5">
+        <div className="flex items-center">
+          <Button
+            variant="ghost"
+            size="icon"
+            onClick={() => {
+              setSurveyStep(7);
+              setFlowState("survey");
+            }}
+            className="border-border/40 hover:bg-secondary/40 h-8 w-8 shrink-0 rounded-xl border"
+          >
+            <ArrowLeft className="h-4.5 w-4.5" />
+          </Button>
+        </div>
         {/* Header */}
         <div className="space-y-1 text-center">
           <span className="text-primary bg-primary/10 rounded-full px-3 py-1 text-[10px] font-bold tracking-wider uppercase">
@@ -70,7 +84,7 @@ export function ReportScreen() {
         </div>
 
         {/* Premium Score Gauge */}
-        <div className="relative mx-auto flex w-full max-w-sm flex-col items-center justify-center rounded-3xl border border-white/60 bg-white/70 py-4 shadow-sm backdrop-blur-md">
+        <div className="relative mx-auto flex w-full max-w-sm flex-col items-center justify-center rounded-3xl border border-white/60 bg-white/70 py-4 shadow-sm backdrop-blur-md sm:max-w-md md:max-w-xl">
           <div className="relative flex h-28 w-28 items-center justify-center">
             <svg className="h-full w-full -rotate-90 transform">
               {/* Background circle */}

@@ -1,14 +1,26 @@
 "use client";
 
-import { Sparkles, User, MapPin, ShieldCheck } from "lucide-react";
+import { ArrowLeft, Sparkles, User, MapPin, ShieldCheck } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { useRouter } from "next/navigation";
 import { useTreatment } from "../context/treatment-context";
 
 export function IntroScreen() {
   const { setFlowState } = useTreatment();
+  const router = useRouter();
 
   return (
     <div className="animate-in fade-in slide-in-from-bottom-4 flex flex-1 flex-col justify-center px-4 duration-500">
+      <div className="mb-2 flex items-center">
+        <Button
+          variant="ghost"
+          size="icon"
+          onClick={() => router.push("/")}
+          className="border-border/40 hover:bg-secondary/40 h-8 w-8 shrink-0 rounded-xl border"
+        >
+          <ArrowLeft className="h-4.5 w-4.5" />
+        </Button>
+      </div>
       <div className="space-y-6 py-6 text-center">
         {/* Brand Icon */}
         <div className="bg-primary/10 text-primary relative mx-auto flex h-16 w-16 items-center justify-center rounded-2xl shadow-inner">
@@ -22,14 +34,14 @@ export function IntroScreen() {
           <h2 className="font-heading text-foreground text-2xl font-extrabold tracking-tight">
             Khảo Sát Liệu Trình Mới
           </h2>
-          <p className="text-muted-foreground mx-auto max-w-xs text-xs leading-relaxed">
+          <p className="text-muted-foreground mx-auto max-w-xs text-xs leading-relaxed sm:max-w-sm md:max-w-md">
             Hệ thống AI GlowScan sẽ cá nhân hóa chu trình dựa trên loại da
             Baumann và hồ sơ sức khỏe cá nhân của bạn.
           </p>
         </div>
 
         {/* Base Profile Confirmation Card (Premium Design) */}
-        <div className="relative mx-auto w-full max-w-sm space-y-4 overflow-hidden rounded-3xl border border-white/60 bg-white/70 p-5 text-left shadow-sm backdrop-blur-md">
+        <div className="relative mx-auto w-full max-w-sm space-y-4 overflow-hidden rounded-3xl border border-white/60 bg-white/70 p-5 text-left shadow-sm backdrop-blur-md sm:max-w-md md:max-w-xl">
           <div className="bg-primary/5 pointer-events-none absolute -top-8 -right-8 h-24 w-24 rounded-full blur-xl" />
 
           <div className="border-border/40 flex items-center gap-2 border-b pb-2.5">
@@ -100,7 +112,7 @@ export function IntroScreen() {
         <div className="pt-2">
           <Button
             onClick={() => setFlowState("survey")}
-            className="shadow-primary/20 hover:shadow-primary/30 bg-primary hover:bg-primary/95 group flex w-full max-w-sm items-center justify-center gap-2 rounded-2xl py-6 text-base font-bold text-white shadow-lg transition-all duration-300"
+            className="shadow-primary/20 hover:shadow-primary/30 bg-primary hover:bg-primary/95 group flex w-full max-w-sm items-center justify-center gap-2 rounded-2xl py-6 text-base font-bold text-white shadow-lg transition-all duration-300 sm:max-w-md md:max-w-xl"
           >
             <Sparkles className="h-5 w-5 transition-transform group-hover:scale-110" />
             Xác Nhận & Bắt Đầu Khảo Sát

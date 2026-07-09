@@ -14,7 +14,7 @@ export function TreatmentFlow() {
   const { state } = useTreatment();
 
   return (
-    <div className="mx-auto flex min-h-[600px] w-full max-w-md flex-col justify-between py-6">
+    <div className="mx-auto flex min-h-[600px] w-full max-w-md flex-col justify-between py-6 sm:max-w-lg md:max-w-2xl">
       {state.flowState === "intro" && <IntroScreen />}
       {state.flowState === "survey" && <SurveyQuestions />}
       {state.flowState === "analyzing" && <AnalyzingScreen />}

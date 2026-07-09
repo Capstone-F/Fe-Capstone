@@ -1,6 +1,13 @@
 "use client";
 
-import { Sun, Moon, Check, AlertTriangle, ShieldCheck } from "lucide-react";
+import {
+  ArrowLeft,
+  Sun,
+  Moon,
+  Check,
+  AlertTriangle,
+  ShieldCheck,
+} from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useTreatment } from "../context/treatment-context";
 
@@ -21,6 +28,16 @@ export function PlanScreen() {
   return (
     <div className="animate-in fade-in slide-in-from-right-4 flex flex-1 flex-col justify-between px-4 duration-500">
       <div className="space-y-4">
+        <div className="flex items-center">
+          <Button
+            variant="ghost"
+            size="icon"
+            onClick={() => setFlowState("report")}
+            className="border-border/40 hover:bg-secondary/40 h-8 w-8 shrink-0 rounded-xl border"
+          >
+            <ArrowLeft className="h-4.5 w-4.5" />
+          </Button>
+        </div>
         {/* Header */}
         <div className="space-y-1 text-center">
           <span className="text-primary bg-primary/10 rounded-full px-3 py-1 text-[10px] font-bold tracking-wider uppercase">
