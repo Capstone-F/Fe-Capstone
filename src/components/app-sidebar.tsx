@@ -33,6 +33,7 @@ import {
   CalendarIcon,
 } from "lucide-react";
 import { vi } from "@/config/locales/vi";
+import { useProfile } from "@/features/profile/hooks/use-profile";
 
 // Icon Map to convert string names from Server Config to Client React Components
 const IconMap: Record<string, LucideIcon> = {
@@ -67,6 +68,22 @@ interface AppSidebarProps extends React.ComponentProps<typeof Sidebar> {
 }
 
 export function AppSidebar({ config, ...props }: AppSidebarProps) {
+  const { data: profile } = useProfile();
+
+  // Check if we are rendering the user portal sidebar
+  const isUserPortal = config.navMain.some(
+    (item) => item.url === "/scan" || item.url === "/experts",
+  );
+
+  const user =
+    isUserPortal && profile
+      ? {
+          name: profile.name || "GlowScan User",
+          email: profile.email || "user@glowscan.local",
+          avatar: "/avatars/shadcn.jpg",
+        }
+      : MOCK_USER;
+
   // Map string icons to React Nodes
   const mappedNavMain = config.navMain.map((item) => {
     const Icon = IconMap[item.icon];
@@ -106,7 +123,7 @@ export function AppSidebar({ config, ...props }: AppSidebarProps) {
         <NavSecondary items={mappedNavSecondary} className="mt-auto" />
       </SidebarContent>
       <SidebarFooter>
-        <NavUser user={MOCK_USER} />
+        <NavUser user={user} />
       </SidebarFooter>
     </Sidebar>
   );

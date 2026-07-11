@@ -6,4 +6,5 @@ export const appConfig = {
   devBypassAuth:
     process.env.NODE_ENV !== "production" &&
     process.env.NEXT_PUBLIC_DEV_BYPASS_AUTH === "true",
+  useMockApi: process.env.NEXT_PUBLIC_USE_MOCK_API !== "false",
 } as const;

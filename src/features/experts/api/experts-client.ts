@@ -1,4 +1,6 @@
 import { Expert } from "@/types/domain";
+import { appConfig } from "@/lib/env";
+import { apiJson } from "@/lib/api/client";
 
 // Centralized endpoints for Experts
 export const EXPERT_API_PATHS = {
@@ -58,6 +60,83 @@ const MOCK_EXPERTS: Expert[] = [
   },
 ];
 
+// Helper to map specialization ENUM from BE to Vietnamese display name
+function translateSpecialization(spec: string): string {
+  switch (spec) {
+    case "DERMATOLOGY":
+      return "Da liễu tổng quát";
+    case "COSMETIC_DERMATOLOGY":
+      return "Phục hồi da";
+    case "ACNE_TREATMENT":
+      return "Trị mụn";
+    case "ANTI_AGING":
+      return "Chống lão hóa";
+    case "PIGMENTATION":
+      return "Nám & Tàn nhang";
+    case "LASER_THERAPY":
+      return "Sẹo rỗ";
+    case "AESTHETIC_MEDICINE":
+      return "Peel da";
+    default:
+      return spec;
+  }
+}
+
+// Map BE specialization to FE query filter enum
+function mapSpecialtyToBackend(specialty: string): string | null {
+  switch (specialty) {
+    case "Trị mụn":
+      return "ACNE_TREATMENT";
+    case "Phục hồi da":
+      return "COSMETIC_DERMATOLOGY";
+    case "Chống lão hóa":
+      return "ANTI_AGING";
+    case "Nám & Tàn nhang":
+      return "PIGMENTATION";
+    case "Sẹo rỗ":
+      return "LASER_THERAPY";
+    case "Peel da":
+      return "AESTHETIC_MEDICINE";
+    case "Da liễu tổng quát":
+      return "DERMATOLOGY";
+    default:
+      return null;
+  }
+}
+
+interface BackendExpert {
+  id: string;
+  name: string | null;
+  email: string | null;
+  clinicId: string | null;
+  clinicName: string | null;
+  specialization: string;
+  licenseNumber: string | null;
+  bio: string | null;
+  rating: number;
+  consultationFee: number | string;
+  distanceKm: number | null;
+  isActive: boolean;
+  createdAt: string;
+  updatedAt: string;
+}
+
+// Map Expert response DTO from Backend to Frontend schema
+function mapBackendExpertToFrontend(be: BackendExpert): Expert {
+  return {
+    id: be.id,
+    name: be.name || "Chuyên gia da liễu",
+    title: translateSpecialization(be.specialization),
+    clinic: be.clinicName || "Phòng khám GlowScan Partner",
+    rating: be.rating || 5.0,
+    reviews: 50, // BE does not track reviews count yet
+    fee: Number(be.consultationFee) || 0,
+    specialties: [translateSpecialization(be.specialization)],
+    distance: be.distanceKm !== null ? Number(be.distanceKm) : undefined,
+    bio: be.bio || "",
+  };
+}
+
 export async function getExperts(filters?: {
   specialty?: string;
   search?: string;
@@ -65,54 +144,122 @@ export async function getExperts(filters?: {
   maxFee?: number;
   maxDistance?: number;
 }): Promise<Expert[]> {
-  // Simulate network delay
-  await new Promise((resolve) => setTimeout(resolve, 300));
+  if (appConfig.useMockApi) {
+    // Simulate network delay
+    await new Promise((resolve) => setTimeout(resolve, 300));
 
-  let result = [...MOCK_EXPERTS];
+    let result = [...MOCK_EXPERTS];
+
+    if (filters) {
+      const { specialty, search, minRating, maxFee, maxDistance } = filters;
+
+      if (specialty && specialty !== "Tất cả") {
+        result = result.filter((e) => e.specialties.includes(specialty));
+      }
+      if (search) {
+        const q = search.toLowerCase();
+        result = result.filter(
+          (e) =>
+            e.name.toLowerCase().includes(q) ||
+            e.title.toLowerCase().includes(q) ||
+            e.clinic.toLowerCase().includes(q),
+        );
+      }
+      if (minRating) {
+        result = result.filter((e) => e.rating >= minRating);
+      }
+      if (maxFee) {
+        result = result.filter((e) => e.fee <= maxFee);
+      }
+      if (maxDistance) {
+        result = result.filter(
+          (e) => e.distance !== undefined && e.distance <= maxDistance,
+        );
+      }
+    }
+
+    return result;
+  }
+
+  // Real API Logic
+  let url = EXPERT_API_PATHS.GET_EXPERTS;
+  const queryParams = new URLSearchParams();
 
   if (filters) {
-    const { specialty, search, minRating, maxFee, maxDistance } = filters;
-
+    const { specialty, minRating, maxFee, maxDistance } = filters;
     if (specialty && specialty !== "Tất cả") {
-      result = result.filter((e) => e.specialties.includes(specialty));
-    }
-    if (search) {
-      const q = search.toLowerCase();
-      result = result.filter(
-        (e) =>
-          e.name.toLowerCase().includes(q) ||
-          e.title.toLowerCase().includes(q) ||
-          e.clinic.toLowerCase().includes(q),
-      );
+      const spec = mapSpecialtyToBackend(specialty);
+      if (spec) queryParams.set("specialization", spec);
     }
     if (minRating) {
-      result = result.filter((e) => e.rating >= minRating);
+      queryParams.set("minRating", minRating.toString());
     }
     if (maxFee) {
-      result = result.filter((e) => e.fee <= maxFee);
+      queryParams.set("maxFee", maxFee.toString());
     }
     if (maxDistance) {
-      result = result.filter(
-        (e) => e.distance !== undefined && e.distance <= maxDistance,
-      );
+      queryParams.set("radiusKm", maxDistance.toString());
+      // Default to central coords for distance calculation if geolocation not provided
+      queryParams.set("lat", "10.7769");
+      queryParams.set("lng", "106.7009");
     }
   }
 
-  return result;
+  const queryString = queryParams.toString();
+  if (queryString) {
+    url += `?${queryString}`;
+  }
+
+  // BE returns PaginatedResponse: { items: ExpertResponseDto[], total: number, page: number, limit: number }
+  const response = await apiJson<{ items: BackendExpert[] }>(url);
+  let experts = response.items.map(mapBackendExpertToFrontend);
+
+  // Perform search locally as BE doesn't support text query on this endpoint
+  if (filters?.search) {
+    const q = filters.search.toLowerCase();
+    experts = experts.filter(
+      (e) =>
+        e.name.toLowerCase().includes(q) ||
+        e.title.toLowerCase().includes(q) ||
+        e.clinic.toLowerCase().includes(q),
+    );
+  }
+
+  return experts;
 }
 
 export async function getExpertById(id: string): Promise<Expert> {
-  await new Promise((resolve) => setTimeout(resolve, 200));
-  const exp = MOCK_EXPERTS.find((e) => e.id === id);
-  if (!exp) {
-    throw new Error(`Bác sĩ với ID ${id} không tồn tại`);
+  if (appConfig.useMockApi) {
+    await new Promise((resolve) => setTimeout(resolve, 200));
+    const exp = MOCK_EXPERTS.find((e) => e.id === id);
+    if (!exp) {
+      throw new Error(`Bác sĩ với ID ${id} không tồn tại`);
+    }
+    return exp;
   }
-  return exp;
+
+  const beExpert = await apiJson<BackendExpert>(
+    EXPERT_API_PATHS.GET_EXPERT_DETAIL(id),
+  );
+  return mapBackendExpertToFrontend(beExpert);
 }
 
 export async function getSpecialties(): Promise<string[]> {
-  await new Promise((resolve) => setTimeout(resolve, 100));
-  const specialties = new Set<string>();
-  MOCK_EXPERTS.forEach((e) => e.specialties.forEach((s) => specialties.add(s)));
-  return Array.from(specialties);
+  if (appConfig.useMockApi) {
+    await new Promise((resolve) => setTimeout(resolve, 100));
+    const specialties = new Set<string>();
+    MOCK_EXPERTS.forEach((e) =>
+      e.specialties.forEach((s) => specialties.add(s)),
+    );
+    return Array.from(specialties);
+  }
+
+  return [
+    "Trị mụn",
+    "Phục hồi da",
+    "Sẹo rỗ",
+    "Chống lão hóa",
+    "Nám & Tàn nhang",
+    "Peel da",
+  ];
 }
