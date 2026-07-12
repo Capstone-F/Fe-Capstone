@@ -8,6 +8,8 @@ import { PaymentMethod, Order, ShippingAddress } from "@/types/domain";
 import { vi } from "@/config/locales/vi";
 import { useCart } from "@/features/commerce/hooks/use-cart";
 import { useCreateOrder } from "@/features/commerce/hooks/use-checkout";
+import { checkoutVnpay } from "@/features/commerce/api/orders-client";
+import { toast } from "sonner";
 import { checkStock } from "@/features/commerce/lib/stock";
 import { formatVnd } from "@/features/commerce/lib/format";
 import { OrderSummary } from "@/features/commerce/components/order-summary";
@@ -34,6 +36,7 @@ export default function CheckoutPage() {
   });
   const [payment, setPayment] = useState<PaymentMethod>("cod");
   const [placedOrder, setPlacedOrder] = useState<Order | null>(null);
+  const [isVnpayRedirecting, setIsVnpayRedirecting] = useState(false);
 
   const lines = useMemo(() => cart?.lines ?? [], [cart]);
   const stockIssues = useMemo(() => checkStock(lines), [lines]);
@@ -112,7 +115,26 @@ export default function CheckoutPage() {
   const handlePlaceOrder = () => {
     createOrder.mutate(
       { summary: cart, paymentMethod: payment, address },
-      { onSuccess: (order) => setPlacedOrder(order) },
+      {
+        onSuccess: async (order) => {
+          if (payment === "vnpay") {
+            // Redirect to VNPay gateway for real payment
+            try {
+              setIsVnpayRedirecting(true);
+              const { paymentUrl } = await checkoutVnpay(order.id);
+              window.location.href = paymentUrl;
+            } catch {
+              setIsVnpayRedirecting(false);
+              toast.error(
+                "Không thể kết nối cổng thanh toán VNPay. Vui lòng thử lại.",
+              );
+            }
+          } else {
+            // COD: show success screen directly
+            setPlacedOrder(order);
+          }
+        },
+      },
     );
   };
 
@@ -291,7 +313,9 @@ export default function CheckoutPage() {
             ) : (
               <Button
                 size="sm"
-                disabled={!canProceed || createOrder.isPending}
+                disabled={
+                  !canProceed || createOrder.isPending || isVnpayRedirecting
+                }
                 onClick={handlePlaceOrder}
                 className="rounded-lg text-xs font-semibold"
               >

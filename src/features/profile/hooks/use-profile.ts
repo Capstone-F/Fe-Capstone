@@ -5,6 +5,7 @@ import {
   patchProfile,
   getSurveyHistory,
   postSurvey,
+  getAllergyOptions,
 } from "../api/profile-client";
 import { UserProfile } from "@/types/domain";
 
@@ -40,5 +41,12 @@ export function useSaveSurvey() {
       queryClient.invalidateQueries({ queryKey: queryKeys.surveyHistory });
       queryClient.invalidateQueries({ queryKey: queryKeys.profile });
     },
+  });
+}
+
+export function useAllergyOptions() {
+  return useQuery({
+    queryKey: queryKeys.allergyOptions,
+    queryFn: getAllergyOptions,
   });
 }

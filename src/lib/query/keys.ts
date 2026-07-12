@@ -8,6 +8,8 @@ export const queryKeys = {
   booking: (id: string) => ["booking", id] as const,
   profile: ["profile"] as const,
   surveyHistory: ["surveyHistory"] as const,
+  allergyOptions: ["allergyOptions"] as const,
+  routines: ["routines"] as const,
   products: (filters: unknown) => ["products", filters] as const,
   product: (id: string) => ["product", id] as const,
   recommendedProducts: ["recommendedProducts"] as const,
