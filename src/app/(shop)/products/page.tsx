@@ -32,6 +32,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { EmptyState } from "@/components/ui/empty-state";
 
 const c = vi.commerce.products;
 
@@ -242,19 +243,12 @@ export default function ProductsPage() {
               />
             </div>
           ) : (
-            <div className="text-muted-foreground flex flex-col items-center justify-center rounded-2xl border border-dashed border-slate-200 bg-white p-12 text-center">
-              <PackageSearch className="mb-3 h-12 w-12 text-slate-300" />
-              <p className="font-bold text-slate-700">{c.emptyTitle}</p>
-              <p className="mt-1 text-xs">{c.emptyHint}</p>
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={handleReset}
-                className="mt-4 text-xs"
-              >
-                {c.reset}
-              </Button>
-            </div>
+            <EmptyState
+              icon={PackageSearch}
+              title={c.emptyTitle}
+              description={c.emptyHint}
+              action={{ label: c.reset, onClick: handleReset }}
+            />
           )}
         </div>
       </div>

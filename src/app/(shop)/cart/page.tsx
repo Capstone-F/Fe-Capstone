@@ -1,7 +1,6 @@
 "use client";
 
 import { useState } from "react";
-import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { ShoppingCart } from "lucide-react";
 import { vi } from "@/config/locales/vi";
@@ -14,8 +13,8 @@ import { detectCartConflicts } from "@/features/commerce/lib/conflicts";
 import { CartItemRow } from "@/features/commerce/components/cart-item-row";
 import { OrderSummary } from "@/features/commerce/components/order-summary";
 import { ConflictWarning } from "@/features/commerce/components/conflict-warning";
-import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
+import { EmptyState } from "@/components/ui/empty-state";
 
 const cc = vi.commerce.cart;
 
@@ -52,16 +51,12 @@ export default function CartPage() {
           <Skeleton className="h-56 w-full rounded-xl bg-slate-300 md:col-span-1" />
         </div>
       ) : lines.length === 0 ? (
-        <div className="text-muted-foreground flex flex-col items-center justify-center rounded-2xl border border-dashed border-slate-200 bg-white p-12 text-center">
-          <ShoppingCart className="mb-3 h-12 w-12 text-slate-300" />
-          <p className="font-bold text-slate-700">{cc.emptyTitle}</p>
-          <p className="mt-1 text-xs">{cc.emptyHint}</p>
-          <Link href="/products">
-            <Button variant="outline" size="sm" className="mt-4 text-xs">
-              {cc.continueShopping}
-            </Button>
-          </Link>
-        </div>
+        <EmptyState
+          icon={ShoppingCart}
+          title={cc.emptyTitle}
+          description={cc.emptyHint}
+          action={{ label: cc.continueShopping, href: "/products" }}
+        />
       ) : (
         <div className="grid grid-cols-1 gap-6 md:grid-cols-3">
           <div className="flex flex-col gap-3 md:col-span-2">
