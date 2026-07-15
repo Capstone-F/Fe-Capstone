@@ -44,9 +44,72 @@ export const vi = {
   },
   userPortal: {
     dashboard: "Bảng điều khiển & Soi da",
-    experts: "Danh sách Bác sĩ",
+    experts: "Danh sách Chuyên gia",
     appointments: "Lịch hẹn của tôi",
     profile: "Hồ sơ cá nhân",
+    expertsPage: {
+      title: "Mạng lưới Chuyên gia da liễu",
+      subtitle:
+        "Tìm kiếm và đặt lịch tư vấn trực tuyến cùng đội ngũ chuyên gia da liễu hàng đầu.",
+      filtersTitle: "Bộ lọc chuyên sâu",
+      reset: "Đặt lại",
+      searchLabel: "Tìm kiếm",
+      searchPlaceholder: "Tên chuyên gia, trung tâm...",
+      specialtyLabel: "Chuyên môn",
+      allSpecialties: "Tất cả chuyên môn",
+      maxFeeLabel: "Phí tư vấn tối đa (đ)",
+      maxDistanceLabel: "Khoảng cách tối đa",
+      minRatingLabel: "Xếp hạng tối thiểu",
+      all: "Tất cả",
+      distanceLabel: "Khoảng cách:",
+      feeLabel: "Phí tư vấn",
+      book: "Đặt lịch tư vấn",
+      emptyTitle: "Không tìm thấy chuyên gia phù hợp",
+      emptyHint: "Thử nới lỏng các bộ lọc tìm kiếm của bạn.",
+      emptyAction: "Xóa bộ lọc",
+    },
+    expertDetail: {
+      back: "Quay lại danh sách chuyên gia",
+      errorTitle: "Đã xảy ra lỗi",
+      errorHint:
+        "Không thể tải thông tin chuyên gia. Hồ sơ có thể không tồn tại hoặc đường dẫn bị sai.",
+      backToList: "Quay lại danh sách",
+      introTitle: "Giới thiệu chuyên gia",
+      bioSuffix:
+        " Chuyên gia luôn ưu tiên thiết kế các quy trình chăm sóc da đơn giản, an toàn và cá nhân hóa tối đa cho làn da người Việt Nam.",
+      specialtiesTitle: "Lĩnh vực chuyên sâu",
+      clinicTitle: "Nơi công tác & Đối tác",
+      clinicSuffix: " (Được trang bị máy soi da chuyên dụng GlowScan Pro)",
+      commitmentTitle: "Cam kết chất lượng tư vấn",
+      commitmentBody:
+        "Tất cả chuyên gia thuộc mạng lưới GlowScan đều được xác minh chứng chỉ hành nghề da liễu thẩm mỹ và có ít nhất 3 năm kinh nghiệm chuyên sâu.",
+      feeLabel: "Chi phí tư vấn dự kiến",
+      book: "Đặt lịch hẹn ngay",
+    },
+    appointmentsPage: {
+      title: "Lịch hẹn tư vấn của tôi",
+      subtitle:
+        "Xem và quản lý các lượt tư vấn trực tiếp cùng chuyên gia da liễu.",
+      codeLabel: "Mã cuộc hẹn:",
+      bookedAtLabel: "Đặt lúc:",
+      expertInCharge: "Chuyên gia phụ trách",
+      appointmentTime: "Thời gian hẹn",
+      serviceFee: "Phí dịch vụ",
+      concernLabel: "Mối quan tâm về da:",
+      status: {
+        paid: "Đã thanh toán",
+        confirmed: "Đã xác nhận",
+        cancelled: "Đã hủy",
+        pending: "Chờ thanh toán",
+      },
+      payNow: "Thanh toán ngay",
+      waiting: "Chờ đến lượt tư vấn",
+      completed: "Hoàn thành",
+      emptyTitle: "Chưa có lịch hẹn nào",
+      emptyHint:
+        "Lịch sử đặt tư vấn trực tiếp cùng chuyên gia da liễu sẽ hiển thị tại đây.",
+      emptyAction: "Tìm chuyên gia đặt lịch ngay",
+    },
   },
   commerce: {
     products: {
@@ -149,6 +212,13 @@ export const vi = {
       products: "Sản phẩm",
       cart: "Giỏ hàng",
       orders: "Đơn hàng",
+    },
+  },
+  common: {
+    error: {
+      title: "Đã xảy ra lỗi kết nối",
+      description: "Có lỗi khi kết nối tới hệ thống. Vui lòng thử lại!",
+      retry: "Tải lại trang",
     },
   },
 };
