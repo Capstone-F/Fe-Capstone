@@ -81,7 +81,7 @@ export function Footer() {
                   href="#products"
                   className="text-muted-foreground hover:text-primary transition-colors"
                 >
-                  Liệu Trình Điều Trị
+                  Liệu Trình Chăm Sóc Da
                 </a>
               </li>
               <li>
@@ -114,7 +114,7 @@ export function Footer() {
                   href="#clinics"
                   className="text-muted-foreground hover:text-primary transition-colors"
                 >
-                  Mạng Lưới Phòng Khám
+                  Mạng Lưới Đối Tác Chăm Sóc Da
                 </a>
               </li>
               <li>

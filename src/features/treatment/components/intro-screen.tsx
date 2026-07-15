@@ -103,7 +103,7 @@ export function IntroScreen() {
             <ShieldCheck className="mt-0.5 h-4.5 w-4.5 shrink-0 text-blue-500" />
             <span>
               Hãy xác nhận thông tin trên là chính xác. Hệ thống AI sẽ tích hợp
-              các dữ liệu lâm sàng này vào chẩn đoán da.
+              các dữ liệu chuyên sâu này vào phân tích da.
             </span>
           </div>
         </div>

@@ -52,7 +52,7 @@ const QUESTIONS: Question[] = [
   },
   {
     id: 3,
-    text: "Mối lo ngại hoặc mục tiêu điều trị da lớn nhất của bạn là gì?",
+    text: "Mối lo ngại hoặc mục tiêu chăm sóc da lớn nhất của bạn là gì?",
     options: [
       { label: "Mụn ẩn, mụn sưng viêm hoặc vết thâm", value: "acne", key: "P" },
       {
@@ -182,8 +182,8 @@ export function QuizWidget() {
             </h3>
             <p className="text-muted-foreground text-sm">
               Chỉ với 3 câu hỏi trắc nghiệm nhanh, khám phá sơ bộ phân loại da
-              của bạn theo chuẩn y khoa Baumann và nhận gợi ý hoạt chất điều
-              trị.
+              của bạn theo chuẩn y khoa Baumann và nhận gợi ý hoạt chất chăm
+              sóc.
             </p>
           </div>
           <Button
@@ -282,7 +282,7 @@ export function QuizWidget() {
             </Button>
             <a href="/login?redirectTo=/scan" className="flex-[2]">
               <Button className="group w-full rounded-xl font-bold">
-                Soi da AI & Nhận phác đồ chi tiết
+                Soi da AI & Nhận quy trình chăm sóc da chi tiết
                 <ArrowRight className="ml-1.5 h-4 w-4 transition-transform group-hover:translate-x-1" />
               </Button>
             </a>

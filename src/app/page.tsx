@@ -51,7 +51,7 @@ export default function HomePage() {
 
   const mockExperts = [
     {
-      name: "ThS. BS. Nguyễn Mai Anh",
+      name: "ThS. Nguyễn Mai Anh",
       title: "Chuyên khoa I - Da liễu thẩm mỹ",
       clinic: "Seoul Skincare Clinic (Cầu Giấy, HN)",
       rating: 4.9,
@@ -60,8 +60,8 @@ export default function HomePage() {
       tags: ["Trị mụn", "Phục hồi da", "Sẹo rỗ"],
     },
     {
-      name: "BS. Lê Hoàng Long",
-      title: "Bác sĩ nội trú Da liễu",
+      name: "Lê Hoàng Long",
+      title: "Chuyên gia nội trú Da liễu",
       clinic: "GlowScan Partner Clinic (Quận 3, HCM)",
       rating: 4.8,
       reviews: 98,
@@ -138,7 +138,7 @@ export default function HomePage() {
                     50+
                   </span>
                   <span className="text-muted-foreground text-xs">
-                    Phòng khám đối tác
+                    Đối tác chăm sóc da
                   </span>
                 </div>
               </div>
@@ -244,9 +244,7 @@ export default function HomePage() {
                         </span>
                       </div>
                       <div className="bg-secondary/40 border-border/30 flex items-center justify-between rounded-xl border p-2 text-[11px]">
-                        <span className="font-semibold">
-                          B2: Điều Trị (Tối)
-                        </span>
+                        <span className="font-semibold">B2: Đặc Trị (Tối)</span>
                         <span className="bg-primary/10 text-primary rounded px-1.5 py-0.5 text-[10px] font-bold">
                           Niacinamide 10%
                         </span>
@@ -300,8 +298,8 @@ export default function HomePage() {
               Hành trình 4 bước nâng cấp làn da
             </h2>
             <p className="text-muted-foreground text-sm">
-              Giải pháp tích hợp giúp bạn dễ dàng theo dõi từ chẩn đoán ban đầu
-              tới khi đạt được làn da như ý muốn.
+              Giải pháp tích hợp giúp bạn dễ dàng theo dõi từ phân tích da ban
+              đầu tới khi đạt được làn da như ý muốn.
             </p>
           </div>
 
@@ -357,7 +355,7 @@ export default function HomePage() {
                 Theo Dõi & Đồng Hành
               </h3>
               <p className="text-muted-foreground text-xs leading-relaxed">
-                Theo dõi tiến trình trước/sau điều trị, nhắc lịch bôi kem và kết
+                Theo dõi tiến trình trước/sau chăm sóc, nhắc lịch bôi kem và kết
                 nối chuyên gia y tế khi có kích ứng bất thường.
               </p>
             </div>
@@ -722,8 +720,8 @@ export default function HomePage() {
             </h2>
             <p className="text-muted-foreground text-sm">
               Giao phó làn da cho những người có chuyên môn. Nhân viên hệ thống
-              hỗ trợ miễn phí các thắc mắc thông thường, bác sĩ chuyên khoa phụ
-              trách điều trị các ca bệnh lý phức tạp.
+              hỗ trợ miễn phí các thắc mắc thông thường, chuyên gia da liễu phụ
+              trách chăm sóc các tình trạng da phức tạp.
             </p>
           </div>
 

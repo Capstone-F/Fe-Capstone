@@ -79,7 +79,7 @@ export function ReportScreen() {
             Báo Cáo Sức Khỏe Da
           </h3>
           <p className="text-muted-foreground text-[10px]">
-            Báo cáo y khoa dựa trên hồ sơ Baumann và dữ liệu lâm sàng của bạn.
+            Báo cáo y khoa dựa trên hồ sơ Baumann và dữ liệu chuyên sâu của bạn.
           </p>
         </div>
 
@@ -255,7 +255,7 @@ export function ReportScreen() {
               </div>
               <div className="flex flex-col">
                 <span className="text-foreground text-xs font-semibold">
-                  An toàn lâm sàng
+                  Đánh giá an toàn
                 </span>
                 <span className="text-muted-foreground text-[10px]">
                   Nguy cơ thai kỳ & kích ứng hoạt chất
@@ -299,7 +299,7 @@ export function ReportScreen() {
           onClick={() => setFlowState("plan")}
           className="shadow-primary/20 hover:shadow-primary/30 bg-primary hover:bg-primary/95 flex w-full items-center justify-center gap-1.5 rounded-2xl py-6 text-base font-bold text-white shadow-lg transition-all duration-300"
         >
-          <span>Xem Phác Đồ Điều Trị</span>
+          <span>Xem Quy Trình Chăm Sóc Da</span>
           <ArrowRight className="h-5 w-5" />
         </Button>
       </div>

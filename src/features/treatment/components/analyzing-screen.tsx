@@ -95,7 +95,7 @@ export function AnalyzingScreen() {
           </p>
           <p className="text-muted-foreground text-[10px] leading-relaxed">
             Hệ thống AI đang tổng hợp các câu trả lời của bạn để xây dựng một
-            báo cáo da y khoa và phác đồ điều trị chuyên biệt.
+            báo cáo da y khoa và quy trình chăm sóc da chuyên biệt.
           </p>
         </div>
 

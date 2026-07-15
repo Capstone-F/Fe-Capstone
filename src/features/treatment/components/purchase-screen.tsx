@@ -231,7 +231,7 @@ export function PurchaseScreen() {
             <span>{formatPrice(totalOriginal)}</span>
           </div>
           <div className="flex justify-between font-semibold text-emerald-600">
-            <span>Giảm giá theo phác đồ combo:</span>
+            <span>Giảm giá theo quy trình chăm sóc da combo:</span>
             <span>-{formatPrice(totalSavings)}</span>
           </div>
           <div className="text-muted-foreground flex justify-between">

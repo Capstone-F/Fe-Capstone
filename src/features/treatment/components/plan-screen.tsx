@@ -59,10 +59,10 @@ export function PlanScreen() {
           <div className="flex items-start gap-2 rounded-2xl border border-emerald-200 bg-emerald-50 p-3 text-[10px] leading-relaxed text-emerald-800 shadow-sm">
             <ShieldCheck className="mt-0.5 h-4.5 w-4.5 shrink-0 text-emerald-600" />
             <span>
-              <strong>Chế độ thai kỳ an toàn hoạt động:</strong> Phác đồ đã tự
-              động loại bỏ các hoạt chất có nguy cơ ảnh hưởng thai nhi
-              (Retinoids, BHA liều cao). Các sản phẩm dưới đây hoàn toàn an toàn
-              cho mẹ và bé.
+              <strong>Chế độ thai kỳ an toàn hoạt động:</strong> Quy trình chăm
+              sóc da đã tự động loại bỏ các hoạt chất có nguy cơ ảnh hưởng thai
+              nhi (Retinoids, BHA liều cao). Các sản phẩm dưới đây hoàn toàn an
+              toàn cho mẹ và bé.
             </span>
           </div>
         )}

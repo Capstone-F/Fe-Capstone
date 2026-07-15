@@ -32,8 +32,9 @@ export function SuccessScreen() {
             Kích Hoạt Thành Công!
           </h3>
           <p className="text-muted-foreground text-sm leading-relaxed">
-            Phác đồ điều trị cá nhân hóa của bạn đã được lưu trữ vào tài khoản
-            GlowScan. Bảng điều khiển theo dõi hàng ngày đã sẵn sàng hoạt động.
+            Quy trình chăm sóc da cá nhân hóa của bạn đã được lưu trữ vào tài
+            khoản GlowScan. Bảng điều khiển theo dõi hàng ngày đã sẵn sàng hoạt
+            động.
           </p>
         </div>
 

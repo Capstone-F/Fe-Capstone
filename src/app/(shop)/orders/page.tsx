@@ -35,7 +35,7 @@ export default function OrdersStubPage() {
           <div className="flex justify-center gap-2">
             <Link href="/scan">
               <Button size="sm" className="rounded-lg text-xs font-semibold">
-                Khảo sát da & Xem phác đồ
+                Khảo sát da & Xem quy trình chăm sóc da
                 <ArrowRight className="ml-1 h-3.5 w-3.5" />
               </Button>
             </Link>

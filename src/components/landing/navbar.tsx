@@ -23,7 +23,7 @@ export function Navbar() {
     { label: "Cách Hoạt Động", href: "#how-it-works" },
     { label: "Sản Phẩm", href: "#products" },
     { label: "Mạng Lưới Chuyên Gia", href: "#experts" },
-    { label: "Phòng Khám", href: "#clinics" },
+    { label: "Đối Tác", href: "#clinics" },
   ];
 
   return (

@@ -117,7 +117,7 @@ function CheckoutPageContent() {
           className="text-muted-foreground hover:text-primary inline-flex items-center gap-1 text-xs transition-colors"
         >
           <ArrowLeft className="h-4 w-4" />
-          Quay lại đổi giờ khám
+          Quay lại đổi giờ tư vấn
         </Link>
       </div>
 
@@ -142,7 +142,7 @@ function CheckoutPageContent() {
           {/* Bill summary details */}
           <div className="flex flex-col gap-2 rounded-xl border border-slate-200/50 bg-slate-100/50 p-4 text-xs">
             <div className="flex items-center justify-between">
-              <span className="text-muted-foreground">Bác sĩ tư vấn:</span>
+              <span className="text-muted-foreground">Chuyên gia tư vấn:</span>
               <span className="font-bold text-slate-800">
                 {booking.expertName}
               </span>
@@ -155,7 +155,7 @@ function CheckoutPageContent() {
             </div>
             <div className="mt-1.5 flex items-start justify-between">
               <span className="text-muted-foreground shrink-0">
-                Triệu chứng khai báo:
+                Mối quan tâm về da:
               </span>
               <span className="max-w-[200px] truncate text-right text-slate-600">
                 {booking.symptoms}

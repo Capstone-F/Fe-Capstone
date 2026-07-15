@@ -181,8 +181,8 @@ export default function ProfilePage() {
                 </Label>
                 <p className="text-muted-foreground text-[10px] leading-relaxed">
                   Các hoạt chất được đánh dấu dưới đây sẽ tự động bị loại bỏ
-                  khỏi phác đồ bôi da (Routine) và đưa ra cảnh báo nếu bạn thêm
-                  vào giỏ hàng.
+                  khỏi quy trình chăm sóc da (Routine) và đưa ra cảnh báo nếu
+                  bạn thêm vào giỏ hàng.
                 </p>
                 <div className="mt-1 grid grid-cols-2 gap-2">
                   {isAllergyLoading ? (
