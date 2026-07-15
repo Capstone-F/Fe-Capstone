@@ -12,7 +12,7 @@ export const EXPERT_API_PATHS = {
 const MOCK_EXPERTS: Expert[] = [
   {
     id: "exp_1",
-    name: "ThS. BS. Nguyễn Mai Anh",
+    name: "ThS. Nguyễn Mai Anh",
     title: "Chuyên khoa I - Da liễu thẩm mỹ",
     clinic: "Seoul Skincare Clinic (Cầu Giấy, HN)",
     rating: 4.9,
@@ -20,35 +20,35 @@ const MOCK_EXPERTS: Expert[] = [
     fee: 250000,
     specialties: ["Trị mụn", "Phục hồi da", "Sẹo rỗ"],
     distance: 2.5,
-    bio: "Hơn 8 năm kinh nghiệm trong điều trị các bệnh lý trứng cá nặng, phục hồi da nhiễm corticoid và trị sẹo chuyên sâu.",
+    bio: "Hơn 8 năm kinh nghiệm trong chăm sóc và cải thiện tình trạng mụn nặng, phục hồi da nhiễm corticoid và trị sẹo chuyên sâu.",
   },
   {
     id: "exp_2",
-    name: "BS. Lê Hoàng Long",
-    title: "Bác sĩ nội trú Da liễu",
+    name: "Lê Hoàng Long",
+    title: "Chuyên gia nội trú Da liễu",
     clinic: "GlowScan Partner Clinic (Quận 3, HCM)",
     rating: 4.8,
     reviews: 98,
     fee: 200000,
     specialties: ["Chống lão hóa", "Nám & Tàn nhang", "Peel da"],
     distance: 5.0,
-    bio: "Chuyên gia về thiết kế routine chống lão hóa và ứng dụng công nghệ chemical peel trong điều trị sắc tố da.",
+    bio: "Chuyên gia về thiết kế routine chống lão hóa và ứng dụng công nghệ chemical peel trong cải thiện sắc tố da.",
   },
   {
     id: "exp_3",
-    name: "BS. Trần Thu Hà",
+    name: "Trần Thu Hà",
     title: "Thạc sĩ Y khoa - Da liễu",
-    clinic: "Phòng khám Da liễu Hà Nội (Đống Đa, HN)",
+    clinic: "Trung tâm chăm sóc da Hà Nội (Đống Đa, HN)",
     rating: 4.7,
     reviews: 76,
     fee: 300000,
     specialties: ["Trị mụn", "Nám & Tàn nhang"],
     distance: 1.2,
-    bio: "Nguyên bác sĩ khoa Da liễu bệnh viện Bạch Mai, chuyên điều trị nám má nội tiết và mụn nội tiết tố.",
+    bio: "Nguyên chuyên gia da liễu tại bệnh viện Bạch Mai, chuyên cải thiện nám má nội tiết và mụn nội tiết tố.",
   },
   {
     id: "exp_4",
-    name: "BS. Phạm Minh Quân",
+    name: "Phạm Minh Quân",
     title: "Chuyên gia Laser & Thiết bị năng lượng",
     clinic: "GlowScan Partner Clinic (Quận 1, HCM)",
     rating: 4.5,
@@ -127,7 +127,7 @@ function mapBackendExpertToFrontend(be: BackendExpert): Expert {
     id: be.id,
     name: be.name || "Chuyên gia da liễu",
     title: translateSpecialization(be.specialization),
-    clinic: be.clinicName || "Phòng khám GlowScan Partner",
+    clinic: be.clinicName || "Trung tâm chăm sóc da GlowScan Partner",
     rating: be.rating || 5.0,
     reviews: 50, // BE does not track reviews count yet
     fee: Number(be.consultationFee) || 0,
@@ -233,7 +233,7 @@ export async function getExpertById(id: string): Promise<Expert> {
     await new Promise((resolve) => setTimeout(resolve, 200));
     const exp = MOCK_EXPERTS.find((e) => e.id === id);
     if (!exp) {
-      throw new Error(`Bác sĩ với ID ${id} không tồn tại`);
+      throw new Error(`Chuyên gia với ID ${id} không tồn tại`);
     }
     return exp;
   }

@@ -110,7 +110,7 @@ export default function BookSlotPage() {
     return (
       <div className="text-muted-foreground mx-auto flex max-w-2xl flex-col items-center justify-center p-12">
         <div className="border-primary mb-3 h-8 w-8 animate-spin rounded-full border-b-2"></div>
-        Đang tải thông tin lịch khám...
+        Đang tải thông tin lịch tư vấn...
       </div>
     );
   }
@@ -118,7 +118,7 @@ export default function BookSlotPage() {
   if (!expert) {
     return (
       <div className="text-muted-foreground mx-auto max-w-2xl p-12 text-center">
-        <p className="font-bold text-red-500">Không tìm thấy bác sĩ</p>
+        <p className="font-bold text-red-500">Không tìm thấy chuyên gia</p>
         <Link href="/experts" className="mt-4 inline-block">
           <Button variant="outline" size="sm">
             Quay lại danh sách
@@ -136,7 +136,7 @@ export default function BookSlotPage() {
           className="text-muted-foreground hover:text-primary inline-flex items-center gap-1 text-xs transition-colors"
         >
           <ArrowLeft className="h-4 w-4" />
-          Quay lại trang bác sĩ
+          Quay lại trang chuyên gia
         </Link>
       </div>
 
@@ -147,7 +147,7 @@ export default function BookSlotPage() {
               Đặt lịch hẹn tư vấn
             </CardTitle>
             <CardDescription className="text-xs">
-              Hẹn tư vấn cùng Bác sĩ:{" "}
+              Hẹn tư vấn cùng Chuyên gia:{" "}
               <strong className="text-slate-800">{expert.name}</strong> (
               {expert.title})
             </CardDescription>
@@ -212,7 +212,7 @@ export default function BookSlotPage() {
             <div className="flex flex-col gap-3">
               <h3 className="flex items-center gap-1.5 text-sm font-bold text-slate-800">
                 <FileText className="text-primary h-4 w-4" />
-                2. Mô tả tình trạng da và triệu chứng
+                2. Mô tả tình trạng da và mối quan tâm của bạn
               </h3>
               <div className="flex flex-col gap-1.5">
                 <Label htmlFor="symptoms" className="text-xs text-slate-600">

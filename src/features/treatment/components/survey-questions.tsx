@@ -88,7 +88,7 @@ export function SurveyQuestions() {
       }
     } else if (step === 4) {
       if (answers.treatmentGoals.length === 0) {
-        setErrorMsg("Vui lòng chọn ít nhất 1 mục tiêu điều trị.");
+        setErrorMsg("Vui lòng chọn ít nhất 1 mục tiêu chăm sóc da.");
         return;
       }
     } else if (step === 5) {
@@ -186,7 +186,7 @@ export function SurveyQuestions() {
                 : step === 3
                   ? "CHU TRÌNH HIỆN TẠI"
                   : step === 4
-                    ? "MỤC TIÊU ĐIỀU TRỊ"
+                    ? "MỤC TIÊU CHĂM SÓC DA"
                     : step === 5
                       ? "MỐI QUAN TÂM CHÍNH"
                       : step === 6
@@ -536,10 +536,10 @@ export function SurveyQuestions() {
                 <div className="animate-in fade-in flex items-start gap-2 rounded-xl border border-amber-200 bg-amber-50 p-3 text-[10px] leading-relaxed text-amber-800 duration-200">
                   <ShieldAlert className="mt-0.5 h-4.5 w-4.5 shrink-0 animate-bounce text-amber-600" />
                   <span>
-                    <strong>Cảnh báo Retinol:</strong> Nếu phác đồ điều trị mới
-                    đề xuất AHA/BHA, việc dùng chung có thể gây bong tróc mạnh
-                    hoặc đỏ rát. Hệ thống sẽ tích hợp cảnh báo phối hợp thuốc
-                    cho bạn.
+                    <strong>Cảnh báo Retinol:</strong> Nếu quy trình chăm sóc da
+                    mới đề xuất AHA/BHA, việc dùng chung có thể gây bong tróc
+                    mạnh hoặc đỏ rát. Hệ thống sẽ tích hợp cảnh báo phối hợp
+                    thuốc cho bạn.
                   </span>
                 </div>
               )}
@@ -691,10 +691,10 @@ export function SurveyQuestions() {
           <div className="space-y-4">
             <div className="space-y-1">
               <h3 className="font-heading text-foreground text-lg font-extrabold tracking-tight">
-                Mục tiêu điều trị da
+                Mục tiêu chăm sóc da
               </h3>
               <p className="text-muted-foreground text-[11px] leading-relaxed">
-                Mục tiêu điều trị da của bạn lúc này là gì? (Chọn một hoặc nhiều
+                Mục tiêu chăm sóc da của bạn lúc này là gì? (Chọn một hoặc nhiều
                 mục tiêu)
               </p>
             </div>
@@ -755,7 +755,7 @@ export function SurveyQuestions() {
               </h3>
               <p className="text-muted-foreground text-[11px] leading-relaxed">
                 Chọn một mối quan tâm về da khẩn cấp nhất của bạn vào lúc này để
-                AI tập trung điều trị.
+                AI tập trung chăm sóc.
               </p>
             </div>
 
@@ -838,7 +838,7 @@ export function SurveyQuestions() {
               </h3>
               <p className="text-muted-foreground text-[10px] leading-relaxed">
                 Thông tin mang tính chất an toàn dược mỹ phẩm (không thay thế
-                chẩn đoán y tế).
+                phân tích chuyên sâu).
               </p>
             </div>
 
@@ -849,8 +849,8 @@ export function SurveyQuestions() {
                 <span>
                   <strong>An Toàn Thai Kỳ:</strong> Do bạn đang mang thai, hệ
                   thống AI sẽ tự động loại trừ các hoạt chất Retinoid (Retinol)
-                  và Axit Salicylic (BHA) liều cao ra khỏi phác đồ chăm sóc để
-                  đảm bảo an toàn tối đa cho mẹ và bé.
+                  và Axit Salicylic (BHA) liều cao ra khỏi quy trình chăm sóc da
+                  để đảm bảo an toàn tối đa cho mẹ và bé.
                 </span>
               </div>
             )}
@@ -875,7 +875,7 @@ export function SurveyQuestions() {
                 },
                 {
                   field: "otherDermatology",
-                  label: "5. Bạn có đang điều trị da liễu nào khác?",
+                  label: "5. Bạn có đang tư vấn da liễu ở nơi khác không?",
                 },
                 {
                   field: "prescriptionMeds",
@@ -1199,7 +1199,8 @@ export function SurveyQuestions() {
                 hợp 4 chữ cái lại với nhau, bạn sẽ nhận được mã loại da riêng
                 của mình (ví dụ: <strong>OSPW</strong>, <strong>DRNT</strong>).
                 Hệ thống AI của chúng tôi sẽ dựa vào bộ mã này kết hợp với phân
-                tích hình ảnh để đưa ra phác đồ sản phẩm tối ưu nhất cho bạn.
+                tích hình ảnh để đưa ra quy trình chăm sóc da tối ưu nhất cho
+                bạn.
               </div>
             </div>
 

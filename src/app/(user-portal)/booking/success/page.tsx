@@ -50,7 +50,7 @@ function SuccessPageContent() {
     return (
       <div className="text-muted-foreground mx-auto flex max-w-md flex-col items-center justify-center p-12">
         <div className="border-primary mb-3 h-8 w-8 animate-spin rounded-full border-b-2"></div>
-        Đang đồng bộ hóa đơn lịch khám...
+        Đang đồng bộ hóa đơn lịch tư vấn...
       </div>
     );
   }
@@ -80,7 +80,7 @@ function SuccessPageContent() {
                 <User className="text-primary h-4 w-4 shrink-0" />
                 <div>
                   <span className="text-muted-foreground block text-[9px] font-semibold uppercase">
-                    Bác sĩ phụ trách
+                    Chuyên gia phụ trách
                   </span>
                   <span className="font-bold text-slate-800">
                     {booking.expertName}
@@ -119,10 +119,10 @@ function SuccessPageContent() {
           )}
 
           <div className="text-muted-foreground text-center text-[10px] leading-normal">
-            💡 <strong>Hướng dẫn tham gia cuộc hẹn:</strong> Bác sĩ sẽ liên hệ
-            trực tiếp với bạn qua cuộc gọi video tích hợp trên ứng dụng GlowScan
-            đúng vào khung giờ trên. Vui lòng kiểm tra kết nối mạng trước 5
-            phút.
+            💡 <strong>Hướng dẫn tham gia cuộc hẹn:</strong> Chuyên gia sẽ liên
+            hệ trực tiếp với bạn qua cuộc gọi video tích hợp trên ứng dụng
+            GlowScan đúng vào khung giờ trên. Vui lòng kiểm tra kết nối mạng
+            trước 5 phút.
           </div>
         </CardContent>
 
@@ -154,7 +154,7 @@ export default function BookingSuccessPage() {
       fallback={
         <div className="text-muted-foreground mx-auto flex max-w-md flex-col items-center justify-center p-12">
           <div className="border-primary mb-3 h-8 w-8 animate-spin rounded-full border-b-2"></div>
-          Đang đồng bộ hóa đơn lịch khám...
+          Đang đồng bộ hóa đơn lịch tư vấn...
         </div>
       }
     >

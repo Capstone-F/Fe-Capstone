@@ -368,7 +368,7 @@ export function TreatmentProvider({ children }: { children: React.ReactNode }) {
       products.push({
         id: "prod_niacinamide",
         name: "Tinh chất phục hồi Niacinamide 10% + Zinc 1%",
-        category: "Tinh chất điều trị",
+        category: "Tinh chất đặc trị",
         price: 390000,
         brand: "GlowScan Active",
         reason: "Kháng viêm cho mụn, giảm thâm đỏ và kiềm dầu hiệu quả.",

@@ -455,7 +455,7 @@ export function DashboardScreen() {
                     }
                   >
                     {state.surveyAnswers.pregnancy === "yes"
-                      ? "Đang mang thai - Chế độ an toàn thai kỳ hoạt động (Đã loại trừ Retinol và BHA liều cao khỏi phác đồ)."
+                      ? "Đang mang thai - Chế độ an toàn thai kỳ hoạt động (Đã loại trừ Retinol và BHA liều cao khỏi quy trình chăm sóc da)."
                       : "Bình thường - Không mang thai."}
                   </span>
                 </div>
