@@ -32,7 +32,9 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Label } from "@/components/ui/label";
-import { Skeleton } from "@/components/ui/skeleton";
+import { vi } from "@/config/locales/vi";
+import { EmptyState } from "@/components/ui/empty-state";
+import { ExpertCardSkeleton } from "@/features/experts/components/expert-card-skeleton";
 
 export default function ExpertsPage() {
   const [search, setSearch] = useState("");
@@ -51,6 +53,7 @@ export default function ExpertsPage() {
 
   const { data: experts, isLoading } = useExperts(filters);
   const { data: specialties } = useSpecialties();
+  const t = vi.userPortal.expertsPage;
 
   const handleReset = () => {
     setSearch("");
@@ -64,12 +67,9 @@ export default function ExpertsPage() {
     <div className="mx-auto flex w-full max-w-5xl flex-col gap-6">
       <div className="flex flex-col gap-1">
         <h2 className="text-2xl font-bold tracking-tight text-slate-900">
-          Mạng lưới Chuyên gia Da liễu
+          {t.title}
         </h2>
-        <p className="text-muted-foreground text-sm">
-          Tìm kiếm và đặt lịch hẹn tư vấn trực tuyến cùng đội ngũ bác sĩ hàng
-          đầu.
-        </p>
+        <p className="text-muted-foreground text-sm">{t.subtitle}</p>
       </div>
 
       <div className="grid grid-cols-1 gap-6 md:grid-cols-4">
@@ -78,7 +78,7 @@ export default function ExpertsPage() {
           <CardHeader className="flex flex-row items-center justify-between border-b border-slate-100 p-4">
             <div className="flex items-center gap-2 text-sm font-bold">
               <Filter className="text-primary h-4 w-4" />
-              Bộ lọc chuyên sâu
+              {t.filtersTitle}
             </div>
             <Button
               variant="ghost"
@@ -87,7 +87,7 @@ export default function ExpertsPage() {
               className="text-muted-foreground hover:text-primary h-8 px-2 text-xs"
             >
               <RefreshCw className="mr-1 h-3 w-3" />
-              Đặt lại
+              {t.reset}
             </Button>
           </CardHeader>
           <CardContent className="flex flex-col gap-4 p-4">
@@ -97,13 +97,13 @@ export default function ExpertsPage() {
                 htmlFor="search"
                 className="text-xs font-semibold text-slate-700"
               >
-                Tìm kiếm
+                {t.searchLabel}
               </Label>
               <div className="relative">
                 <Search className="text-muted-foreground absolute top-2.5 left-2.5 h-4 w-4" />
                 <Input
                   id="search"
-                  placeholder="Tên bác sĩ, phòng khám..."
+                  placeholder={t.searchPlaceholder}
                   value={search}
                   onChange={(e) => setSearch(e.target.value)}
                   className="pl-8 text-sm"
@@ -114,7 +114,7 @@ export default function ExpertsPage() {
             {/* Specialty Dropdown */}
             <div className="flex flex-col gap-1.5">
               <Label className="text-xs font-semibold text-slate-700">
-                Chuyên khoa
+                {t.specialtyLabel}
               </Label>
               <Select
                 value={specialty}
@@ -124,7 +124,7 @@ export default function ExpertsPage() {
                   <SelectValue placeholder="Chọn chuyên khoa" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="Tất cả">Tất cả chuyên khoa</SelectItem>
+                  <SelectItem value="Tất cả">{t.allSpecialties}</SelectItem>
                   {specialties?.map((s) => (
                     <SelectItem key={s} value={s}>
                       {s}
@@ -140,7 +140,7 @@ export default function ExpertsPage() {
                 htmlFor="maxFee"
                 className="text-xs font-semibold text-slate-700"
               >
-                Phí tư vấn tối đa (đ)
+                {t.maxFeeLabel}
               </Label>
               <Input
                 id="maxFee"
@@ -160,7 +160,7 @@ export default function ExpertsPage() {
             {/* Max Distance Slider */}
             <div className="flex flex-col gap-1.5">
               <Label className="flex justify-between text-xs font-semibold text-slate-700">
-                <span>Khoảng cách tối đa</span>
+                <span>{t.maxDistanceLabel}</span>
                 <span className="text-primary font-bold">{maxDistance} km</span>
               </Label>
               <input
@@ -176,7 +176,7 @@ export default function ExpertsPage() {
             {/* Min Rating Stars Filter */}
             <div className="flex flex-col gap-1.5">
               <Label className="text-xs font-semibold text-slate-700">
-                Xếp hạng tối thiểu
+                {t.minRatingLabel}
               </Label>
               <div className="flex gap-1">
                 {[0, 3, 4, 5].map((star) => (
@@ -188,7 +188,7 @@ export default function ExpertsPage() {
                     onClick={() => setMinRating(star)}
                     className="h-8 flex-1 px-1 text-xs"
                   >
-                    {star === 0 ? "Tất cả" : `${star}★`}
+                    {star === 0 ? t.all : `${star}★`}
                   </Button>
                 ))}
               </div>
@@ -201,41 +201,7 @@ export default function ExpertsPage() {
           {isLoading ? (
             <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
               {Array.from({ length: 4 }).map((_, index) => (
-                <Card
-                  key={index}
-                  className="flex flex-col justify-between border-slate-200 shadow-xs"
-                >
-                  <CardHeader className="p-4 pb-2">
-                    <div className="flex items-start justify-between gap-2">
-                      <div className="flex flex-col gap-1.5">
-                        <Skeleton className="h-4 w-16 bg-slate-300" />
-                        <Skeleton className="h-5 w-32 bg-slate-300" />
-                      </div>
-                      <Skeleton className="h-5 w-10 shrink-0 bg-slate-300" />
-                    </div>
-                    <Skeleton className="mt-2 h-3.5 w-40 bg-slate-300" />
-                  </CardHeader>
-                  <CardContent className="flex-1 p-4 pt-1 pb-2">
-                    <Skeleton className="h-3 w-full bg-slate-300" />
-                    <Skeleton className="mt-1.5 h-3 w-4/5 bg-slate-300" />
-                    <div className="mt-3 flex flex-wrap gap-1">
-                      <Skeleton className="h-4 w-16 bg-slate-300" />
-                      <Skeleton className="h-4 w-14 bg-slate-300" />
-                      <Skeleton className="h-4 w-20 bg-slate-300" />
-                    </div>
-                    <div className="mt-3 flex items-center justify-between border-t border-slate-100 pt-3">
-                      <Skeleton className="h-3 w-20 bg-slate-300" />
-                      <Skeleton className="h-3 w-12 bg-slate-300" />
-                    </div>
-                  </CardContent>
-                  <CardFooter className="flex items-center justify-between rounded-b-xl border-t border-slate-100 bg-slate-50/50 p-4 pt-2">
-                    <div className="flex flex-col gap-1.5">
-                      <Skeleton className="h-2.5 w-16 bg-slate-300" />
-                      <Skeleton className="h-4 w-20 bg-slate-300" />
-                    </div>
-                    <Skeleton className="h-8 w-28 rounded-lg" />
-                  </CardFooter>
-                </Card>
+                <ExpertCardSkeleton key={index} />
               ))}
             </div>
           ) : experts && experts.length > 0 ? (
@@ -281,7 +247,7 @@ export default function ExpertsPage() {
                     </div>
                     <div className="mt-3 flex items-center justify-between border-t border-slate-100 pt-3 text-xs">
                       <span className="text-muted-foreground">
-                        Khoảng cách:
+                        {t.distanceLabel}
                       </span>
                       <span className="font-semibold text-slate-700">
                         {exp.distance} km
@@ -291,7 +257,7 @@ export default function ExpertsPage() {
                   <CardFooter className="flex items-center justify-between rounded-b-xl border-t border-slate-100 bg-slate-50/50 p-4 pt-2">
                     <div>
                       <span className="text-muted-foreground block text-[10px] font-semibold uppercase">
-                        Phí tư vấn
+                        {t.feeLabel}
                       </span>
                       <span className="text-sm font-bold text-slate-800">
                         {exp.fee.toLocaleString("vi-VN")} đ
@@ -302,7 +268,7 @@ export default function ExpertsPage() {
                         size="sm"
                         className="rounded-lg text-xs font-semibold"
                       >
-                        Đặt lịch tư vấn
+                        {t.book}
                       </Button>
                     </Link>
                   </CardFooter>
@@ -310,23 +276,12 @@ export default function ExpertsPage() {
               ))}
             </div>
           ) : (
-            <div className="text-muted-foreground flex flex-col items-center justify-center rounded-2xl border border-dashed border-slate-200 bg-white p-12 text-center">
-              <UserCheck className="mb-3 h-12 w-12 text-slate-300" />
-              <p className="font-bold text-slate-700">
-                Không tìm thấy bác sĩ phù hợp
-              </p>
-              <p className="mt-1 text-xs">
-                Thử nới lỏng các bộ lọc tìm kiếm của bạn.
-              </p>
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={handleReset}
-                className="mt-4 text-xs"
-              >
-                Xóa bộ lọc
-              </Button>
-            </div>
+            <EmptyState
+              icon={UserCheck}
+              title={t.emptyTitle}
+              description={t.emptyHint}
+              action={{ label: t.emptyAction, onClick: handleReset }}
+            />
           )}
         </div>
       </div>
