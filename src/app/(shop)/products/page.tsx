@@ -1,22 +1,16 @@
 "use client";
 
 import { useMemo, useState } from "react";
-import {
-  Filter,
-  RefreshCw,
-  PackageSearch,
-  Search,
-  Sparkles,
-} from "lucide-react";
+import { Filter, RefreshCw, PackageSearch, Search } from "lucide-react";
 import { toast } from "sonner";
-import { Product, ProductCategory } from "@/types/domain";
+import { Product } from "@/types/domain";
 import { vi } from "@/config/locales/vi";
 import {
-  useFilterMeta,
+  useCategories,
   useProducts,
-  useRecommended,
 } from "@/features/commerce/hooks/use-products";
 import { useAddToCart } from "@/features/commerce/hooks/use-cart";
+import { primaryVariant } from "@/features/commerce/lib/variant";
 import { ProductSort } from "@/features/commerce/api/products-client";
 import { ProductCard } from "@/features/commerce/components/product-card";
 import { ProductCardSkeleton } from "@/features/commerce/components/product-card-skeleton";
@@ -35,60 +29,81 @@ import {
 import { EmptyState } from "@/components/ui/empty-state";
 
 const c = vi.commerce.products;
+const ALL = "Tất cả";
 
 export default function ProductsPage() {
   const [search, setSearch] = useState("");
-  const [category, setCategory] = useState("Tất cả");
-  const [brand, setBrand] = useState("Tất cả");
-  const [skinType, setSkinType] = useState("Tất cả");
-  const [concern, setConcern] = useState("Tất cả");
+  const [categoryId, setCategoryId] = useState<string>(ALL);
+  const [brand, setBrand] = useState(ALL);
   const [maxPrice, setMaxPrice] = useState<number>(1000000);
   const [sort, setSort] = useState<ProductSort>("featured");
-
-  const filters = {
-    search: search || undefined,
-    category: category !== "Tất cả" ? (category as ProductCategory) : undefined,
-    brand: brand !== "Tất cả" ? brand : undefined,
-    skinType: skinType !== "Tất cả" ? skinType : undefined,
-    concern: concern !== "Tất cả" ? concern : undefined,
-    maxPrice,
-    sort,
-  } as const;
-
-  const { data: products, isLoading } = useProducts(filters);
-  const { data: recommended } = useRecommended();
-  const { data: meta } = useFilterMeta();
-  const addToCart = useAddToCart();
-
   const [page, setPage] = useState(1);
   const [pageSize, setPageSize] = useState(8);
 
-  const filterKey = `${search}|${category}|${brand}|${skinType}|${concern}|${maxPrice}|${sort}|${pageSize}`;
+  const { data: categories } = useCategories();
+
+  const queryFilters = {
+    categoryId: categoryId !== ALL ? categoryId : undefined,
+    brandName: brand !== ALL ? brand : undefined,
+    query: search || undefined,
+    page,
+    limit: pageSize,
+  };
+
+  const { data, isLoading } = useProducts(queryFilters);
+  const addToCart = useAddToCart();
+
+  const filterKey = `${search}|${categoryId}|${brand}|${pageSize}`;
   const [prevFilterKey, setPrevFilterKey] = useState(filterKey);
   if (filterKey !== prevFilterKey) {
     setPrevFilterKey(filterKey);
-    setPage(1);
+    if (page !== 1) setPage(1);
   }
 
-  const totalPages = Math.max(1, Math.ceil((products?.length ?? 0) / pageSize));
-  const pageItems = useMemo(
-    () => (products ?? []).slice((page - 1) * pageSize, page * pageSize),
-    [products, page, pageSize],
-  );
+  // maxPrice/sort have no backend query param — applied to the fetched
+  // page only, not the full catalog (see Global Constraints correction #1).
+  const pageItems = useMemo(() => {
+    let items = (data?.products ?? []).filter(
+      (p) => (primaryVariant(p)?.priceVnd ?? 0) <= maxPrice,
+    );
+    if (sort === "price_asc") {
+      items = [...items].sort(
+        (a, b) =>
+          (primaryVariant(a)?.priceVnd ?? 0) -
+          (primaryVariant(b)?.priceVnd ?? 0),
+      );
+    } else if (sort === "price_desc") {
+      items = [...items].sort(
+        (a, b) =>
+          (primaryVariant(b)?.priceVnd ?? 0) -
+          (primaryVariant(a)?.priceVnd ?? 0),
+      );
+    }
+    return items;
+  }, [data, maxPrice, sort]);
+
+  // No "list brands" endpoint exists — options are derived from the
+  // currently-fetched page only (accepted limitation, design doc §2).
+  const brandOptions = useMemo(() => {
+    const names = new Set((data?.products ?? []).map((p) => p.brandName));
+    return Array.from(names).sort();
+  }, [data]);
+
+  const totalPages = Math.max(1, Math.ceil((data?.total ?? 0) / pageSize));
 
   const handleReset = () => {
     setSearch("");
-    setCategory("Tất cả");
-    setBrand("Tất cả");
-    setSkinType("Tất cả");
-    setConcern("Tất cả");
+    setCategoryId(ALL);
+    setBrand(ALL);
     setMaxPrice(1000000);
     setSort("featured");
   };
 
   const handleAdd = (product: Product) => {
+    const variant = primaryVariant(product);
+    if (!variant) return;
     addToCart.mutate(
-      { productId: product.id },
+      { productVariantId: variant.id },
       { onSuccess: () => toast.success(`${c.added}: ${product.name}`) },
     );
   };
@@ -102,27 +117,7 @@ export default function ProductsPage() {
         <p className="text-muted-foreground text-sm">{c.subtitle}</p>
       </div>
 
-      {recommended && recommended.length > 0 && (
-        <section className="flex flex-col gap-3">
-          <div className="text-primary flex items-center gap-2 text-sm font-bold">
-            <Sparkles className="h-4 w-4" />
-            {c.recommendedTitle}
-          </div>
-          <div className="grid grid-cols-2 gap-4 lg:grid-cols-4">
-            {recommended.map((product) => (
-              <ProductCard
-                key={product.id}
-                product={product}
-                onAddToCart={handleAdd}
-                isAdding={addToCart.isPending}
-              />
-            ))}
-          </div>
-        </section>
-      )}
-
       <div className="grid grid-cols-1 gap-6 md:grid-cols-4">
-        {/* Filters */}
         <Card className="h-fit border-slate-200 shadow-sm md:col-span-1">
           <CardHeader className="flex flex-row items-center justify-between border-b border-slate-100 p-4">
             <div className="flex items-center gap-2 text-sm font-bold">
@@ -152,30 +147,40 @@ export default function ProductsPage() {
               </div>
             </FilterField>
 
-            <FilterSelect
-              label={c.category}
-              value={category}
-              onChange={setCategory}
-              options={meta?.categories ?? []}
-            />
-            <FilterSelect
-              label={c.brand}
-              value={brand}
-              onChange={setBrand}
-              options={meta?.brands ?? []}
-            />
-            <FilterSelect
-              label={c.skinType}
-              value={skinType}
-              onChange={setSkinType}
-              options={meta?.skinTypes ?? []}
-            />
-            <FilterSelect
-              label={c.concern}
-              value={concern}
-              onChange={setConcern}
-              options={meta?.concerns ?? []}
-            />
+            <FilterField label={c.category}>
+              <Select
+                value={categoryId}
+                onValueChange={(v) => setCategoryId(v || ALL)}
+              >
+                <SelectTrigger className="text-sm">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value={ALL}>{c.all}</SelectItem>
+                  {(categories ?? []).map((option) => (
+                    <SelectItem key={option.id} value={option.id}>
+                      {option.name}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </FilterField>
+
+            <FilterField label={c.brand}>
+              <Select value={brand} onValueChange={(v) => setBrand(v || ALL)}>
+                <SelectTrigger className="text-sm">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value={ALL}>{c.all}</SelectItem>
+                  {brandOptions.map((option) => (
+                    <SelectItem key={option} value={option}>
+                      {option}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </FilterField>
 
             <FilterField
               label={`${c.maxPrice}: ${maxPrice.toLocaleString("vi-VN")}đ`}
@@ -193,13 +198,10 @@ export default function ProductsPage() {
           </CardContent>
         </Card>
 
-        {/* Results */}
         <div className="flex flex-col gap-4 md:col-span-3">
           <div className="flex items-center justify-between">
             <span className="text-muted-foreground text-xs">
-              {products
-                ? `${products.length} ${vi.commerce.cart.itemsCount}`
-                : ""}
+              {data ? `${data.total} ${vi.commerce.cart.itemsCount}` : ""}
             </span>
             <Select
               value={sort}
@@ -222,7 +224,7 @@ export default function ProductsPage() {
                 <ProductCardSkeleton key={index} />
               ))}
             </div>
-          ) : products && products.length > 0 ? (
+          ) : pageItems.length > 0 ? (
             <div className="flex flex-col gap-4">
               <div className="grid grid-cols-2 gap-4 lg:grid-cols-3">
                 {pageItems.map((product) => (
@@ -268,35 +270,5 @@ function FilterField({
       <Label className="text-xs font-semibold text-slate-700">{label}</Label>
       {children}
     </div>
-  );
-}
-
-function FilterSelect({
-  label,
-  value,
-  onChange,
-  options,
-}: {
-  label: string;
-  value: string;
-  onChange: (value: string) => void;
-  options: string[];
-}) {
-  return (
-    <FilterField label={label}>
-      <Select value={value} onValueChange={(v) => onChange(v || "Tất cả")}>
-        <SelectTrigger className="text-sm">
-          <SelectValue />
-        </SelectTrigger>
-        <SelectContent>
-          <SelectItem value="Tất cả">{vi.commerce.products.all}</SelectItem>
-          {options.map((option) => (
-            <SelectItem key={option} value={option}>
-              {option}
-            </SelectItem>
-          ))}
-        </SelectContent>
-      </Select>
-    </FilterField>
   );
 }
