@@ -18,7 +18,7 @@ export async function getSession() {
     return DEV_BYPASS_SESSION_USER;
   }
 
-  return apiJson<SessionUser>("/auth/me");
+  return apiJson<SessionUser>("/users/me");
 }
 
 export async function getAuthStatus() {
