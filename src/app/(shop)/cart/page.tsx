@@ -1,6 +1,5 @@
 "use client";
 
-import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { ShoppingCart } from "lucide-react";
 import { vi } from "@/config/locales/vi";
@@ -9,10 +8,8 @@ import {
   useRemoveFromCart,
   useUpdateQuantity,
 } from "@/features/commerce/hooks/use-cart";
-import { detectCartConflicts } from "@/features/commerce/lib/conflicts";
 import { CartItemRow } from "@/features/commerce/components/cart-item-row";
 import { OrderSummary } from "@/features/commerce/components/order-summary";
-import { ConflictWarning } from "@/features/commerce/components/conflict-warning";
 import { Skeleton } from "@/components/ui/skeleton";
 import { EmptyState } from "@/components/ui/empty-state";
 
@@ -23,11 +20,8 @@ export default function CartPage() {
   const { data: cart, isLoading } = useCart();
   const updateQuantity = useUpdateQuantity();
   const removeFromCart = useRemoveFromCart();
-  const [acknowledged, setAcknowledged] = useState(false);
 
   const lines = cart?.lines ?? [];
-  const conflicts = detectCartConflicts(lines.map((line) => line.product));
-  const blockedByConflict = conflicts.length > 0 && !acknowledged;
 
   return (
     <div className="mx-auto flex w-full max-w-5xl flex-col gap-6">
@@ -60,19 +54,22 @@ export default function CartPage() {
       ) : (
         <div className="grid grid-cols-1 gap-6 md:grid-cols-3">
           <div className="flex flex-col gap-3 md:col-span-2">
-            <ConflictWarning
-              conflicts={conflicts}
-              acknowledged={acknowledged}
-              onAcknowledgeChange={setAcknowledged}
-            />
+            {cart && cart.unresolvedVariantIds.length > 0 && (
+              <p className="bg-warning-soft text-warning rounded-xl px-3 py-2 text-xs">
+                {cart.unresolvedVariantIds.length} {cc.unresolvedItemsNote}
+              </p>
+            )}
             {lines.map((line) => (
               <CartItemRow
-                key={line.product.id}
+                key={line.variant.id}
                 line={line}
-                onUpdateQuantity={(productId, quantity) =>
-                  updateQuantity.mutate({ productId, quantity })
+                onUpdateQuantity={(variantId, quantity) =>
+                  updateQuantity.mutate({
+                    productVariantId: variantId,
+                    quantity,
+                  })
                 }
-                onRemove={(productId) => removeFromCart.mutate(productId)}
+                onRemove={(variantId) => removeFromCart.mutate(variantId)}
               />
             ))}
           </div>
@@ -82,7 +79,6 @@ export default function CartPage() {
                 <OrderSummary
                   summary={cart}
                   primaryLabel={cc.checkout}
-                  primaryDisabled={blockedByConflict}
                   onPrimary={() => router.push("/checkout")}
                 />
               )}

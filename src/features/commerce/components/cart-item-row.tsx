@@ -1,17 +1,17 @@
 "use client";
 
 import Link from "next/link";
-import Image from "next/image";
 import { Minus, Plus, Trash2 } from "lucide-react";
 import { CartLine } from "@/types/domain";
 import { vi } from "@/config/locales/vi";
 import { formatVnd } from "../lib/format";
+import { CategoryPlaceholder } from "./category-placeholder";
 import { Button } from "@/components/ui/button";
 
 interface CartItemRowProps {
   line: CartLine;
-  onUpdateQuantity: (productId: string, quantity: number) => void;
-  onRemove: (productId: string) => void;
+  onUpdateQuantity: (productVariantId: string, quantity: number) => void;
+  onRemove: (productVariantId: string) => void;
 }
 
 export function CartItemRow({
@@ -19,24 +19,18 @@ export function CartItemRow({
   onUpdateQuantity,
   onRemove,
 }: CartItemRowProps) {
-  const { product, quantity, lineTotal } = line;
+  const { product, variant, quantity, lineTotal } = line;
   return (
     <div className="flex gap-3 rounded-xl border border-slate-200 bg-white p-3">
       <Link
         href={`/products/${product.id}`}
         className="relative h-20 w-20 shrink-0 overflow-hidden rounded-lg bg-slate-50"
       >
-        <Image
-          src={product.images[0]}
-          alt={product.name}
-          fill
-          sizes="80px"
-          className="object-cover"
-        />
+        <CategoryPlaceholder categoryName={product.categoryName} />
       </Link>
       <div className="flex flex-1 flex-col gap-1">
         <span className="text-muted-foreground text-[10px] font-semibold uppercase">
-          {product.brand}
+          {product.brandName}
         </span>
         <Link
           href={`/products/${product.id}`}
@@ -52,7 +46,7 @@ export function CartItemRow({
         <Button
           variant="ghost"
           size="icon-sm"
-          onClick={() => onRemove(product.id)}
+          onClick={() => onRemove(variant.id)}
           aria-label={vi.commerce.cart.remove}
           className="text-muted-foreground hover:text-destructive"
         >
@@ -62,7 +56,7 @@ export function CartItemRow({
           <Button
             variant="ghost"
             size="icon-xs"
-            onClick={() => onUpdateQuantity(product.id, quantity - 1)}
+            onClick={() => onUpdateQuantity(variant.id, quantity - 1)}
             aria-label="Giảm số lượng"
           >
             <Minus className="h-3 w-3" />
@@ -73,7 +67,7 @@ export function CartItemRow({
           <Button
             variant="ghost"
             size="icon-xs"
-            onClick={() => onUpdateQuantity(product.id, quantity + 1)}
+            onClick={() => onUpdateQuantity(variant.id, quantity + 1)}
             aria-label="Tăng số lượng"
           >
             <Plus className="h-3 w-3" />
