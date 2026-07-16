@@ -8,7 +8,6 @@ export function useCreateOrder() {
     mutationFn: createOrder,
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: queryKeys.cart });
-      queryClient.invalidateQueries({ queryKey: queryKeys.orders });
     },
   });
 }
