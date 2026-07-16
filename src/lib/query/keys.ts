@@ -12,9 +12,10 @@ export const queryKeys = {
   routines: ["routines"] as const,
   products: (filters: unknown) => ["products", filters] as const,
   product: (id: string) => ["product", id] as const,
-  recommendedProducts: ["recommendedProducts"] as const,
-  productFilterMeta: ["productFilterMeta"] as const,
+  productCategories: ["productCategories"] as const,
+  productPool: ["productPool"] as const,
   cart: ["cart"] as const,
   orders: ["orders"] as const,
   order: (id: string) => ["order", id] as const,
+  payment: (id: string) => ["payment", id] as const,
 };

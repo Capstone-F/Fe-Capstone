@@ -74,57 +74,56 @@ export interface SurveyRecord {
 
 // ----- E-commerce domain -----
 
-export type StockStatus = "in_stock" | "low_stock" | "out_of_stock";
-
-export type ProductCategory =
-  | "Cleanser"
-  | "Toner"
-  | "Serum"
-  | "Moisturizer"
-  | "Sunscreen"
-  | "Mask";
+export interface ProductVariant {
+  id: string;
+  sku: string;
+  volume: string | null;
+  packaging: string | null;
+  priceVnd: number;
+  isActive: boolean;
+}
 
 export interface Product {
   id: string;
   name: string;
-  brand: string;
-  category: ProductCategory;
-  priceVnd: number;
-  images: string[]; // placeholder urls
-  shortDescription: string;
-  description: string;
-  ingredients: string[]; // ingredient slugs, e.g. "retinol", "niacinamide"
-  activeIngredient?: string; // primary active slug
-  concentration?: string; // e.g. "5%"
-  skinTypes: string[]; // e.g. ["Da dầu", "Da hỗn hợp"]
-  concerns: string[]; // e.g. ["Mụn", "Thâm"]
-  goals: string[]; // e.g. ["Giảm mụn"]
-  howToUse: string;
-  rating: number;
-  reviews: number;
-  stockStatus: StockStatus;
-  quantityOnHand: number;
-  matchesUserSkin?: boolean; // drives the "Hợp da bạn" badge
-  previouslyPurchased?: boolean; // drives the "Đã mua trước đây" badge
+  brandId: string;
+  brandName: string;
+  categoryId: string;
+  categoryName: string;
+  description: string | null;
+  isActive: boolean;
+  variants: ProductVariant[];
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface ProductIngredient {
+  name: string;
+  concentrationPct: number | null;
+  isKeyIngredient: boolean;
+}
+
+export interface ProductDetail {
+  product: Product;
+  ingredients: ProductIngredient[];
+}
+
+export interface ProductCategory {
+  id: string;
+  code: string;
+  name: string;
 }
 
 export interface CartItem {
-  productId: string;
+  productVariantId: string;
   quantity: number;
 }
 
 export interface CartLine {
   product: Product;
+  variant: ProductVariant;
   quantity: number;
   lineTotal: number;
-}
-
-export interface IngredientConflict {
-  a: string;
-  b: string;
-  productA: string;
-  productB: string;
-  reason: string;
 }
 
 export interface CartSummary {
@@ -133,6 +132,10 @@ export interface CartSummary {
   shippingFee: number;
   total: number;
   itemCount: number;
+  /** productVariantIds present in the cart but not resolvable against the
+   * fetched product pool (see cart-hydration.ts) — surfaced, not silently
+   * dropped. */
+  unresolvedVariantIds: string[];
 }
 
 export type PaymentMethod = "vnpay" | "cod";
@@ -145,26 +148,44 @@ export interface ShippingAddress {
 }
 
 export type OrderStatus =
-  | "created"
-  | "pending_payment"
-  | "paid"
-  | "processing"
-  | "shipped"
-  | "delivered"
-  | "completed"
-  | "cancelled"
-  | "refunded";
+  | "PENDING"
+  | "PAID"
+  | "PROCESSING"
+  | "SHIPPED"
+  | "DELIVERED"
+  | "CANCELLED"
+  | "REFUNDED";
+
+export interface OrderItem {
+  id: string;
+  productVariantId: string;
+  quantity: number;
+  unitPriceVnd: number;
+  lineTotalVnd: number;
+}
 
 export interface Order {
   id: string;
-  createdAt: string; // ISO
-  lines: CartLine[];
-  subtotal: number;
-  shippingFee: number;
-  total: number;
-  paymentMethod: PaymentMethod;
-  address: ShippingAddress;
   status: OrderStatus;
-  trackingNumber: string;
-  carrier: "GHN" | "GHTK";
+  subtotalVnd: number;
+  discountVnd: number;
+  totalVnd: number;
+  items: OrderItem[];
+  createdAt: string;
+}
+
+export type PaymentStatusValue =
+  | "PENDING"
+  | "PROCESSING"
+  | "PAID"
+  | "FAILED"
+  | "CANCELLED";
+
+export interface PaymentStatus {
+  id: string;
+  orderId: string;
+  status: PaymentStatusValue;
+  provider: "VNPAY";
+  amountVnd: string; // BE bigint column serializes as string
+  paidAt: string | null;
 }
