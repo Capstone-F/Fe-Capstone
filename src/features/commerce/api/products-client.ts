@@ -1,104 +1,121 @@
-import { Product, ProductCategory } from "@/types/domain";
-import {
-  MOCK_PRODUCTS,
-  PRODUCT_BRANDS,
-  PRODUCT_CATEGORIES,
-  SKIN_CONCERNS,
-  SKIN_TYPES,
-} from "../data/mock-catalog";
+import { apiJson } from "@/lib/api/client";
+import { Product, ProductCategory, ProductDetail } from "@/types/domain";
 
-// Forward-looking endpoint map (mirrors experts-client convention).
+// Paths are unprefixed to match Be-Capstone in dev (setGlobalPrefix('api')
+// only applies when NODE_ENV=production — see Global Constraints).
 export const PRODUCT_API_PATHS = {
   GET_PRODUCTS: "/products",
   GET_PRODUCT_DETAIL: (id: string) => `/products/${id}`,
-  GET_RECOMMENDED: "/products/recommended",
-  GET_FILTER_META: "/products/meta/filters",
+  GET_CATEGORIES: "/products/categories",
 };
 
 export type ProductSort = "featured" | "price_asc" | "price_desc";
 
-export interface ProductFilters {
-  search?: string;
-  category?: ProductCategory | "Tất cả";
-  brand?: string;
-  skinType?: string;
-  concern?: string;
-  maxPrice?: number;
-  sort?: ProductSort;
+export interface ProductQuery {
+  categoryId?: string;
+  brandName?: string;
+  query?: string;
+  page?: number;
+  limit?: number;
 }
 
-export interface FilterMeta {
-  categories: ProductCategory[];
-  brands: string[];
-  skinTypes: string[];
-  concerns: string[];
+interface ProductVariantResponse {
+  id: string;
+  sku: string;
+  volume: string | null;
+  packaging: string | null;
+  priceVnd: number;
+  isActive: boolean;
 }
 
-export async function getProducts(
-  filters?: ProductFilters,
-): Promise<Product[]> {
-  await new Promise((resolve) => setTimeout(resolve, 300));
-
-  let result = [...MOCK_PRODUCTS];
-
-  if (filters) {
-    const { search, category, brand, skinType, concern, maxPrice, sort } =
-      filters;
-
-    if (search) {
-      const q = search.toLowerCase();
-      result = result.filter(
-        (p) =>
-          p.name.toLowerCase().includes(q) ||
-          p.brand.toLowerCase().includes(q) ||
-          p.ingredients.some((i) => i.toLowerCase().includes(q)),
-      );
-    }
-    if (category && category !== "Tất cả") {
-      result = result.filter((p) => p.category === category);
-    }
-    if (brand && brand !== "Tất cả") {
-      result = result.filter((p) => p.brand === brand);
-    }
-    if (skinType && skinType !== "Tất cả") {
-      result = result.filter((p) => p.skinTypes.includes(skinType));
-    }
-    if (concern && concern !== "Tất cả") {
-      result = result.filter((p) => p.concerns.includes(concern));
-    }
-    if (maxPrice) {
-      result = result.filter((p) => p.priceVnd <= maxPrice);
-    }
-    if (sort === "price_asc") {
-      result.sort((a, b) => a.priceVnd - b.priceVnd);
-    } else if (sort === "price_desc") {
-      result.sort((a, b) => b.priceVnd - a.priceVnd);
-    }
-  }
-
-  return result;
+interface ProductResponse {
+  id: string;
+  name: string;
+  brandId: string;
+  brandName: string;
+  categoryId: string;
+  categoryName: string;
+  description: string | null;
+  isActive: boolean;
+  variants: ProductVariantResponse[];
+  createdAt: string;
+  updatedAt: string;
 }
 
-export async function getProductById(id: string): Promise<Product> {
-  await new Promise((resolve) => setTimeout(resolve, 200));
-  const product = MOCK_PRODUCTS.find((p) => p.id === id);
-  if (!product) {
-    throw new Error(`Sản phẩm với ID ${id} không tồn tại`);
-  }
-  return product;
+interface ProductIngredientResponse {
+  name: string;
+  concentrationPct: number | null;
+  isKeyIngredient: boolean;
 }
 
-export async function getRecommended(): Promise<Product[]> {
-  await new Promise((resolve) => setTimeout(resolve, 250));
-  return MOCK_PRODUCTS.filter((p) => p.matchesUserSkin).slice(0, 4);
+interface ProductDetailResponse {
+  product: ProductResponse;
+  ingredients: ProductIngredientResponse[];
 }
 
-export async function getFilterMeta(): Promise<FilterMeta> {
-  await new Promise((resolve) => setTimeout(resolve, 100));
+interface PaginatedProductsResponse {
+  items: ProductDetailResponse[];
+  total: number;
+  page: number;
+  limit: number;
+}
+
+interface ProductCategoryResponse {
+  id: string;
+  code: string;
+  name: string;
+  description: string | null;
+  isActive: boolean;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface ProductsPage {
+  products: Product[];
+  total: number;
+  page: number;
+  limit: number;
+}
+
+function toProduct(response: ProductDetailResponse): Product {
+  return response.product;
+}
+
+/**
+ * `query` (free-text) and `brandName` (ILIKE substring) are real
+ * Be-Capstone query params (ListProductsQueryDto) — sent server-side.
+ * `page`/`limit` drive server-side pagination (max limit 100, enforced by BE).
+ */
+export async function getProducts(query?: ProductQuery): Promise<ProductsPage> {
+  const params = new URLSearchParams();
+  if (query?.categoryId) params.set("categoryId", query.categoryId);
+  if (query?.brandName) params.set("brandName", query.brandName);
+  if (query?.query) params.set("query", query.query);
+  params.set("page", String(query?.page ?? 1));
+  params.set("limit", String(query?.limit ?? 20));
+
+  const response = await apiJson<PaginatedProductsResponse>(
+    `${PRODUCT_API_PATHS.GET_PRODUCTS}?${params.toString()}`,
+  );
+
   return {
-    categories: PRODUCT_CATEGORIES,
-    brands: PRODUCT_BRANDS,
-    skinTypes: SKIN_TYPES,
-    concerns: SKIN_CONCERNS,
+    products: response.items.map(toProduct),
+    total: response.total,
+    page: response.page,
+    limit: response.limit,
   };
+}
+
+export async function getProductById(id: string): Promise<ProductDetail> {
+  const response = await apiJson<ProductDetailResponse>(
+    PRODUCT_API_PATHS.GET_PRODUCT_DETAIL(id),
+  );
+  return { product: response.product, ingredients: response.ingredients };
+}
+
+export async function getCategories(): Promise<ProductCategory[]> {
+  const response = await apiJson<ProductCategoryResponse[]>(
+    PRODUCT_API_PATHS.GET_CATEGORIES,
+  );
+  return response.map((c) => ({ id: c.id, code: c.code, name: c.name }));
 }

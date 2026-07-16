@@ -1,17 +1,16 @@
 import { useQuery } from "@tanstack/react-query";
 import { queryKeys } from "@/lib/query/keys";
 import {
-  getFilterMeta,
+  getCategories,
   getProductById,
   getProducts,
-  getRecommended,
-  ProductFilters,
+  ProductQuery,
 } from "../api/products-client";
 
-export function useProducts(filters?: ProductFilters) {
+export function useProducts(query?: ProductQuery) {
   return useQuery({
-    queryKey: queryKeys.products(filters),
-    queryFn: () => getProducts(filters),
+    queryKey: queryKeys.products(query),
+    queryFn: () => getProducts(query),
   });
 }
 
@@ -23,16 +22,9 @@ export function useProduct(id: string) {
   });
 }
 
-export function useRecommended() {
+export function useCategories() {
   return useQuery({
-    queryKey: queryKeys.recommendedProducts,
-    queryFn: getRecommended,
-  });
-}
-
-export function useFilterMeta() {
-  return useQuery({
-    queryKey: queryKeys.productFilterMeta,
-    queryFn: getFilterMeta,
+    queryKey: queryKeys.productCategories,
+    queryFn: getCategories,
   });
 }
