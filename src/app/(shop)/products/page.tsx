@@ -1,7 +1,8 @@
 "use client";
 
+import Image from "next/image";
 import { useMemo, useState } from "react";
-import { Filter, RefreshCw, PackageSearch, Search } from "lucide-react";
+import { Filter, RefreshCw, PackageSearch, Search, Layers } from "lucide-react";
 import { toast } from "sonner";
 import { Product } from "@/types/domain";
 import { vi } from "@/config/locales/vi";
@@ -11,7 +12,10 @@ import {
 } from "@/features/commerce/hooks/use-products";
 import { useAddToCart } from "@/features/commerce/hooks/use-cart";
 import { primaryVariant } from "@/features/commerce/lib/variant";
-import { ProductSort } from "@/features/commerce/api/products-client";
+import {
+  getCategoryIcon,
+  getCategoryLabel,
+} from "@/features/commerce/lib/category-mapper";
 import { ProductCard } from "@/features/commerce/components/product-card";
 import { ProductCardSkeleton } from "@/features/commerce/components/product-card-skeleton";
 import { ProductPagination } from "@/features/commerce/components/product-pagination";
@@ -27,6 +31,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { EmptyState } from "@/components/ui/empty-state";
+import { cn } from "@/lib/utils";
 
 const c = vi.commerce.products;
 const ALL = "Tất cả";
@@ -35,16 +40,18 @@ export default function ProductsPage() {
   const [search, setSearch] = useState("");
   const [categoryId, setCategoryId] = useState<string>(ALL);
   const [brand, setBrand] = useState(ALL);
-  const [maxPrice, setMaxPrice] = useState<number>(1000000);
-  const [sort, setSort] = useState<ProductSort>("featured");
+  const [ingredient, setIngredient] = useState("");
   const [page, setPage] = useState(1);
   const [pageSize, setPageSize] = useState(8);
 
   const { data: categories } = useCategories();
 
+  // Every filter maps 1:1 to a real Be-Capstone ListProductsQueryDto param —
+  // filtering and pagination happen server-side (BE has no price/sort param).
   const queryFilters = {
     categoryId: categoryId !== ALL ? categoryId : undefined,
     brandName: brand !== ALL ? brand : undefined,
+    ingredientName: ingredient || undefined,
     query: search || undefined,
     page,
     limit: pageSize,
@@ -53,34 +60,14 @@ export default function ProductsPage() {
   const { data, isLoading } = useProducts(queryFilters);
   const addToCart = useAddToCart();
 
-  const filterKey = `${search}|${categoryId}|${brand}|${pageSize}`;
+  const filterKey = `${search}|${categoryId}|${brand}|${ingredient}|${pageSize}`;
   const [prevFilterKey, setPrevFilterKey] = useState(filterKey);
   if (filterKey !== prevFilterKey) {
     setPrevFilterKey(filterKey);
     if (page !== 1) setPage(1);
   }
 
-  // maxPrice/sort have no backend query param — applied to the fetched
-  // page only, not the full catalog (see Global Constraints correction #1).
-  const pageItems = useMemo(() => {
-    let items = (data?.products ?? []).filter(
-      (p) => (primaryVariant(p)?.priceVnd ?? 0) <= maxPrice,
-    );
-    if (sort === "price_asc") {
-      items = [...items].sort(
-        (a, b) =>
-          (primaryVariant(a)?.priceVnd ?? 0) -
-          (primaryVariant(b)?.priceVnd ?? 0),
-      );
-    } else if (sort === "price_desc") {
-      items = [...items].sort(
-        (a, b) =>
-          (primaryVariant(b)?.priceVnd ?? 0) -
-          (primaryVariant(a)?.priceVnd ?? 0),
-      );
-    }
-    return items;
-  }, [data, maxPrice, sort]);
+  const pageItems = data?.products ?? [];
 
   // No "list brands" endpoint exists — options are derived from the
   // currently-fetched page only (accepted limitation, design doc §2).
@@ -95,8 +82,7 @@ export default function ProductsPage() {
     setSearch("");
     setCategoryId(ALL);
     setBrand(ALL);
-    setMaxPrice(1000000);
-    setSort("featured");
+    setIngredient("");
   };
 
   const handleAdd = (product: Product) => {
@@ -109,7 +95,7 @@ export default function ProductsPage() {
   };
 
   return (
-    <div className="mx-auto flex w-full max-w-5xl flex-col gap-6">
+    <div className="mx-auto flex w-full max-w-7xl flex-col gap-6">
       <div className="flex flex-col gap-1">
         <h2 className="text-2xl font-bold tracking-tight text-slate-900">
           {c.title}
@@ -148,22 +134,22 @@ export default function ProductsPage() {
             </FilterField>
 
             <FilterField label={c.category}>
-              <Select
-                value={categoryId}
-                onValueChange={(v) => setCategoryId(v || ALL)}
-              >
-                <SelectTrigger className="text-sm">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value={ALL}>{c.all}</SelectItem>
-                  {(categories ?? []).map((option) => (
-                    <SelectItem key={option.id} value={option.id}>
-                      {option.name}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+              <div className="flex flex-col gap-1">
+                <CategoryItem
+                  active={categoryId === ALL}
+                  label={c.all}
+                  onClick={() => setCategoryId(ALL)}
+                />
+                {(categories ?? []).map((option) => (
+                  <CategoryItem
+                    key={option.id}
+                    active={categoryId === option.id}
+                    label={getCategoryLabel(option.name)}
+                    icon={getCategoryIcon(option.name)}
+                    onClick={() => setCategoryId(option.id)}
+                  />
+                ))}
+              </div>
             </FilterField>
 
             <FilterField label={c.brand}>
@@ -182,17 +168,12 @@ export default function ProductsPage() {
               </Select>
             </FilterField>
 
-            <FilterField
-              label={`${c.maxPrice}: ${maxPrice.toLocaleString("vi-VN")}đ`}
-            >
-              <input
-                type="range"
-                min={100000}
-                max={1000000}
-                step={50000}
-                value={maxPrice}
-                onChange={(e) => setMaxPrice(Number(e.target.value))}
-                className="accent-primary h-1.5 w-full cursor-pointer appearance-none rounded-lg bg-slate-200"
+            <FilterField label={c.ingredient}>
+              <Input
+                placeholder={c.ingredientPlaceholder}
+                value={ingredient}
+                onChange={(e) => setIngredient(e.target.value)}
+                className="text-sm"
               />
             </FilterField>
           </CardContent>
@@ -203,30 +184,17 @@ export default function ProductsPage() {
             <span className="text-muted-foreground text-xs">
               {data ? `${data.total} ${vi.commerce.cart.itemsCount}` : ""}
             </span>
-            <Select
-              value={sort}
-              onValueChange={(v) => setSort(v as ProductSort)}
-            >
-              <SelectTrigger className="h-8 w-40 text-xs">
-                <SelectValue placeholder={c.sort} />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="featured">{c.sortFeatured}</SelectItem>
-                <SelectItem value="price_asc">{c.sortPriceAsc}</SelectItem>
-                <SelectItem value="price_desc">{c.sortPriceDesc}</SelectItem>
-              </SelectContent>
-            </Select>
           </div>
 
           {isLoading ? (
-            <div className="grid grid-cols-2 gap-4 lg:grid-cols-3">
+            <div className="grid grid-cols-2 gap-4 lg:grid-cols-3 xl:grid-cols-4">
               {Array.from({ length: 6 }).map((_, index) => (
                 <ProductCardSkeleton key={index} />
               ))}
             </div>
           ) : pageItems.length > 0 ? (
             <div className="flex flex-col gap-4">
-              <div className="grid grid-cols-2 gap-4 lg:grid-cols-3">
+              <div className="grid grid-cols-2 gap-4 lg:grid-cols-3 xl:grid-cols-4">
                 {pageItems.map((product) => (
                   <ProductCard
                     key={product.id}
@@ -270,5 +238,40 @@ function FilterField({
       <Label className="text-xs font-semibold text-slate-700">{label}</Label>
       {children}
     </div>
+  );
+}
+
+function CategoryItem({
+  active,
+  label,
+  icon,
+  onClick,
+}: {
+  active: boolean;
+  label: string;
+  icon?: string;
+  onClick: () => void;
+}) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      aria-pressed={active}
+      className={cn(
+        "flex items-center gap-2.5 rounded-md px-2.5 py-2 text-left text-sm transition-colors",
+        active
+          ? "bg-primary/10 text-primary font-semibold"
+          : "text-slate-700 hover:bg-slate-100",
+      )}
+    >
+      <span className="flex h-5 w-5 shrink-0 items-center justify-center">
+        {icon ? (
+          <Image src={icon} alt="" width={20} height={20} />
+        ) : (
+          <Layers className="h-4 w-4 text-slate-400" />
+        )}
+      </span>
+      {label}
+    </button>
   );
 }
