@@ -1,21 +1,45 @@
 "use client";
 
+import Image from "next/image";
 import { use, useState } from "react";
 import Link from "next/link";
-import { ArrowLeft, Minus, Plus, ShoppingCart } from "lucide-react";
+import {
+  ArrowLeft,
+  ChevronRight,
+  Minus,
+  Plus,
+  RotateCcw,
+  ShieldCheck,
+  ShoppingCart,
+  Truck,
+} from "lucide-react";
 import { toast } from "sonner";
 import { vi } from "@/config/locales/vi";
 import { useProduct } from "@/features/commerce/hooks/use-products";
 import { useAddToCart } from "@/features/commerce/hooks/use-cart";
 import { primaryVariant } from "@/features/commerce/lib/variant";
 import { formatVnd } from "@/features/commerce/lib/format";
+import {
+  getCategoryIcon,
+  getCategoryLabel,
+} from "@/features/commerce/lib/category-mapper";
 import { CategoryPlaceholder } from "@/features/commerce/components/category-placeholder";
+import { RelatedProducts } from "@/features/commerce/components/related-products";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { cn } from "@/lib/utils";
+import type { ProductVariant } from "@/types/domain";
 
 const d = vi.commerce.detail;
+
+function variantLabel(variant: ProductVariant): string {
+  return (
+    [variant.volume, variant.packaging].filter(Boolean).join(" · ") ||
+    variant.sku
+  );
+}
 
 export default function ProductDetailPage({
   params,
@@ -24,6 +48,9 @@ export default function ProductDetailPage({
 }) {
   const { id } = use(params);
   const [quantity, setQuantity] = useState(1);
+  const [selectedVariantId, setSelectedVariantId] = useState<string | null>(
+    null,
+  );
 
   const { data: detail, isLoading } = useProduct(id);
   const addToCart = useAddToCart();
@@ -33,12 +60,16 @@ export default function ProductDetailPage({
   }
 
   const { product, ingredients } = detail;
-  const variant = primaryVariant(product);
+  const selectedVariant =
+    product.variants.find((v) => v.id === selectedVariantId) ??
+    primaryVariant(product);
+  const categoryIcon = getCategoryIcon(product.categoryName);
+  const keyIngredients = ingredients.filter((i) => i.isKeyIngredient);
 
   const handleAdd = () => {
-    if (!variant) return;
+    if (!selectedVariant) return;
     addToCart.mutate(
-      { productVariantId: variant.id, quantity },
+      { productVariantId: selectedVariant.id, quantity },
       {
         onSuccess: () =>
           toast.success(`${vi.commerce.products.added}: ${product.name}`),
@@ -47,14 +78,20 @@ export default function ProductDetailPage({
   };
 
   return (
-    <div className="mx-auto flex w-full max-w-5xl flex-col gap-6">
-      <Link
-        href="/products"
-        className="text-muted-foreground hover:text-primary flex items-center gap-1 text-sm"
-      >
-        <ArrowLeft className="h-4 w-4" />
-        {d.backToShop}
-      </Link>
+    <div className="mx-auto flex w-full max-w-6xl flex-col gap-6">
+      <nav className="text-muted-foreground flex items-center gap-1.5 text-sm">
+        <Link href="/" className="hover:text-primary">
+          {d.breadcrumbHome}
+        </Link>
+        <ChevronRight className="h-3.5 w-3.5" />
+        <Link href="/products" className="hover:text-primary">
+          {d.breadcrumbShop}
+        </Link>
+        <ChevronRight className="h-3.5 w-3.5" />
+        <span className="line-clamp-1 font-medium text-slate-700">
+          {product.name}
+        </span>
+      </nav>
 
       <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
         <Card className="overflow-hidden border-slate-200 py-0 shadow-sm">
@@ -65,16 +102,55 @@ export default function ProductDetailPage({
 
         <div className="flex flex-col gap-4">
           <div className="flex flex-col gap-2">
-            <span className="text-muted-foreground text-xs font-semibold tracking-wide uppercase">
-              {product.brandName}
-            </span>
+            <div className="flex items-center gap-2">
+              <span className="inline-flex items-center gap-1.5 rounded-full bg-slate-100 px-2.5 py-1 text-xs font-semibold text-slate-600">
+                {categoryIcon && (
+                  <Image src={categoryIcon} alt="" width={14} height={14} />
+                )}
+                {getCategoryLabel(product.categoryName)}
+              </span>
+              <span className="text-muted-foreground text-xs font-semibold tracking-wide uppercase">
+                {product.brandName}
+              </span>
+            </div>
             <h1 className="text-2xl font-bold text-slate-900">
               {product.name}
             </h1>
             <p className="text-primary text-2xl font-bold">
-              {variant ? formatVnd(variant.priceVnd) : "—"}
+              {selectedVariant ? formatVnd(selectedVariant.priceVnd) : "—"}
             </p>
           </div>
+
+          {product.variants.length > 0 && (
+            <div className="flex flex-col gap-2">
+              <span className="text-sm font-semibold text-slate-700">
+                {d.variantLabel}
+              </span>
+              <div className="flex flex-wrap gap-2">
+                {product.variants.map((v) => (
+                  <button
+                    key={v.id}
+                    type="button"
+                    onClick={() => setSelectedVariantId(v.id)}
+                    aria-pressed={selectedVariant?.id === v.id}
+                    className={cn(
+                      "rounded-lg border px-3 py-1.5 text-sm transition-colors",
+                      selectedVariant?.id === v.id
+                        ? "border-primary bg-primary/5 text-primary font-semibold"
+                        : "border-slate-200 text-slate-700 hover:border-slate-300",
+                    )}
+                  >
+                    {variantLabel(v)}
+                  </button>
+                ))}
+              </div>
+              {selectedVariant && (
+                <span className="text-muted-foreground text-xs">
+                  {d.sku}: {selectedVariant.sku}
+                </span>
+              )}
+            </div>
+          )}
 
           <div className="flex items-center gap-4">
             <span className="text-sm font-semibold text-slate-700">
@@ -105,15 +181,51 @@ export default function ProductDetailPage({
 
           <Button
             size="lg"
-            disabled={!variant || addToCart.isPending}
+            disabled={!selectedVariant || addToCart.isPending}
             onClick={handleAdd}
             className="rounded-lg font-semibold"
           >
             <ShoppingCart className="mr-2 h-4 w-4" />
             {vi.commerce.products.addToCart}
           </Button>
+
+          <div className="flex flex-wrap gap-x-5 gap-y-2 border-t border-slate-100 pt-4 text-xs text-slate-600">
+            <span className="flex items-center gap-1.5">
+              <ShieldCheck className="text-primary h-4 w-4" />
+              {d.trustGenuine}
+            </span>
+            <span className="flex items-center gap-1.5">
+              <Truck className="text-primary h-4 w-4" />
+              {d.trustShipping}
+            </span>
+            <span className="flex items-center gap-1.5">
+              <RotateCcw className="text-primary h-4 w-4" />
+              {d.trustReturn}
+            </span>
+          </div>
         </div>
       </div>
+
+      {keyIngredients.length > 0 && (
+        <Card className="border-slate-200 p-4 shadow-sm">
+          <h2 className="mb-3 text-sm font-bold text-slate-900">
+            {d.keyIngredients}
+          </h2>
+          <div className="flex flex-wrap gap-2">
+            {keyIngredients.map((ingredient) => (
+              <span
+                key={ingredient.name}
+                className="bg-primary-soft text-primary rounded-full px-3 py-1.5 text-sm font-semibold"
+              >
+                {ingredient.name}
+                {ingredient.concentrationPct !== null
+                  ? ` ${ingredient.concentrationPct}%`
+                  : ""}
+              </span>
+            ))}
+          </div>
+        </Card>
+      )}
 
       <Tabs defaultValue="description" className="w-full">
         <TabsList>
@@ -151,14 +263,27 @@ export default function ProductDetailPage({
           </div>
         </TabsContent>
       </Tabs>
+
+      <RelatedProducts
+        categoryId={product.categoryId}
+        currentProductId={product.id}
+      />
+
+      <Link
+        href="/products"
+        className="text-muted-foreground hover:text-primary flex items-center gap-1 text-sm"
+      >
+        <ArrowLeft className="h-4 w-4" />
+        {d.backToShop}
+      </Link>
     </div>
   );
 }
 
 function DetailSkeleton() {
   return (
-    <div className="mx-auto flex w-full max-w-5xl flex-col gap-6">
-      <Skeleton className="h-4 w-32 bg-slate-300" />
+    <div className="mx-auto flex w-full max-w-6xl flex-col gap-6">
+      <Skeleton className="h-4 w-48 bg-slate-300" />
       <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
         <Skeleton className="aspect-square w-full rounded-xl bg-slate-300" />
         <div className="flex flex-col gap-3">

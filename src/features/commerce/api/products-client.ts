@@ -14,6 +14,7 @@ export type ProductSort = "featured" | "price_asc" | "price_desc";
 export interface ProductQuery {
   categoryId?: string;
   brandName?: string;
+  ingredientName?: string;
   query?: string;
   page?: number;
   limit?: number;
@@ -82,14 +83,16 @@ function toProduct(response: ProductDetailResponse): Product {
 }
 
 /**
- * `query` (free-text) and `brandName` (ILIKE substring) are real
- * Be-Capstone query params (ListProductsQueryDto) — sent server-side.
- * `page`/`limit` drive server-side pagination (max limit 100, enforced by BE).
+ * `query` (free-text), `brandName` (ILIKE substring), and `ingredientName`
+ * (matches products containing the ingredient) are real Be-Capstone query
+ * params (ListProductsQueryDto) — sent server-side. `page`/`limit` drive
+ * server-side pagination (max limit 100, enforced by BE).
  */
 export async function getProducts(query?: ProductQuery): Promise<ProductsPage> {
   const params = new URLSearchParams();
   if (query?.categoryId) params.set("categoryId", query.categoryId);
   if (query?.brandName) params.set("brandName", query.brandName);
+  if (query?.ingredientName) params.set("ingredientName", query.ingredientName);
   if (query?.query) params.set("query", query.query);
   params.set("page", String(query?.page ?? 1));
   params.set("limit", String(query?.limit ?? 20));
