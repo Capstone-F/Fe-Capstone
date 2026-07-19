@@ -1,15 +1,67 @@
 "use client";
 
 import Link from "next/link";
-import { ClipboardList, ShoppingCart, Sparkles } from "lucide-react";
+import { usePathname, useRouter } from "next/navigation";
+import { useTransition } from "react";
+import { useQueryClient } from "@tanstack/react-query";
+import {
+  ClipboardList,
+  LogOut,
+  ShoppingCart,
+  Sparkles,
+  UserCircle2,
+} from "lucide-react";
+import { toast } from "sonner";
 import { useCart } from "@/features/commerce/hooks/use-cart";
+import { useMergeGuestCartOnLogin } from "@/features/commerce/hooks/use-merge-guest-cart-on-login";
+import { useSession } from "@/features/auth/hooks/use-session";
+import { logout, startLogin } from "@/features/auth/api/auth-client";
+import { queryKeys } from "@/lib/query/keys";
 import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 import { vi } from "@/config/locales/vi";
 
 export function ShopNavbar() {
   const { data: cart } = useCart();
+  const session = useSession();
+  const pathname = usePathname();
+  const router = useRouter();
+  const queryClient = useQueryClient();
+  const [isPending, startTransition] = useTransition();
   const itemCount = cart?.itemCount ?? 0;
   const n = vi.commerce.nav;
+
+  // Merge a guest cart into the server cart when the user logs in.
+  useMergeGuestCartOnLogin();
+
+  function handleLogin() {
+    // Return to the current page after Keycloak login.
+    void startLogin({ redirectTo: pathname });
+  }
+
+  function handleLogout() {
+    startTransition(async () => {
+      try {
+        await logout();
+        // Reset auth + cart caches so the navbar reverts to the guest state.
+        queryClient.invalidateQueries({ queryKey: queryKeys.session });
+        queryClient.invalidateQueries({ queryKey: queryKeys.cart });
+        router.refresh();
+      } catch {
+        toast.error(n.logout);
+      }
+    });
+  }
+
+  const user = session.data;
 
   return (
     <header className="sticky top-0 z-40 border-b border-slate-200 bg-white">
@@ -49,6 +101,46 @@ export function ShopNavbar() {
               </Badge>
             )}
           </Link>
+
+          {user ? (
+            <DropdownMenu>
+              <DropdownMenuTrigger
+                render={
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    className="flex items-center gap-1.5"
+                  />
+                }
+              >
+                <UserCircle2 className="h-4 w-4" />
+                <span className="max-w-32 truncate">
+                  {user.name ?? user.email ?? n.account}
+                </span>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end">
+                <DropdownMenuLabel>
+                  {user.name ?? user.email ?? n.account}
+                </DropdownMenuLabel>
+                <DropdownMenuSeparator />
+                <DropdownMenuItem render={<Link href="/orders" />}>
+                  {n.orders}
+                </DropdownMenuItem>
+                <DropdownMenuItem onClick={handleLogout} disabled={isPending}>
+                  <LogOut className="mr-2 h-4 w-4" />
+                  {n.logout}
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
+          ) : (
+            <Button
+              size="sm"
+              onClick={handleLogin}
+              disabled={session.isLoading}
+            >
+              {n.login}
+            </Button>
+          )}
         </nav>
       </div>
     </header>

@@ -45,10 +45,10 @@ export async function startLogin({
 
   const response = await apiJson<{ login_uri: string }>("/auth/login", {
     method: "POST",
-    body: JSON.stringify({
+    body: {
       client_redirect_uri: clientRedirectUri,
       ...(idpHint ? { idpHint } : {}),
-    }),
+    },
   });
 
   window.location.assign(response.login_uri);

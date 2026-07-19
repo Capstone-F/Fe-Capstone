@@ -17,6 +17,7 @@ import { toast } from "sonner";
 import { vi } from "@/config/locales/vi";
 import { useProduct } from "@/features/commerce/hooks/use-products";
 import { useAddToCart } from "@/features/commerce/hooks/use-cart";
+import { useSession } from "@/features/auth/hooks/use-session";
 import { primaryVariant } from "@/features/commerce/lib/variant";
 import { formatVnd } from "@/features/commerce/lib/format";
 import {
@@ -54,6 +55,7 @@ export default function ProductDetailPage({
 
   const { data: detail, isLoading } = useProduct(id);
   const addToCart = useAddToCart();
+  const session = useSession();
 
   if (isLoading || !detail) {
     return <DetailSkeleton />;
@@ -73,6 +75,7 @@ export default function ProductDetailPage({
       {
         onSuccess: () =>
           toast.success(`${vi.commerce.products.added}: ${product.name}`),
+        onError: () => toast.error(vi.commerce.products.addError),
       },
     );
   };
@@ -181,7 +184,9 @@ export default function ProductDetailPage({
 
           <Button
             size="lg"
-            disabled={!selectedVariant || addToCart.isPending}
+            disabled={
+              !selectedVariant || addToCart.isPending || session.isLoading
+            }
             onClick={handleAdd}
             className="rounded-lg font-semibold"
           >

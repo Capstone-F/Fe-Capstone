@@ -11,6 +11,7 @@ import {
   useProducts,
 } from "@/features/commerce/hooks/use-products";
 import { useAddToCart } from "@/features/commerce/hooks/use-cart";
+import { useSession } from "@/features/auth/hooks/use-session";
 import { primaryVariant } from "@/features/commerce/lib/variant";
 import {
   getCategoryIcon,
@@ -59,6 +60,7 @@ export default function ProductsPage() {
 
   const { data, isLoading } = useProducts(queryFilters);
   const addToCart = useAddToCart();
+  const session = useSession();
 
   const filterKey = `${search}|${categoryId}|${brand}|${ingredient}|${pageSize}`;
   const [prevFilterKey, setPrevFilterKey] = useState(filterKey);
@@ -90,7 +92,10 @@ export default function ProductsPage() {
     if (!variant) return;
     addToCart.mutate(
       { productVariantId: variant.id },
-      { onSuccess: () => toast.success(`${c.added}: ${product.name}`) },
+      {
+        onSuccess: () => toast.success(`${c.added}: ${product.name}`),
+        onError: () => toast.error(c.addError),
+      },
     );
   };
 
@@ -200,7 +205,7 @@ export default function ProductsPage() {
                     key={product.id}
                     product={product}
                     onAddToCart={handleAdd}
-                    isAdding={addToCart.isPending}
+                    isAdding={addToCart.isPending || session.isLoading}
                   />
                 ))}
               </div>
