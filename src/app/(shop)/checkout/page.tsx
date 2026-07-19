@@ -194,9 +194,7 @@ export default function CheckoutPage() {
                   <AddressField
                     label={ck.address.fullName}
                     value={address.fullName}
-                    onChange={(v) =>
-                      setAddress((a) => ({ ...a, fullName: v }))
-                    }
+                    onChange={(v) => setAddress((a) => ({ ...a, fullName: v }))}
                   />
                   <AddressField
                     label={ck.address.phone}
