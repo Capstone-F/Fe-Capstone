@@ -4,7 +4,7 @@ import { cn } from "@/lib/utils";
 
 const STEPS = [
   vi.commerce.checkout.steps.review,
-  vi.commerce.checkout.steps.address,
+  vi.commerce.checkout.steps.shipping,
   vi.commerce.checkout.steps.payment,
   vi.commerce.checkout.steps.confirm,
   vi.commerce.checkout.steps.done,
