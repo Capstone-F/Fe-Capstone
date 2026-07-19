@@ -127,6 +127,7 @@ export const vi = {
       all: "Tất cả",
       addToCart: "Thêm vào giỏ",
       added: "Đã thêm vào giỏ",
+      addError: "Không thể thêm vào giỏ hàng. Vui lòng thử lại.",
       emptyTitle: "Không tìm thấy sản phẩm phù hợp",
       emptyHint: "Thử nới lỏng bộ lọc của bạn.",
       perPage: "sản phẩm/trang",
@@ -168,20 +169,33 @@ export const vi = {
     },
     checkout: {
       title: "Thanh toán",
+      loginRequiredTitle: "Vui lòng đăng nhập để đặt hàng",
+      loginRequiredHint:
+        "Bạn cần đăng nhập để tiếp tục thanh toán. Giỏ hàng của bạn sẽ được giữ lại.",
+      loginCta: "Đăng nhập",
       steps: {
         review: "Xem lại giỏ",
-        address: "Địa chỉ",
+        shipping: "Giao hàng",
         payment: "Thanh toán",
         confirm: "Xác nhận",
         done: "Hoàn tất",
       },
       address: {
+        heading: "Địa chỉ nhận hàng",
         fullName: "Họ và tên",
         phone: "Số điện thoại",
         line: "Địa chỉ (số nhà, đường, phường/xã)",
         city: "Tỉnh / Thành phố",
-        unavailableNote:
-          "Backend chưa hỗ trợ lưu địa chỉ giao hàng — bước này tạm thời chỉ mang tính minh hoạ.",
+      },
+      delivery: {
+        heading: "Phương thức giao hàng",
+        loading: "Đang tải phương thức giao hàng...",
+        empty: "Hiện chưa có phương thức giao hàng khả dụng.",
+        types: {
+          STANDARD: "Giao tiêu chuẩn",
+          EXPRESS: "Giao nhanh",
+          SAME_DAY: "Giao trong ngày",
+        },
       },
       payment: {
         vnpay: "VnPay",
@@ -192,6 +206,12 @@ export const vi = {
       back: "Quay lại",
       next: "Tiếp tục",
       placeOrder: "Đặt hàng",
+      notSelected: "Chưa chọn",
+      errors: {
+        address: "Vui lòng nhập đầy đủ thông tin nhận hàng.",
+        delivery: "Vui lòng chọn phương thức giao hàng.",
+        placeOrder: "Không thể đặt hàng. Vui lòng thử lại.",
+      },
       successTitle: "Đặt hàng thành công!",
       successHint: "Cảm ơn bạn. Đơn hàng của bạn đang được xử lý.",
       loadingTitle: "Đang xác nhận thanh toán...",
@@ -210,6 +230,12 @@ export const vi = {
       products: "Sản phẩm",
       cart: "Giỏ hàng",
       orders: "Đơn hàng",
+      login: "Đăng nhập",
+      account: "Tài khoản",
+      logout: "Đăng xuất",
+      cartMerged: "Đã chuyển giỏ hàng của bạn vào tài khoản.",
+      cartMergeFailed:
+        "Không thể chuyển giỏ hàng vào tài khoản. Vui lòng thử lại.",
     },
   },
   common: {
