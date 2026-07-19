@@ -147,6 +147,17 @@ export interface ShippingAddress {
   city: string;
 }
 
+export type DeliveryType = "STANDARD" | "EXPRESS" | "SAME_DAY";
+
+/** A priced shipping option from GET /delivery/options. */
+export interface DeliveryOption {
+  providerId: string;
+  providerCode: string;
+  providerName: string;
+  type: DeliveryType;
+  feeVnd: number;
+}
+
 export type OrderStatus =
   | "PENDING"
   | "PAID"
