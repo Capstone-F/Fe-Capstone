@@ -5,9 +5,9 @@
   "packageManager": "pnpm@10.15.1",
   "scripts": {
     "predev": "node scripts/check-backend.mjs",
-    "dev": "next dev --turbopack --port 5173",
+    "dev": "next dev --turbopack --port 3000",
     "build": "next build",
-    "start": "next start --port 5173",
+    "start": "next start --port 3000",
     "lint": "eslint . --max-warnings=0",
     "lint:fix": "eslint . --fix",
     "typecheck": "tsc --noEmit",

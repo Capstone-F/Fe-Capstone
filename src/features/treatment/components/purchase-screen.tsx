@@ -8,13 +8,21 @@ import {
   AlertTriangle,
   ShieldCheck,
   Check,
+  Loader2,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useTreatment } from "../context/treatment-context";
 
 export function PurchaseScreen() {
-  const { state, setFlowState, getRecommendedProducts } = useTreatment();
+  const {
+    state,
+    setFlowState,
+    getRecommendedProducts,
+    addRecommendationsToCart,
+  } = useTreatment();
   const [isProcessing, setIsProcessing] = useState(false);
+  const [isAddingToCart, setIsAddingToCart] = useState(false);
+  const [cartMessage, setCartMessage] = useState<string | null>(null);
   const [paymentStep, setPaymentStep] = useState<"checkout" | "processing">(
     "checkout",
   );
@@ -50,15 +58,37 @@ export function PurchaseScreen() {
   const totalDiscounted = selectedProducts.reduce((acc, p) => acc + p.price, 0);
   const totalSavings = totalOriginal - totalDiscounted;
 
-  const handleCheckout = () => {
+  const handleAddToCart = async () => {
+    if (selectedProductIds.length === 0) return;
+    setIsAddingToCart(true);
+    setCartMessage(null);
+    try {
+      await addRecommendationsToCart(selectedProductIds);
+      setCartMessage("Đã thêm các sản phẩm vào giỏ hàng thành công!");
+    } catch (e) {
+      console.error(e);
+      setCartMessage("Có lỗi khi thêm vào giỏ hàng. Vui lòng thử lại.");
+    } finally {
+      setIsAddingToCart(false);
+    }
+  };
+
+  const handleCheckout = async () => {
     setIsProcessing(true);
     setPaymentStep("processing");
+    try {
+      if (selectedProductIds.length > 0) {
+        await addRecommendationsToCart(selectedProductIds);
+      }
+    } catch (e) {
+      console.error("Lỗi khi thêm vào giỏ trước checkout:", e);
+    }
 
-    // Simulate Payment processing
+    // Simulate Payment processing transition to tracker
     setTimeout(() => {
       setIsProcessing(false);
       setFlowState("success");
-    }, 2000);
+    }, 1500);
   };
 
   const formatPrice = (value: number) => {
@@ -247,16 +277,43 @@ export function PurchaseScreen() {
           </div>
         </div>
 
-        <Button
-          onClick={handleCheckout}
-          disabled={isProcessing}
-          className="shadow-primary/20 hover:shadow-primary/30 bg-primary hover:bg-primary/95 flex w-full items-center justify-center gap-2 rounded-2xl py-6 text-base font-bold text-white shadow-lg transition-all duration-300"
-        >
-          <CreditCard className="h-5 w-5" />
-          {selectedProductIds.length > 0
-            ? `Đặt Mua (${selectedProductIds.length} sp) & Kích Hoạt Tracker`
-            : "Kích Hoạt Tracker"}
-        </Button>
+        {cartMessage && (
+          <div className="border-primary/20 bg-primary/10 text-primary animate-in fade-in rounded-xl border p-2.5 text-center text-xs font-semibold">
+            {cartMessage}
+          </div>
+        )}
+        <div className="grid grid-cols-2 gap-2">
+          <Button
+            variant="outline"
+            onClick={handleAddToCart}
+            disabled={
+              isProcessing || isAddingToCart || selectedProductIds.length === 0
+            }
+            className="border-primary/40 hover:bg-primary/5 text-primary flex items-center justify-center gap-1.5 rounded-2xl py-6 text-xs font-bold transition-all duration-300"
+          >
+            {isAddingToCart ? (
+              <Loader2 className="h-4 w-4 animate-spin" />
+            ) : (
+              <ShoppingBag className="h-4.5 w-4.5" />
+            )}
+            <span>Thêm vào giỏ ({selectedProductIds.length})</span>
+          </Button>
+
+          <Button
+            onClick={handleCheckout}
+            disabled={
+              isProcessing || isAddingToCart || selectedProductIds.length === 0
+            }
+            className="shadow-primary/20 hover:shadow-primary/30 bg-primary hover:bg-primary/95 flex items-center justify-center gap-1.5 rounded-2xl py-6 text-xs font-bold text-white shadow-lg transition-all duration-300"
+          >
+            {isProcessing ? (
+              <Loader2 className="h-4 w-4 animate-spin" />
+            ) : (
+              <CreditCard className="h-4.5 w-4.5" />
+            )}
+            <span>Mua combo & Kích hoạt</span>
+          </Button>
+        </div>
       </div>
     </div>
   );

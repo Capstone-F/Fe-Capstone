@@ -402,19 +402,21 @@ export function DashboardScreen() {
                 <div>
                   <h4 className="text-foreground text-xs font-extrabold">
                     Loại da:{" "}
-                    {(state.surveyAnswers.baumannOilyDry || "O") +
-                      (state.surveyAnswers.baumannSensitiveResistant || "S") +
-                      (state.surveyAnswers.baumannPigmentNon || "P") +
-                      (state.surveyAnswers.baumannWrinkleTight || "T")}
+                    {state.customerProfile?.customer?.skinType?.name ||
+                      (state.surveyAnswers.baumannOilyDry || "O") +
+                        (state.surveyAnswers.baumannSensitiveResistant || "S") +
+                        (state.surveyAnswers.baumannPigmentNon || "P") +
+                        (state.surveyAnswers.baumannWrinkleTight || "T")}
                   </h4>
                   <span className="text-primary text-[10px] font-bold">
-                    {state.surveyAnswers.baumannOilyDry === "O"
-                      ? "Da dầu (Oily)"
-                      : "Da khô (Dry)"}{" "}
-                    •{" "}
-                    {state.surveyAnswers.baumannSensitiveResistant === "S"
-                      ? "Nhạy cảm (Sensitive)"
-                      : "Đề kháng (Resistant)"}
+                    {state.customerProfile?.customer?.skinType?.description ||
+                      (state.surveyAnswers.baumannOilyDry === "O"
+                        ? "Da dầu (Oily)"
+                        : "Da khô (Dry)") +
+                        " • " +
+                        (state.surveyAnswers.baumannSensitiveResistant === "S"
+                          ? "Nhạy cảm (Sensitive)"
+                          : "Đề kháng (Resistant)")}
                   </span>
                 </div>
               </div>

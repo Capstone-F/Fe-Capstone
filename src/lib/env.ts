@@ -1,7 +1,7 @@
 export const MOCK_FLAGS = {
   commerce: false, // E-commerce wired to real BE
   booking: true,
-  survey: true,
+  survey: false,
   routine: true,
   clinic: true,
   consultation: true,
