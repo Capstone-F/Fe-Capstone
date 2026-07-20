@@ -19,7 +19,16 @@ function buildUpstreamUrl(pathSegments: string[], search: string) {
   const normalizedBase = appConfig.backendApiUrl.endsWith("/")
     ? appConfig.backendApiUrl
     : `${appConfig.backendApiUrl}/`;
-  const upstreamUrl = new URL(pathSegments.join("/"), normalizedBase);
+
+  // Translate /auth/me to /users/me to match BE canonical profile endpoint
+  const targetSegments =
+    pathSegments.length === 2 &&
+    pathSegments[0] === "auth" &&
+    pathSegments[1] === "me"
+      ? ["users", "me"]
+      : pathSegments;
+
+  const upstreamUrl = new URL(targetSegments.join("/"), normalizedBase);
   upstreamUrl.search = search;
 
   return upstreamUrl;

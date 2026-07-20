@@ -1,7 +1,20 @@
 "use client";
 
-import React, { createContext, useContext, useState, useEffect } from "react";
+import React, {
+  createContext,
+  useContext,
+  useState,
+  useEffect,
+  useCallback,
+} from "react";
 import { SurveyRecord } from "@/types/domain";
+import { apiJson } from "@/lib/api/client";
+import {
+  SurveyQuestionDto,
+  SurveyResponseDto,
+  RecommendationResponseDto,
+  CustomerProfileResponseDto,
+} from "@/types/domain";
 
 export type SurveyAnswers = {
   // Baumann
@@ -69,6 +82,15 @@ export type TreatmentData = {
   eveningRoutine: RoutineItem[];
   aiObservation: AiObservation | null;
   surveyHistory?: SurveyRecord[];
+  // Dynamic API state
+  surveySessionId: string | null;
+  dynamicQuestions: SurveyQuestionDto[];
+  dynamicAnswers: Record<string, string[]>;
+  dynamicTextAnswers: Record<string, string>;
+  recommendations: RecommendationResponseDto | null;
+  customerProfile: CustomerProfileResponseDto | null;
+  isLoadingDynamic?: boolean;
+  dynamicError?: string | null;
 };
 
 export type SkincareProduct = {
@@ -118,6 +140,18 @@ type TreatmentContextType = {
   generateRoutines: () => void;
   getRecommendedProducts: () => SkincareProduct[];
   resetAll: () => void;
+  // Dynamic API methods
+  startDynamicSurvey: () => Promise<void>;
+  setDynamicAnswer: (
+    questionId: string,
+    labelCodes: string[],
+    value?: string,
+  ) => void;
+  submitDynamicAnswersAndNext: (questionIds: string[]) => Promise<boolean>;
+  completeDynamicSurvey: () => Promise<boolean>;
+  fetchLatestRecommendations: () => Promise<void>;
+  fetchCustomerProfile: () => Promise<void>;
+  addRecommendationsToCart: (productVariantIds: string[]) => Promise<boolean>;
 };
 
 const TreatmentContext = createContext<TreatmentContextType | undefined>(
@@ -135,11 +169,28 @@ export function TreatmentProvider({ children }: { children: React.ReactNode }) {
       eveningRoutine: [],
       aiObservation: null,
       surveyHistory: [],
+      surveySessionId: null,
+      dynamicQuestions: [],
+      dynamicAnswers: {},
+      dynamicTextAnswers: {},
+      recommendations: null,
+      customerProfile: null,
+      isLoadingDynamic: false,
+      dynamicError: null,
     };
     if (typeof window === "undefined") return defaultState;
     try {
       const stored = localStorage.getItem(LOCAL_STORAGE_KEY);
-      if (stored) return JSON.parse(stored) as TreatmentData;
+      if (stored) {
+        const parsed = JSON.parse(stored) as TreatmentData;
+        return {
+          ...defaultState,
+          ...parsed,
+          dynamicQuestions: parsed.dynamicQuestions || [],
+          dynamicAnswers: parsed.dynamicAnswers || {},
+          dynamicTextAnswers: parsed.dynamicTextAnswers || {},
+        };
+      }
     } catch {
       // ignore malformed storage
     }
@@ -185,7 +236,7 @@ export function TreatmentProvider({ children }: { children: React.ReactNode }) {
   };
 
   // Logic to generate routines dynamically based on survey questionnaire answers
-  const generateRoutines = () => {
+  const generateRoutines = useCallback(() => {
     const answers = state.surveyAnswers;
 
     // 1. Check pregnancy safety
@@ -335,10 +386,219 @@ export function TreatmentProvider({ children }: { children: React.ReactNode }) {
         surveyHistory: [newHistoryRecord, ...currentHistory],
       };
     });
-  };
+  }, [state.surveyAnswers]);
+
+  // Dynamic API methods
+  const startDynamicSurvey = useCallback(async () => {
+    setState((prev) => ({
+      ...prev,
+      isLoadingDynamic: true,
+      dynamicError: null,
+    }));
+    try {
+      // 1. Get CORE questions
+      const questions =
+        await apiJson<SurveyQuestionDto[]>("/surveys/questions");
+      // 2. Start survey session
+      const session = await apiJson<SurveyResponseDto>("/surveys", {
+        method: "POST",
+      });
+      setState((prev) => ({
+        ...prev,
+        surveySessionId: session.id,
+        dynamicQuestions: questions || [],
+        dynamicAnswers: {},
+        dynamicTextAnswers: {},
+        surveyStep: 1,
+        isLoadingDynamic: false,
+      }));
+    } catch (e: unknown) {
+      console.error("Failed to start dynamic survey:", e);
+      const msg =
+        e instanceof Error
+          ? e.message
+          : "Không thể khởi tạo khảo sát từ hệ thống.";
+      setState((prev) => ({
+        ...prev,
+        isLoadingDynamic: false,
+        dynamicError: msg,
+      }));
+    }
+  }, []);
+
+  const setDynamicAnswer = useCallback(
+    (questionId: string, labelCodes: string[], value?: string) => {
+      setState((prev) => ({
+        ...prev,
+        dynamicAnswers: { ...prev.dynamicAnswers, [questionId]: labelCodes },
+        dynamicTextAnswers:
+          value !== undefined
+            ? { ...prev.dynamicTextAnswers, [questionId]: value }
+            : prev.dynamicTextAnswers,
+      }));
+    },
+    [],
+  );
+
+  const submitDynamicAnswersAndNext = useCallback(
+    async (questionIds: string[]): Promise<boolean> => {
+      if (!state.surveySessionId) return false;
+      setState((prev) => ({
+        ...prev,
+        isLoadingDynamic: true,
+        dynamicError: null,
+      }));
+      try {
+        const payloadAnswers = questionIds.map((qId) => ({
+          questionId: qId,
+          labelCodes: state.dynamicAnswers[qId] || [],
+          value: state.dynamicTextAnswers[qId],
+        }));
+
+        await apiJson(`/surveys/${state.surveySessionId}/answers`, {
+          method: "POST",
+          body: { answers: payloadAnswers },
+        });
+
+        // Check if any conditional questions (L2) unlocked
+        const nextQuestions = await apiJson<SurveyQuestionDto[]>(
+          `/surveys/questions?surveyId=${state.surveySessionId}`,
+        );
+
+        setState((prev) => ({
+          ...prev,
+          dynamicQuestions: nextQuestions || prev.dynamicQuestions,
+          isLoadingDynamic: false,
+        }));
+        return true;
+      } catch (e: unknown) {
+        console.error("Failed to submit answers:", e);
+        const msg =
+          e instanceof Error
+            ? e.message
+            : "Không thể lưu câu trả lời khảo sát.";
+        setState((prev) => ({
+          ...prev,
+          isLoadingDynamic: false,
+          dynamicError: msg,
+        }));
+        return false;
+      }
+    },
+    [state.surveySessionId, state.dynamicAnswers, state.dynamicTextAnswers],
+  );
+
+  const fetchCustomerProfile = useCallback(async () => {
+    try {
+      const profile =
+        await apiJson<CustomerProfileResponseDto>("/customers/me");
+      setState((prev) => ({ ...prev, customerProfile: profile }));
+    } catch (e) {
+      console.error("Failed to fetch customer profile:", e);
+    }
+  }, []);
+
+  const fetchLatestRecommendations = useCallback(async () => {
+    try {
+      const rec = await apiJson<RecommendationResponseDto>(
+        "/recommendations/latest",
+      );
+      setState((prev) => ({ ...prev, recommendations: rec }));
+    } catch (e) {
+      console.error("Failed to fetch latest recommendations:", e);
+    }
+  }, []);
+
+  const completeDynamicSurvey = useCallback(async (): Promise<boolean> => {
+    if (!state.surveySessionId) return false;
+    setState((prev) => ({
+      ...prev,
+      isLoadingDynamic: true,
+      dynamicError: null,
+    }));
+    try {
+      // Complete on backend
+      await apiJson(`/surveys/${state.surveySessionId}/complete`, {
+        method: "POST",
+      });
+
+      // Generate local routines based on current answers as fallback/supplement
+      generateRoutines();
+
+      // Fetch profile (for skinType description) & recommendations
+      await Promise.all([fetchCustomerProfile(), fetchLatestRecommendations()]);
+
+      setState((prev) => ({
+        ...prev,
+        isLoadingDynamic: false,
+        flowState: "analyzing",
+      }));
+      return true;
+    } catch (e: unknown) {
+      console.error("Failed to complete dynamic survey:", e);
+      const msg =
+        e instanceof Error
+          ? e.message
+          : "Không thể hoàn tất phân tích khảo sát.";
+      setState((prev) => ({
+        ...prev,
+        isLoadingDynamic: false,
+        dynamicError: msg,
+      }));
+      return false;
+    }
+  }, [
+    state.surveySessionId,
+    fetchCustomerProfile,
+    fetchLatestRecommendations,
+    generateRoutines,
+  ]);
+
+  const addRecommendationsToCart = useCallback(
+    async (productVariantIds: string[]): Promise<boolean> => {
+      try {
+        const recommendationId = state.recommendations?.id;
+        for (const variantId of productVariantIds) {
+          await apiJson("/cart/items", {
+            method: "POST",
+            body: {
+              productVariantId: variantId,
+              quantity: 1,
+              source: "SURVEY",
+              ...(recommendationId
+                ? { surveyRecommendationId: recommendationId }
+                : {}),
+            },
+          });
+        }
+        return true;
+      } catch (e: unknown) {
+        console.error("Failed to add recommendations to cart:", e);
+        throw e;
+      }
+    },
+    [state.recommendations],
+  );
 
   // Helper to generate recommended products dynamically for the checkout cart
   const getRecommendedProducts = (): SkincareProduct[] => {
+    if (
+      state.recommendations?.products &&
+      state.recommendations.products.length > 0
+    ) {
+      return state.recommendations.products.map((p) => {
+        const variant = p.variants?.[0];
+        return {
+          id: variant?.productVariantId || p.productId,
+          name: p.productName || variant?.productName || "Sản phẩm khuyên dùng",
+          category: p.protocolName || "Chăm sóc chuyên sâu",
+          price: variant?.priceVnd || p.priceVnd || 0,
+          brand: p.protocolCode || "GlowScan Derm",
+          reason: `Độ phù hợp: ${Math.round(p.matchScore * 100)}% — Phác đồ ${p.protocolName}`,
+        };
+      });
+    }
+
     const products: SkincareProduct[] = [];
     const answers = state.surveyAnswers;
     const isPregnant = answers.pregnancy === "yes";
@@ -450,6 +710,14 @@ export function TreatmentProvider({ children }: { children: React.ReactNode }) {
       eveningRoutine: [],
       aiObservation: null,
       surveyHistory: [],
+      surveySessionId: null,
+      dynamicQuestions: [],
+      dynamicAnswers: {},
+      dynamicTextAnswers: {},
+      recommendations: null,
+      customerProfile: null,
+      isLoadingDynamic: false,
+      dynamicError: null,
     });
   };
 
@@ -465,6 +733,13 @@ export function TreatmentProvider({ children }: { children: React.ReactNode }) {
         generateRoutines,
         getRecommendedProducts,
         resetAll,
+        startDynamicSurvey,
+        setDynamicAnswer,
+        submitDynamicAnswersAndNext,
+        completeDynamicSurvey,
+        fetchLatestRecommendations,
+        fetchCustomerProfile,
+        addRecommendationsToCart,
       }}
     >
       {children}

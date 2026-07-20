@@ -1,3 +1,14 @@
+export const MOCK_FLAGS = {
+  commerce: false, // E-commerce wired to real BE
+  booking: true,
+  survey: false,
+  routine: true,
+  clinic: true,
+  consultation: true,
+  treatment: true,
+  admin: true,
+} as const;
+
 export const appConfig = {
   appName: "GlowScan Admin",
   appUrl: process.env.NEXT_PUBLIC_APP_URL ?? "http://localhost:3001",
@@ -6,5 +17,5 @@ export const appConfig = {
   devBypassAuth:
     process.env.NODE_ENV !== "production" &&
     process.env.NEXT_PUBLIC_DEV_BYPASS_AUTH === "true",
-  useMockApi: process.env.NEXT_PUBLIC_USE_MOCK_API !== "false",
+  useMockApi: MOCK_FLAGS.commerce,
 } as const;

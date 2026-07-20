@@ -20,7 +20,12 @@ export function proxy(request: NextRequest) {
     return NextResponse.redirect(new URL("/dashboard", request.url));
   }
 
-  if (pathname.startsWith("/dashboard") && !hasSession) {
+  if (
+    (pathname.startsWith("/dashboard") ||
+      pathname.startsWith("/scan") ||
+      pathname.startsWith("/survey")) &&
+    !hasSession
+  ) {
     const loginUrl = new URL("/login", request.url);
     loginUrl.searchParams.set("redirectTo", `${pathname}${search}`);
 
@@ -31,5 +36,12 @@ export function proxy(request: NextRequest) {
 }
 
 export const config = {
-  matcher: ["/dashboard/:path*", "/login"],
+  matcher: [
+    "/dashboard/:path*",
+    "/scan/:path*",
+    "/scan",
+    "/survey/:path*",
+    "/survey",
+    "/login",
+  ],
 };

@@ -26,15 +26,18 @@ export function ReportScreen() {
   // Guard score range
   score = Math.max(45, Math.min(98, score));
 
-  // Baumann code
+  // Baumann code & Skin type derived from backend survey completion
+  const skinType = state.customerProfile?.customer?.skinType;
   const baumannCode =
+    skinType?.code ||
     (answers.baumannOilyDry || "O") +
-    (answers.baumannSensitiveResistant || "S") +
-    (answers.baumannPigmentNon || "P") +
-    (answers.baumannWrinkleTight || "T");
+      (answers.baumannSensitiveResistant || "S") +
+      (answers.baumannPigmentNon || "P") +
+      (answers.baumannWrinkleTight || "T");
 
-  // Format Baumann text translation
+  // Format Baumann text translation (fallback if backend description missing)
   const getBaumannTranslation = (code: string) => {
+    if (skinType?.description) return skinType.description;
     const parts = [];
     parts.push(code[0] === "O" ? "Da dầu (Oily)" : "Da khô (Dry)");
     parts.push(
@@ -124,6 +127,12 @@ export function ReportScreen() {
             <span className="bg-primary/10 text-primary inline-block rounded-xl px-2.5 py-0.5 text-[11px] font-bold">
               Mã Baumann: {baumannCode}
             </span>
+            {skinType?.name && (
+              <div className="font-heading text-foreground pt-1 text-xs font-bold">
+                Loại da của bạn:{" "}
+                <span className="text-primary">{skinType.name}</span>
+              </div>
+            )}
             <p className="text-muted-foreground text-[10px] leading-relaxed font-medium">
               {getBaumannTranslation(baumannCode)}
             </p>

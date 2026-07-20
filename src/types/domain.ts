@@ -205,3 +205,5 @@ export interface PaymentStatus {
   amountVnd: string; // BE bigint column serializes as string
   paidAt: string | null;
 }
+
+export * from "./survey";
