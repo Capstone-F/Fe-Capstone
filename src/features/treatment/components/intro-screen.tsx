@@ -10,115 +10,38 @@ export function IntroScreen() {
   const router = useRouter();
 
   return (
-    <div className="animate-in fade-in slide-in-from-bottom-4 flex flex-1 flex-col justify-center px-4 duration-500">
-      <div className="mb-2 flex items-center">
+    <div className="animate-in fade-in flex flex-1 flex-col justify-center px-4 py-8 duration-500">
+      <div className="mb-4 flex items-center">
         <Button
           variant="ghost"
           size="icon"
           onClick={() => router.push("/")}
-          className="border-border/40 hover:bg-secondary/40 h-8 w-8 shrink-0 rounded-xl border"
+          className="hover:bg-black/5 h-10 w-10 shrink-0 rounded-full text-[#131336]"
         >
-          <ArrowLeft className="h-4.5 w-4.5" />
+          <ArrowLeft className="h-6 w-6" />
         </Button>
       </div>
-      <div className="space-y-6 py-6 text-center">
-        {/* Brand Icon */}
-        <div className="bg-primary/10 text-primary relative mx-auto flex h-16 w-16 items-center justify-center rounded-2xl shadow-inner">
-          <Sparkles className="h-8 w-8 animate-pulse" />
-          <div className="absolute -top-1 -right-1 flex h-3.5 w-3.5 animate-ping rounded-full bg-emerald-500" />
-          <div className="absolute -top-1 -right-1 flex h-3.5 w-3.5 rounded-full bg-emerald-500" />
-        </div>
 
-        {/* Text info */}
-        <div className="space-y-2">
-          <h2 className="font-heading text-foreground text-2xl font-extrabold tracking-tight">
-            Khảo Sát Liệu Trình Mới
-          </h2>
-          <p className="text-muted-foreground mx-auto max-w-xs text-xs leading-relaxed sm:max-w-sm md:max-w-md">
-            Hệ thống AI GlowScan sẽ cá nhân hóa chu trình dựa trên loại da
-            Baumann và hồ sơ sức khỏe cá nhân của bạn.
+      <div className="mx-auto max-w-xl space-y-12 text-center mt-8">
+        <div className="space-y-6">
+          <h1 className="font-heading text-[2.5rem] leading-tight font-bold tracking-tight text-[#131336] sm:text-5xl">
+            Nhận công thức cá nhân hóa từ chuyên gia AI GlowScan
+          </h1>
+          <p className="mx-auto max-w-md text-lg text-[#131336]/70">
+            Đầu tiên, hãy cho chúng tôi biết về tình trạng da của bạn.
           </p>
         </div>
 
-        {/* Base Profile Confirmation Card (Premium Design) */}
-        <div className="relative mx-auto w-full max-w-sm space-y-4 overflow-hidden rounded-3xl border border-white/60 bg-white/70 p-5 text-left shadow-sm backdrop-blur-md sm:max-w-md md:max-w-xl">
-          <div className="bg-primary/5 pointer-events-none absolute -top-8 -right-8 h-24 w-24 rounded-full blur-xl" />
-
-          <div className="border-border/40 flex items-center gap-2 border-b pb-2.5">
-            <User className="text-primary h-4.5 w-4.5" />
-            <h4 className="text-foreground text-xs font-bold tracking-wider uppercase">
-              Hồ Sơ Cá Nhân Cơ Bản (Base Profile)
-            </h4>
-          </div>
-
-          <div className="text-muted-foreground space-y-2.5 text-xs">
-            <div className="flex items-center justify-between">
-              <span className="font-medium">Họ và tên:</span>
-              <span className="text-foreground font-bold">
-                Đặng Nguyễn Gia Bảo
-              </span>
-            </div>
-
-            <div className="flex items-center justify-between">
-              <span className="font-medium">Độ tuổi & Giới tính:</span>
-              <span className="text-foreground font-bold">28 tuổi • Nam</span>
-            </div>
-
-            <div className="flex items-start justify-between gap-2">
-              <span className="shrink-0 font-medium">Khu vực sinh sống:</span>
-              <span className="text-foreground flex items-center gap-1 text-right font-bold">
-                <MapPin className="inline h-3 w-3 text-red-500" />
-                TP. Hồ Chí Minh{" "}
-                <span className="text-muted-foreground text-[10px] font-normal">
-                  (Nhiệt đới ẩm)
-                </span>
-              </span>
-            </div>
-
-            <div className="bg-border/40 my-1 h-[1px]" />
-
-            <div className="flex items-center justify-between">
-              <span className="font-medium">Dị ứng đã biết:</span>
-              <span className="rounded border border-emerald-100 bg-emerald-50 px-2 py-0.5 text-[10px] font-bold text-emerald-600">
-                Không có
-              </span>
-            </div>
-
-            <div className="flex items-center justify-between">
-              <span className="font-medium">Nhạy cảm với cồn:</span>
-              <span className="rounded border border-amber-100 bg-amber-50 px-2 py-0.5 text-[10px] font-bold text-amber-600">
-                Nhạy cảm nhẹ
-              </span>
-            </div>
-
-            <div className="flex items-start justify-between gap-2">
-              <span className="shrink-0 font-medium">Kích ứng trước đó:</span>
-              <span className="text-destructive bg-destructive/5 border-destructive/10 rounded border px-2 py-0.5 text-right text-[10px] font-bold">
-                Tretinoin (bong tróc nhẹ)
-              </span>
-            </div>
-          </div>
-
-          <div className="flex items-start gap-2 rounded-2xl border border-blue-100 bg-blue-50/50 p-3 text-[10px] leading-relaxed text-blue-700">
-            <ShieldCheck className="mt-0.5 h-4.5 w-4.5 shrink-0 text-blue-500" />
-            <span>
-              Hãy xác nhận thông tin trên là chính xác. Hệ thống AI sẽ tích hợp
-              các dữ liệu chuyên sâu này vào phân tích da.
-            </span>
-          </div>
-        </div>
-
-        {/* Start Button */}
-        <div className="pt-2">
+        <div className="pt-8">
           <Button
             onClick={() => setFlowState("survey")}
-            className="shadow-primary/20 hover:shadow-primary/30 bg-primary hover:bg-primary/95 group flex w-full max-w-sm items-center justify-center gap-2 rounded-2xl py-6 text-base font-bold text-white shadow-lg transition-all duration-300 sm:max-w-md md:max-w-xl"
+            className="group relative h-14 w-full rounded-[100px] bg-[#6b5cf6] px-8 text-lg font-bold text-white shadow-md transition-all duration-200 hover:bg-[#5a4ae5] active:scale-[0.98] sm:w-auto sm:min-w-[300px]"
           >
-            <Sparkles className="h-5 w-5 transition-transform group-hover:scale-110" />
-            Xác Nhận & Bắt Đầu Khảo Sát
+            <span>Bắt Đầu Khảo Sát</span>
           </Button>
         </div>
       </div>
     </div>
   );
 }
+

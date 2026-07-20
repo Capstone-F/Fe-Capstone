@@ -28,7 +28,7 @@ export default function UnauthorizedPage() {
             frontend scaffold only guards on authenticated session presence.
           </p>
           <div className="flex flex-wrap gap-3">
-            <Button render={<Link href="/dashboard" />}>Go to dashboard</Button>
+            <Button render={<Link href="/" />}>Về Trang Chủ</Button>
             <Button variant="outline" render={<Link href="/login" />}>
               Back to login
             </Button>

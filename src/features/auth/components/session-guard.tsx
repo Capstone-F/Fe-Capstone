@@ -38,9 +38,9 @@ export function SessionGuard({
       const loginTarget = pathname
         ? `/login?redirectTo=${encodeURIComponent(pathname)}`
         : "/login";
-      router.replace(loginTarget as Route);
+      window.location.href = loginTarget;
     }
-  }, [pathname, router, sessionQuery.error]);
+  }, [pathname, sessionQuery.error]);
 
   if (appConfig.devBypassAuth) {
     return <>{children}</>;

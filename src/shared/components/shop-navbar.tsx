@@ -51,12 +51,12 @@ export function ShopNavbar() {
     startTransition(async () => {
       try {
         await logout();
-        // Reset auth + cart caches so the navbar reverts to the guest state.
+      } catch {
+        // Ignore errors if session already cleared
+      } finally {
         queryClient.invalidateQueries({ queryKey: queryKeys.session });
         queryClient.invalidateQueries({ queryKey: queryKeys.cart });
         router.refresh();
-      } catch {
-        toast.error(n.logout);
       }
     });
   }

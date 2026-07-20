@@ -73,6 +73,8 @@ export function PurchaseScreen() {
     }
   };
 
+  const router = useRouter();
+
   const handleCheckout = async () => {
     setIsProcessing(true);
     setPaymentStep("processing");
@@ -80,15 +82,13 @@ export function PurchaseScreen() {
       if (selectedProductIds.length > 0) {
         await addRecommendationsToCart(selectedProductIds);
       }
+      router.push("/checkout");
     } catch (e) {
       console.error("Lỗi khi thêm vào giỏ trước checkout:", e);
-    }
-
-    // Simulate Payment processing transition to tracker
-    setTimeout(() => {
       setIsProcessing(false);
-      setFlowState("success");
-    }, 1500);
+      setPaymentStep("checkout");
+      setCartMessage("Có lỗi khi chuyển sang thanh toán. Vui lòng thử lại.");
+    }
   };
 
   const formatPrice = (value: number) => {

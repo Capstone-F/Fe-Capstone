@@ -6,6 +6,7 @@ import { useTreatment } from "@/features/treatment/components/treatment-context"
 
 export function SuccessScreen() {
   const { setFlowState } = useTreatment();
+  const router = useRouter();
 
   return (
     <div className="animate-in fade-in zoom-in-95 flex flex-1 flex-col justify-center px-4 text-center duration-500">
@@ -53,7 +54,7 @@ export function SuccessScreen() {
         {/* Action button */}
         <div className="pt-4">
           <Button
-            onClick={() => setFlowState("dashboard")}
+            onClick={() => router.push("/profile")}
             className="shadow-primary/20 hover:shadow-primary/30 bg-primary hover:bg-primary/95 group flex w-full items-center justify-center gap-2 rounded-2xl py-6 text-base font-bold text-white shadow-lg transition-all duration-300"
           >
             <LayoutDashboard className="h-5 w-5 transition-transform group-hover:scale-110" />

@@ -22,7 +22,6 @@ export function TreatmentFlow() {
       {state.flowState === "plan" && <PlanScreen />}
       {state.flowState === "purchase" && <PurchaseScreen />}
       {state.flowState === "success" && <SuccessScreen />}
-      {state.flowState === "dashboard" && <DashboardScreen />}
     </div>
   );
 }

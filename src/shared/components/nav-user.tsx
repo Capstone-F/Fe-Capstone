@@ -27,6 +27,10 @@ import {
   BellIcon,
   LogOutIcon,
 } from "lucide-react";
+import { useRouter } from "next/navigation";
+import { useTransition } from "react";
+import { toast } from "sonner";
+import { logout } from "@/features/auth/api/auth-client";
 
 export function NavUser({
   user,
@@ -38,6 +42,22 @@ export function NavUser({
   };
 }) {
   const { isMobile } = useSidebar();
+  const router = useRouter();
+  const [isPending, startTransition] = useTransition();
+
+  function handleLogout() {
+    startTransition(async () => {
+      try {
+        await logout();
+      } catch (error) {
+        console.error("Logout error:", error);
+      } finally {
+        router.refresh();
+        router.push("/");
+      }
+    });
+  }
+
   return (
     <SidebarMenu>
       <SidebarMenuItem>
@@ -97,9 +117,13 @@ export function NavUser({
               </DropdownMenuItem>
             </DropdownMenuGroup>
             <DropdownMenuSeparator />
-            <DropdownMenuItem>
-              <LogOutIcon />
-              Log out
+            <DropdownMenuItem
+              onClick={handleLogout}
+              disabled={isPending}
+              className="cursor-pointer text-destructive focus:text-destructive"
+            >
+              <LogOutIcon className="mr-2 size-4" />
+              <span>{isPending ? "Đang đăng xuất..." : "Log out"}</span>
             </DropdownMenuItem>
           </DropdownMenuContent>
         </DropdownMenu>
@@ -107,3 +131,4 @@ export function NavUser({
     </SidebarMenu>
   );
 }
+

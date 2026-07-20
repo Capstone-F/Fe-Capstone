@@ -33,11 +33,18 @@ export async function getCartItems(): Promise<CartItem[]> {
 export async function addToCart(
   productVariantId: string,
   quantity = 1,
+  source: "CATALOG" | "SURVEY" = "CATALOG",
+  surveyRecommendationId?: string,
 ): Promise<CartItem[]> {
   await ensureProvisionedOnce();
   const response = await apiJson<CartResponse>(CART_API_PATHS.ADD_ITEM, {
     method: "POST",
-    body: { productVariantId, quantity, source: "CATALOG" },
+    body: {
+      productVariantId,
+      quantity,
+      source,
+      ...(surveyRecommendationId ? { surveyRecommendationId } : {}),
+    },
   });
   return response.items;
 }
@@ -47,11 +54,27 @@ export async function addToCart(
 export async function updateQuantity(
   productVariantId: string,
   quantity: number,
+  source?: "CATALOG" | "SURVEY",
+  surveyRecommendationId?: string,
 ): Promise<CartItem[]> {
   if (quantity <= 0) {
     return removeFromCart(productVariantId);
   }
-  return addToCart(productVariantId, quantity);
+
+  let finalSource = source;
+  let finalRecId = surveyRecommendationId;
+
+  if (!finalSource) {
+    try {
+      const response = await apiJson<CartResponse>(CART_API_PATHS.GET_CART);
+      finalSource = response.source || "CATALOG";
+      finalRecId = response.surveyRecommendationId || undefined;
+    } catch {
+      finalSource = "CATALOG";
+    }
+  }
+
+  return addToCart(productVariantId, quantity, finalSource, finalRecId);
 }
 
 export async function removeFromCart(
