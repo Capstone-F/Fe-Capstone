@@ -14,10 +14,8 @@ import {
   removeGuestItem,
   setGuestQty,
 } from "../lib/guest-cart";
-import { getProducts } from "../api/products-client";
+import { getAllProducts } from "../api/products-client";
 import { hydrateCart, indexProductVariants } from "../lib/cart-hydration";
-
-const CART_PRODUCT_POOL_LIMIT = 100; // Be-Capstone's own max `limit` value
 
 export function useCart(): {
   data: CartSummary | undefined;
@@ -37,16 +35,13 @@ export function useCart(): {
 
   const poolQuery = useQuery({
     queryKey: queryKeys.productPool,
-    queryFn: () => getProducts({ limit: CART_PRODUCT_POOL_LIMIT }),
+    queryFn: getAllProducts,
     staleTime: 60_000,
   });
 
   const data =
     itemsQuery.data && poolQuery.data
-      ? hydrateCart(
-          itemsQuery.data,
-          indexProductVariants(poolQuery.data.products),
-        )
+      ? hydrateCart(itemsQuery.data, indexProductVariants(poolQuery.data))
       : undefined;
 
   return {

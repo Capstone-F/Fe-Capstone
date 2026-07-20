@@ -16,7 +16,8 @@ export const queryKeys = {
   productPool: ["productPool"] as const,
   cart: ["cart"] as const,
   deliveryOptions: ["deliveryOptions"] as const,
-  orders: ["orders"] as const,
+  orders: (query: unknown) => ["orders", query] as const,
+  ordersAll: ["orders"] as const,
   order: (id: string) => ["order", id] as const,
   payment: (id: string) => ["payment", id] as const,
 };
