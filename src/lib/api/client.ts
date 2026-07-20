@@ -34,6 +34,13 @@ export async function apiFetch(path: string, init: ApiJsonInit = {}) {
   const headers = new Headers(init.headers);
   let body = init.body;
 
+  if (typeof window !== "undefined") {
+    const token = localStorage.getItem("glowscan_access_token");
+    if (token) {
+      headers.set("Authorization", `Bearer ${token}`);
+    }
+  }
+
   if (body) {
     if (
       typeof body === "object" &&

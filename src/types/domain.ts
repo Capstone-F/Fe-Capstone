@@ -37,8 +37,11 @@ export interface UserProfile {
   name: string;
   email: string;
   phone?: string;
+  gender?: "MALE" | "FEMALE" | "OTHER" | null;
+  dateOfBirth?: string | null;
   allergies: string[];
   baumannCode?: string;
+  oilyDryScore?: number | null;
 }
 
 export interface SurveyAnswers {

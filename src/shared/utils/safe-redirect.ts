@@ -1,4 +1,4 @@
-const defaultRedirect = "/dashboard";
+const defaultRedirect = "/";
 
 export function sanitizeRedirectPath(value?: string) {
   if (!value) {

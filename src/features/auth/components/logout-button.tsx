@@ -17,11 +17,11 @@ export function LogoutButton() {
     startTransition(async () => {
       try {
         await logout();
-        router.replace("/login");
-        router.refresh();
       } catch (error) {
         console.error(error);
-        toast.error("Unable to logout cleanly.");
+      } finally {
+        router.replace("/login");
+        router.refresh();
       }
     });
   }

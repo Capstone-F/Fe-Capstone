@@ -31,20 +31,28 @@ function loadTreatmentData() {
  * Fetch user profile. When connected to the backend this calls
  * `GET /customers/me` and maps the response to the FE `UserProfile` shape.
  */
+import { SessionUser } from "@/types/auth";
+
 export async function getProfile(): Promise<UserProfile> {
   if (appConfig.useMockApi) {
     return getProfileMock();
   }
 
-  const data = await apiJson<CustomerProfileResponse>("/customers/me");
+  const [user, data] = await Promise.all([
+    apiJson<SessionUser>("/users/me"),
+    apiJson<CustomerProfileResponse>("/customers/me"),
+  ]);
 
   return {
-    id: data.customer?.id ?? DEV_BYPASS_SESSION_USER.id,
-    name: DEV_BYPASS_SESSION_USER.name || "GlowScan User",
-    email: DEV_BYPASS_SESSION_USER.email || "user@glowscan.local",
+    id: data.customer?.id ?? user.id,
+    name: user.name || "GlowScan User",
+    email: user.email || "user@glowscan.local",
     phone: data.customer?.phone ?? "",
+    gender: data.customer?.gender as any,
+    dateOfBirth: data.customer?.dateOfBirth,
     allergies: data.allergies.map((a) => a.code),
     baumannCode: data.customer?.skinType?.code,
+    oilyDryScore: data.customer?.baumannScores?.oilyDryScore,
   };
 }
 
@@ -58,8 +66,17 @@ export async function patchProfile(
     return patchProfileMock(data);
   }
 
+  if (data.name !== undefined) {
+    await apiJson<SessionUser>("/users/me", {
+      method: "PATCH",
+      body: { name: data.name },
+    });
+  }
+
   const body: Record<string, unknown> = {};
-  if (data.phone !== undefined) body.phone = data.phone;
+  if (data.phone !== undefined) body.phone = data.phone || null;
+  if (data.gender !== undefined) body.gender = data.gender || null;
+  if (data.dateOfBirth !== undefined) body.dateOfBirth = data.dateOfBirth || null;
   if (data.allergies !== undefined) body.allergyLabelCodes = data.allergies;
 
   await apiJson<CustomerProfileResponse>("/customers/me", {

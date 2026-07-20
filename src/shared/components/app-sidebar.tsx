@@ -56,7 +56,7 @@ const IconMap: Record<string, LucideIcon> = {
 const MOCK_USER = {
   name: "GlowScan Admin",
   email: "admin@glowscan.com",
-  avatar: "/avatars/shadcn.jpg",
+  avatar: "",
 };
 
 interface AppSidebarProps extends React.ComponentProps<typeof Sidebar> {
@@ -80,7 +80,7 @@ export function AppSidebar({ config, ...props }: AppSidebarProps) {
       ? {
           name: profile.name || "GlowScan User",
           email: profile.email || "user@glowscan.local",
-          avatar: "/avatars/shadcn.jpg",
+          avatar: "",
         }
       : MOCK_USER;
 
