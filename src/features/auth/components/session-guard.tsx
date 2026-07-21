@@ -1,8 +1,7 @@
 "use client";
 
-import type { Route } from "next";
+import { usePathname } from "next/navigation";
 import { useEffect } from "react";
-import { usePathname, useRouter } from "next/navigation";
 
 import {
   Card,
@@ -21,7 +20,6 @@ export function SessionGuard({
 }: Readonly<{
   children: React.ReactNode;
 }>) {
-  const router = useRouter();
   const pathname = usePathname();
   const sessionQuery = useSession();
 

@@ -3,7 +3,6 @@
 import { LogOutIcon } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useTransition } from "react";
-import { toast } from "sonner";
 
 import { Button } from "@/shared/components/ui/button";
 

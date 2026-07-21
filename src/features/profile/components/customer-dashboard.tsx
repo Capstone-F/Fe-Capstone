@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import {
   Sun,
   Moon,
@@ -10,7 +10,7 @@ import {
   User,
   Award,
   Loader2,
-  AlertCircle
+  AlertCircle,
 } from "lucide-react";
 import { useQuery } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
@@ -24,7 +24,22 @@ export function CustomerDashboard() {
   const [activeTab, setActiveTab] = useState<
     "home" | "report" | "history" | "profile"
   >("home");
-  const [completedSteps, setCompletedSteps] = useState<Record<string, boolean>>({});
+  const [completedSteps, setCompletedSteps] = useState<Record<string, boolean>>(
+    () => {
+      if (typeof window !== "undefined") {
+        const today = new Date().toISOString().split("T")[0];
+        const saved = localStorage.getItem(`glowscan_checkin_${today}`);
+        if (saved) {
+          try {
+            return JSON.parse(saved);
+          } catch {
+            // ignore parsing error
+          }
+        }
+      }
+      return {};
+    },
+  );
 
   const { data: profileResponse, isLoading: isLoadingProfile } = useQuery({
     queryKey: ["profile"],
@@ -35,18 +50,6 @@ export function CustomerDashboard() {
     queryKey: ["routines"],
     queryFn: getMyRoutines,
   });
-
-  // Load check-in state from local storage
-  useEffect(() => {
-    const today = new Date().toISOString().split("T")[0];
-    const saved = localStorage.getItem(`glowscan_checkin_${today}`);
-    if (saved) {
-      try {
-        setCompletedSteps(JSON.parse(saved));
-      } catch (e) {}
-    }
-  }, []);
-
   const toggleRoutine = (stepId: string) => {
     const today = new Date().toISOString().split("T")[0];
     const next = { ...completedSteps, [stepId]: !completedSteps[stepId] };
@@ -59,16 +62,20 @@ export function CustomerDashboard() {
   if (isLoading) {
     return (
       <div className="flex h-[400px] w-full flex-col items-center justify-center text-center">
-        <Loader2 className="mb-4 h-8 w-8 animate-spin text-primary" />
-        <p className="text-sm font-medium text-muted-foreground">Đang tải hồ sơ...</p>
+        <Loader2 className="text-primary mb-4 h-8 w-8 animate-spin" />
+        <p className="text-muted-foreground text-sm font-medium">
+          Đang tải hồ sơ...
+        </p>
       </div>
     );
   }
 
   const activeRoutine = routines && routines.length > 0 ? routines[0] : null;
-  const morningList = activeRoutine?.steps.filter(s => s.period === "MORNING") || [];
-  const eveningList = activeRoutine?.steps.filter(s => s.period === "EVENING") || [];
-  
+  const morningList =
+    activeRoutine?.steps.filter((s) => s.period === "MORNING") || [];
+  const eveningList =
+    activeRoutine?.steps.filter((s) => s.period === "EVENING") || [];
+
   const totalItems = morningList.length + eveningList.length;
   const completedItemsCount =
     morningList.filter((item) => completedSteps[item.id]).length +
@@ -85,8 +92,8 @@ export function CustomerDashboard() {
     circumference - (progressPercentage / 100) * circumference;
 
   return (
-    <div className="bg-[#F4F3ED] animate-in fade-in relative flex min-h-[580px] w-full max-w-2xl mx-auto flex-1 flex-col pb-16 duration-300">
-      <div className="max-h-full flex-1 overflow-y-auto px-4 pr-1 pb-4 pt-6">
+    <div className="animate-in fade-in relative mx-auto flex min-h-[580px] w-full max-w-2xl flex-1 flex-col bg-[#F4F3ED] pb-16 duration-300">
+      <div className="max-h-full flex-1 overflow-y-auto px-4 pt-6 pr-1 pb-4">
         {/* Tab 1: Home (Tracker) */}
         {activeTab === "home" && (
           <div className="space-y-5">
@@ -102,13 +109,18 @@ export function CustomerDashboard() {
             </div>
 
             {totalItems === 0 ? (
-              <div className="flex flex-col items-center justify-center py-12 text-center bg-white/60 rounded-3xl border border-white/60 shadow-sm">
-                <AlertCircle className="h-10 w-10 text-muted-foreground mb-4 opacity-50" />
-                <h4 className="text-sm font-bold text-foreground">Chưa có Phác đồ</h4>
-                <p className="text-xs text-muted-foreground mt-1 max-w-[200px]">
+              <div className="flex flex-col items-center justify-center rounded-3xl border border-white/60 bg-white/60 py-12 text-center shadow-sm">
+                <AlertCircle className="text-muted-foreground mb-4 h-10 w-10 opacity-50" />
+                <h4 className="text-foreground text-sm font-bold">
+                  Chưa có Phác đồ
+                </h4>
+                <p className="text-muted-foreground mt-1 max-w-[200px] text-xs">
                   Bạn cần hoàn thành bài khảo sát cấu trúc da để nhận phác đồ.
                 </p>
-                <Button onClick={() => router.push("/scan")} className="mt-4 rounded-full bg-primary font-bold">
+                <Button
+                  onClick={() => router.push("/scan")}
+                  className="bg-primary mt-4 rounded-full font-bold"
+                >
                   Bắt đầu Khảo sát
                 </Button>
               </div>
@@ -184,7 +196,7 @@ export function CustomerDashboard() {
                           }`}
                         />
                         <div className="flex-1 space-y-1">
-                          <span className="block text-sm font-bold leading-tight">
+                          <span className="block text-sm leading-tight font-bold">
                             {item.name}
                           </span>
                           <span className="block text-[11px] leading-relaxed opacity-80">
@@ -194,13 +206,15 @@ export function CustomerDashboard() {
                       </label>
                     ))}
                     {morningList.length === 0 && (
-                      <p className="text-xs text-muted-foreground pl-2">Không có bước chăm sóc buổi sáng.</p>
+                      <p className="text-muted-foreground pl-2 text-xs">
+                        Không có bước chăm sóc buổi sáng.
+                      </p>
                     )}
                   </div>
                 </div>
 
                 <div className="space-y-2.5">
-                  <div className="flex items-center gap-1.5 pl-1.5 pt-4 text-xs font-extrabold tracking-wider text-indigo-500 uppercase">
+                  <div className="flex items-center gap-1.5 pt-4 pl-1.5 text-xs font-extrabold tracking-wider text-indigo-500 uppercase">
                     <Moon className="h-4 w-4" />
                     <span>Routine Buổi Tối</span>
                   </div>
@@ -224,7 +238,7 @@ export function CustomerDashboard() {
                           }`}
                         />
                         <div className="flex-1 space-y-1">
-                          <span className="block text-sm font-bold leading-tight">
+                          <span className="block text-sm leading-tight font-bold">
                             {item.name}
                           </span>
                           <span className="block text-[11px] leading-relaxed opacity-80">
@@ -234,7 +248,9 @@ export function CustomerDashboard() {
                       </label>
                     ))}
                     {eveningList.length === 0 && (
-                      <p className="text-xs text-muted-foreground pl-2">Không có bước chăm sóc buổi tối.</p>
+                      <p className="text-muted-foreground pl-2 text-xs">
+                        Không có bước chăm sóc buổi tối.
+                      </p>
                     )}
                   </div>
                 </div>
@@ -247,13 +263,22 @@ export function CustomerDashboard() {
         {activeTab === "report" && (
           <div className="space-y-5">
             <div>
-              <h3 className="font-heading text-foreground text-xl font-extrabold">Biểu Đồ Sức Khỏe Da</h3>
-              <p className="text-muted-foreground text-[11px]">Theo dõi chỉ số cải thiện qua các tuần</p>
+              <h3 className="font-heading text-foreground text-xl font-extrabold">
+                Biểu Đồ Sức Khỏe Da
+              </h3>
+              <p className="text-muted-foreground text-[11px]">
+                Theo dõi chỉ số cải thiện qua các tuần
+              </p>
             </div>
-            <div className="flex flex-col items-center justify-center py-16 text-center bg-white/60 rounded-3xl border border-white/60 shadow-sm">
-              <BarChart3 className="h-12 w-12 text-muted-foreground mb-4 opacity-30" />
-              <h4 className="text-sm font-bold text-foreground">Chưa có Dữ liệu Biểu đồ</h4>
-              <p className="text-xs text-muted-foreground mt-2 max-w-[200px]">Hãy duy trì check-in hàng ngày để hệ thống cập nhật tiến trình của bạn.</p>
+            <div className="flex flex-col items-center justify-center rounded-3xl border border-white/60 bg-white/60 py-16 text-center shadow-sm">
+              <BarChart3 className="text-muted-foreground mb-4 h-12 w-12 opacity-30" />
+              <h4 className="text-foreground text-sm font-bold">
+                Chưa có Dữ liệu Biểu đồ
+              </h4>
+              <p className="text-muted-foreground mt-2 max-w-[200px] text-xs">
+                Hãy duy trì check-in hàng ngày để hệ thống cập nhật tiến trình
+                của bạn.
+              </p>
             </div>
           </div>
         )}
@@ -261,13 +286,21 @@ export function CustomerDashboard() {
         {activeTab === "history" && (
           <div className="space-y-5">
             <div>
-              <h3 className="font-heading text-foreground text-xl font-extrabold">Nhật Ký Chăm Sóc Da</h3>
-              <p className="text-muted-foreground text-[11px]">Lịch sử và tiến độ hoàn thành</p>
+              <h3 className="font-heading text-foreground text-xl font-extrabold">
+                Nhật Ký Chăm Sóc Da
+              </h3>
+              <p className="text-muted-foreground text-[11px]">
+                Lịch sử và tiến độ hoàn thành
+              </p>
             </div>
-            <div className="flex flex-col items-center justify-center py-16 text-center bg-white/60 rounded-3xl border border-white/60 shadow-sm">
-              <Calendar className="h-12 w-12 text-muted-foreground mb-4 opacity-30" />
-              <h4 className="text-sm font-bold text-foreground">Nhật ký trống</h4>
-              <p className="text-xs text-muted-foreground mt-2 max-w-[200px]">Bạn chưa ghi nhận hoạt động chăm sóc da nào trong tuần này.</p>
+            <div className="flex flex-col items-center justify-center rounded-3xl border border-white/60 bg-white/60 py-16 text-center shadow-sm">
+              <Calendar className="text-muted-foreground mb-4 h-12 w-12 opacity-30" />
+              <h4 className="text-foreground text-sm font-bold">
+                Nhật ký trống
+              </h4>
+              <p className="text-muted-foreground mt-2 max-w-[200px] text-xs">
+                Bạn chưa ghi nhận hoạt động chăm sóc da nào trong tuần này.
+              </p>
             </div>
           </div>
         )}
@@ -276,8 +309,12 @@ export function CustomerDashboard() {
         {activeTab === "profile" && (
           <div className="space-y-5">
             <div>
-              <h3 className="font-heading text-foreground text-xl font-extrabold">Hồ Sơ Loại Da</h3>
-              <p className="text-muted-foreground text-[11px]">Thông tin phân tích theo chuẩn Baumann</p>
+              <h3 className="font-heading text-foreground text-xl font-extrabold">
+                Hồ Sơ Loại Da
+              </h3>
+              <p className="text-muted-foreground text-[11px]">
+                Thông tin phân tích theo chuẩn Baumann
+              </p>
             </div>
             <div className="surface-glass space-y-4 rounded-3xl bg-white/60 p-5 shadow-sm">
               <div className="border-border/50 flex items-center gap-3 border-b pb-3">
@@ -286,47 +323,57 @@ export function CustomerDashboard() {
                 </div>
                 <div>
                   <h4 className="text-foreground text-xs font-extrabold">
-                    Loại da: {profileResponse?.skinType?.code || "Chưa xác định"}
+                    Loại da: {profileResponse?.baumannCode || "Chưa xác định"}
                   </h4>
                   <span className="text-primary text-[10px] font-bold">
-                    {profileResponse?.skinType?.description || "Hãy hoàn thành khảo sát để cập nhật"}
+                    Hãy hoàn thành khảo sát để cập nhật
                   </span>
                 </div>
               </div>
               <div className="text-muted-foreground space-y-3 text-xs leading-relaxed">
                 <div>
-                  <span className="text-foreground block font-bold">Lưu ý y khoa:</span>
-                  <span>{profileResponse?.skinType?.medicalAdvice || "Hệ thống sẽ cập nhật sau khi bạn hoàn thành khảo sát."}</span>
+                  <span className="text-foreground block font-bold">
+                    Lưu ý y khoa:
+                  </span>
+                  <span>
+                    Hệ thống sẽ cập nhật sau khi bạn hoàn thành khảo sát.
+                  </span>
                 </div>
                 <div className="bg-border/40 h-[1px]" />
                 <div>
-                  <span className="text-foreground block font-bold">Đặc tính tuyến bã nhờn:</span>
+                  <span className="text-foreground block font-bold">
+                    Đặc tính tuyến bã nhờn:
+                  </span>
                   <span>
-                    {profileResponse?.skinType?.code?.includes("O") 
+                    {profileResponse?.baumannCode?.includes("O")
                       ? "Da có xu hướng tiết nhiều dầu, dễ bít tắc lỗ chân lông."
-                      : profileResponse?.skinType?.code?.includes("D")
+                      : profileResponse?.baumannCode?.includes("D")
                         ? "Da có xu hướng khô, thiếu độ ẩm."
                         : "Chưa có thông tin."}
                   </span>
                 </div>
                 <div>
-                  <span className="text-foreground block font-bold">Mức độ nhạy cảm:</span>
+                  <span className="text-foreground block font-bold">
+                    Mức độ nhạy cảm:
+                  </span>
                   <span>
-                    {profileResponse?.skinType?.code?.includes("S")
+                    {profileResponse?.baumannCode?.includes("S")
                       ? "Da nhạy cảm, dễ kích ứng hoặc mẩn đỏ."
-                      : profileResponse?.skinType?.code?.includes("R")
+                      : profileResponse?.baumannCode?.includes("R")
                         ? "Da khỏe, ít bị nhạy cảm với các sản phẩm mới."
                         : "Chưa có thông tin."}
                   </span>
                 </div>
                 <div>
-                  <span className="text-foreground block font-bold">Thông tin an toàn thai kỳ:</span>
+                  <span className="text-foreground block font-bold">
+                    Thông tin an toàn thai kỳ:
+                  </span>
                   <span>Bình thường - Không mang thai.</span>
                 </div>
               </div>
               <Button
                 variant="outline"
-                className="w-full rounded-xl border-red-100 bg-red-50/50 text-red-600 hover:bg-red-50 hover:text-red-700 mt-4"
+                className="mt-4 w-full rounded-xl border-red-100 bg-red-50/50 text-red-600 hover:bg-red-50 hover:text-red-700"
                 onClick={() => router.push("/scan")}
               >
                 Reset Phác Đồ & Khảo Sát Lại
@@ -337,7 +384,7 @@ export function CustomerDashboard() {
       </div>
 
       {/* Fixed Bottom Navigation */}
-      <div className="border-border/50 absolute right-0 bottom-0 left-0 flex items-center justify-between border-t bg-white/95 px-6 py-2.5 backdrop-blur-md pb-4">
+      <div className="border-border/50 absolute right-0 bottom-0 left-0 flex items-center justify-between border-t bg-white/95 px-6 py-2.5 pb-4 backdrop-blur-md">
         <button
           onClick={() => setActiveTab("home")}
           className={`flex flex-col items-center gap-1 p-2 transition-colors ${activeTab === "home" ? "text-primary" : "text-muted-foreground hover:text-foreground"}`}

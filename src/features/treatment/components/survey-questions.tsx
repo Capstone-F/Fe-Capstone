@@ -13,7 +13,7 @@ import {
 } from "lucide-react";
 import { Button } from "@/shared/components/ui/button";
 import { useRouter, usePathname } from "next/navigation";
-import type { Route } from "next";
+
 import { useSession } from "@/features/auth/hooks/use-session";
 import { ApiError } from "@/lib/api/client";
 import { appConfig } from "@/lib/env";
@@ -189,17 +189,18 @@ export function SurveyQuestions() {
   // If we passed all questions
   if (step > questionsCount) {
     return (
-      <div className="flex flex-1 flex-col items-center justify-center p-8 text-center space-y-6">
+      <div className="flex flex-1 flex-col items-center justify-center space-y-6 p-8 text-center">
         <h3 className="font-heading text-2xl font-bold text-[#131336]">
           Bạn đã hoàn thành các câu hỏi!
         </h3>
-        <p className="text-base text-[#131336]/70 max-w-md">
-          Hệ thống AI GlowScan sẽ tính toán điểm Baumann và thiết kế phác đồ phù hợp với làn da của bạn.
+        <p className="max-w-md text-base text-[#131336]/70">
+          Hệ thống AI GlowScan sẽ tính toán điểm Baumann và thiết kế phác đồ phù
+          hợp với làn da của bạn.
         </p>
         <Button
           onClick={handleComplete}
           disabled={isSubmittingStep}
-          className="w-full max-w-xs h-14 rounded-full bg-[#6b5cf6] px-8 text-lg font-bold text-white shadow-md hover:bg-[#5a4ae5]"
+          className="h-14 w-full max-w-xs rounded-full bg-[#6b5cf6] px-8 text-lg font-bold text-white shadow-md hover:bg-[#5a4ae5]"
         >
           {isSubmittingStep ? (
             <Loader2 className="h-5 w-5 animate-spin" />
@@ -212,18 +213,18 @@ export function SurveyQuestions() {
   }
 
   return (
-    <div className="flex flex-1 flex-col mx-auto w-full max-w-3xl">
+    <div className="mx-auto flex w-full max-w-3xl flex-1 flex-col">
       {/* Top Progress Bar */}
-      <div className="w-full bg-[#e5e5e5] h-1.5 mt-2 rounded-full overflow-hidden">
+      <div className="mt-2 h-1.5 w-full overflow-hidden rounded-full bg-[#e5e5e5]">
         <div
-          className="bg-[#6b5cf6] h-full transition-all duration-300 ease-out"
+          className="h-full bg-[#6b5cf6] transition-all duration-300 ease-out"
           style={{
             width: `${Math.min(100, (step / questionsCount) * 100)}%`,
           }}
         />
       </div>
 
-      <div className="flex-1 flex flex-col pt-12 pb-8 px-4">
+      <div className="flex flex-1 flex-col px-4 pt-12 pb-8">
         {errorMsg && (
           <div className="mb-6 rounded-lg bg-red-50 p-4 text-sm font-medium text-red-700">
             {errorMsg}
@@ -231,20 +232,20 @@ export function SurveyQuestions() {
         )}
 
         {currentQ && (
-          <div className="space-y-8 animate-in fade-in duration-300">
-            <div className="text-center space-y-3">
-              <h2 className="font-heading text-3xl md:text-4xl font-bold text-[#131336] leading-tight">
+          <div className="animate-in fade-in space-y-8 duration-300">
+            <div className="space-y-3 text-center">
+              <h2 className="font-heading text-3xl leading-tight font-bold text-[#131336] md:text-4xl">
                 {currentQ.text}
               </h2>
               {currentQ.description && (
-                <p className="text-lg text-[#131336]/70 max-w-xl mx-auto">
+                <p className="mx-auto max-w-xl text-lg text-[#131336]/70">
                   {currentQ.description}
                 </p>
               )}
             </div>
 
             {/* Options Grid */}
-            <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-2 mx-auto w-full max-w-2xl pt-6">
+            <div className="mx-auto grid w-full max-w-2xl gap-4 pt-6 sm:grid-cols-2 lg:grid-cols-2">
               {currentQ.options && currentQ.options.length > 0 ? (
                 currentQ.options.map((option) => {
                   const selected = (
@@ -255,7 +256,7 @@ export function SurveyQuestions() {
                     <div
                       key={option.labelCode}
                       onClick={() => handleOptionClick(option.labelCode)}
-                      className={`relative flex cursor-pointer flex-col p-6 rounded-xl border-2 transition-all duration-200 bg-white shadow-sm hover:shadow-md ${
+                      className={`relative flex cursor-pointer flex-col rounded-xl border-2 bg-white p-6 shadow-sm transition-all duration-200 hover:shadow-md ${
                         selected
                           ? "border-[#6b5cf6] ring-1 ring-[#6b5cf6]"
                           : "border-transparent ring-1 ring-[#e5e5e5] hover:ring-[#6b5cf6]/50"
@@ -269,7 +270,7 @@ export function SurveyQuestions() {
                         {option.name}
                       </span>
                       {option.description && (
-                        <span className="mt-2 text-sm text-[#131336]/60 leading-relaxed">
+                        <span className="mt-2 text-sm leading-relaxed text-[#131336]/60">
                           {option.description}
                         </span>
                       )}
@@ -285,7 +286,7 @@ export function SurveyQuestions() {
                     onChange={(e) =>
                       setDynamicAnswer(currentQ.id, [], e.target.value)
                     }
-                    className="w-full rounded-xl border border-[#e5e5e5] bg-white p-4 text-base text-[#131336] placeholder:text-[#131336]/40 focus:border-[#6b5cf6] focus:outline-none focus:ring-1 focus:ring-[#6b5cf6]"
+                    className="w-full rounded-xl border border-[#e5e5e5] bg-white p-4 text-base text-[#131336] placeholder:text-[#131336]/40 focus:border-[#6b5cf6] focus:ring-1 focus:ring-[#6b5cf6] focus:outline-none"
                   />
                 </div>
               )}
@@ -295,7 +296,7 @@ export function SurveyQuestions() {
       </div>
 
       {/* Bottom Actions Fixed/Sticky Footer */}
-      <div className="sticky bottom-0 left-0 w-full bg-[#F4F3ED] border-t border-[#e5e5e5] p-4 z-10">
+      <div className="sticky bottom-0 left-0 z-10 w-full border-t border-[#e5e5e5] bg-[#F4F3ED] p-4">
         <div className="mx-auto flex w-full max-w-2xl items-center justify-between gap-4">
           <Button
             variant="ghost"
@@ -308,10 +309,10 @@ export function SurveyQuestions() {
           <Button
             onClick={handleNext}
             disabled={isSubmittingStep}
-            className="h-14 flex-[2] rounded-full bg-[#6b5cf6] text-lg font-bold text-white hover:bg-[#5a4ae5] shadow-md disabled:opacity-70 disabled:cursor-not-allowed"
+            className="h-14 flex-[2] rounded-full bg-[#6b5cf6] text-lg font-bold text-white shadow-md hover:bg-[#5a4ae5] disabled:cursor-not-allowed disabled:opacity-70"
           >
             {isSubmittingStep ? (
-              <Loader2 className="h-5 w-5 animate-spin mx-auto" />
+              <Loader2 className="mx-auto h-5 w-5 animate-spin" />
             ) : (
               <span>Tiếp tục</span>
             )}

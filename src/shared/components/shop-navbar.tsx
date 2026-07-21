@@ -11,7 +11,7 @@ import {
   Sparkles,
   UserCircle2,
 } from "lucide-react";
-import { toast } from "sonner";
+
 import { useCart } from "@/features/commerce/hooks/use-cart";
 import { useMergeGuestCartOnLogin } from "@/features/commerce/hooks/use-merge-guest-cart-on-login";
 import { useSession } from "@/features/auth/hooks/use-session";

@@ -8,7 +8,6 @@ import { ReportScreen } from "./report-screen";
 import { PlanScreen } from "./plan-screen";
 import { PurchaseScreen } from "./purchase-screen";
 import { SuccessScreen } from "./success-screen";
-import { DashboardScreen } from "./dashboard-screen";
 
 export function TreatmentFlow() {
   const { state } = useTreatment();
