@@ -1,5 +1,6 @@
 import { apiJson } from "@/lib/api/client";
-import { CartItem } from "@/types/domain";
+
+import type { CartItem, CartResponse } from "../types/cart";
 import { ensureCustomerProvisioned } from "./customers-client";
 
 export const CART_API_PATHS = {
@@ -8,12 +9,6 @@ export const CART_API_PATHS = {
   REMOVE_ITEM: (variantId: string) => `/cart/items/${variantId}`,
   CLEAR: "/cart",
 };
-
-interface CartResponse {
-  source: "SURVEY" | "CATALOG" | null;
-  surveyRecommendationId: string | null;
-  items: CartItem[];
-}
 
 let provisioned = false;
 

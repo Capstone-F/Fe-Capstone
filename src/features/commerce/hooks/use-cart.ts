@@ -13,9 +13,12 @@ import {
   readGuestCart,
   removeGuestItem,
   setGuestQty,
-} from "../lib/guest-cart";
-import { getAllProducts } from "../api/products-client";
-import { hydrateCart, indexProductVariants } from "../lib/cart-hydration";
+} from "@/features/commerce/api/guest-cart";
+import { getProducts } from "../api/products-client";
+import {
+  hydrateCart,
+  indexProductVariants,
+} from "@/features/commerce/mapper/cart-hydration";
 
 export function useCart(): {
   data: CartSummary | undefined;

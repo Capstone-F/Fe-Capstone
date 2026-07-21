@@ -1,5 +1,5 @@
-import { Skeleton } from "@/components/ui/skeleton";
-import { Card, CardContent } from "@/components/ui/card";
+import { Skeleton } from "@/shared/components/ui/skeleton";
+import { Card, CardContent } from "@/shared/components/ui/card";
 
 // Loading placeholder mirroring the appointment card layout.
 export function AppointmentCardSkeleton() {

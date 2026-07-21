@@ -1,17 +1,9 @@
 import { apiJson } from "@/lib/api/client";
 import { appConfig } from "@/lib/env";
-import {
-  DEV_BYPASS_SESSION_USER,
-  type AuthStatus,
-  type SessionUser,
-} from "@/types/auth";
+import { sanitizeRedirectPath } from "@/shared/utils/safe-redirect";
 
-import { sanitizeRedirectPath } from "../lib/safe-redirect";
-
-type StartLoginInput = {
-  redirectTo?: string;
-  idpHint?: "google";
-};
+import { DEV_BYPASS_SESSION_USER } from "../constants/session-dev";
+import type { AuthStatus, SessionUser, StartLoginInput } from "../types/auth";
 
 export async function getSession() {
   if (appConfig.devBypassAuth) {

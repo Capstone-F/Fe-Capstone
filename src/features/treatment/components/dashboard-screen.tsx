@@ -14,9 +14,9 @@ import {
   TrendingUp,
   History,
 } from "lucide-react";
-import { Button } from "@/components/ui/button";
-import { useTreatment } from "../context/treatment-context";
-import { Checkbox } from "@/components/ui/checkbox";
+import { Button } from "@/shared/components/ui/button";
+import { useTreatment } from "@/features/treatment/components/treatment-context";
+import { Checkbox } from "@/shared/components/ui/checkbox";
 
 export function DashboardScreen() {
   const { state, toggleRoutine, resetAll } = useTreatment();

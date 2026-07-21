@@ -6,8 +6,11 @@ import { toast } from "sonner";
 import { queryKeys } from "@/lib/query/keys";
 import { vi } from "@/config/locales/vi";
 import { useSession } from "@/features/auth/hooks/use-session";
-import { clearGuestCart, readGuestCart } from "../lib/guest-cart";
-import { mergeGuestCartIntoServer } from "../lib/merge-guest-cart";
+import {
+  clearGuestCart,
+  readGuestCart,
+} from "@/features/commerce/api/guest-cart";
+import { mergeGuestCartIntoServer } from "@/features/commerce/api/merge-guest-cart";
 
 /**
  * When the session transitions to authenticated and a guest cart exists,

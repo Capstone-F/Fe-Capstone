@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import { JetBrains_Mono, Manrope, Space_Grotesk } from "next/font/google";
 
-import { AppProviders } from "@/components/providers/app-providers";
+import { AppProviders } from "@/shared/components/providers/app-providers";
 import { appConfig } from "@/lib/env";
 
 import "./globals.css";

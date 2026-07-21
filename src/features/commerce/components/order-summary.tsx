@@ -1,8 +1,13 @@
 import { CartSummary } from "@/types/domain";
 import { vi } from "@/config/locales/vi";
-import { formatVnd } from "../lib/format";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
+import { formatVnd } from "@/shared/utils/format";
+import {
+  Card,
+  CardContent,
+  CardHeader,
+  CardTitle,
+} from "@/shared/components/ui/card";
+import { Button } from "@/shared/components/ui/button";
 
 interface OrderSummaryProps {
   summary: CartSummary;

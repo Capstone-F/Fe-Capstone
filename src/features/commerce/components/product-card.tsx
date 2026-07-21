@@ -4,10 +4,10 @@ import Link from "next/link";
 import { ShoppingCart } from "lucide-react";
 import { Product } from "@/types/domain";
 import { vi } from "@/config/locales/vi";
-import { formatVnd } from "../lib/format";
-import { primaryVariant } from "../lib/variant";
-import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardFooter } from "@/components/ui/card";
+import { formatVnd } from "@/shared/utils/format";
+import { primaryVariant } from "@/features/commerce/mapper/variant";
+import { Button } from "@/shared/components/ui/button";
+import { Card, CardContent, CardFooter } from "@/shared/components/ui/card";
 import { CategoryPlaceholder } from "./category-placeholder";
 
 interface ProductCardProps {

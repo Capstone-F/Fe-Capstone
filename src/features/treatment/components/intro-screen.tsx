@@ -1,9 +1,9 @@
 "use client";
 
 import { ArrowLeft, Sparkles, User, MapPin, ShieldCheck } from "lucide-react";
-import { Button } from "@/components/ui/button";
+import { Button } from "@/shared/components/ui/button";
 import { useRouter } from "next/navigation";
-import { useTreatment } from "../context/treatment-context";
+import { useTreatment } from "@/features/treatment/components/treatment-context";
 
 export function IntroScreen() {
   const { setFlowState } = useTreatment();

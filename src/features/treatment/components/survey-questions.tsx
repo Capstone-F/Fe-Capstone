@@ -11,13 +11,13 @@ import {
   HelpCircle,
   Loader2,
 } from "lucide-react";
-import { Button } from "@/components/ui/button";
+import { Button } from "@/shared/components/ui/button";
 import { useRouter, usePathname } from "next/navigation";
 import type { Route } from "next";
 import { useSession } from "@/features/auth/hooks/use-session";
 import { ApiError } from "@/lib/api/client";
 import { appConfig } from "@/lib/env";
-import { useTreatment } from "../context/treatment-context";
+import { useTreatment } from "@/features/treatment/components/treatment-context";
 
 export function SurveyQuestions() {
   const {

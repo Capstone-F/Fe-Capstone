@@ -1,3 +1,5 @@
-import ScanPage from "@/app/scan/page";
+import { SurveyPage } from "@/features/survey/pages/survey-page";
 
-export default ScanPage;
+export default function Page() {
+  return <SurveyPage />;
+}

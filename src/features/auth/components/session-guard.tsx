@@ -4,8 +4,13 @@ import type { Route } from "next";
 import { useEffect } from "react";
 import { usePathname, useRouter } from "next/navigation";
 
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Skeleton } from "@/components/ui/skeleton";
+import {
+  Card,
+  CardContent,
+  CardHeader,
+  CardTitle,
+} from "@/shared/components/ui/card";
+import { Skeleton } from "@/shared/components/ui/skeleton";
 import { ApiError } from "@/lib/api/client";
 import { appConfig } from "@/lib/env";
 

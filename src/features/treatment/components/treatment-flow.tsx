@@ -1,6 +1,6 @@
 "use client";
 
-import { useTreatment } from "../context/treatment-context";
+import { useTreatment } from "@/features/treatment/components/treatment-context";
 import { IntroScreen } from "./intro-screen";
 import { SurveyQuestions } from "./survey-questions";
 import { AnalyzingScreen } from "./analyzing-screen";
