@@ -48,7 +48,7 @@ export async function getProfile(): Promise<UserProfile> {
     name: user.name || "GlowScan User",
     email: user.email || "user@glowscan.local",
     phone: data.customer?.phone ?? "",
-    gender: data.customer?.gender as any,
+    gender: data.customer?.gender as "MALE" | "FEMALE" | "OTHER",
     dateOfBirth: data.customer?.dateOfBirth,
     allergies: data.allergies.map((a) => a.code),
     baumannCode: data.customer?.skinType?.code,
@@ -76,7 +76,8 @@ export async function patchProfile(
   const body: Record<string, unknown> = {};
   if (data.phone !== undefined) body.phone = data.phone || null;
   if (data.gender !== undefined) body.gender = data.gender || null;
-  if (data.dateOfBirth !== undefined) body.dateOfBirth = data.dateOfBirth || null;
+  if (data.dateOfBirth !== undefined)
+    body.dateOfBirth = data.dateOfBirth || null;
   if (data.allergies !== undefined) body.allergyLabelCodes = data.allergies;
 
   await apiJson<CustomerProfileResponse>("/customers/me", {

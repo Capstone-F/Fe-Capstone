@@ -29,7 +29,7 @@ import {
 } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useTransition } from "react";
-import { toast } from "sonner";
+
 import { logout } from "@/features/auth/api/auth-client";
 
 export function NavUser({
@@ -120,7 +120,7 @@ export function NavUser({
             <DropdownMenuItem
               onClick={handleLogout}
               disabled={isPending}
-              className="cursor-pointer text-destructive focus:text-destructive"
+              className="text-destructive focus:text-destructive cursor-pointer"
             >
               <LogOutIcon className="mr-2 size-4" />
               <span>{isPending ? "Đang đăng xuất..." : "Log out"}</span>
@@ -131,4 +131,3 @@ export function NavUser({
     </SidebarMenu>
   );
 }
-

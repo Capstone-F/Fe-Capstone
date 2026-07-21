@@ -1,6 +1,12 @@
 "use client";
 
-import { Sparkles, ShieldCheck, ArrowRight, HeartPulse, CheckCircle2 } from "lucide-react";
+import {
+  Sparkles,
+  ShieldCheck,
+  ArrowRight,
+  HeartPulse,
+  CheckCircle2,
+} from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useState, useTransition, useEffect } from "react";
@@ -32,7 +38,7 @@ export function LoginPanel({ redirectTo }: LoginPanelProps) {
   useEffect(() => {
     const token = localStorage.getItem("glowscan_access_token");
     if (token) {
-      router.replace(redirectTo as any);
+      router.replace(redirectTo);
     }
   }, [router, redirectTo]);
 
@@ -60,9 +66,11 @@ export function LoginPanel({ redirectTo }: LoginPanelProps) {
       }
       // Redirect to target path
       window.location.href = redirectTo || "/";
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error(error);
-      const msg = error?.message || "Đăng nhập thất bại. Vui lòng kiểm tra lại thông tin.";
+      const e = error as Error;
+      const msg =
+        e?.message || "Đăng nhập thất bại. Vui lòng kiểm tra lại thông tin.";
       toast.error(msg);
     } finally {
       setIsSubmitting(false);
@@ -89,8 +97,8 @@ export function LoginPanel({ redirectTo }: LoginPanelProps) {
     <div className="relative min-h-screen w-full bg-[#FAF8F5] text-[#2C3E35] selection:bg-[#E2EBE6]">
       {/* Subtle organic background gradient accents */}
       <div className="pointer-events-none absolute top-0 left-0 -z-10 h-full w-full overflow-hidden">
-        <div className="absolute top-[-10%] right-[-5%] h-[600px] w-[600px] rounded-full bg-[#EBF2EE] blur-3xl opacity-80" />
-        <div className="absolute bottom-[-10%] left-[-5%] h-[500px] w-[500px] rounded-full bg-[#F5EFE6] blur-3xl opacity-70" />
+        <div className="absolute top-[-10%] right-[-5%] h-[600px] w-[600px] rounded-full bg-[#EBF2EE] opacity-80 blur-3xl" />
+        <div className="absolute bottom-[-10%] left-[-5%] h-[500px] w-[500px] rounded-full bg-[#F5EFE6] opacity-70 blur-3xl" />
       </div>
 
       {/* Header / Brand Logo */}
@@ -100,7 +108,8 @@ export function LoginPanel({ redirectTo }: LoginPanelProps) {
             <Sparkles className="h-4.5 w-4.5 text-[#E0F2E9]" />
           </div>
           <span className="font-serif text-xl font-bold tracking-tight text-[#2C3E35]">
-            Glow<span className="font-sans font-light text-[#5C7468]">Scan</span>
+            Glow
+            <span className="font-sans font-light text-[#5C7468]">Scan</span>
           </span>
         </Link>
         <Link
@@ -112,7 +121,7 @@ export function LoginPanel({ redirectTo }: LoginPanelProps) {
       </header>
 
       {/* Main Content: Split layout inspired by Curology */}
-      <main className="mx-auto grid max-w-6xl gap-12 px-6 py-8 md:grid-cols-12 md:py-16 sm:px-8 items-center">
+      <main className="mx-auto grid max-w-6xl items-center gap-12 px-6 py-8 sm:px-8 md:grid-cols-12 md:py-16">
         {/* Left Column: Brand & Medical Value Proposition */}
         <div className="space-y-8 md:col-span-7 lg:col-span-6">
           <div className="inline-flex items-center gap-2 rounded-full border border-[#D5E2DC] bg-white/80 px-3.5 py-1.5 text-xs font-medium text-[#3A5246] shadow-2xs backdrop-blur-xs">
@@ -125,17 +134,21 @@ export function LoginPanel({ redirectTo }: LoginPanelProps) {
               Hành trình làn da khỏe đẹp của bạn bắt đầu từ đây.
             </h1>
             <p className="max-w-xl text-base leading-relaxed text-[#5C7468] sm:text-lg">
-              Phân tích chuyên sâu theo 16 loại da Baumann. Được thiết kế bởi đội ngũ bác sĩ da liễu hàng đầu để mang lại công thức phù hợp nhất cho riêng bạn.
+              Phân tích chuyên sâu theo 16 loại da Baumann. Được thiết kế bởi
+              đội ngũ bác sĩ da liễu hàng đầu để mang lại công thức phù hợp nhất
+              cho riêng bạn.
             </p>
           </div>
 
           {/* Value points */}
-          <div className="space-y-3.5 pt-2 border-t border-[#E8EFEB]">
+          <div className="space-y-3.5 border-t border-[#E8EFEB] pt-2">
             <div className="flex items-center gap-3 text-sm text-[#3A5246]">
               <div className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-[#E2EBE6] text-[#2C3E35]">
                 <CheckCircle2 className="h-3.5 w-3.5" />
               </div>
-              <span>Phác đồ chăm sóc cá nhân hóa theo từng biến đổi của da</span>
+              <span>
+                Phác đồ chăm sóc cá nhân hóa theo từng biến đổi của da
+              </span>
             </div>
             <div className="flex items-center gap-3 text-sm text-[#3A5246]">
               <div className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-[#E2EBE6] text-[#2C3E35]">
@@ -166,11 +179,11 @@ export function LoginPanel({ redirectTo }: LoginPanelProps) {
             </div>
 
             {/* Toggle tabs */}
-            <div className="flex border-b border-[#E0E8E4] mb-5">
+            <div className="mb-5 flex border-b border-[#E0E8E4]">
               <button
                 type="button"
                 onClick={() => setMode("login")}
-                className={`flex-1 pb-2.5 text-sm font-bold border-b-2 transition-colors ${
+                className={`flex-1 border-b-2 pb-2.5 text-sm font-bold transition-colors ${
                   mode === "login"
                     ? "border-[#2C3E35] text-[#2C3E35]"
                     : "border-transparent text-[#6A8275] hover:text-[#2C3E35]"
@@ -181,7 +194,7 @@ export function LoginPanel({ redirectTo }: LoginPanelProps) {
               <button
                 type="button"
                 onClick={() => setMode("register")}
-                className={`flex-1 pb-2.5 text-sm font-bold border-b-2 transition-colors ${
+                className={`flex-1 border-b-2 pb-2.5 text-sm font-bold transition-colors ${
                   mode === "register"
                     ? "border-[#2C3E35] text-[#2C3E35]"
                     : "border-transparent text-[#6A8275] hover:text-[#2C3E35]"
@@ -194,7 +207,10 @@ export function LoginPanel({ redirectTo }: LoginPanelProps) {
             <form onSubmit={handleSubmit} className="space-y-4">
               {mode === "register" && (
                 <div className="space-y-1.5">
-                  <Label htmlFor="reg-name" className="text-xs font-bold text-[#2C3E35]">
+                  <Label
+                    htmlFor="reg-name"
+                    className="text-xs font-bold text-[#2C3E35]"
+                  >
                     Họ và tên
                   </Label>
                   <Input
@@ -202,14 +218,17 @@ export function LoginPanel({ redirectTo }: LoginPanelProps) {
                     placeholder="Nhập họ và tên..."
                     value={name}
                     onChange={(e) => setName(e.target.value)}
-                    className="h-11 rounded-xl border-[#E0E8E4] focus-visible:ring-[#2C3E35] text-sm"
+                    className="h-11 rounded-xl border-[#E0E8E4] text-sm focus-visible:ring-[#2C3E35]"
                     required
                   />
                 </div>
               )}
 
               <div className="space-y-1.5">
-                <Label htmlFor="login-email" className="text-xs font-bold text-[#2C3E35]">
+                <Label
+                  htmlFor="login-email"
+                  className="text-xs font-bold text-[#2C3E35]"
+                >
                   Địa chỉ Email
                 </Label>
                 <Input
@@ -218,13 +237,16 @@ export function LoginPanel({ redirectTo }: LoginPanelProps) {
                   placeholder="name@example.com"
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
-                  className="h-11 rounded-xl border-[#E0E8E4] focus-visible:ring-[#2C3E35] text-sm"
+                  className="h-11 rounded-xl border-[#E0E8E4] text-sm focus-visible:ring-[#2C3E35]"
                   required
                 />
               </div>
 
               <div className="space-y-1.5">
-                <Label htmlFor="login-password" className="text-xs font-bold text-[#2C3E35]">
+                <Label
+                  htmlFor="login-password"
+                  className="text-xs font-bold text-[#2C3E35]"
+                >
                   Mật khẩu
                 </Label>
                 <Input
@@ -233,7 +255,7 @@ export function LoginPanel({ redirectTo }: LoginPanelProps) {
                   placeholder="••••••••"
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
-                  className="h-11 rounded-xl border-[#E0E8E4] focus-visible:ring-[#2C3E35] text-sm"
+                  className="h-11 rounded-xl border-[#E0E8E4] text-sm focus-visible:ring-[#2C3E35]"
                   required
                 />
               </div>
@@ -241,7 +263,7 @@ export function LoginPanel({ redirectTo }: LoginPanelProps) {
               <Button
                 type="submit"
                 disabled={isSubmitting}
-                className="group relative h-12 w-full rounded-xl bg-[#2C3E35] px-6 text-sm font-bold text-white shadow-md transition-all duration-200 hover:bg-[#3A5246] hover:shadow-lg active:scale-[0.99] mt-2"
+                className="group relative mt-2 h-12 w-full rounded-xl bg-[#2C3E35] px-6 text-sm font-bold text-white shadow-md transition-all duration-200 hover:bg-[#3A5246] hover:shadow-lg active:scale-[0.99]"
               >
                 {isSubmitting ? (
                   <span className="flex items-center justify-center gap-2">
@@ -250,7 +272,9 @@ export function LoginPanel({ redirectTo }: LoginPanelProps) {
                   </span>
                 ) : (
                   <span className="flex items-center justify-center gap-2">
-                    <span>{mode === "login" ? "Đăng nhập ngay" : "Tạo tài khoản"}</span>
+                    <span>
+                      {mode === "login" ? "Đăng nhập ngay" : "Tạo tài khoản"}
+                    </span>
                     <ArrowRight className="h-4 w-4 transition-transform group-hover:translate-x-1" />
                   </span>
                 )}
@@ -261,7 +285,7 @@ export function LoginPanel({ redirectTo }: LoginPanelProps) {
               <div className="absolute inset-0 flex items-center">
                 <div className="w-full border-t border-[#F0F4F2]"></div>
               </div>
-              <span className="relative bg-white px-3.5 text-[11px] font-bold text-[#7A9284] uppercase tracking-wider">
+              <span className="relative bg-white px-3.5 text-[11px] font-bold tracking-wider text-[#7A9284] uppercase">
                 Hoặc kết nối bằng IDP
               </span>
             </div>
@@ -347,4 +371,3 @@ export function LoginPanel({ redirectTo }: LoginPanelProps) {
     </div>
   );
 }
-

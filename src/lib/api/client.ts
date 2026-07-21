@@ -70,6 +70,9 @@ export async function apiFetch(path: string, init: ApiJsonInit = {}) {
   });
 
   if (!response.ok) {
+    if (response.status === 401 && typeof window !== "undefined") {
+      localStorage.removeItem("glowscan_access_token");
+    }
     throw new ApiError(
       `Request failed for ${path}`,
       response.status,

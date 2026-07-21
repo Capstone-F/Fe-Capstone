@@ -18,7 +18,10 @@ export async function getAuthStatus() {
     return { authenticated: true } satisfies AuthStatus;
   }
 
-  if (typeof window !== "undefined" && localStorage.getItem("glowscan_access_token")) {
+  if (
+    typeof window !== "undefined" &&
+    localStorage.getItem("glowscan_access_token")
+  ) {
     return { authenticated: true } satisfies AuthStatus;
   }
 
@@ -54,7 +57,7 @@ interface MobileTokenResponse {
   accessToken: string;
   refreshToken: string;
   expiresIn: number;
-  user: any;
+  user: unknown;
 }
 
 export async function loginDirect(
