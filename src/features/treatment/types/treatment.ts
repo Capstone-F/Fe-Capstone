@@ -1,7 +1,6 @@
 import {
   SurveyRecord,
   SurveyQuestionDto,
-  SurveyResponseDto,
   RecommendationResponseDto,
   CustomerProfileResponseDto,
 } from "@/types/domain";

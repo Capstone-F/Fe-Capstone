@@ -15,13 +15,14 @@ import {
 import { useCart } from "@/features/commerce/hooks/use-cart";
 import { useMergeGuestCartOnLogin } from "@/features/commerce/hooks/use-merge-guest-cart-on-login";
 import { useSession } from "@/features/auth/hooks/use-session";
-import { logout, startLogin } from "@/features/auth/api/auth-client";
+import { logout } from "@/features/auth/api/auth-client";
 import { queryKeys } from "@/lib/query/keys";
 import { Badge } from "@/shared/components/ui/badge";
 import { Button } from "@/shared/components/ui/button";
 import {
   DropdownMenu,
   DropdownMenuContent,
+  DropdownMenuGroup,
   DropdownMenuItem,
   DropdownMenuLabel,
   DropdownMenuSeparator,
@@ -43,8 +44,7 @@ export function ShopNavbar() {
   useMergeGuestCartOnLogin();
 
   function handleLogin() {
-    // Return to the current page after Keycloak login.
-    void startLogin({ redirectTo: pathname });
+    router.push(`/login?redirectTo=${encodeURIComponent(pathname)}`);
   }
 
   function handleLogout() {
@@ -56,6 +56,7 @@ export function ShopNavbar() {
       } finally {
         queryClient.invalidateQueries({ queryKey: queryKeys.session });
         queryClient.invalidateQueries({ queryKey: queryKeys.cart });
+        router.push("/login");
         router.refresh();
       }
     });
@@ -119,13 +120,21 @@ export function ShopNavbar() {
                 </span>
               </DropdownMenuTrigger>
               <DropdownMenuContent align="end">
-                <DropdownMenuLabel>
-                  {user.name ?? user.email ?? n.account}
-                </DropdownMenuLabel>
+                <DropdownMenuGroup>
+                  <DropdownMenuLabel>
+                    {user.name ?? user.email ?? n.account}
+                  </DropdownMenuLabel>
+                </DropdownMenuGroup>
                 <DropdownMenuSeparator />
+                <DropdownMenuItem render={<Link href="/profile" />}>
+                  <UserCircle2 className="mr-2 h-4 w-4" />
+                  Trang cá nhân & Lịch trình
+                </DropdownMenuItem>
                 <DropdownMenuItem render={<Link href="/orders" />}>
+                  <ClipboardList className="mr-2 h-4 w-4" />
                   {n.orders}
                 </DropdownMenuItem>
+                <DropdownMenuSeparator />
                 <DropdownMenuItem onClick={handleLogout} disabled={isPending}>
                   <LogOut className="mr-2 h-4 w-4" />
                   {n.logout}

@@ -1,16 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import {
-  ArrowLeft,
-  ArrowRight,
-  Upload,
-  Check,
-  AlertTriangle,
-  Sparkles,
-  HelpCircle,
-  Loader2,
-} from "lucide-react";
+import { Loader2 } from "lucide-react";
 import { Button } from "@/shared/components/ui/button";
 import { useRouter, usePathname } from "next/navigation";
 
