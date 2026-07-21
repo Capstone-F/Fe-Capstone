@@ -3,6 +3,7 @@ import type { NextRequest } from "next/server";
 import { appConfig } from "@/lib/env";
 
 const hopByHopHeaders = new Set([
+  "accept-encoding",
   "connection",
   "content-length",
   "host",
@@ -60,9 +61,13 @@ async function proxyRequest(
     },
   );
 
+  const responseHeaders = new Headers(response.headers);
+  responseHeaders.delete("content-encoding");
+  responseHeaders.delete("content-length");
+
   return new Response(response.body, {
     status: response.status,
-    headers: response.headers,
+    headers: responseHeaders,
   });
 }
 
