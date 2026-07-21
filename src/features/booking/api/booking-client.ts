@@ -1,15 +1,20 @@
-import { ConsultationBooking, TimeSlot } from "@/types/domain";
-import { appConfig } from "@/lib/env";
 import { apiJson } from "@/lib/api/client";
+import { appConfig } from "@/lib/env";
 
-// Centralized endpoints for Booking
-export const BOOKING_API_PATHS = {
-  GET_SLOTS: (expertId: string) => `/bookings/${expertId}`,
-  CREATE_BOOKING: "/bookings",
-  GET_BOOKINGS: "/bookings/me",
-};
+import {
+  BOOKING_API_PATHS,
+  LOCAL_STORAGE_KEY_BOOKINGS,
+} from "../constants/booking";
+import { mapBackendBookingToFrontend } from "../mapper/booking-mapper";
+import type {
+  BackendBooking,
+  BackendBookingsResponse,
+  BackendSlotsResponse,
+  ConsultationBooking,
+  TimeSlot,
+} from "../types/booking";
 
-const LOCAL_STORAGE_KEY_BOOKINGS = "glowscan_bookings_v2";
+export { BOOKING_API_PATHS };
 
 // Helper to load/save bookings in localStorage (for mock mode)
 function loadBookings(): ConsultationBooking[] {
@@ -25,76 +30,6 @@ function loadBookings(): ConsultationBooking[] {
 function saveBookings(bookings: ConsultationBooking[]) {
   if (typeof window === "undefined") return;
   localStorage.setItem(LOCAL_STORAGE_KEY_BOOKINGS, JSON.stringify(bookings));
-}
-
-interface BackendSlot {
-  startAt: string;
-  endAt: string;
-  available: boolean;
-}
-
-interface BackendDaySlots {
-  date: string;
-  slots: BackendSlot[];
-}
-
-interface BackendSlotsResponse {
-  expertId: string;
-  sessionLengthHours: number;
-  range: string;
-  from: string;
-  to: string;
-  days: BackendDaySlots[];
-}
-
-interface BackendBooking {
-  id: string;
-  customerId: string;
-  expertId: string;
-  expertName: string | null;
-  customerName: string | null;
-  reason: string | null;
-  status: string;
-  scheduledAt: string;
-  startedAt: string | null;
-  completedAt: string | null;
-  createdAt: string;
-  updatedAt: string;
-}
-
-interface BackendBookingsResponse {
-  items: BackendBooking[];
-  total: number;
-  page: number;
-  limit: number;
-}
-
-// Map Backend Booking DTO to Frontend ConsultationBooking schema
-function mapBackendBookingToFrontend(be: BackendBooking): ConsultationBooking {
-  // Normalize backend status to frontend type
-  let status: "pending" | "confirmed" | "cancelled" | "paid" = "pending";
-  const beStatus = be.status.toLowerCase();
-
-  if (beStatus === "confirmed" || beStatus === "in_progress") {
-    status = "confirmed";
-  } else if (beStatus === "cancelled" || beStatus === "failed") {
-    status = "cancelled";
-  } else if (beStatus === "completed" || beStatus === "paid") {
-    status = "paid";
-  }
-
-  return {
-    id: be.id,
-    expertId: be.expertId,
-    expertName: be.expertName || "Chuyên gia da liễu",
-    userId: be.customerId,
-    slotId: `${be.expertId}_${be.scheduledAt}`,
-    dateTime: be.scheduledAt,
-    symptoms: be.reason || "",
-    status,
-    amount: 300000, // Consultation fee defaults to 300k VND
-    createdAt: be.createdAt,
-  };
 }
 
 // Generate slots dynamically based on the current date

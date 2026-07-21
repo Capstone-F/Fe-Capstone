@@ -4,9 +4,9 @@ import Link from "next/link";
 import { Minus, Plus, Trash2 } from "lucide-react";
 import { CartLine } from "@/types/domain";
 import { vi } from "@/config/locales/vi";
-import { formatVnd } from "../lib/format";
+import { formatVnd } from "@/shared/utils/format";
 import { CategoryPlaceholder } from "./category-placeholder";
-import { Button } from "@/components/ui/button";
+import { Button } from "@/shared/components/ui/button";
 
 interface CartItemRowProps {
   line: CartLine;

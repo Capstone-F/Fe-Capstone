@@ -1,7 +1,10 @@
 import Image from "next/image";
 import { Layers } from "lucide-react";
 import { cn } from "@/lib/utils";
-import { getCategoryIcon, getCategoryLabel } from "../lib/category-mapper";
+import {
+  getCategoryIcon,
+  getCategoryLabel,
+} from "@/features/commerce/mapper/category-mapper";
 
 /**
  * Be-Capstone has no product-image field — render the category's custom icon

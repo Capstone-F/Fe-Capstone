@@ -1,5 +1,17 @@
 import { apiJson } from "@/lib/api/client";
-import { Product, ProductCategory, ProductDetail } from "@/types/domain";
+
+import type {
+  PaginatedProductsResponse,
+  Product,
+  ProductCategory,
+  ProductCategoryResponse,
+  ProductDetail,
+  ProductDetailResponse,
+  ProductQuery,
+  ProductsPage,
+} from "../types/product";
+
+export type { ProductQuery, ProductsPage };
 
 // Paths are unprefixed to match Be-Capstone in dev (setGlobalPrefix('api')
 // only applies when NODE_ENV=production — see Global Constraints).
@@ -8,75 +20,6 @@ export const PRODUCT_API_PATHS = {
   GET_PRODUCT_DETAIL: (id: string) => `/products/${id}`,
   GET_CATEGORIES: "/products/categories",
 };
-
-export type ProductSort = "featured" | "price_asc" | "price_desc";
-
-export interface ProductQuery {
-  categoryId?: string;
-  brandName?: string;
-  ingredientName?: string;
-  query?: string;
-  page?: number;
-  limit?: number;
-}
-
-interface ProductVariantResponse {
-  id: string;
-  sku: string;
-  volume: string | null;
-  packaging: string | null;
-  priceVnd: number;
-  isActive: boolean;
-}
-
-interface ProductResponse {
-  id: string;
-  name: string;
-  brandId: string;
-  brandName: string;
-  categoryId: string;
-  categoryName: string;
-  description: string | null;
-  isActive: boolean;
-  variants: ProductVariantResponse[];
-  createdAt: string;
-  updatedAt: string;
-}
-
-interface ProductIngredientResponse {
-  name: string;
-  concentrationPct: number | null;
-  isKeyIngredient: boolean;
-}
-
-interface ProductDetailResponse {
-  product: ProductResponse;
-  ingredients: ProductIngredientResponse[];
-}
-
-interface PaginatedProductsResponse {
-  items: ProductDetailResponse[];
-  total: number;
-  page: number;
-  limit: number;
-}
-
-interface ProductCategoryResponse {
-  id: string;
-  code: string;
-  name: string;
-  description: string | null;
-  isActive: boolean;
-  createdAt: string;
-  updatedAt: string;
-}
-
-export interface ProductsPage {
-  products: Product[];
-  total: number;
-  page: number;
-  limit: number;
-}
 
 function toProduct(response: ProductDetailResponse): Product {
   return response.product;

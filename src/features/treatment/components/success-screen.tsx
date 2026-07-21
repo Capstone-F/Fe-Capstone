@@ -1,8 +1,8 @@
 "use client";
 
 import { ArrowLeft, CheckCircle2, LayoutDashboard } from "lucide-react";
-import { Button } from "@/components/ui/button";
-import { useTreatment } from "../context/treatment-context";
+import { Button } from "@/shared/components/ui/button";
+import { useTreatment } from "@/features/treatment/components/treatment-context";
 
 export function SuccessScreen() {
   const { setFlowState } = useTreatment();

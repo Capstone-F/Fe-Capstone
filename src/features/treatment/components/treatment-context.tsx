@@ -8,127 +8,25 @@ import React, {
   useCallback,
 } from "react";
 import { SurveyRecord } from "@/types/domain";
-import { apiJson } from "@/lib/api/client";
 import {
-  SurveyQuestionDto,
-  SurveyResponseDto,
-  RecommendationResponseDto,
-  CustomerProfileResponseDto,
-} from "@/types/domain";
-
-export type SurveyAnswers = {
-  // Baumann
-  baumannOilyDry: "O" | "D" | "";
-  baumannSensitiveResistant: "S" | "R" | "";
-  baumannPigmentNon: "P" | "N" | "";
-  baumannWrinkleTight: "W" | "T" | "";
-  // Hydration
-  hydration: 0 | 25 | 50 | 75 | 100 | "";
-  // Current routine
-  currentRoutineProducts: string;
-  currentActiveIngredients: string[]; // Retinol, AHA, BHA, Vitamin C, Niacinamide, Benzoyl Peroxide
-  morningRoutineText: string;
-  eveningRoutineText: string;
-  irritationStatus: "none" | "mild" | "redness" | "burning" | "itchy" | "";
-  // Goals & Concern
-  treatmentGoals: string[];
-  primaryConcern: string;
-  // Health
-  pregnancy: "yes" | "no" | "declined" | "";
-  breastfeeding: "yes" | "no" | "declined" | "";
-  menstruation: "yes" | "no" | "declined" | "";
-  hormonalChanges: "yes" | "no" | "declined" | "";
-  otherDermatology: "yes" | "no" | "declined" | "";
-  prescriptionMeds: "yes" | "no" | "declined" | "";
-  // Photo
-  photoUploaded: boolean;
-  photoFile: string | null;
-};
-
-export type RoutineItem = {
-  id: string;
-  text: string;
-  completed: boolean;
-  description?: string;
-  conflictWarning?: string;
-  reason?: string;
-};
-
-export type FlowState =
-  | "intro"
-  | "survey"
-  | "analyzing"
-  | "report"
-  | "plan"
-  | "purchase"
-  | "success"
-  | "dashboard";
-
-export type DashboardTab = "home" | "report" | "history" | "profile";
-
-export type AiObservation = {
-  acneSeverity: "Nhẹ" | "Trung bình" | "Nặng";
-  darkSpots: "Nhẹ" | "Trung bình" | "Nặng";
-  poreSize: "Mịn" | "Trung bình" | "Rộng";
-  wrinkleDepth: "Thấp" | "Trung bình" | "Cao";
-};
-
-export type TreatmentData = {
-  surveyAnswers: SurveyAnswers;
-  surveyStep: number;
-  flowState: FlowState;
-  dashboardTab: DashboardTab;
-  morningRoutine: RoutineItem[];
-  eveningRoutine: RoutineItem[];
-  aiObservation: AiObservation | null;
-  surveyHistory?: SurveyRecord[];
-  // Dynamic API state
-  surveySessionId: string | null;
-  dynamicQuestions: SurveyQuestionDto[];
-  dynamicAnswers: Record<string, string[]>;
-  dynamicTextAnswers: Record<string, string>;
-  recommendations: RecommendationResponseDto | null;
-  customerProfile: CustomerProfileResponseDto | null;
-  isLoadingDynamic?: boolean;
-  dynamicError?: string | null;
-};
-
-export type SkincareProduct = {
-  id: string;
-  name: string;
-  category: string;
-  price: number;
-  originalPrice?: number;
-  brand: string;
-  reason: string;
-  conflict?: boolean;
-  conflictWarning?: string;
-};
-
-const DEFAULT_ANSWERS: SurveyAnswers = {
-  baumannOilyDry: "",
-  baumannSensitiveResistant: "",
-  baumannPigmentNon: "",
-  baumannWrinkleTight: "",
-  hydration: "",
-  currentRoutineProducts: "",
-  currentActiveIngredients: [],
-  morningRoutineText: "",
-  eveningRoutineText: "",
-  irritationStatus: "",
-  treatmentGoals: [],
-  primaryConcern: "",
-  pregnancy: "",
-  breastfeeding: "",
-  menstruation: "",
-  hormonalChanges: "",
-  otherDermatology: "",
-  prescriptionMeds: "",
-  photoUploaded: false,
-  photoFile: null,
-};
-
-const LOCAL_STORAGE_KEY = "glowscan_treatment_data_v2";
+  SurveyAnswers,
+  RoutineItem,
+  FlowState,
+  DashboardTab,
+  AiObservation,
+  TreatmentData,
+  SkincareProduct,
+} from "../types/treatment";
+import { DEFAULT_ANSWERS, LOCAL_STORAGE_KEY } from "../constants/treatment";
+import {
+  fetchQuestionsApi,
+  createSurveySessionApi,
+  submitSurveyAnswersApi,
+  fetchCustomerProfileApi,
+  fetchLatestRecommendationsApi,
+  completeSurveyApi,
+  addRecommendationToCartApi,
+} from "../api/treatment-client";
 
 type TreatmentContextType = {
   state: TreatmentData;
@@ -154,7 +52,7 @@ type TreatmentContextType = {
   addRecommendationsToCart: (productVariantIds: string[]) => Promise<boolean>;
 };
 
-const TreatmentContext = createContext<TreatmentContextType | undefined>(
+export const TreatmentContext = createContext<TreatmentContextType | undefined>(
   undefined,
 );
 
@@ -397,12 +295,9 @@ export function TreatmentProvider({ children }: { children: React.ReactNode }) {
     }));
     try {
       // 1. Get CORE questions
-      const questions =
-        await apiJson<SurveyQuestionDto[]>("/surveys/questions");
+      const questions = await fetchQuestionsApi();
       // 2. Start survey session
-      const session = await apiJson<SurveyResponseDto>("/surveys", {
-        method: "POST",
-      });
+      const session = await createSurveySessionApi();
       setState((prev) => ({
         ...prev,
         surveySessionId: session.id,
@@ -455,15 +350,10 @@ export function TreatmentProvider({ children }: { children: React.ReactNode }) {
           value: state.dynamicTextAnswers[qId],
         }));
 
-        await apiJson(`/surveys/${state.surveySessionId}/answers`, {
-          method: "POST",
-          body: { answers: payloadAnswers },
-        });
+        await submitSurveyAnswersApi(state.surveySessionId, payloadAnswers);
 
         // Check if any conditional questions (L2) unlocked
-        const nextQuestions = await apiJson<SurveyQuestionDto[]>(
-          `/surveys/questions?surveyId=${state.surveySessionId}`,
-        );
+        const nextQuestions = await fetchQuestionsApi(state.surveySessionId);
 
         setState((prev) => ({
           ...prev,
@@ -490,8 +380,7 @@ export function TreatmentProvider({ children }: { children: React.ReactNode }) {
 
   const fetchCustomerProfile = useCallback(async () => {
     try {
-      const profile =
-        await apiJson<CustomerProfileResponseDto>("/customers/me");
+      const profile = await fetchCustomerProfileApi();
       setState((prev) => ({ ...prev, customerProfile: profile }));
     } catch (e) {
       console.error("Failed to fetch customer profile:", e);
@@ -500,9 +389,7 @@ export function TreatmentProvider({ children }: { children: React.ReactNode }) {
 
   const fetchLatestRecommendations = useCallback(async () => {
     try {
-      const rec = await apiJson<RecommendationResponseDto>(
-        "/recommendations/latest",
-      );
+      const rec = await fetchLatestRecommendationsApi();
       setState((prev) => ({ ...prev, recommendations: rec }));
     } catch (e) {
       console.error("Failed to fetch latest recommendations:", e);
@@ -518,9 +405,7 @@ export function TreatmentProvider({ children }: { children: React.ReactNode }) {
     }));
     try {
       // Complete on backend
-      await apiJson(`/surveys/${state.surveySessionId}/complete`, {
-        method: "POST",
-      });
+      await completeSurveyApi(state.surveySessionId);
 
       // Generate local routines based on current answers as fallback/supplement
       generateRoutines();
@@ -559,17 +444,7 @@ export function TreatmentProvider({ children }: { children: React.ReactNode }) {
       try {
         const recommendationId = state.recommendations?.id;
         for (const variantId of productVariantIds) {
-          await apiJson("/cart/items", {
-            method: "POST",
-            body: {
-              productVariantId: variantId,
-              quantity: 1,
-              source: "SURVEY",
-              ...(recommendationId
-                ? { surveyRecommendationId: recommendationId }
-                : {}),
-            },
-          });
+          await addRecommendationToCartApi(variantId, recommendationId);
         }
         return true;
       } catch (e: unknown) {
@@ -747,10 +622,4 @@ export function TreatmentProvider({ children }: { children: React.ReactNode }) {
   );
 }
 
-export function useTreatment() {
-  const context = useContext(TreatmentContext);
-  if (!context) {
-    throw new Error("useTreatment must be used within a TreatmentProvider");
-  }
-  return context;
-}
+export { useTreatment } from "../hooks/use-treatment";

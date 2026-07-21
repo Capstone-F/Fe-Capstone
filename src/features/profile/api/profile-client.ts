@@ -1,64 +1,21 @@
+import { DEV_BYPASS_SESSION_USER } from "@/features/auth/constants/session-dev";
 import { apiJson } from "@/lib/api/client";
 import { appConfig } from "@/lib/env";
-import { UserProfile, SurveyRecord, SurveyAnswers } from "@/types/domain";
-import { DEV_BYPASS_SESSION_USER } from "@/types/auth";
+import type { SurveyAnswers, SurveyRecord } from "@/types/domain";
 
-export const PROFILE_API_PATHS = {
-  GET_PROFILE: "/customers/me",
-  UPDATE_PROFILE: "/customers/me",
-  GET_ALLERGIES: "/customers/allergies",
-  GET_SURVEY_HISTORY: "/survey/history",
-  POST_SURVEY: "/survey",
-};
+import {
+  LOCAL_STORAGE_KEY_PROFILE,
+  LOCAL_STORAGE_KEY_TREATMENT,
+  PROFILE_API_PATHS,
+} from "../constants/profile";
+import { extractBaumannFromAnswers } from "../mapper/profile-mapper";
+import type {
+  AllergyLabelResponse,
+  CustomerProfileResponse,
+  UserProfile,
+} from "../types/profile";
 
-// --- Backend response types (matching BE DTOs) ---
-
-interface AllergyLabelResponse {
-  id: string;
-  code: string;
-  name: string;
-}
-
-interface CustomerDetailsResponse {
-  id: string;
-  phone: string | null;
-  avatarUrl: string | null;
-  dateOfBirth: string | null;
-  gender: string;
-  skinType: { code: string; name: string } | null;
-  baumannScores: {
-    oilyDryScore: number | null;
-    sensitiveResistantScore: number | null;
-    pigmentedNonPigmentedScore: number | null;
-    wrinkledTightScore: number | null;
-    assessedAt: string | null;
-  } | null;
-}
-
-interface SurveyAnswerResponse {
-  questionCode: string;
-  questionText: string;
-  value: string | null;
-  labels: { code: string; name: string }[];
-}
-
-interface SurveyHistoryItemResponse {
-  id: string;
-  isCompleted: boolean;
-  completedAt: string | null;
-  createdAt: string;
-  answers: SurveyAnswerResponse[];
-}
-
-interface CustomerProfileResponse {
-  customer: CustomerDetailsResponse | null;
-  allergies: AllergyLabelResponse[];
-  surveyHistory: SurveyHistoryItemResponse[];
-}
-
-// --- localStorage fallback keys (used only in mock mode) ---
-const LOCAL_STORAGE_KEY_PROFILE = "glowscan_user_profile_v2";
-const LOCAL_STORAGE_KEY_TREATMENT = "glowscan_treatment_data_v2";
+export { PROFILE_API_PATHS };
 
 function loadTreatmentData() {
   if (typeof window === "undefined") return null;
@@ -69,10 +26,6 @@ function loadTreatmentData() {
     return null;
   }
 }
-
-// ============================================================
-// PUBLIC API — delegates to real backend or localStorage mock
-// ============================================================
 
 /**
  * Fetch user profile. When connected to the backend this calls
@@ -165,23 +118,6 @@ export async function postSurvey(
   answers: SurveyAnswers,
 ): Promise<SurveyRecord> {
   return postSurveyMock(answers);
-}
-
-// ============================================================
-// HELPER
-// ============================================================
-
-function extractBaumannFromAnswers(answers: SurveyAnswerResponse[]): string {
-  const map: Record<string, string> = {};
-  for (const a of answers) {
-    if (a.value) map[a.questionCode] = a.value;
-  }
-  return (
-    (map["OILY_DRY"] ?? "?") +
-    (map["SENSITIVE_RESISTANT"] ?? "?") +
-    (map["PIGMENTED_NON"] ?? "?") +
-    (map["WRINKLE_TIGHT"] ?? "?")
-  );
 }
 
 // ============================================================

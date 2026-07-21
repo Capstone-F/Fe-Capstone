@@ -13,9 +13,12 @@ import {
   readGuestCart,
   removeGuestItem,
   setGuestQty,
-} from "../lib/guest-cart";
+} from "@/features/commerce/api/guest-cart";
 import { getProducts } from "../api/products-client";
-import { hydrateCart, indexProductVariants } from "../lib/cart-hydration";
+import {
+  hydrateCart,
+  indexProductVariants,
+} from "@/features/commerce/mapper/cart-hydration";
 
 const CART_PRODUCT_POOL_LIMIT = 100; // Be-Capstone's own max `limit` value
 

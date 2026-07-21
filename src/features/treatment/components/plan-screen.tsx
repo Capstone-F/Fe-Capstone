@@ -8,8 +8,8 @@ import {
   AlertTriangle,
   ShieldCheck,
 } from "lucide-react";
-import { Button } from "@/components/ui/button";
-import { useTreatment } from "../context/treatment-context";
+import { Button } from "@/shared/components/ui/button";
+import { useTreatment } from "@/features/treatment/components/treatment-context";
 
 export function PlanScreen() {
   const { state, setFlowState } = useTreatment();

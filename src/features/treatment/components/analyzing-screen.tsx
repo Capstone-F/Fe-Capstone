@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { useTreatment } from "../context/treatment-context";
+import { useTreatment } from "@/features/treatment/components/treatment-context";
 import { Cpu, Sparkles } from "lucide-react";
 
 export function AnalyzingScreen() {

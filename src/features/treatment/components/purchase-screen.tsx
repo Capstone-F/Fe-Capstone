@@ -10,8 +10,8 @@ import {
   Check,
   Loader2,
 } from "lucide-react";
-import { Button } from "@/components/ui/button";
-import { useTreatment } from "../context/treatment-context";
+import { Button } from "@/shared/components/ui/button";
+import { useTreatment } from "@/features/treatment/components/treatment-context";
 
 export function PurchaseScreen() {
   const {

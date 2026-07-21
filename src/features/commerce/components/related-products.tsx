@@ -5,7 +5,7 @@ import { Product } from "@/types/domain";
 import { vi } from "@/config/locales/vi";
 import { useProducts } from "../hooks/use-products";
 import { useAddToCart } from "../hooks/use-cart";
-import { primaryVariant } from "../lib/variant";
+import { primaryVariant } from "@/features/commerce/mapper/variant";
 import { ProductCard } from "./product-card";
 
 const d = vi.commerce.detail;

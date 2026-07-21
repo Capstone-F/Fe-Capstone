@@ -2,14 +2,14 @@
 
 import { ChevronLeft, ChevronRight } from "lucide-react";
 import { vi } from "@/config/locales/vi";
-import { Button } from "@/components/ui/button";
+import { Button } from "@/shared/components/ui/button";
 import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from "@/components/ui/select";
+} from "@/shared/components/ui/select";
 
 const PAGE_SIZE_OPTIONS = [8, 12, 24] as const;
 
