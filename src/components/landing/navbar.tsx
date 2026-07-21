@@ -6,6 +6,7 @@ import { Sparkles, Menu, ArrowRight } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
+import Image from "next/image";
 
 export function Navbar() {
   const [isScrolled, setIsScrolled] = useState(false);
@@ -37,8 +38,8 @@ export function Navbar() {
       <div className="mx-auto flex h-16 max-w-7xl items-center justify-between px-4 sm:px-6 lg:px-8">
         {/* Logo */}
         <Link href="/" className="group flex items-center gap-2">
-          <div className="bg-primary flex h-9 w-9 items-center justify-center rounded-xl text-white shadow-md transition-transform duration-300 group-hover:scale-105">
-            <Sparkles className="h-5 w-5 animate-pulse" />
+          <div className="flex h-9 items-center justify-center rounded-xl transition-transform duration-300 group-hover:scale-105">
+            <Image src="/icon.png" alt="Logo" width={90} height={90} />
           </div>
           <span className="font-heading text-foreground group-hover:text-primary text-xl font-bold tracking-tight transition-colors">
             Glow<span className="text-primary">Scan</span>
