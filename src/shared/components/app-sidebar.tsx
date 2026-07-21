@@ -2,10 +2,10 @@
 
 import * as React from "react";
 
-import { NavDocuments } from "@/components/nav-documents";
-import { NavMain } from "@/components/nav-main";
-import { NavSecondary } from "@/components/nav-secondary";
-import { NavUser } from "@/components/nav-user";
+import { NavDocuments } from "@/shared/components/nav-documents";
+import { NavMain } from "@/shared/components/nav-main";
+import { NavSecondary } from "@/shared/components/nav-secondary";
+import { NavUser } from "@/shared/components/nav-user";
 import {
   Sidebar,
   SidebarContent,
@@ -14,7 +14,7 @@ import {
   SidebarMenu,
   SidebarMenuButton,
   SidebarMenuItem,
-} from "@/components/ui/sidebar";
+} from "@/shared/components/ui/sidebar";
 import {
   LayoutDashboardIcon,
   ListIcon,

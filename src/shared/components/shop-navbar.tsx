@@ -17,8 +17,8 @@ import { useMergeGuestCartOnLogin } from "@/features/commerce/hooks/use-merge-gu
 import { useSession } from "@/features/auth/hooks/use-session";
 import { logout, startLogin } from "@/features/auth/api/auth-client";
 import { queryKeys } from "@/lib/query/keys";
-import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
+import { Badge } from "@/shared/components/ui/badge";
+import { Button } from "@/shared/components/ui/button";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -26,7 +26,7 @@ import {
   DropdownMenuLabel,
   DropdownMenuSeparator,
   DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
+} from "@/shared/components/ui/dropdown-menu";
 import { vi } from "@/config/locales/vi";
 
 export function ShopNavbar() {
