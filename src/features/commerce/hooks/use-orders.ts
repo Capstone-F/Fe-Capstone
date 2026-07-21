@@ -7,7 +7,7 @@ import { Order } from "@/types/domain";
 import { useSession } from "@/features/auth/hooks/use-session";
 import { getAllProducts } from "../api/products-client";
 import { getOrder, getOrders, ListOrdersQuery } from "../api/orders-client";
-import { indexProductVariants } from "../lib/cart-hydration";
+import { indexProductVariants } from "../mapper/cart-hydration";
 import { hydrateOrderItems, HydratedOrderItem } from "../lib/order-hydration";
 
 /** An order plus its display-hydrated lines. */

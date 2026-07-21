@@ -1,6 +1,6 @@
 import { vi } from "@/config/locales/vi";
 import { HydratedOrderItem } from "../lib/order-hydration";
-import { formatVnd } from "../lib/format";
+import { formatVnd } from "@/shared/utils/format";
 import { CategoryPlaceholder } from "./category-placeholder";
 
 /**

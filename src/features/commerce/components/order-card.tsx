@@ -1,10 +1,10 @@
 import Link from "next/link";
 import { ChevronRight } from "lucide-react";
-import { Card, CardContent } from "@/components/ui/card";
+import { Card, CardContent } from "@/shared/components/ui/card";
 import { vi } from "@/config/locales/vi";
 import { HydratedOrder } from "../hooks/use-orders";
 import { formatOrderCode } from "../lib/order-hydration";
-import { formatVnd } from "../lib/format";
+import { formatVnd } from "@/shared/utils/format";
 import { OrderStatusBadge } from "./order-status-badge";
 import { OrderItemRow } from "./order-item-row";
 

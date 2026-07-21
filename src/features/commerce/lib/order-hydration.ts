@@ -1,5 +1,5 @@
 import { OrderItem, Product, ProductVariant } from "@/types/domain";
-import { VariantIndex } from "./cart-hydration";
+import { VariantIndex } from "../mapper/cart-hydration";
 
 export interface HydratedOrderItem {
   /** The order item id, stable across renders — safe as a React key. */

@@ -14,7 +14,7 @@ import {
   removeGuestItem,
   setGuestQty,
 } from "@/features/commerce/api/guest-cart";
-import { getProducts } from "../api/products-client";
+import { getAllProducts } from "../api/products-client";
 import {
   hydrateCart,
   indexProductVariants,
