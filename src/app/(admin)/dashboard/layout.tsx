@@ -1,6 +1,6 @@
-import { AppSidebar } from "@/components/app-sidebar";
-import { SiteHeader } from "@/components/site-header";
-import { SidebarInset, SidebarProvider } from "@/components/ui/sidebar";
+import { AppSidebar } from "@/shared/components/app-sidebar";
+import { SiteHeader } from "@/shared/components/site-header";
+import { SidebarInset, SidebarProvider } from "@/shared/components/ui/sidebar";
 import { siteConfig } from "@/config/site";
 
 export default function DashboardLayout({

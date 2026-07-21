@@ -10,14 +10,14 @@ import {
   Sparkles,
   RefreshCw,
 } from "lucide-react";
-import { Button } from "@/components/ui/button";
+import { Button } from "@/shared/components/ui/button";
 import {
   Card,
   CardHeader,
   CardTitle,
   CardDescription,
   CardContent,
-} from "@/components/ui/card";
+} from "@/shared/components/ui/card";
 
 interface ImageStats {
   name: string;

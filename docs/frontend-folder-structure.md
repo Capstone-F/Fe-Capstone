@@ -49,6 +49,7 @@ src/features/<feature-name>/
   mapper/
   types/
   constants/
+  pages/
 ```
 
 Ví dụ:
@@ -68,6 +69,9 @@ src/features/experts/
     expert.ts
   constants/
     expert-options.ts
+  pages/
+    experts-page.tsx
+    expert-detail-page.tsx
 ```
 
 ## 4. Trách nhiệm của từng folder trong feature
@@ -163,6 +167,22 @@ Ví dụ:
 - tab config
 
 Không nên hard-code lặp lại các giá trị này trong nhiều component.
+
+### `pages/`
+
+Chứa toàn bộ các trang màn hình (Page Views) thuộc phạm vi của feature đó.
+
+Ví dụ:
+
+- `src/features/experts/pages/experts-page.tsx`
+- `src/features/experts/pages/expert-detail-page.tsx`
+- `src/features/booking/pages/booking-page.tsx`
+- `src/features/commerce/pages/products-page.tsx`
+
+Lưu ý mối quan hệ với `src/app`:
+
+- Thư mục `pages/` trong `feature` giữ toàn bộ UI layout, state, và logic của màn hình đó.
+- Thư mục `src/app/` (Next.js App Router) đóng vai trò làm routing entry point mỏng gọn, nhập (import) và render component từ `src/features/<feature-name>/pages/`.
 
 ## 5. `shared/` trong `src`
 

@@ -1,4 +1,4 @@
-import { ShopNavbar } from "@/components/shop-navbar";
+import { ShopNavbar } from "@/shared/components/shop-navbar";
 
 export default function ShopLayout({
   children,

@@ -3,7 +3,7 @@
 import { useEffect } from "react";
 import { AlertTriangle } from "lucide-react";
 import { vi } from "@/config/locales/vi";
-import { Button } from "@/components/ui/button";
+import { Button } from "@/shared/components/ui/button";
 
 // Route-level error boundary for the shop routes.
 export default function ShopError({
