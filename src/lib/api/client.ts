@@ -17,13 +17,17 @@ export class ApiError extends Error {
 }
 
 async function parseError(response: Response) {
-  const contentType = response.headers.get("content-type") ?? "";
+  try {
+    const contentType = response.headers.get("content-type") ?? "";
 
-  if (contentType.includes("application/json")) {
-    return response.json();
+    if (contentType.includes("application/json")) {
+      return await response.json();
+    }
+
+    return await response.text();
+  } catch {
+    return null;
   }
-
-  return response.text();
 }
 
 export async function apiFetch(path: string, init: ApiJsonInit = {}) {
