@@ -40,8 +40,12 @@ export default function RootLayout({
     <html
       lang="en"
       className={`${fontSans.variable} ${fontHeading.variable} ${fontMono.variable}`}
+      suppressHydrationWarning
     >
-      <body className="bg-background text-foreground min-h-screen font-sans antialiased">
+      <body
+        className="bg-background text-foreground min-h-screen font-sans antialiased"
+        suppressHydrationWarning
+      >
         <AppProviders>{children}</AppProviders>
       </body>
     </html>

@@ -3,6 +3,7 @@
 import { ArrowLeft, CheckCircle2, LayoutDashboard } from "lucide-react";
 import { Button } from "@/shared/components/ui/button";
 import { useTreatment } from "@/features/treatment/components/treatment-context";
+import { useRouter } from "next/navigation";
 
 export function SuccessScreen() {
   const { setFlowState } = useTreatment();

@@ -1,6 +1,6 @@
 "use client";
 
-import { ArrowLeft, Sparkles, User, MapPin, ShieldCheck } from "lucide-react";
+import { ArrowLeft } from "lucide-react";
 import { Button } from "@/shared/components/ui/button";
 import { useRouter } from "next/navigation";
 import { useTreatment } from "@/features/treatment/components/treatment-context";
@@ -16,13 +16,13 @@ export function IntroScreen() {
           variant="ghost"
           size="icon"
           onClick={() => router.push("/")}
-          className="hover:bg-black/5 h-10 w-10 shrink-0 rounded-full text-[#131336]"
+          className="h-10 w-10 shrink-0 rounded-full text-[#131336] hover:bg-black/5"
         >
           <ArrowLeft className="h-6 w-6" />
         </Button>
       </div>
 
-      <div className="mx-auto max-w-xl space-y-12 text-center mt-8">
+      <div className="mx-auto mt-8 max-w-xl space-y-12 text-center">
         <div className="space-y-6">
           <h1 className="font-heading text-[2.5rem] leading-tight font-bold tracking-tight text-[#131336] sm:text-5xl">
             Nhận công thức cá nhân hóa từ chuyên gia AI GlowScan
@@ -44,4 +44,3 @@ export function IntroScreen() {
     </div>
   );
 }
-

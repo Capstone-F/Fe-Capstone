@@ -13,8 +13,8 @@ import {
   AlertCircle,
 } from "lucide-react";
 import { useQuery } from "@tanstack/react-query";
-import { Button } from "@/components/ui/button";
-import { Checkbox } from "@/components/ui/checkbox";
+import { Button } from "@/shared/components/ui/button";
+import { Checkbox } from "@/shared/components/ui/checkbox";
 import { getProfile } from "../api/profile-client";
 import { getMyRoutines } from "../api/routines-client";
 import { useRouter } from "next/navigation";

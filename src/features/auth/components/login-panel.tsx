@@ -12,17 +12,13 @@ import { useRouter } from "next/navigation";
 import { useState, useTransition, useEffect } from "react";
 import { toast } from "sonner";
 
-import { Badge } from "@/shared/components/ui/badge";
 import { Button } from "@/shared/components/ui/button";
-import {
-  Card,
-  CardContent,
-  CardHeader,
-  CardTitle,
-} from "@/shared/components/ui/card";
 import { Spinner } from "@/shared/components/ui/spinner";
+import { Input } from "@/shared/components/ui/input";
+import { Label } from "@/shared/components/ui/label";
 
-import { startLogin } from "../api/auth-client";
+import { startLogin, loginDirect, registerDirect } from "../api/auth-client";
+import { useSession } from "../hooks/use-session";
 
 type LoginPanelProps = {
   redirectTo: string;
@@ -30,17 +26,21 @@ type LoginPanelProps = {
 
 export function LoginPanel({ redirectTo }: LoginPanelProps) {
   const router = useRouter();
+  const session = useSession();
   const [activeProvider, setActiveProvider] = useState<"keycloak" | "google">(
     "keycloak",
   );
   const [isPending, startTransition] = useTransition();
 
   useEffect(() => {
-    const token = localStorage.getItem("glowscan_access_token");
-    if (token) {
-      router.replace(redirectTo);
+    const token =
+      typeof window !== "undefined"
+        ? localStorage.getItem("glowscan_access_token")
+        : null;
+    if (token || session.data) {
+      router.replace(redirectTo || "/profile");
     }
-  }, [router, redirectTo]);
+  }, [router, redirectTo, session.data]);
 
   const [mode, setMode] = useState<"login" | "register">("login");
   const [email, setEmail] = useState("");

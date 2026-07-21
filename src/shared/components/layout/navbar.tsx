@@ -2,7 +2,20 @@
 
 import Link from "next/link";
 import { useState, useEffect } from "react";
-import { Sparkles, Menu, ArrowRight } from "lucide-react";
+import { Sparkles, Menu, ArrowRight, UserCircle2, LogOut } from "lucide-react";
+import { useSession } from "@/features/auth/hooks/use-session";
+import { logout } from "@/features/auth/api/auth-client";
+import { useQueryClient } from "@tanstack/react-query";
+import { queryKeys } from "@/lib/query/keys";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuGroup,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/shared/components/ui/dropdown-menu";
 
 import { Button } from "@/shared/components/ui/button";
 import {
@@ -14,6 +27,8 @@ import Image from "next/image";
 
 export function Navbar() {
   const [isScrolled, setIsScrolled] = useState(false);
+  const session = useSession();
+  const queryClient = useQueryClient();
 
   useEffect(() => {
     const handleScroll = () => {
@@ -22,6 +37,20 @@ export function Navbar() {
     window.addEventListener("scroll", handleScroll);
     return () => window.removeEventListener("scroll", handleScroll);
   }, []);
+
+  const handleLogout = async () => {
+    try {
+      await logout();
+    } catch {
+      // Ignore
+    } finally {
+      queryClient.invalidateQueries({ queryKey: queryKeys.session });
+      queryClient.invalidateQueries({ queryKey: queryKeys.cart });
+      window.location.reload();
+    }
+  };
+
+  const user = session.data;
 
   const navLinks = [
     { label: "Soi Da AI", href: "#ai-scan" },
@@ -71,12 +100,52 @@ export function Navbar() {
 
         {/* Action Buttons */}
         <div className="hidden items-center gap-4 md:flex">
-          <Link href="/login">
-            <Button variant="ghost" size="sm" className="text-sm font-medium">
-              Đăng nhập
-            </Button>
-          </Link>
-          <a href="/login?redirectTo=/scan">
+          {user ? (
+            <DropdownMenu>
+              <DropdownMenuTrigger
+                render={
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    className="flex items-center gap-1.5 font-medium"
+                  />
+                }
+              >
+                <UserCircle2 className="h-4 w-4" />
+                <span className="max-w-32 truncate">
+                  {user.name ?? user.email ?? "Tài khoản"}
+                </span>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end">
+                <DropdownMenuGroup>
+                  <DropdownMenuLabel>
+                    {user.name ?? user.email ?? "Tài khoản"}
+                  </DropdownMenuLabel>
+                </DropdownMenuGroup>
+                <DropdownMenuSeparator />
+                <DropdownMenuItem render={<Link href="/profile" />}>
+                  <UserCircle2 className="mr-2 h-4 w-4" />
+                  Trang cá nhân & Lịch trình
+                </DropdownMenuItem>
+                <DropdownMenuItem render={<Link href="/orders" />}>
+                  <ArrowRight className="mr-2 h-4 w-4" />
+                  Đơn hàng của tôi
+                </DropdownMenuItem>
+                <DropdownMenuSeparator />
+                <DropdownMenuItem onClick={handleLogout}>
+                  <LogOut className="mr-2 h-4 w-4" />
+                  Đăng xuất
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
+          ) : (
+            <Link href="/login">
+              <Button variant="ghost" size="sm" className="text-sm font-medium">
+                Đăng nhập
+              </Button>
+            </Link>
+          )}
+          <a href={user ? "/scan" : "/login?redirectTo=/scan"}>
             <Button
               size="sm"
               className="group rounded-xl px-5 text-sm font-semibold"
