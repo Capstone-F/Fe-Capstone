@@ -24,14 +24,13 @@ src/
     (auth)/            # Layout & trang Đăng nhập / Phân quyền
     (expert)/          # Layout & trang dành cho Chuyên gia Da liễu
     (expert-manager)/  # Layout & trang dành cho Quản lý Chuyên gia
-    (main)/            # Layout & trang chính dành cho Khách hàng / Public
-      (shop)/          # Sub-layout Cửa hàng Mỹ phẩm (/products, /cart...)
-      (user-portal)/   # Sub-layout Cổng Khách hàng (/profile, /experts...)
-      scan/            # Màn hình Soi da AI (/scan)
-      survey/          # Màn hình Khảo sát da (/survey)
-      page.tsx         # Trang chủ Landing Page (/)
+    (landing)/         # Layout Landing Page & Trang chủ (/)
+    (shop)/            # Layout Cửa hàng Mỹ phẩm (/products, /cart...)
     (staff)/           # Layout & trang dành cho Nhân viên (Staff)
     (tools)/           # Tools / công cụ nội bộ
+    (user-portal)/     # Layout Cổng thông tin Khách hàng (/profile, /experts...)
+    scan/              # Màn hình Soi da AI chuyên dụng (/scan)
+    survey/            # Màn hình Khảo sát da (/survey)
   features/
     auth/
     booking/
