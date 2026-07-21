@@ -11,7 +11,7 @@ import {
   SelectValue,
 } from "@/shared/components/ui/select";
 
-const PAGE_SIZE_OPTIONS = [8, 12, 24] as const;
+const DEFAULT_PAGE_SIZE_OPTIONS = [8, 12, 24];
 
 interface ProductPaginationProps {
   page: number;
@@ -19,6 +19,10 @@ interface ProductPaginationProps {
   pageSize: number;
   onPageChange: (page: number) => void;
   onPageSizeChange: (pageSize: number) => void;
+  /** Defaults to the product-grid sizes. */
+  pageSizeOptions?: number[];
+  /** Unit shown next to each size, e.g. "đơn/trang". */
+  perPageLabel?: string;
 }
 
 export function ProductPagination({
@@ -27,8 +31,11 @@ export function ProductPagination({
   pageSize,
   onPageChange,
   onPageSizeChange,
+  pageSizeOptions = DEFAULT_PAGE_SIZE_OPTIONS,
+  perPageLabel,
 }: ProductPaginationProps) {
   const c = vi.commerce.products;
+  const unitLabel = perPageLabel ?? c.perPage;
 
   return (
     <div className="flex items-center justify-between border-t border-slate-100 pt-4">
@@ -40,9 +47,9 @@ export function ProductPagination({
           <SelectValue />
         </SelectTrigger>
         <SelectContent>
-          {PAGE_SIZE_OPTIONS.map((size) => (
+          {pageSizeOptions.map((size) => (
             <SelectItem key={size} value={`${size}`}>
-              {size} {c.perPage}
+              {size} {unitLabel}
             </SelectItem>
           ))}
         </SelectContent>

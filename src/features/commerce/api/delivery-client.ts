@@ -17,8 +17,11 @@ interface DeliveryOptionResponse {
 interface OrderResponse {
   id: string;
   status: string;
+  source: string;
   subtotalVnd: number;
   discountVnd: number;
+  discountType: string | null;
+  shippingFeeVnd: number;
   totalVnd: number;
   items: {
     id: string;
@@ -57,8 +60,11 @@ export async function attachDelivery(
   return {
     id: response.id,
     status: response.status as Order["status"],
+    source: response.source as Order["source"],
     subtotalVnd: response.subtotalVnd,
     discountVnd: response.discountVnd,
+    discountType: response.discountType,
+    shippingFeeVnd: response.shippingFeeVnd,
     totalVnd: response.totalVnd,
     items: response.items.map((item) => ({
       id: item.id,
