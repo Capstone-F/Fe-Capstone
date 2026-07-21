@@ -13,6 +13,8 @@ import type {
 
 export type { ProductQuery, ProductsPage };
 
+const CATALOG_PAGE_SIZE = 100;
+
 // Paths are unprefixed to match Be-Capstone in dev (setGlobalPrefix('api')
 // only applies when NODE_ENV=production — see Global Constraints).
 export const PRODUCT_API_PATHS = {

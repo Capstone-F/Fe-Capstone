@@ -4,14 +4,14 @@ import { use } from "react";
 import Link from "next/link";
 import { ArrowLeft, PackageX } from "lucide-react";
 import { vi } from "@/config/locales/vi";
-import { Card, CardContent } from "@/components/ui/card";
-import { EmptyState } from "@/components/ui/empty-state";
+import { Card, CardContent } from "@/shared/components/ui/card";
+import { EmptyState } from "@/shared/components/ui/empty-state";
 import { useOrder } from "@/features/commerce/hooks/use-orders";
 import { OrderItemRow } from "@/features/commerce/components/order-item-row";
 import { OrderStatusBadge } from "@/features/commerce/components/order-status-badge";
 import { OrderCardSkeleton } from "@/features/commerce/components/order-card-skeleton";
 import { formatOrderCode } from "@/features/commerce/lib/order-hydration";
-import { formatVnd } from "@/features/commerce/lib/format";
+import { formatVnd } from "@/shared/utils/format";
 
 export default function OrderDetailPage({
   params,
