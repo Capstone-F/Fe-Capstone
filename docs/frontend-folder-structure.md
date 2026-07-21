@@ -1,297 +1,336 @@
-# Frontend Folder Structure Guide
+# Frontend Folder Structure & Coding Conventions Guide
 
-Tài liệu này thống nhất cách tổ chức code frontend cho các thành viên trong team.
+Tài liệu này là **Quy chuẩn Code & Cấu trúc Frontend (Coding Conventions)** bắt buộc dành cho tất cả các thành viên phát triển dự án.
 
-Mục tiêu:
+> **Mục tiêu**:
+>
+> - **Dễ đọc & Dễ tìm**: Tổ chức theo từng `feature`, tìm file nào biết ngay nằm ở đâu.
+> - **Tái sử dụng cao (Reusability)**: Phân định rõ code dùng riêng cho 1 feature và code dùng chung toàn app trong `shared/` hoặc `types/`.
+> - **Tách biệt trách nhiệm (Separation of Concerns)**: Không trộn API call, TanStack Query, UI layout, Mapper, Constant và Type trong cùng 1 file.
 
-- Giữ code theo từng `feature` để dễ tìm, dễ sửa, dễ tách trách nhiệm.
-- Phân biệt rõ code chỉ dùng trong một feature và code dùng chung toàn app.
-- Hạn chế để logic business, API call, component, và constant trộn lẫn ở nhiều nơi.
+---
 
-## 1. Nguyên tắc chung
+## 1. Nguyên Tắc Vàng (Core Principles)
 
-- Mỗi feature tự quản lý phần code của nó trong `src/features/<feature-name>`.
-- Chỉ đưa code ra `shared` khi code đó thật sự được tái sử dụng bởi nhiều feature hoặc toàn app.
-- Ưu tiên đặt code gần nơi sử dụng nhất.
-- Không đặt API call, TanStack Query hook, mapper, và UI component chung một file.
+1. **Rule "Dùng 1 vs Dùng 2+"**:
+   - Nếu code (component, hook, type, utils) chỉ dùng cho **1 feature** $\rightarrow$ Để trong `src/features/<feature-name>/`.
+   - Nếu code dùng cho **từ 2 feature trở lên** hoặc **toàn app** $\rightarrow$ Đưa ra `src/shared/` hoặc `src/types/`.
+2. **Quy tắc đặt tên File & Thư mục (Naming Conventions)**:
+   - **Tên file & folder**: Sử dụng `kebab-case` (ví dụ: `product-card.tsx`, `use-products.ts`, `category-mapper.ts`).
+   - **React Component**: Sử dụng `PascalCase` (ví dụ: `ProductCard`, `ProductsPage`).
+   - **Function & Variable**: Sử dụng `camelCase` (ví dụ: `formatVnd`, `isPendingPaymentStatus`).
+3. **Tuyệt đối không trộn lẫn trách nhiệm**:
+   - Component UI **không** tự viết `fetch()` hay `axios.get()`.
+   - File `api` **không** chứa `useQuery` hay React State.
+   - Hook **không** chứa mã HTML JSX.
 
-## 2. Cấu trúc đề xuất trong `src`
+---
+
+## 2. Cấu Trúc Tổng Thể Thư Mục `src/`
 
 ```text
 src/
-  app/
-    (admin)/           # Layout & trang dành cho Quản trị viên (Admin)
-    (auth)/            # Layout & trang Đăng nhập / Phân quyền
-    (expert)/          # Layout & trang dành cho Chuyên gia Da liễu
-    (expert-manager)/  # Layout & trang dành cho Quản lý Chuyên gia
-    (landing)/         # Layout Landing Page & Trang chủ (/)
-    (shop)/            # Layout Cửa hàng Mỹ phẩm (/products, /cart...)
-    (staff)/           # Layout & trang dành cho Nhân viên (Staff)
-    (tools)/           # Tools / công cụ nội bộ
-    (user-portal)/     # Layout Cổng thông tin Khách hàng (/profile, /experts...)
-    scan/              # Màn hình Soi da AI chuyên dụng (/scan)
-    survey/            # Màn hình Khảo sát da (/survey)
-  features/
-    auth/
-    booking/
-    commerce/
-    experts/
-    landing/
-    profile/
-    scan/
-    survey/
-    treatment/
-  shared/
-    components/
-    hooks/
-    utils/
+├── app/                       # Next.js App Router (Chỉ chứa Route Entry Points & Layouts)
+│   ├── (admin)/               # Layout & Route dành cho Admin (/dashboard)
+│   ├── (auth)/                # Layout & Route Đăng nhập / Phân quyền (/login, /unauthorized)
+│   ├── (expert)/              # Layout & Route dành cho Chuyên gia Da liễu (/expert)
+│   ├── (expert-manager)/      # Layout & Route dành cho Quản lý Chuyên gia (/expert-manager)
+│   ├── (landing)/             # Layout & Route Trang chủ Landing Page (/)
+│   ├── (shop)/                # Layout & Route Cửa hàng Mỹ phẩm (/products, /cart, /checkout...)
+│   ├── (staff)/               # Layout & Route dành cho Nhân viên (/staff)
+│   ├── (tools)/               # Tools nội bộ Dev (/upload)
+│   ├── (user-portal)/         # Layout & Route Cổng Khách hàng (/profile, /experts, /appointments...)
+│   ├── scan/                  # Route Soi da AI (/scan)
+│   ├── survey/                # Route Khảo sát da (/survey)
+│   ├── api/                   # Backend API Route Handlers (/api/be/[...path])
+│   ├── globals.css
+│   ├── layout.tsx
+│   └── not-found.tsx
+│
+├── features/                  # Quản lý code theo từng Tính năng (Feature-Driven Architecture)
+│   ├── auth/
+│   ├── booking/
+│   ├── commerce/
+│   ├── experts/
+│   ├── landing/
+│   ├── profile/
+│   ├── scan/
+│   ├── survey/
+│   └── treatment/
+│
+├── shared/                    # Code tái sử dụng toàn app (Shared Module)
+│   ├── components/            # UI Components tái sử dụng (ui/, layout/, providers...)
+│   ├── hooks/                 # Custom Hooks tái sử dụng (useDebounce, useMobile...)
+│   └── utils/                 # Utility Functions (formatVnd, formatDate...)
+│
+├── config/                    # Cấu hình tĩnh toàn ứng dụng (locales, siteConfig...)
+├── lib/                       # Khởi tạo thư viện bên thứ 3 (query-client, utils...)
+└── types/                     # TypeScript Types Global (api.ts, domain.ts, auth.ts...)
 ```
 
-## 3. Cấu trúc chuẩn cho một feature
+---
 
-Mỗi feature nên đi theo cấu trúc sau:
+## 3. Quy Chuẩn & Hướng Dẫn Từng Thư Mục Trong `src/features/<feature>/`
+
+Mỗi feature bắt buộc phải có đầy đủ 7 thư mục chuẩn sau (nếu chưa có code, tạo sẵn file `.gitkeep`):
 
 ```text
 src/features/<feature-name>/
-  components/
-  api/
-  hooks/
-  mapper/
-  types/
-  constants/
-  pages/
+├── api/                       # Gọi HTTP Client & API Endpoints
+├── components/                # UI Components phụ trợ của feature
+├── constants/                 # Hằng số, Enum, Mock data, Options
+├── hooks/                     # Custom Hooks (TanStack Query / State)
+├── mapper/                    # Transform DTO <-> Domain Model
+├── pages/                     # Màn hình chính (Page View Component)
+└── types/                     # TypeScript Types / DTOs của feature
 ```
 
-Ví dụ:
+---
 
-```text
-src/features/experts/
-  components/
-    expert-card.tsx
-    expert-card-skeleton.tsx
-  api/
-    experts-client.ts
-  hooks/
-    use-experts.ts
-  mapper/
-    expert-mapper.ts
-  types/
-    expert.ts
-  constants/
-    expert-options.ts
-  pages/
-    experts-page.tsx
-    expert-detail-page.tsx
+### 3.1. Thư mục `api/` (API Layer)
+
+- **Nên làm gì**:
+  - Chỉ chứa các hàm thuần async/await gọi endpoint HTTP (thông qua `fetch`, `axios` hoặc client helper `@/lib/api`).
+  - Trả về Promise nhận DTO hoặc Data.
+- **KHÔNG NÊN làm gì**:
+  - Không import React, không dùng React State.
+  - Không bọc `useQuery` hay `useMutation` ở đây.
+- **Code mẫu chuẩn (`src/features/experts/api/experts-client.ts`)**:
+
+```typescript
+import type { Expert } from "@/types/domain";
+
+export async function fetchExpertsApi(): Promise<Expert[]> {
+  const res = await fetch("/api/be/experts");
+  if (!res.ok) throw new Error("Không thể tải danh sách chuyên gia");
+  return res.json();
+}
+
+export async function fetchExpertDetailApi(id: string): Promise<Expert> {
+  const res = await fetch(`/api/be/experts/${id}`);
+  if (!res.ok) throw new Error("Không thể tải thông tin chuyên gia");
+  return res.json();
+}
 ```
 
-## 4. Trách nhiệm của từng folder trong feature
+---
 
-### `components/`
+### 3.2. Thư mục `hooks/` (Data & State Layer)
 
-Chứa component chỉ phục vụ cho feature đó.
+- **Nên làm gì**:
+  - Chứa các custom hook kết nối `api/` với **TanStack Query** (`useQuery`, `useMutation`).
+  - Xử lý cache key (`queryKeys`), refetching, invalidation, toast thông báo.
+- **KHÔNG NÊN làm gì**:
+  - Không viết trực tiếp logic `fetch()` bên trong hook (gọi hàm từ `api/`).
+  - Không trả về thẻ JSX.
+- **Code mẫu chuẩn (`src/features/experts/hooks/use-experts.ts`)**:
 
-Ví dụ:
+```typescript
+import { useQuery } from "@tanstack/react-query";
+import { queryKeys } from "@/lib/query/keys";
+import { fetchExpertsApi, fetchExpertDetailApi } from "../api/experts-client";
 
-- `ExpertCard`
-- `BookingSummary`
-- `TreatmentFlow`
+export function useExperts() {
+  return useQuery({
+    queryKey: queryKeys.experts.list(),
+    queryFn: () => fetchExpertsApi(),
+  });
+}
 
-Không nên đặt ở đây:
-
-- helper format
-- API call
-- shared component dùng cho nhiều feature
-
-### `api/`
-
-Chỉ xử lý việc gọi API.
-
-Bao gồm:
-
-- định nghĩa endpoint
-- hàm gọi `fetch` hoặc `apiJson`
-- xử lý request/response ở mức client
-
-Không nên đặt ở đây:
-
-- `useQuery`, `useMutation`
-- UI state
-- mapper phức tạp nếu có thể tách riêng
-
-Ví dụ hiện tại của repo:
-
-- `src/features/experts/api/experts-client.ts`
-- `src/features/booking/api/booking-client.ts`
-
-### `hooks/`
-
-Chứa custom hook của feature.
-
-Bao gồm:
-
-- `useQuery`, `useMutation`
-- hook kết hợp API với TanStack Query
-- hook xử lý state riêng của feature
-
-Ví dụ:
-
-- `useExperts`
-- `useCreateBooking`
-- `useProfile`
-
-### `mapper/`
-
-Folder này là optional, chỉ tạo khi feature có nhu cầu map dữ liệu.
-
-Dùng cho:
-
-- map response từ backend sang model frontend
-- normalize data
-- convert enum, status, label
-
-Nếu logic map còn nhỏ và chỉ có 1 chỗ dùng, có thể để tạm trong file `api`. Khi logic bắt đầu dài hoặc có thể tái dùng, tách ra `mapper/`.
-
-### `types/`
-
-Chứa type chỉ thuộc phạm vi của feature.
-
-Ví dụ:
-
-- request payload
-- response model
-- filter type
-- form value type
-
-Nếu type dùng chung cho nhiều feature hoặc toàn app, khi đó mới cân nhắc đưa ra khu vực shared chung.
-
-### `constants/`
-
-Chứa các constant dùng lại trong feature.
-
-Ví dụ:
-
-- label
-- status text
-- badge color
-- filter options
-- tab config
-
-Không nên hard-code lặp lại các giá trị này trong nhiều component.
-
-### `pages/`
-
-Chứa toàn bộ các trang màn hình (Page Views) thuộc phạm vi của feature đó.
-
-Ví dụ:
-
-- `src/features/experts/pages/experts-page.tsx`
-- `src/features/experts/pages/expert-detail-page.tsx`
-- `src/features/booking/pages/booking-page.tsx`
-- `src/features/commerce/pages/products-page.tsx`
-
-Lưu ý mối quan hệ với `src/app`:
-
-- Thư mục `pages/` trong `feature` giữ toàn bộ UI layout, state, và logic của màn hình đó.
-- Thư mục `src/app/` (Next.js App Router) đóng vai trò làm routing entry point mỏng gọn, nhập (import) và render component từ `src/features/<feature-name>/pages/`.
-
-## 5. `shared/` trong `src`
-
-Tạo `src/shared` để chứa những thứ dùng chung ở nhiều feature hoặc toàn app.
-
-```text
-src/shared/
-  components/
-  hooks/
-  utils/
+export function useExpertDetail(id: string) {
+  return useQuery({
+    queryKey: queryKeys.experts.detail(id),
+    queryFn: () => fetchExpertDetailApi(id),
+    enabled: !!id,
+  });
+}
 ```
 
-### `src/shared/components/`
+---
 
-Chứa component tái sử dụng.
+### 3.3. Thư mục `types/` (Data Contracts Layer)
 
-Ví dụ:
+- **Nên làm gì**:
+  - Định nghĩa kiểu dữ liệu Input/Output, Payload Request, DTO Response riêng của feature đó.
+- **Code mẫu chuẩn (`src/features/experts/types/expert.ts`)**:
 
-- common empty state
-- reusable filter bar
-- section header
-- loading block
+```typescript
+export interface CreateExpertInput {
+  name: string;
+  title: string;
+  clinic: string;
+  fee: number;
+  specialties: string[];
+}
 
-Lưu ý:
+export interface ExpertFilterQuery {
+  specialty?: string;
+  minFee?: number;
+  maxFee?: number;
+}
+```
 
-- nếu component chỉ dùng cho một feature, giữ nó trong `src/features/<feature>/components`
-- chỉ đưa vào `shared` khi đã có nhu cầu dùng chung thật sự
+---
 
-### `src/shared/utils/`
+### 3.4. Thư mục `mapper/` (Data Transformation Layer)
 
-Chứa utility dùng chung toàn app.
+- **Nên làm gì**:
+  - Biến đổi dữ liệu từ Backend DTO thô sang kiểu dữ liệu mượt mà ở Frontend (nếu khác nhau).
+  - Convert status code, format nhãn label, map icon.
+- **Code mẫu chuẩn (`src/features/experts/mapper/expert-mapper.ts`)**:
 
-Ví dụ:
+```typescript
+import type { Expert } from "@/types/domain";
 
-- `formatTime`
-- `formatCurrency`
-- `formatDate`
-- `buildQueryString`
+export function mapExpertSpecialtiesLabel(specialties: string[]): string {
+  if (!specialties || specialties.length === 0) return "Chuyên khoa chung";
+  return specialties.join(" • ");
+}
+```
 
-### `src/shared/hooks/`
+---
 
-Chứa hook dùng chung.
+### 3.5. Thư mục `constants/` (Static Config & Options Layer)
 
-Ví dụ:
+- **Nên làm gì**:
+  - Khai báo hằng số dùng lại nhiều lần trong feature: danh sách Tab, Filter options, Badge status color, nhãn hiển thị.
+- **Code mẫu chuẩn (`src/features/experts/constants/expert-options.ts`)**:
 
-- `useDebounce`
-- `useErrorBoundary`
-- `usePagination`
+```typescript
+export className SPECIALTY_OPTIONS = [
+  { label: "Tất cả chuyên khoa", value: "ALL" },
+  { label: "Điều trị mụn trứng cá", value: "ACNE" },
+  { label: "Phục hồi da nhạy cảm", value: "SENSITIVE" },
+  { label: "Trẻ hóa & Chống lão hóa", value: "ANTI_AGING" },
+] as const;
+```
 
-## 6. Khi nào để ở feature, khi nào để ở shared
+---
 
-Đặt trong `feature` khi:
+### 3.6. Thư mục `components/` (UI Sub-components Layer)
 
-- code chỉ phục vụ một màn hình hoặc một domain
-- logic đang gắn chặt với data của feature đó
-- chưa có nhu cầu tái sử dụng rõ ràng
+- **Nên làm gì**:
+  - Chứa các Component UI nhỏ phục vụ riêng cho feature này (Card, Skeleton, FilterBar, ItemRow...).
+  - Nhận `props`, gọi hook từ `hooks/` nếu cần, và render JSX mượt mà.
+- **Code mẫu chuẩn (`src/features/experts/components/expert-card.tsx`)**:
 
-Đặt trong `shared` khi:
+```typescript
+import React from "react";
+import Link from "next/link";
+import type { Expert } from "@/types/domain";
+import { Button } from "@/shared/components/ui/button";
 
-- dùng lại từ 2 feature trở lên
-- không phụ thuộc mạnh vào domain cụ thể
-- có thể hiểu và dùng độc lập
+interface ExpertCardProps {
+  expert: Expert;
+}
 
-Rule đơn giản:
+export function ExpertCard({ expert }: ExpertCardProps) {
+  return (
+    <div className="rounded-xl border border-slate-200 bg-white p-4 shadow-xs">
+      <h3 className="font-bold text-slate-900">{expert.name}</h3>
+      <p className="text-muted-foreground text-xs">{expert.title}</p>
+      <div className="mt-4 flex items-center justify-between">
+        <span className="text-primary font-bold">{expert.fee.toLocaleString("vi-VN")} đ</span>
+        <Link href={`/experts/${expert.id}`}>
+          <Button size="sm">Đặt lịch hẹn</Button>
+        </Link>
+      </div>
+    </div>
+  );
+}
+```
 
-- dùng riêng cho `experts` thì để trong `src/features/experts`
-- dùng chung cho `experts`, `booking`, `profile` thì chuyển sang `src/shared`
+---
 
-## 7. Áp dụng cho repo hiện tại
+### 3.7. Thư mục `pages/` (Page View Layer)
 
-Repo hiện tại đã có nền tảng theo hướng feature-based, ví dụ:
+- **Nên làm gì**:
+  - Chứa trang giao diện hoàn chỉnh (Page View Component).
+  - Lắp ráp các `components/`, gọi `hooks/`, xử lý state chuyển trang và hiển thị Layout.
+- **Code mẫu chuẩn (`src/features/experts/pages/experts-page.tsx`)**:
 
-- `src/features/experts/api/experts-client.ts`
-- `src/features/experts/hooks/use-experts.ts`
-- `src/features/booking/api/booking-client.ts`
-- `src/features/booking/hooks/use-booking.ts`
+```typescript
+"use client";
 
-Các phần nên áp dụng dần từ bây giờ:
+import React from "react";
+import { useExperts } from "../hooks/use-experts";
+import { ExpertCard } from "../components/expert-card";
 
-- feature mới tạo theo đúng cấu trúc `components`, `api`, `hooks`, `mapper`, `types`, `constants`
-- code dùng chung mới nên đưa vào `src/shared`
-- không cần ép di chuyển toàn bộ code cũ ngay lập tức
-- khi sửa feature cũ, ưu tiên refactor dần theo guideline này
+export function ExpertsPage() {
+  const { data: experts, isLoading } = useExperts();
 
-## 8. Quy ước review code
+  if (isLoading) return <div>Đang tải danh sách chuyên gia...</div>;
 
-Khi tạo PR, nên tự check nhanh:
+  return (
+    <div className="mx-auto max-w-5xl flex flex-col gap-6">
+      <h1 className="text-2xl font-bold">Danh sách Chuyên gia Da liễu</h1>
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+        {experts?.map((expert) => (
+          <ExpertCard key={expert.id} expert={expert} />
+        ))}
+      </div>
+    </div>
+  );
+}
+```
 
-- API call đã nằm trong `api/` chưa?
-- TanStack Query hook đã nằm trong `hooks/` chưa?
-- type của feature đã nằm trong `types/` chưa?
-- constant như label, color, option đã tách ra `constants/` chưa?
-- code này thực sự là shared hay vẫn chỉ thuộc một feature?
+- **Mối quan hệ với `src/app/`**:
+  Nhiệm vụ của `src/app/` (Next.js App Router) chỉ là file route mỏng nhẹ import `ExpertsPage`:
 
-## 9. Kết luận
+```typescript
+// File: src/app/(main)/(user-portal)/experts/page.tsx
+import { ExpertsPage } from "@/features/experts/pages/experts-page";
 
-Từ thời điểm này, team frontend nên follow guideline sau:
+export default function Page() {
+  return <ExpertsPage />;
+}
+```
 
-- Code theo feature trước.
-- Shared chỉ dùng cho phần tái sử dụng thật sự.
-- Không trộn UI, API, hook, type, mapper, constant trong cùng một chỗ.
-- Refactor dần khi chạm vào code cũ, không cần migrate toàn bộ trong một lần.
+---
+
+## 4. Hướng Dẫn Thư Mục Dùng Chung (`src/shared/` & `src/types/`)
+
+### 4.1. Thư mục `src/types/` (Global Types)
+
+Chứa toàn bộ Type hợp đồng (Contracts) toàn dự án:
+
+- **[`src/types/api.ts`](file:///Users/gbzun/Desktop/SU26/Fe-Capstone/src/types/api.ts)**: Chứa type response từ Server (`ServerResponse<T>`, `PaginatedResponse<T>`, `QueryParams`).
+- **[`src/types/domain.ts`](file:///Users/gbzun/Desktop/SU26/Fe-Capstone/src/types/domain.ts)**: Chứa các Entity Models chính (`User`, `Product`, `Order`, `Expert`, `Booking`).
+
+> 💡 **Quy tắc**: Nếu type thuộc về 2 feature trở lên, hãy đưa vào `src/types/domain.ts` hoặc `src/types/api.ts`.
+
+### 4.2. Thư mục `src/shared/components/` (Reusable UI Components)
+
+- **`src/shared/components/ui/`**: Các UI primitives từ Base UI / Tailwind (Button, Card, Dialog, Input, Select, Badge, Skeleton, Sonner...).
+- **`src/shared/components/layout/`**: Header, Footer, Navbar chung của toàn ứng dụng (`Navbar`, `Footer`, `ShopNavbar`, `SiteHeader`).
+
+### 4.3. Thư mục `src/shared/utils/` (Utility Functions)
+
+Chứa các hàm thuần (pure functions) xử lý chuỗi, ngày tháng, tiền tệ:
+
+- **`formatVnd(amount: number)`**: Định dạng số tiền VND.
+- **`formatDate(isoString: string)`**: Định dạng ngày tháng hiển thị Tiếng Việt.
+
+---
+
+## 5. Bảng So Sánh Nên Làm (Do's) & Không Nên Làm (Don'ts)
+
+| Hạng mục           | ❌ Không nên làm (Don't)                                                 | ✅ Nên làm (Do)                                                            |
+| :----------------- | :----------------------------------------------------------------------- | :------------------------------------------------------------------------- |
+| **API Call**       | Viết `fetch()` trực tiếp trong Component JSX hoặc trong custom hook.     | Tách riêng hàm `apiClient` vào thư mục `features/<feature>/api/`.          |
+| **TanStack Query** | Khai báo `useQuery` rải rác trực tiếp trong file UI Component.           | Gom tất cả `useQuery`, `useMutation` vào `features/<feature>/hooks/`.      |
+| **Hardcoded Data** | Hardcode danh sách options, status label Tiếng Việt trực tiếp trong JSX. | Tách hằng số ra file `features/<feature>/constants/`.                      |
+| **Reusability**    | Copy-paste code từ feature A sang feature B.                             | Chuyển code đó ra `src/shared/` hoặc `src/types/` để import chung.         |
+| **Imports**        | Import tương đối dài ngoằn: `../../../../components/ui/button`.          | Dùng alias `@/`: `import { Button } from "@/shared/components/ui/button"`. |
+
+---
+
+## 6. Checklist Tự Kiểm Tra Trước Khi Mở Pull Request (PR Review Checklist)
+
+Mỗi khi làm xong 1 tính năng hoặc mở PR, hãy tự check:
+
+- [ ] File API đã được đặt trong `src/features/<feature>/api/` chưa?
+- [ ] Hook TanStack Query đã nằm trong `src/features/<feature>/hooks/` chưa?
+- [ ] Component màn hình chính đã được đưa vào `src/features/<feature>/pages/` chưa?
+- [ ] Các type dùng chung cho Server đã import từ `@/types/api` hoặc `@/types/domain` chưa?
+- [ ] Đã chạy `npx tsc --noEmit` và **0 lỗi** type chưa?
