@@ -20,21 +20,32 @@ Mục tiêu:
 ```text
 src/
   app/
+    (admin)/           # Layout & trang dành cho Quản trị viên (Admin)
+    (auth)/            # Layout & trang Đăng nhập / Phân quyền
+    (expert)/          # Layout & trang dành cho Chuyên gia Da liễu
+    (expert-manager)/  # Layout & trang dành cho Quản lý Chuyên gia
+    (main)/            # Layout & trang chính dành cho Khách hàng / Public
+      (shop)/          # Sub-layout Cửa hàng Mỹ phẩm (/products, /cart...)
+      (user-portal)/   # Sub-layout Cổng Khách hàng (/profile, /experts...)
+      scan/            # Màn hình Soi da AI (/scan)
+      survey/          # Màn hình Khảo sát da (/survey)
+      page.tsx         # Trang chủ Landing Page (/)
+    (staff)/           # Layout & trang dành cho Nhân viên (Staff)
+    (tools)/           # Tools / công cụ nội bộ
   features/
     auth/
     booking/
     commerce/
     experts/
+    landing/
     profile/
+    scan/
+    survey/
     treatment/
   shared/
     components/
     hooks/
     utils/
-  components/
-  hooks/
-  lib/
-  types/
 ```
 
 ## 3. Cấu trúc chuẩn cho một feature
