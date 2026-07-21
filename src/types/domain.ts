@@ -167,6 +167,8 @@ export type OrderStatus =
   | "CANCELLED"
   | "REFUNDED";
 
+export type OrderSource = "SURVEY" | "CATALOG";
+
 export interface OrderItem {
   id: string;
   productVariantId: string;
@@ -178,8 +180,11 @@ export interface OrderItem {
 export interface Order {
   id: string;
   status: OrderStatus;
+  source: OrderSource;
   subtotalVnd: number;
   discountVnd: number;
+  discountType: string | null;
+  shippingFeeVnd: number;
   totalVnd: number;
   items: OrderItem[];
   createdAt: string;

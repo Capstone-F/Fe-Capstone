@@ -9,6 +9,9 @@ export const PRODUCT_API_PATHS = {
   GET_CATEGORIES: "/products/categories",
 };
 
+/** Be-Capstone's own @Max on ListProductsQueryDto.limit. */
+const CATALOG_PAGE_SIZE = 100;
+
 export type ProductSort = "featured" | "price_asc" | "price_desc";
 
 export interface ProductQuery {
@@ -107,6 +110,27 @@ export async function getProducts(query?: ProductQuery): Promise<ProductsPage> {
     page: response.page,
     limit: response.limit,
   };
+}
+
+/**
+ * Fetch the entire catalog, not just the first page.
+ *
+ * Order and cart lines carry only a productVariantId and Be-Capstone exposes no
+ * variant-by-id endpoint, so every variant must be present in the pool for a
+ * name to resolve. BE caps `limit` at 100, so page 1 alone silently loses any
+ * variant beyond the first 100 products. Fetch page 1, then the rest in parallel.
+ */
+export async function getAllProducts(): Promise<Product[]> {
+  const first = await getProducts({ page: 1, limit: CATALOG_PAGE_SIZE });
+  const pageCount = Math.ceil(first.total / CATALOG_PAGE_SIZE);
+  if (pageCount <= 1) return first.products;
+
+  const rest = await Promise.all(
+    Array.from({ length: pageCount - 1 }, (_, i) =>
+      getProducts({ page: i + 2, limit: CATALOG_PAGE_SIZE }),
+    ),
+  );
+  return [...first.products, ...rest.flatMap((p) => p.products)];
 }
 
 export async function getProductById(id: string): Promise<ProductDetail> {
