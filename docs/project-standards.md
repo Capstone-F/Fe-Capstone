@@ -98,25 +98,70 @@ graph TD
        },
      };
      ```
-3. **Chuyển đổi dữ liệu (Mapping) thực hiện ở tầng Hook**:
-   - Dữ liệu trả về từ API (DTO) thường khác với dữ liệu giao diện cần hiển thị (Domain Model).
-   - Hãy viết hàm mapper riêng và thực hiện map trực tiếp trong hàm `queryFn` hoặc `mutationFn` của hook.
-   - _Ví dụ mẫu chuẩn:_
-     ```typescript
-     // src/features/booking/hooks/useBooking.ts
-     export function useBookings() {
-       return useQuery({
-         queryKey: queryKeys.bookings,
-         queryFn: async () => {
-           if (appConfig.useMockApi) {
-             return bookingMock.getBookings(); // Gọi mock file
-           }
-           const response = await bookingApi.getBookings(); // Gọi api file
-           return response.data.items.map(mapBackendBookingToFrontend); // Thực hiện mapping
-         },
-       });
-     }
-     ```
+
+3. **Quy chuẩn triển khai Hook (TanStack Query Hooks)**:
+   - **Trường hợp A: API có phân nhánh Mock/Real hoặc cần Mapping dữ liệu phức tạp (ví dụ: Booking, Auth, Profile)**:
+     - **BẮT BUỘC viết tường minh khối `async/await` trong `queryFn`** để phân nhánh kiểm tra `appConfig.useMockApi` và gọi hàm mapper chuyển đổi từ Backend DTO sang Frontend Domain Model.
+     - _Ví dụ mẫu chuẩn:_
+
+       ```typescript
+       // src/features/booking/hooks/useBooking.ts
+       import { useQuery } from "@tanstack/react-query";
+       import { bookingApi } from "../api/booking.api";
+       import { bookingMock } from "../api/booking.mock";
+       import { mapBackendBookingToFrontend } from "../mapper/booking-mapper";
+       import type { ConsultationBooking } from "../types/booking.types";
+
+       type UseBookingsOptions = {
+         initialData?: ConsultationBooking[];
+         staleTime?: number;
+       };
+
+       export const useBookings = (options: UseBookingsOptions = {}) => {
+         return useQuery({
+           queryKey: queryKeys.bookings,
+           queryFn: async () => {
+             if (appConfig.useMockApi) {
+               return bookingMock.getBookings(); // Gọi mock file
+             }
+             const response = await bookingApi.getBookings(); // Gọi api file
+             return response.data.items.map(mapBackendBookingToFrontend); // Thực hiện mapping
+           },
+           initialData: options.initialData,
+           staleTime: options.staleTime,
+         });
+       };
+       ```
+
+   - **Trường hợp B: API chạy thật 100% (Không có Mock) & Không cần mapping phức tạp (ví dụ: Products, Categories, Provinces)**:
+     - **KHUYÊN DÙNG sử dụng cú pháp rút gọn `.then(res => res.data)`** để giải nén dữ liệu trực tiếp từ AxiosResponse mà không cần viết khối `async/await` dư thừa.
+     - _Ví dụ mẫu chuẩn:_
+
+       ```typescript
+       // src/features/commerce/hooks/useProducts.ts
+       import { useQuery } from "@tanstack/react-query";
+       import { productsApi } from "../api/products.api";
+       import type { ProductDetail } from "../types/product.types";
+
+       type UseProductOptions = {
+         enabled?: boolean;
+         staleTime?: number;
+       };
+
+       export const useProduct = (
+         id: string,
+         options: UseProductOptions = {},
+       ) => {
+         return useQuery({
+           queryKey: queryKeys.product(id),
+           // Gọi trực tiếp và unwrap dữ liệu cực kỳ ngắn gọn
+           queryFn: () =>
+             productsApi.getProductById(id).then((res) => res.data),
+           enabled: !!id && options.enabled,
+           staleTime: options.staleTime,
+         });
+       };
+       ```
 
 ---
 
