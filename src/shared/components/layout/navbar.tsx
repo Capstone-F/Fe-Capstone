@@ -4,8 +4,6 @@ import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { useState, useEffect } from "react";
 import {
-  Sparkles,
-  Search,
   ShoppingBag,
   UserCircle2,
   LogOut,
@@ -14,9 +12,9 @@ import {
   Stethoscope,
   ArrowLeft,
 } from "lucide-react";
-import { useSession } from "@/features/auth/hooks/use-session";
-import { useCart } from "@/features/commerce/hooks/use-cart";
-import { logout } from "@/features/auth/api/auth-client";
+import { useSession } from "@/features/auth/hooks/useSession";
+import { useCart } from "@/features/commerce/hooks/useCart";
+import { authApi } from "@/features/auth/api/auth.api";
 import { useQueryClient } from "@tanstack/react-query";
 import { queryKeys } from "@/lib/query/keys";
 import {
@@ -29,6 +27,7 @@ import {
   DropdownMenuTrigger,
 } from "@/shared/components/ui/dropdown-menu";
 import { Button } from "@/shared/components/ui/button";
+import { BrandMark } from "@/shared/components/brand-mark";
 
 export function Navbar() {
   const [isScrolled, setIsScrolled] = useState(false);
@@ -51,7 +50,7 @@ export function Navbar() {
 
   const handleLogout = async () => {
     try {
-      await logout();
+      await authApi.logout();
     } catch {
       // Ignore
     } finally {
@@ -192,34 +191,10 @@ export function Navbar() {
             </div>
 
             {/* Desktop Brand Logo fallback */}
-            <Link
-              href="/"
-              className="group hidden items-center gap-2.5 select-none md:flex"
-            >
-              <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-[#2C3E35] text-white shadow-xs transition-transform group-hover:scale-105">
-                <Sparkles className="h-4.5 w-4.5 text-[#E0F2E9]" />
-              </div>
-              <span className="font-serif text-xl font-bold tracking-tight text-[#2C3E35]">
-                Glow
-                <span className="font-sans font-light text-[#5C7468]">
-                  Scan
-                </span>
-              </span>
-            </Link>
+            <BrandMark className="hidden md:flex" />
           </>
         ) : (
-          <Link
-            href="/"
-            className="group flex items-center gap-2.5 select-none"
-          >
-            <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-[#2C3E35] text-white shadow-xs transition-transform group-hover:scale-105">
-              <Sparkles className="h-4.5 w-4.5 text-[#E0F2E9]" />
-            </div>
-            <span className="font-serif text-xl font-bold tracking-tight text-[#2C3E35]">
-              Glow
-              <span className="font-sans font-light text-[#5C7468]">Scan</span>
-            </span>
-          </Link>
+          <BrandMark />
         )}
 
         {/* Desktop Main Navigation */}
@@ -244,7 +219,7 @@ export function Navbar() {
           className={`items-center gap-3 ${mobileHeader ? "hidden md:flex" : "flex"}`}
         >
           {/* Quick Search Button */}
-          <Link href="/products">
+          {/* <Link href="/products">
             <Button
               variant="ghost"
               size="icon"
@@ -253,7 +228,7 @@ export function Navbar() {
             >
               <Search className="h-4.5 w-4.5" />
             </Button>
-          </Link>
+          </Link> */}
 
           {/* Cart Badge */}
           <Link href="/cart" className="relative">

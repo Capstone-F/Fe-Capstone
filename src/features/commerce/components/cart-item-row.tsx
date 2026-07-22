@@ -3,7 +3,6 @@
 import Link from "next/link";
 import { Minus, Plus, Trash2 } from "lucide-react";
 import { CartLine } from "@/types/domain";
-import { vi } from "@/config/locales/vi";
 import { formatVnd } from "@/shared/utils/format";
 import { CategoryPlaceholder } from "./category-placeholder";
 import { Button } from "@/shared/components/ui/button";
@@ -47,7 +46,7 @@ export function CartItemRow({
           variant="ghost"
           size="icon-sm"
           onClick={() => onRemove(variant.id)}
-          aria-label={vi.commerce.cart.remove}
+          aria-label={"Xóa"}
           className="text-muted-foreground hover:text-destructive"
         >
           <Trash2 className="h-4 w-4" />

@@ -17,8 +17,11 @@ import { Spinner } from "@/shared/components/ui/spinner";
 import { Input } from "@/shared/components/ui/input";
 import { Label } from "@/shared/components/ui/label";
 
-import { loginDirect, registerDirect } from "../api/auth-client";
-import { useSession } from "../hooks/use-session";
+import { authApi } from "../api/auth.api";
+import { authMock } from "../api/auth.mock";
+import { tokenStorage } from "../utils/token-storage";
+import { useSession } from "../hooks/useSession";
+import { appConfig } from "@/lib/env";
 
 type LoginPanelProps = {
   redirectTo: string;
@@ -45,18 +48,46 @@ export function LoginPanel({ redirectTo }: LoginPanelProps) {
     e.preventDefault();
     setIsSubmitting(true);
     try {
-      if (mode === "login") {
-        await loginDirect(email, password);
-        toast.success("Đăng nhập thành công!");
-      } else {
-        if (!name.trim()) {
-          toast.error("Vui lòng nhập họ và tên.");
-          setIsSubmitting(false);
-          return;
+      let tokenData;
+      if (appConfig.useMockApi) {
+        if (mode === "login") {
+          tokenData = await authMock.loginDirect(email);
+          toast.success("Đăng nhập thành công (Mock)!");
+        } else {
+          if (!name.trim()) {
+            toast.error("Vui lòng nhập họ và tên.");
+            setIsSubmitting(false);
+            return;
+          }
+          tokenData = await authMock.registerDirect(email, name.trim());
+          toast.success("Đăng ký thành công (Mock)!");
         }
-        await registerDirect(email, password, name.trim());
-        toast.success("Đăng ký thành công!");
+      } else {
+        if (mode === "login") {
+          const res = await authApi.loginDirect(email, password);
+          tokenData = res.data;
+          toast.success("Đăng nhập thành công!");
+        } else {
+          if (!name.trim()) {
+            toast.error("Vui lòng nhập họ và tên.");
+            setIsSubmitting(false);
+            return;
+          }
+          const res = await authApi.registerDirect(
+            email,
+            password,
+            name.trim(),
+          );
+          tokenData = res.data;
+          toast.success("Đăng ký thành công!");
+        }
       }
+
+      if (tokenData && tokenData.accessToken) {
+        tokenStorage.setAccessToken(tokenData.accessToken);
+        tokenStorage.setRefreshToken(tokenData.refreshToken);
+      }
+
       // Redirect to target path
       window.location.href = redirectTo || "/";
     } catch (error: unknown) {

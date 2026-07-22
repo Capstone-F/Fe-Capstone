@@ -6,7 +6,7 @@ import { Button } from "@/shared/components/ui/button";
 import { usePathname } from "next/navigation";
 import { cn } from "@/lib/utils";
 
-import { useSession } from "@/features/auth/hooks/use-session";
+import { useSession } from "@/features/auth/hooks/useSession";
 import { appConfig } from "@/lib/env";
 import { useTreatment } from "@/features/treatment/components/treatment-context";
 import { shouldRedirectToLogin } from "@/features/auth/lib/session-access";

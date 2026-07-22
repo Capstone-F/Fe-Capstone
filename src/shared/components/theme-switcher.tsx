@@ -11,36 +11,35 @@ import {
   DropdownMenuTrigger,
   DropdownMenuGroup,
 } from "@/shared/components/ui/dropdown-menu";
-import { vi } from "@/config/locales/vi";
 
 const THEMES = [
   {
     id: "default",
-    name: vi.themes.default,
+    name: "Xanh đại dương (Mặc định)",
     color: "bg-[oklch(0.53_0.105_205)]",
     className: "",
   },
   {
     id: "theme-emerald",
-    name: vi.themes.emerald,
+    name: "Xanh ngọc lục bảo",
     color: "bg-[oklch(0.627_0.194_149.214)]",
     className: "theme-emerald",
   },
   {
     id: "theme-orange",
-    name: vi.themes.orange,
+    name: "Cam hoàng hôn",
     color: "bg-[oklch(0.612_0.17_28.59)]",
     className: "theme-orange",
   },
   {
     id: "theme-violet",
-    name: vi.themes.violet,
+    name: "Tím cẩm chạch",
     color: "bg-[oklch(0.505_0.213_275.12)]",
     className: "theme-violet",
   },
   {
     id: "theme-rose",
-    name: vi.themes.rose,
+    name: "Hồng nhạt",
     color: "bg-[oklch(0.645_0.2_3.5)]",
     className: "theme-rose",
   },
@@ -89,11 +88,11 @@ export function ThemeSwitcher() {
     <DropdownMenu>
       <DropdownMenuTrigger className="focus-visible:ring-ring hover:bg-accent hover:text-accent-foreground border-input bg-background/50 inline-flex h-9 items-center justify-center gap-2 rounded-lg border px-3 text-sm font-medium whitespace-nowrap shadow-xs backdrop-blur transition-colors focus-visible:ring-1 focus-visible:outline-none">
         <Palette className="h-4 w-4" />
-        <span className="hidden sm:inline">{vi.header.changeTheme}</span>
+        <span className="hidden sm:inline">{"Đổi giao diện"}</span>
       </DropdownMenuTrigger>
       <DropdownMenuContent align="end" className="w-52">
         <DropdownMenuGroup>
-          <DropdownMenuLabel>{vi.header.selectTheme}</DropdownMenuLabel>
+          <DropdownMenuLabel>{"Chọn màu chủ đạo"}</DropdownMenuLabel>
         </DropdownMenuGroup>
         <DropdownMenuSeparator />
         {THEMES.map((theme) => (

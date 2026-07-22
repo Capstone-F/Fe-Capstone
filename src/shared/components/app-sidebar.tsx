@@ -1,6 +1,7 @@
 "use client";
 
 import * as React from "react";
+import Link from "next/link";
 
 import { NavDocuments } from "@/shared/components/nav-documents";
 import { NavMain } from "@/shared/components/nav-main";
@@ -27,13 +28,12 @@ import {
   DatabaseIcon,
   FileChartColumnIcon,
   FileIcon,
-  CommandIcon,
   LucideIcon,
   ShoppingBagIcon,
   CalendarIcon,
 } from "lucide-react";
-import { vi } from "@/config/locales/vi";
-import { useProfile } from "@/features/profile/hooks/use-profile";
+import { useProfile } from "@/features/profile/hooks/useProfile";
+import { BrandMark } from "@/shared/components/brand-mark";
 
 // Icon Map to convert string names from Server Config to Client React Components
 const IconMap: Record<string, LucideIcon> = {
@@ -107,11 +107,11 @@ export function AppSidebar({ config, ...props }: AppSidebarProps) {
           <SidebarMenuItem>
             <SidebarMenuButton
               className="data-[slot=sidebar-menu-button]:p-1.5!"
-              render={<a href="#" />}
+              render={<Link href="/" />}
             >
-              <CommandIcon className="size-5!" />
+              <BrandMark asLink={false} showLabel={false} className="gap-0" />
               <span className="text-base font-semibold">
-                {vi.sidebar.brand}
+                {"GlowScan Admin"}
               </span>
             </SidebarMenuButton>
           </SidebarMenuItem>

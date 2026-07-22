@@ -12,7 +12,7 @@ import {
 import { Skeleton } from "@/shared/components/ui/skeleton";
 import { appConfig } from "@/lib/env";
 
-import { useSession } from "../hooks/use-session";
+import { useSession } from "../hooks/useSession";
 import { shouldRedirectToLogin } from "../lib/session-access";
 
 export function SessionGuard({

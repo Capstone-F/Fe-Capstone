@@ -12,10 +12,10 @@ import {
   UserCircle2,
 } from "lucide-react";
 
-import { useCart } from "@/features/commerce/hooks/use-cart";
-import { useMergeGuestCartOnLogin } from "@/features/commerce/hooks/use-merge-guest-cart-on-login";
-import { useSession } from "@/features/auth/hooks/use-session";
-import { logout } from "@/features/auth/api/auth-client";
+import { useCart } from "@/features/commerce/hooks/useCart";
+import { useMergeGuestCartOnLogin } from "@/features/commerce/hooks/useMergeGuestCartOnLogin";
+import { useSession } from "@/features/auth/hooks/useSession";
+import { authApi } from "@/features/auth/api/auth.api";
 import { queryKeys } from "@/lib/query/keys";
 import { Badge } from "@/shared/components/ui/badge";
 import { Button } from "@/shared/components/ui/button";
@@ -28,7 +28,6 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/shared/components/ui/dropdown-menu";
-import { vi } from "@/config/locales/vi";
 
 export function ShopNavbar() {
   const { data: cart } = useCart();
@@ -38,7 +37,17 @@ export function ShopNavbar() {
   const queryClient = useQueryClient();
   const [isPending, startTransition] = useTransition();
   const itemCount = cart?.itemCount ?? 0;
-  const n = vi.commerce.nav;
+  const n = {
+    products: "Sản phẩm",
+    cart: "Giỏ hàng",
+    orders: "Đơn hàng",
+    login: "Đăng nhập",
+    account: "Tài khoản",
+    logout: "Đăng xuất",
+    cartMerged: "Đã chuyển giỏ hàng của bạn vào tài khoản.",
+    cartMergeFailed:
+      "Không thể chuyển giỏ hàng vào tài khoản. Vui lòng thử lại.",
+  };
 
   // Merge a guest cart into the server cart when the user logs in.
   useMergeGuestCartOnLogin();
@@ -50,7 +59,7 @@ export function ShopNavbar() {
   function handleLogout() {
     startTransition(async () => {
       try {
-        await logout();
+        await authApi.logout();
       } catch {
         // Ignore errors if session already cleared
       } finally {

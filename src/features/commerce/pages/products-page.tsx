@@ -6,14 +6,13 @@ import { useSearchParams } from "next/navigation";
 import { Filter, RefreshCw, PackageSearch, Search, Layers } from "lucide-react";
 import { toast } from "sonner";
 import { Product } from "@/types/domain";
-import { vi } from "@/config/locales/vi";
 import {
   useCategories,
   useProducts,
   useProductSuggestions,
-} from "@/features/commerce/hooks/use-products";
-import { useAddToCart } from "@/features/commerce/hooks/use-cart";
-import { useSession } from "@/features/auth/hooks/use-session";
+} from "@/features/commerce/hooks/useProducts";
+import { useAddToCart } from "@/features/commerce/hooks/useCart";
+import { useSession } from "@/features/auth/hooks/useSession";
 import { primaryVariant } from "@/features/commerce/mapper/variant";
 import {
   getCategoryIcon,
@@ -36,7 +35,27 @@ import {
 import { EmptyState } from "@/shared/components/ui/empty-state";
 import { cn } from "@/lib/utils";
 
-const c = vi.commerce.products;
+const c = {
+  title: "Cửa hàng sản phẩm",
+  subtitle:
+    "Chọn sản phẩm skincare phù hợp với làn da của bạn — đã được kiểm tra hoạt chất.",
+  filters: "Bộ lọc",
+  reset: "Đặt lại",
+  searchLabel: "Tìm kiếm",
+  searchPlaceholder: "Tên, thương hiệu, hoạt chất...",
+  category: "Danh mục",
+  brand: "Thương hiệu",
+  ingredient: "Thành phần",
+  ingredientPlaceholder: "VD: Niacinamide, Retinol...",
+  all: "Tất cả",
+  addToCart: "Thêm vào giỏ",
+  added: "Đã thêm vào giỏ",
+  addError: "Không thể thêm vào giỏ hàng. Vui lòng thử lại.",
+  emptyTitle: "Không tìm thấy sản phẩm phù hợp",
+  emptyHint: "Thử nới lỏng bộ lọc của bạn.",
+  perPage: "sản phẩm/trang",
+  pageLabel: "Trang",
+};
 const ALL = "Tất cả";
 
 export function ProductsPage() {
@@ -236,7 +255,7 @@ export function ProductsPage() {
         <div className="flex flex-col gap-4 md:col-span-3">
           <div className="flex items-center justify-between">
             <span className="text-muted-foreground text-xs">
-              {data ? `${data.total} ${vi.commerce.cart.itemsCount}` : ""}
+              {data ? `${data.total} ${"sản phẩm"}` : ""}
             </span>
             <div className="flex items-center gap-2">
               <span className="text-xs font-semibold text-slate-500">

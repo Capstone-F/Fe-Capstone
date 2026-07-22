@@ -12,8 +12,8 @@ import {
   User,
   CalendarDays,
 } from "lucide-react";
-import { useExpertDetail } from "@/features/experts/hooks/use-experts";
-import { useSession } from "@/features/auth/hooks/use-session";
+import { useExpertDetail } from "@/features/experts/hooks/useExperts";
+import { useSession } from "@/features/auth/hooks/useSession";
 import { Button } from "@/shared/components/ui/button";
 import {
   Card,
@@ -22,7 +22,6 @@ import {
   CardFooter,
 } from "@/shared/components/ui/card";
 import { Skeleton } from "@/shared/components/ui/skeleton";
-import { vi } from "@/config/locales/vi";
 import { useEffect } from "react";
 
 export function ExpertDetailPage() {
@@ -35,7 +34,24 @@ export function ExpertDetailPage() {
     isLoading,
     error,
   } = useExpertDetail(id, Boolean(session.data));
-  const t = vi.userPortal.expertDetail;
+  const t = {
+    back: "Quay lại danh sách chuyên gia",
+    errorTitle: "Đã xảy ra lỗi",
+    errorHint:
+      "Không thể tải thông tin chuyên gia. Hồ sơ có thể không tồn tại hoặc đường dẫn bị sai.",
+    backToList: "Quay lại danh sách",
+    introTitle: "Giới thiệu chuyên gia",
+    bioSuffix:
+      " Chuyên gia luôn ưu tiên thiết kế các quy trình chăm sóc da đơn giản, an toàn và cá nhân hóa tối đa cho làn da người Việt Nam.",
+    specialtiesTitle: "Lĩnh vực chuyên sâu",
+    clinicTitle: "Nơi công tác & Đối tác",
+    clinicSuffix: " (Được trang bị máy soi da chuyên dụng GlowScan Pro)",
+    commitmentTitle: "Cam kết chất lượng tư vấn",
+    commitmentBody:
+      "Tất cả chuyên gia thuộc mạng lưới GlowScan đều được xác minh chứng chỉ hành nghề da liễu thẩm mỹ và có ít nhất 3 năm kinh nghiệm chuyên sâu.",
+    feeLabel: "Chi phí tư vấn dự kiến",
+    book: "Đặt lịch hẹn ngay",
+  };
 
   useEffect(() => {
     if (!session.isLoading && !session.data) {

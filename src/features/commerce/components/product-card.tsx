@@ -3,7 +3,6 @@
 import Link from "next/link";
 import { ShoppingCart } from "lucide-react";
 import { Product } from "@/types/domain";
-import { vi } from "@/config/locales/vi";
 import { formatVnd } from "@/shared/utils/format";
 import { primaryVariant } from "@/features/commerce/mapper/variant";
 import { Button } from "@/shared/components/ui/button";
@@ -51,7 +50,7 @@ export function ProductCard({
           className="rounded-lg text-xs font-semibold"
         >
           <ShoppingCart className="mr-1 h-3.5 w-3.5" />
-          {vi.commerce.products.addToCart}
+          {"Thêm vào giỏ"}
         </Button>
       </CardFooter>
     </Card>

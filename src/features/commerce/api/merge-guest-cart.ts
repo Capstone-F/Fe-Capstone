@@ -1,8 +1,32 @@
 import { CartItem } from "@/types/domain";
-import { addToCart, getCartItems } from "../api/cart-client";
-import { getAllProducts } from "../api/products-client";
+import { cartApi } from "../api/cart.api";
+import { productsApi } from "../api/products.api";
 import { indexProductVariants } from "../mapper/cart-hydration";
 import { partitionGuestCartItems } from "@/features/commerce/lib/guest-cart-merge";
+
+const CATALOG_PAGE_SIZE = 100;
+async function getAllProducts() {
+  const firstResponse = await productsApi.getProducts({
+    page: 1,
+    limit: CATALOG_PAGE_SIZE,
+  });
+  const first = firstResponse.data;
+  const pageCount = Math.ceil(first.total / CATALOG_PAGE_SIZE);
+  const products = first.items.map((item) => item.product);
+  if (pageCount <= 1) return products;
+
+  const restResponses = await Promise.all(
+    Array.from({ length: pageCount - 1 }, (_, i) =>
+      productsApi.getProducts({ page: i + 2, limit: CATALOG_PAGE_SIZE }),
+    ),
+  );
+  return [
+    ...products,
+    ...restResponses.flatMap((res) =>
+      res.data.items.map((item) => item.product),
+    ),
+  ];
+}
 
 /**
  * Push each guest cart line to the server cart. For a variant that already
@@ -26,15 +50,16 @@ export async function mergeGuestCartIntoServer(
     return { droppedVariantIds: staleVariantIds };
   }
 
-  const serverItems = await getCartItems();
-  const serverQtyByVariant = new Map(
-    serverItems.map((item) => [item.productVariantId, item.quantity]),
+  const serverCartResponse = await cartApi.getCart();
+  const serverItems = serverCartResponse.data.items;
+  const serverQtyByVariant = new Map<string, number>(
+    serverItems.map((item: CartItem) => [item.productVariantId, item.quantity]),
   );
 
   for (const item of mergeableItems) {
     const serverQty = serverQtyByVariant.get(item.productVariantId) ?? 0;
     const mergedQty = Math.max(item.quantity, serverQty);
-    await addToCart(item.productVariantId, mergedQty);
+    await cartApi.addToCart(item.productVariantId, mergedQty, "CATALOG");
   }
 
   return { droppedVariantIds: staleVariantIds };

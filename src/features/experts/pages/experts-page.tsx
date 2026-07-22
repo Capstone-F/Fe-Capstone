@@ -18,12 +18,12 @@ import {
 import {
   useExperts,
   useSpecialties,
-} from "@/features/experts/hooks/use-experts";
+} from "@/features/experts/hooks/useExperts";
 import {
   useProvinceWards,
   useProvinces,
-} from "@/features/experts/hooks/use-provinces";
-import { useSession } from "@/features/auth/hooks/use-session";
+} from "@/features/experts/hooks/useProvinces";
+import { useSession } from "@/features/auth/hooks/useSession";
 import { Button } from "@/shared/components/ui/button";
 import { Input } from "@/shared/components/ui/input";
 import {
@@ -42,7 +42,6 @@ import {
   SelectValue,
 } from "@/shared/components/ui/select";
 import { Label } from "@/shared/components/ui/label";
-import { vi } from "@/config/locales/vi";
 import { EmptyState } from "@/shared/components/ui/empty-state";
 import { ExpertCardSkeleton } from "@/features/experts/components/expert-card-skeleton";
 import { toast } from "sonner";
@@ -185,7 +184,27 @@ export function ExpertsPage() {
   const { data: specialties } = useSpecialties(
     isAuthenticated && !session.isLoading,
   );
-  const t = vi.userPortal.expertsPage;
+  const t = {
+    title: "Mạng lưới Chuyên gia da liễu",
+    subtitle:
+      "Tìm kiếm và đặt lịch tư vấn trực tuyến cùng đội ngũ chuyên gia da liễu hàng đầu.",
+    filtersTitle: "Bộ lọc chuyên sâu",
+    reset: "Đặt lại",
+    searchLabel: "Tìm kiếm",
+    searchPlaceholder: "Tên chuyên gia, trung tâm...",
+    specialtyLabel: "Chuyên môn",
+    allSpecialties: "Tất cả chuyên môn",
+    maxFeeLabel: "Phí tư vấn tối đa (đ)",
+    maxDistanceLabel: "Khoảng cách tối đa",
+    minRatingLabel: "Xếp hạng tối thiểu",
+    all: "Tất cả",
+    distanceLabel: "Khoảng cách:",
+    feeLabel: "Phí tư vấn",
+    book: "Đặt lịch tư vấn",
+    emptyTitle: "Không tìm thấy chuyên gia phù hợp",
+    emptyHint: "Thử nới lỏng các bộ lọc tìm kiếm của bạn.",
+    emptyAction: "Xóa bộ lọc",
+  };
 
   const selectedExpert = experts?.find((e) => e.id === selectedExpertId);
 

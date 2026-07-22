@@ -1,7 +1,6 @@
 "use client";
 
 import { ChevronLeft, ChevronRight } from "lucide-react";
-import { vi } from "@/config/locales/vi";
 import { Button } from "@/shared/components/ui/button";
 import {
   Select,
@@ -34,7 +33,27 @@ export function ProductPagination({
   pageSizeOptions = DEFAULT_PAGE_SIZE_OPTIONS,
   perPageLabel,
 }: ProductPaginationProps) {
-  const c = vi.commerce.products;
+  const c = {
+    title: "Cửa hàng sản phẩm",
+    subtitle:
+      "Chọn sản phẩm skincare phù hợp với làn da của bạn — đã được kiểm tra hoạt chất.",
+    filters: "Bộ lọc",
+    reset: "Đặt lại",
+    searchLabel: "Tìm kiếm",
+    searchPlaceholder: "Tên, thương hiệu, hoạt chất...",
+    category: "Danh mục",
+    brand: "Thương hiệu",
+    ingredient: "Thành phần",
+    ingredientPlaceholder: "VD: Niacinamide, Retinol...",
+    all: "Tất cả",
+    addToCart: "Thêm vào giỏ",
+    added: "Đã thêm vào giỏ",
+    addError: "Không thể thêm vào giỏ hàng. Vui lòng thử lại.",
+    emptyTitle: "Không tìm thấy sản phẩm phù hợp",
+    emptyHint: "Thử nới lỏng bộ lọc của bạn.",
+    perPage: "sản phẩm/trang",
+    pageLabel: "Trang",
+  };
   const unitLabel = perPageLabel ?? c.perPage;
 
   return (

@@ -13,7 +13,7 @@ import {
 import {
   useBookingDetail,
   useUpdatePaymentStatus,
-} from "@/features/booking/hooks/use-booking";
+} from "@/features/booking/hooks/useBooking";
 import { Button } from "@/shared/components/ui/button";
 import {
   Card,

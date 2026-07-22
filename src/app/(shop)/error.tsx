@@ -2,7 +2,6 @@
 
 import { useEffect } from "react";
 import { AlertTriangle } from "lucide-react";
-import { vi } from "@/config/locales/vi";
 import { Button } from "@/shared/components/ui/button";
 
 // Route-level error boundary for the shop routes.
@@ -17,7 +16,11 @@ export default function ShopError({
     console.error(error);
   }, [error]);
 
-  const t = vi.common.error;
+  const t = {
+    title: "Đã xảy ra lỗi kết nối",
+    description: "Có lỗi khi kết nối tới hệ thống. Vui lòng thử lại!",
+    retry: "Tải lại trang",
+  };
 
   return (
     <div className="text-muted-foreground mx-auto flex min-h-[50vh] w-full max-w-md flex-col items-center justify-center gap-3 p-12 text-center">

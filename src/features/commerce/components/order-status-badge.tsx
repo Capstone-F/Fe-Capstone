@@ -1,5 +1,4 @@
 import { OrderStatus } from "@/types/domain";
-import { vi } from "@/config/locales/vi";
 import { cn } from "@/lib/utils";
 
 // Exhaustive over OrderStatus, so adding a status to the union becomes a type
@@ -12,6 +11,16 @@ const STATUS_STYLES: Record<OrderStatus, string> = {
   DELIVERED: "bg-success-soft text-success",
   CANCELLED: "bg-destructive-soft text-destructive",
   REFUNDED: "bg-destructive-soft text-destructive",
+};
+
+const STATUS_TEXT: Record<OrderStatus, string> = {
+  PENDING: "Chờ thanh toán",
+  PAID: "Đã thanh toán",
+  PROCESSING: "Đang xử lý",
+  SHIPPED: "Đang giao",
+  DELIVERED: "Đã giao",
+  CANCELLED: "Đã huỷ",
+  REFUNDED: "Đã hoàn tiền",
 };
 
 export function OrderStatusBadge({
@@ -29,7 +38,7 @@ export function OrderStatusBadge({
         className,
       )}
     >
-      {vi.commerce.orders.status[status]}
+      {STATUS_TEXT[status]}
     </span>
   );
 }

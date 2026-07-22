@@ -4,7 +4,7 @@ import { ArrowLeft, Loader2 } from "lucide-react";
 import { Button } from "@/shared/components/ui/button";
 import { useRouter } from "next/navigation";
 import { useTreatment } from "@/features/treatment/components/treatment-context";
-import { useProfile } from "@/features/profile/hooks/use-profile";
+import { useProfile } from "@/features/profile/hooks/useProfile";
 import { getRequiredSurveyProfileFields } from "@/features/treatment/lib/survey-flow";
 
 export function IntroScreen() {

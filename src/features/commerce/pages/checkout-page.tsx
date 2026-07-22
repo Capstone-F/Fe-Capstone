@@ -6,16 +6,15 @@ import { useRouter } from "next/navigation";
 import { CreditCard, Truck } from "lucide-react";
 import { toast } from "sonner";
 import { DeliveryOption, PaymentMethod, ShippingAddress } from "@/types/domain";
-import { vi } from "@/config/locales/vi";
-import { useCart } from "@/features/commerce/hooks/use-cart";
-import { useCreateOrder } from "@/features/commerce/hooks/use-checkout";
-import { useDeliveryOptions } from "@/features/commerce/hooks/use-delivery";
-import { attachDelivery } from "@/features/commerce/api/delivery-client";
-import { startCheckout } from "@/features/commerce/api/payments-client";
+import { useCart } from "@/features/commerce/hooks/useCart";
+import { useCreateOrder } from "@/features/commerce/hooks/useCheckout";
+import { useDeliveryOptions } from "@/features/commerce/hooks/useDelivery";
+import { deliveryApi } from "@/features/commerce/api/delivery.api";
+import { paymentsApi } from "@/features/commerce/api/payments.api";
 import { formatVnd } from "@/shared/utils/format";
 import { OrderSummary } from "@/features/commerce/components/order-summary";
 import { CheckoutStepper } from "@/features/commerce/components/checkout-stepper";
-import { useSession } from "@/features/auth/hooks/use-session";
+import { useSession } from "@/features/auth/hooks/useSession";
 import { Button } from "@/shared/components/ui/button";
 import { Input } from "@/shared/components/ui/input";
 import { Label } from "@/shared/components/ui/label";
@@ -27,7 +26,64 @@ import {
 } from "@/shared/components/ui/card";
 import { cn } from "@/lib/utils";
 
-const ck = vi.commerce.checkout;
+const ck = {
+  title: "Thanh toán",
+  loginRequiredTitle: "Vui lòng đăng nhập để đặt hàng",
+  loginRequiredHint:
+    "Bạn cần đăng nhập để tiếp tục thanh toán. Giỏ hàng của bạn sẽ được giữ lại.",
+  loginCta: "Đăng nhập",
+  steps: {
+    review: "Xem lại giỏ",
+    shipping: "Giao hàng",
+    payment: "Thanh toán",
+    confirm: "Xác nhận",
+    done: "Hoàn tất",
+  },
+  address: {
+    heading: "Địa chỉ nhận hàng",
+    fullName: "Họ và tên",
+    phone: "Số điện thoại",
+    line: "Địa chỉ (số nhà, đường, phường/xã)",
+    city: "Tỉnh / Thành phố",
+  },
+  delivery: {
+    heading: "Phương thức giao hàng",
+    loading: "Đang tải phương thức giao hàng...",
+    empty: "Hiện chưa có phương thức giao hàng khả dụng.",
+    types: {
+      STANDARD: "Giao tiêu chuẩn",
+      EXPRESS: "Giao nhanh",
+      SAME_DAY: "Giao trong ngày",
+    },
+  },
+  payment: {
+    vnpay: "VnPay",
+    vnpayHint: "Thanh toán qua thẻ/ngân hàng (sandbox).",
+    cod: "COD — Thanh toán khi nhận hàng",
+    codDisabledHint: "Backend chỉ hỗ trợ VNPay ở giai đoạn này.",
+  },
+  back: "Quay lại",
+  next: "Tiếp tục",
+  placeOrder: "Đặt hàng",
+  notSelected: "Chưa chọn",
+  errors: {
+    address: "Vui lòng nhập đầy đủ thông tin nhận hàng.",
+    delivery: "Vui lòng chọn phương thức giao hàng.",
+    placeOrder: "Không thể đặt hàng. Vui lòng thử lại.",
+  },
+  successTitle: "Đặt hàng thành công!",
+  successHint: "Cảm ơn bạn. Đơn hàng của bạn đang được xử lý.",
+  loadingTitle: "Đang xác nhận thanh toán...",
+  processingTitle: "Đang xử lý thanh toán...",
+  processingHint:
+    "Vui lòng đợi trong giây lát, hệ thống đang xác nhận với VNPay.",
+  timeoutTitle: "Thanh toán đang được xử lý",
+  timeoutHint:
+    "Quá trình xác nhận đang mất nhiều thời gian hơn dự kiến. Vui lòng kiểm tra lại đơn hàng của bạn sau ít phút.",
+  failedTitle: "Thanh toán không thành công",
+  failedHint: "Đơn hàng chưa được thanh toán. Bạn có thể thử lại từ giỏ hàng.",
+  orderCode: "Mã đơn hàng",
+};
 
 function optionKey(option: DeliveryOption): string {
   return `${option.providerId}:${option.type}`;
@@ -98,12 +154,10 @@ export function CheckoutPage() {
       <div className="mx-auto flex w-full max-w-4xl flex-col gap-4">
         <CheckoutStepper current={0} />
         <div className="text-muted-foreground rounded-2xl border border-dashed border-slate-200 bg-white p-12 text-center">
-          <p className="font-bold text-slate-700">
-            {vi.commerce.cart.emptyTitle}
-          </p>
+          <p className="font-bold text-slate-700">{"Giỏ hàng đang trống"}</p>
           <Link href="/products">
             <Button variant="outline" size="sm" className="mt-4 text-xs">
-              {vi.commerce.cart.continueShopping}
+              {"Tiếp tục mua sắm"}
             </Button>
           </Link>
         </div>
@@ -125,13 +179,13 @@ export function CheckoutPage() {
     setIsPlacing(true);
     try {
       const order = await createOrder.mutateAsync();
-      await attachDelivery(order.id, {
+      await deliveryApi.attachDelivery(order.id, {
         providerId: selectedOption.providerId,
         type: selectedOption.type,
         shippingAddress,
       });
-      const { paymentUrl } = await startCheckout(order.id);
-      window.location.assign(paymentUrl);
+      const checkoutResponse = await paymentsApi.startCheckout(order.id);
+      window.location.assign(checkoutResponse.data.paymentUrl);
     } catch {
       setIsPlacing(false);
       toast.error(ck.errors.placeOrder);
@@ -158,7 +212,9 @@ export function CheckoutPage() {
                 {cart.unresolvedVariantIds.length > 0 && (
                   <p className="bg-warning-soft text-warning rounded-xl px-3 py-2 text-xs">
                     {cart.unresolvedVariantIds.length}{" "}
-                    {vi.commerce.cart.unresolvedItemsNote}
+                    {
+                      "sản phẩm trong giỏ không tải được thông tin hiển thị (đã ẩn khỏi danh sách)."
+                    }
                   </p>
                 )}
                 {lines.map((line) => (

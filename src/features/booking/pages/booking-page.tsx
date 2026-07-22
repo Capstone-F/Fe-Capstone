@@ -13,9 +13,9 @@ import {
 import {
   useSlots,
   useCreateBooking,
-} from "@/features/booking/hooks/use-booking";
-import { useExpertDetail } from "@/features/experts/hooks/use-experts";
-import { useSession } from "@/features/auth/hooks/use-session";
+} from "@/features/booking/hooks/useBooking";
+import { useExpertDetail } from "@/features/experts/hooks/useExperts";
+import { useSession } from "@/features/auth/hooks/useSession";
 import { Button } from "@/shared/components/ui/button";
 import {
   Card,

@@ -6,7 +6,7 @@ import { useTransition } from "react";
 
 import { Button } from "@/shared/components/ui/button";
 
-import { logout } from "../api/auth-client";
+import { authApi } from "../api/auth.api";
 
 export function LogoutButton() {
   const router = useRouter();
@@ -15,7 +15,7 @@ export function LogoutButton() {
   function handleLogout() {
     startTransition(async () => {
       try {
-        await logout();
+        await authApi.logout();
       } catch (error) {
         console.error(error);
       } finally {

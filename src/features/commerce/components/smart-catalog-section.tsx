@@ -3,9 +3,9 @@
 import Link from "next/link";
 import { AlertTriangle, Plus, Check, ArrowRight } from "lucide-react";
 import { toast } from "sonner";
-import { useProductSelection } from "../hooks/use-product-selection";
-import { useAddToCart } from "../hooks/use-cart";
-import { useProducts } from "../hooks/use-products";
+import { useProductSelection } from "../hooks/useProductSelection";
+import { useAddToCart } from "../hooks/useCart";
+import { useProducts } from "../hooks/useProducts";
 import { primaryVariant } from "../mapper/variant";
 import { Button } from "@/shared/components/ui/button";
 import { formatVnd } from "@/shared/utils/format";
