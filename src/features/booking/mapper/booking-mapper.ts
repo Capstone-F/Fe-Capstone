@@ -1,4 +1,7 @@
-import type { BackendBooking, ConsultationBooking } from "../types/booking";
+import type {
+  BackendBooking,
+  ConsultationBooking,
+} from "../types/booking.types";
 import { DEFAULT_CONSULTATION_FEE } from "../constants/booking";
 
 export function mapBackendBookingToFrontend(

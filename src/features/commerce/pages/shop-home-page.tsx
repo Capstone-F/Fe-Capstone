@@ -16,14 +16,14 @@ import {
   UserCircle2,
 } from "lucide-react";
 import { toast } from "sonner";
-import { useSession } from "@/features/auth/hooks/use-session";
-import { useProfile } from "@/features/profile/hooks/use-profile";
+import { useSession } from "@/features/auth/hooks/useSession";
+import { useProfile } from "@/features/profile/hooks/useProfile";
 import {
   useCategories,
   useProducts,
   useProductSuggestions,
-} from "@/features/commerce/hooks/use-products";
-import { useAddToCart } from "@/features/commerce/hooks/use-cart";
+} from "@/features/commerce/hooks/useProducts";
+import { useAddToCart } from "@/features/commerce/hooks/useCart";
 import { primaryVariant } from "@/features/commerce/mapper/variant";
 import { ProductCard } from "@/features/commerce/components/product-card";
 import { ProductCardSkeleton } from "@/features/commerce/components/product-card-skeleton";

@@ -1,5 +1,4 @@
 import { CartSummary } from "@/types/domain";
-import { vi } from "@/config/locales/vi";
 import { formatVnd } from "@/shared/utils/format";
 import {
   Card,
@@ -22,7 +21,22 @@ export function OrderSummary({
   onPrimary,
   primaryDisabled,
 }: OrderSummaryProps) {
-  const cc = vi.commerce.cart;
+  const cc = {
+    title: "Giỏ hàng của tôi",
+    subtitle: "Xem lại sản phẩm trước khi thanh toán.",
+    emptyTitle: "Giỏ hàng đang trống",
+    emptyHint: "Khám phá cửa hàng và thêm sản phẩm bạn yêu thích.",
+    continueShopping: "Tiếp tục mua sắm",
+    remove: "Xóa",
+    subtotal: "Tạm tính",
+    shipping: "Phí vận chuyển",
+    freeShip: "Miễn phí",
+    total: "Tổng cộng",
+    checkout: "Tiến hành thanh toán",
+    itemsCount: "sản phẩm",
+    unresolvedItemsNote:
+      "sản phẩm trong giỏ không tải được thông tin hiển thị (đã ẩn khỏi danh sách).",
+  };
   return (
     <Card className="border-slate-200 shadow-sm">
       <CardHeader className="border-b border-slate-100 p-4">

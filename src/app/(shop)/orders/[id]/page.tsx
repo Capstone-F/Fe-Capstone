@@ -3,10 +3,9 @@
 import { use } from "react";
 import Link from "next/link";
 import { ArrowLeft, PackageX } from "lucide-react";
-import { vi } from "@/config/locales/vi";
 import { Card, CardContent } from "@/shared/components/ui/card";
 import { EmptyState } from "@/shared/components/ui/empty-state";
-import { useOrder } from "@/features/commerce/hooks/use-orders";
+import { useOrder } from "@/features/commerce/hooks/useOrders";
 import { OrderItemRow } from "@/features/commerce/components/order-item-row";
 import { OrderStatusBadge } from "@/features/commerce/components/order-status-badge";
 import { OrderCardSkeleton } from "@/features/commerce/components/order-card-skeleton";
@@ -19,7 +18,46 @@ export default function OrderDetailPage({
   params: Promise<{ id: string }>;
 }) {
   const { id } = use(params);
-  const t = vi.commerce.orders;
+  const t = {
+    title: "Đơn hàng của tôi",
+    subtitle: "Theo dõi các đơn hàng bạn đã đặt.",
+    filterLabel: "Trạng thái",
+    filterAll: "Tất cả",
+    perPage: "đơn/trang",
+    codeLabel: "Mã đơn",
+    placedAt: "Đặt ngày",
+    moreItems: "món khác",
+    viewDetail: "Xem chi tiết",
+    unknownProduct: "Sản phẩm",
+    quantityShort: "SL",
+    status: {
+      PENDING: "Chờ thanh toán",
+      PAID: "Đã thanh toán",
+      PROCESSING: "Đang xử lý",
+      SHIPPED: "Đang giao",
+      DELIVERED: "Đã giao",
+      CANCELLED: "Đã huỷ",
+      REFUNDED: "Đã hoàn tiền",
+    },
+    loginTitle: "Đăng nhập để xem đơn hàng",
+    loginHint: "Bạn cần đăng nhập để xem lịch sử đơn hàng của mình.",
+    loginCta: "Đăng nhập",
+    emptyTitle: "Chưa có đơn hàng nào",
+    emptyHint: "Khám phá cửa hàng và đặt đơn hàng đầu tiên của bạn.",
+    emptyCta: "Mua sắm ngay",
+    emptyFilteredTitle: "Không có đơn hàng nào ở trạng thái này",
+    emptyFilteredHint: "Thử chọn một trạng thái khác hoặc xem tất cả đơn hàng.",
+    notFoundTitle: "Không tìm thấy đơn hàng",
+    notFoundHint: "Đơn hàng không tồn tại hoặc không thuộc về tài khoản này.",
+    backToList: "Quay lại danh sách đơn hàng",
+    detailTitle: "Chi tiết đơn hàng",
+    itemsHeading: "Sản phẩm đã đặt",
+    summaryHeading: "Tổng kết đơn hàng",
+    subtotal: "Tạm tính",
+    discount: "Giảm giá",
+    shipping: "Phí vận chuyển",
+    total: "Tổng cộng",
+  };
   const { order, items, isLoading, isNotFound } = useOrder(id);
 
   return (

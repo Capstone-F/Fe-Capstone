@@ -1,7 +1,6 @@
 import { Separator } from "@/shared/components/ui/separator";
 import { SidebarTrigger } from "@/shared/components/ui/sidebar";
 import { ThemeSwitcher } from "@/shared/components/theme-switcher";
-import { vi } from "@/config/locales/vi";
 
 export function SiteHeader() {
   return (
@@ -12,7 +11,7 @@ export function SiteHeader() {
           orientation="vertical"
           className="mx-2 h-4 data-vertical:self-auto"
         />
-        <h1 className="text-base font-medium">{vi.header.documents}</h1>
+        <h1 className="text-base font-medium">{"Tài liệu"}</h1>
         <div className="ml-auto">
           <ThemeSwitcher />
         </div>

@@ -30,7 +30,7 @@ import {
 import { useRouter } from "next/navigation";
 import { useTransition } from "react";
 
-import { logout } from "@/features/auth/api/auth-client";
+import { authApi } from "@/features/auth/api/auth.api";
 
 export function NavUser({
   user,
@@ -48,7 +48,7 @@ export function NavUser({
   function handleLogout() {
     startTransition(async () => {
       try {
-        await logout();
+        await authApi.logout();
       } catch (error) {
         console.error("Logout error:", error);
       } finally {

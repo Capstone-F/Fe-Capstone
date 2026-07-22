@@ -9,16 +9,38 @@ import {
   MessageSquare,
   CalendarX,
 } from "lucide-react";
-import { useBookings } from "@/features/booking/hooks/use-booking";
+import { useBookings } from "@/features/booking/hooks/useBooking";
 import { Button } from "@/shared/components/ui/button";
 import { Card, CardContent } from "@/shared/components/ui/card";
-import { vi } from "@/config/locales/vi";
 import { EmptyState } from "@/shared/components/ui/empty-state";
 import { AppointmentCardSkeleton } from "@/features/booking/components/appointment-card-skeleton";
 
 export function AppointmentsPage() {
   const { data: bookings, isLoading } = useBookings();
-  const t = vi.userPortal.appointmentsPage;
+  const t = {
+    title: "Lịch hẹn tư vấn của tôi",
+    subtitle:
+      "Xem và quản lý các lượt tư vấn trực tiếp cùng chuyên gia da liễu.",
+    codeLabel: "Mã cuộc hẹn:",
+    bookedAtLabel: "Đặt lúc:",
+    expertInCharge: "Chuyên gia phụ trách",
+    appointmentTime: "Thời gian hẹn",
+    serviceFee: "Phí dịch vụ",
+    concernLabel: "Mối quan tâm về da:",
+    status: {
+      paid: "Đã thanh toán",
+      confirmed: "Đã xác nhận",
+      cancelled: "Đã hủy",
+      pending: "Chờ thanh toán",
+    },
+    payNow: "Thanh toán ngay",
+    waiting: "Chờ đến lượt tư vấn",
+    completed: "Hoàn thành",
+    emptyTitle: "Chưa có lịch hẹn nào",
+    emptyHint:
+      "Lịch sử đặt tư vấn trực tiếp cùng chuyên gia da liễu sẽ hiển thị tại đây.",
+    emptyAction: "Tìm chuyên gia đặt lịch ngay",
+  };
 
   const formatDate = (isoString: string) => {
     const d = new Date(isoString);

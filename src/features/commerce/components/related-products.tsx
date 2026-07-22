@@ -2,13 +2,29 @@
 
 import { toast } from "sonner";
 import { Product } from "@/types/domain";
-import { vi } from "@/config/locales/vi";
-import { useProducts } from "../hooks/use-products";
-import { useAddToCart } from "../hooks/use-cart";
+import { useProducts } from "../hooks/useProducts";
+import { useAddToCart } from "../hooks/useCart";
 import { primaryVariant } from "@/features/commerce/mapper/variant";
 import { ProductCard } from "./product-card";
 
-const d = vi.commerce.detail;
+const d = {
+  quantity: "Số lượng",
+  ingredients: "Thành phần",
+  description: "Mô tả",
+  noDescription: "Sản phẩm này chưa có mô tả.",
+  noIngredients: "Chưa có thông tin thành phần.",
+  related: "Sản phẩm liên quan",
+  relatedInCategory: "Sản phẩm cùng danh mục",
+  backToShop: "Quay lại cửa hàng",
+  breadcrumbHome: "Trang chủ",
+  breadcrumbShop: "Sản phẩm",
+  variantLabel: "Phân loại",
+  sku: "Mã SKU",
+  keyIngredients: "Thành phần chính",
+  trustGenuine: "Chính hãng",
+  trustShipping: "Miễn phí vận chuyển",
+  trustReturn: "Đổi trả trong 7 ngày",
+};
 
 /**
  * "Sản phẩm cùng danh mục" — fetches active products in the same category via
@@ -35,8 +51,7 @@ export function RelatedProducts({
     addToCart.mutate(
       { productVariantId: variant.id },
       {
-        onSuccess: () =>
-          toast.success(`${vi.commerce.products.added}: ${product.name}`),
+        onSuccess: () => toast.success(`${"Đã thêm vào giỏ"}: ${product.name}`),
       },
     );
   };

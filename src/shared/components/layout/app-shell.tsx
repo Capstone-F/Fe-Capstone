@@ -1,7 +1,7 @@
 "use client";
 
 import React from "react";
-import { useMergeGuestCartOnLogin } from "@/features/commerce/hooks/use-merge-guest-cart-on-login";
+import { useMergeGuestCartOnLogin } from "@/features/commerce/hooks/useMergeGuestCartOnLogin";
 import { Navbar } from "./navbar";
 import { Footer } from "./footer";
 import { BottomNav } from "./bottom-nav";

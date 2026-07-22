@@ -11,7 +11,7 @@ import {
   ArrowRight,
   Home,
 } from "lucide-react";
-import { useBookingDetail } from "@/features/booking/hooks/use-booking";
+import { useBookingDetail } from "@/features/booking/hooks/useBooking";
 import { Button } from "@/shared/components/ui/button";
 import {
   Card,

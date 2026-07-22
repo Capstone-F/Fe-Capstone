@@ -5,68 +5,66 @@
  * Note: Icons are stored as string names to prevent Next.js Server-to-Client serialization crashes.
  */
 
-import { vi } from "./locales/vi";
-
 export const siteConfig = {
   // Config for the general dashboard
   dashboard: {
     navMain: [
       {
-        title: vi.sidebar.sections.dashboard,
+        title: "Bảng điều khiển",
         url: "/dashboard",
         icon: "LayoutDashboard",
       },
       {
-        title: vi.sidebar.sections.lifecycle,
+        title: "Vòng đời khách hàng",
         url: "#",
         icon: "List",
       },
       {
-        title: vi.sidebar.sections.analytics,
+        title: "Phân tích & Thống kê",
         url: "#",
         icon: "ChartBar",
       },
       {
-        title: vi.sidebar.sections.projects,
+        title: "Dự án",
         url: "#",
         icon: "Folder",
       },
       {
-        title: vi.sidebar.sections.team,
+        title: "Đội ngũ",
         url: "#",
         icon: "Users",
       },
     ],
     navSecondary: [
       {
-        title: vi.sidebar.sections.settings,
+        title: "Cài đặt hệ thống",
         url: "#",
         icon: "Settings2",
       },
       {
-        title: vi.sidebar.sections.help,
+        title: "Trợ giúp & Hỗ trợ",
         url: "#",
         icon: "CircleHelp",
       },
       {
-        title: vi.sidebar.sections.search,
+        title: "Tìm kiếm...",
         url: "#",
         icon: "Search",
       },
     ],
     documents: [
       {
-        name: vi.sidebar.sections.dataLibrary,
+        name: "Thư viện dữ liệu",
         url: "#",
         icon: "Database",
       },
       {
-        name: vi.sidebar.sections.reports,
+        name: "Báo cáo",
         url: "#",
         icon: "FileChartColumn",
       },
       {
-        name: vi.sidebar.sections.wordAssistant,
+        name: "Trợ lý AI",
         url: "#",
         icon: "File",
       },
@@ -77,22 +75,22 @@ export const siteConfig = {
   userPortal: {
     navMain: [
       {
-        title: vi.userPortal.dashboard,
+        title: "Bảng điều khiển & Soi da",
         url: "/scan",
         icon: "LayoutDashboard",
       },
       {
-        title: vi.userPortal.experts,
+        title: "Danh sách Chuyên gia",
         url: "/experts",
         icon: "Users",
       },
       {
-        title: vi.userPortal.appointments,
+        title: "Lịch hẹn của tôi",
         url: "/appointments",
         icon: "Calendar",
       },
       {
-        title: vi.userPortal.profile,
+        title: "Hồ sơ cá nhân",
         url: "/profile",
         icon: "Settings2",
       },

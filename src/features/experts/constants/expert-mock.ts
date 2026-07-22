@@ -1,4 +1,4 @@
-import type { Expert } from "../types/expert";
+import type { Expert } from "../types/expert.types";
 
 export const MOCK_EXPERTS: Expert[] = [
   {

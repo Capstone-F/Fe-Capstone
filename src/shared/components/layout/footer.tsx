@@ -1,5 +1,6 @@
-import Link from "next/link";
-import { Sparkles, ShieldAlert } from "lucide-react";
+import { ShieldAlert } from "lucide-react";
+
+import { BrandMark } from "@/shared/components/brand-mark";
 
 export function Footer() {
   return (
@@ -8,14 +9,7 @@ export function Footer() {
         <div className="grid grid-cols-1 gap-8 pb-12 md:grid-cols-4">
           {/* Logo & Description */}
           <div className="space-y-4 md:col-span-1">
-            <Link href="/" className="flex items-center gap-2">
-              <div className="bg-primary flex h-8 w-8 items-center justify-center rounded-lg text-white">
-                <Sparkles className="h-4 w-4" />
-              </div>
-              <span className="font-heading text-foreground text-lg font-bold">
-                Glow<span className="text-primary">Scan</span>
-              </span>
-            </Link>
+            <BrandMark href="/" />
             <p className="text-muted-foreground text-sm leading-relaxed">
               Hệ thống Beauty-Tech E-Commerce tích hợp AI phân tích da mặt và tư
               vấn chăm sóc da cá nhân hóa hàng đầu Việt Nam.
@@ -154,7 +148,7 @@ export function Footer() {
         {/* Medical Disclaimer Panel */}
         <div className="border-border border-t pt-8 pb-6">
           <div className="bg-destructive/5 border-destructive/10 text-muted-foreground flex gap-3 rounded-2xl border p-4 text-xs leading-relaxed">
-            <ShieldAlert className="text-destructive h-5 w-5 flex-shrink-0" />
+            <ShieldAlert className="text-destructive h-5 w-5 shrink-0" />
             <div>
               <span className="text-destructive mb-1 block font-bold">
                 TUYÊN BỐ MIỄN TRỪ TRÁCH NHIỆM Y TẾ:

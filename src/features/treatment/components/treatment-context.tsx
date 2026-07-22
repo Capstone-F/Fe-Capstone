@@ -16,15 +16,7 @@ import type {
   RecommendationResponseDto,
 } from "@/types/domain";
 import { DEFAULT_ANSWERS, LOCAL_STORAGE_KEY } from "../constants/treatment";
-import {
-  fetchQuestionsApi,
-  createSurveySessionApi,
-  submitSurveyAnswersApi,
-  fetchCustomerProfileApi,
-  fetchLatestRecommendationsApi,
-  completeSurveyApi,
-  addRecommendationToCartApi,
-} from "../api/treatment-client";
+import { treatmentApi } from "../api/treatment.api";
 import {
   getRequiredSurveyProfileFields,
   mapRecommendationProducts,
@@ -297,7 +289,8 @@ export function TreatmentProvider({ children }: { children: React.ReactNode }) {
       dynamicError: null,
     }));
     try {
-      const profile = await fetchCustomerProfileApi();
+      const profileResponse = await treatmentApi.fetchCustomerProfile();
+      const profile = profileResponse.data;
       const missingProfileFields = getRequiredSurveyProfileFields(
         profile?.customer,
       );
@@ -309,9 +302,11 @@ export function TreatmentProvider({ children }: { children: React.ReactNode }) {
       }
 
       // 1. Get CORE questions
-      const questions = await fetchQuestionsApi();
+      const questionsResponse = await treatmentApi.fetchQuestions();
+      const questions = questionsResponse.data;
       // 2. Start survey session
-      const session = await createSurveySessionApi();
+      const sessionResponse = await treatmentApi.createSurveySession();
+      const session = sessionResponse.data;
       setState((prev) => ({
         ...prev,
         surveySessionId: session.id,
@@ -365,10 +360,16 @@ export function TreatmentProvider({ children }: { children: React.ReactNode }) {
           value: state.dynamicTextAnswers[qId],
         }));
 
-        await submitSurveyAnswersApi(state.surveySessionId, payloadAnswers);
+        await treatmentApi.submitSurveyAnswers(
+          state.surveySessionId,
+          payloadAnswers,
+        );
 
         // Check if any conditional questions (L2) unlocked
-        const nextQuestions = await fetchQuestionsApi(state.surveySessionId);
+        const nextQuestionsResponse = await treatmentApi.fetchQuestions(
+          state.surveySessionId,
+        );
+        const nextQuestions = nextQuestionsResponse.data;
 
         setState((prev) => ({
           ...prev,
@@ -395,7 +396,8 @@ export function TreatmentProvider({ children }: { children: React.ReactNode }) {
 
   const fetchCustomerProfile = useCallback(async () => {
     try {
-      const profile = await fetchCustomerProfileApi();
+      const response = await treatmentApi.fetchCustomerProfile();
+      const profile = response.data;
       setState((prev) => ({ ...prev, customerProfile: profile }));
       return profile;
     } catch (e) {
@@ -406,7 +408,8 @@ export function TreatmentProvider({ children }: { children: React.ReactNode }) {
 
   const fetchLatestRecommendations = useCallback(async () => {
     try {
-      const rec = await fetchLatestRecommendationsApi();
+      const response = await treatmentApi.fetchLatestRecommendations();
+      const rec = response.data;
       setState((prev) => ({ ...prev, recommendations: rec }));
       return rec;
     } catch (e) {
@@ -424,7 +427,7 @@ export function TreatmentProvider({ children }: { children: React.ReactNode }) {
     }));
     try {
       // Complete on backend
-      await completeSurveyApi(state.surveySessionId);
+      await treatmentApi.completeSurvey(state.surveySessionId);
 
       // Fetch the canonical backend outputs for this survey.
       const [profile, recommendation] = await Promise.all([
@@ -503,7 +506,10 @@ export function TreatmentProvider({ children }: { children: React.ReactNode }) {
           if (!validVariantIds.has(variantId)) {
             continue;
           }
-          await addRecommendationToCartApi(variantId, recommendationId);
+          await treatmentApi.addRecommendationToCart(
+            variantId,
+            recommendationId,
+          );
         }
         return true;
       } catch (e: unknown) {
@@ -566,4 +572,4 @@ export function TreatmentProvider({ children }: { children: React.ReactNode }) {
   );
 }
 
-export { useTreatment } from "../hooks/use-treatment";
+export { useTreatment } from "../hooks/useTreatment";

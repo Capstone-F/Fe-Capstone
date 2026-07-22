@@ -1,4 +1,4 @@
-import type { BackendExpert, Expert } from "../types/expert";
+import type { BackendExpert, Expert } from "../types/expert.types";
 
 export function translateSpecialization(spec: string): string {
   switch (spec) {

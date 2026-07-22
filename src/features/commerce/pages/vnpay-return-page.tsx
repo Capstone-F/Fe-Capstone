@@ -5,11 +5,10 @@ import Link from "next/link";
 import { useSearchParams } from "next/navigation";
 import { useQuery } from "@tanstack/react-query";
 import { CheckCircle2, Clock, Loader2, XCircle } from "lucide-react";
-import { vi } from "@/config/locales/vi";
 import { queryKeys } from "@/lib/query/keys";
-import { getPaymentStatus } from "@/features/commerce/api/payments-client";
-import { getOrder } from "@/features/commerce/api/orders-client";
-import { generateRoutine } from "@/features/profile/api/routines-client";
+import { paymentsApi } from "@/features/commerce/api/payments.api";
+import { ordersApi } from "@/features/commerce/api/orders.api";
+import { routinesApi } from "@/features/profile/api/routines.api";
 import { formatVnd } from "@/shared/utils/format";
 import { CheckoutStepper } from "@/features/commerce/components/checkout-stepper";
 import { Button } from "@/shared/components/ui/button";
@@ -17,7 +16,64 @@ import { Card, CardContent } from "@/shared/components/ui/card";
 import { Skeleton } from "@/shared/components/ui/skeleton";
 import type { PaymentStatusValue } from "@/types/domain";
 
-const ck = vi.commerce.checkout;
+const ck = {
+  title: "Thanh toán",
+  loginRequiredTitle: "Vui lòng đăng nhập để đặt hàng",
+  loginRequiredHint:
+    "Bạn cần đăng nhập để tiếp tục thanh toán. Giỏ hàng của bạn sẽ được giữ lại.",
+  loginCta: "Đăng nhập",
+  steps: {
+    review: "Xem lại giỏ",
+    shipping: "Giao hàng",
+    payment: "Thanh toán",
+    confirm: "Xác nhận",
+    done: "Hoàn tất",
+  },
+  address: {
+    heading: "Địa chỉ nhận hàng",
+    fullName: "Họ và tên",
+    phone: "Số điện thoại",
+    line: "Địa chỉ (số nhà, đường, phường/xã)",
+    city: "Tỉnh / Thành phố",
+  },
+  delivery: {
+    heading: "Phương thức giao hàng",
+    loading: "Đang tải phương thức giao hàng...",
+    empty: "Hiện chưa có phương thức giao hàng khả dụng.",
+    types: {
+      STANDARD: "Giao tiêu chuẩn",
+      EXPRESS: "Giao nhanh",
+      SAME_DAY: "Giao trong ngày",
+    },
+  },
+  payment: {
+    vnpay: "VnPay",
+    vnpayHint: "Thanh toán qua thẻ/ngân hàng (sandbox).",
+    cod: "COD — Thanh toán khi nhận hàng",
+    codDisabledHint: "Backend chỉ hỗ trợ VNPay ở giai đoạn này.",
+  },
+  back: "Quay lại",
+  next: "Tiếp tục",
+  placeOrder: "Đặt hàng",
+  notSelected: "Chưa chọn",
+  errors: {
+    address: "Vui lòng nhập đầy đủ thông tin nhận hàng.",
+    delivery: "Vui lòng chọn phương thức giao hàng.",
+    placeOrder: "Không thể đặt hàng. Vui lòng thử lại.",
+  },
+  successTitle: "Đặt hàng thành công!",
+  successHint: "Cảm ơn bạn. Đơn hàng của bạn đang được xử lý.",
+  loadingTitle: "Đang xác nhận thanh toán...",
+  processingTitle: "Đang xử lý thanh toán...",
+  processingHint:
+    "Vui lòng đợi trong giây lát, hệ thống đang xác nhận với VNPay.",
+  timeoutTitle: "Thanh toán đang được xử lý",
+  timeoutHint:
+    "Quá trình xác nhận đang mất nhiều thời gian hơn dự kiến. Vui lòng kiểm tra lại đơn hàng của bạn sau ít phút.",
+  failedTitle: "Thanh toán không thành công",
+  failedHint: "Đơn hàng chưa được thanh toán. Bạn có thể thử lại từ giỏ hàng.",
+  orderCode: "Mã đơn hàng",
+};
 
 function isPendingPaymentStatus(
   status: PaymentStatusValue | undefined,
@@ -64,7 +120,17 @@ function VnpayReturnContent() {
     isError,
   } = useQuery({
     queryKey: queryKeys.payment(paymentId),
-    queryFn: () => getPaymentStatus(paymentId),
+    queryFn: async () => {
+      const response = await paymentsApi.getPaymentStatus(paymentId);
+      return {
+        id: response.data.id,
+        orderId: response.data.orderId,
+        status: response.data.status as PaymentStatusValue,
+        provider: response.data.provider,
+        amountVnd: response.data.amountVnd,
+        paidAt: response.data.paidAt,
+      };
+    },
     enabled: !!paymentId,
     refetchInterval: (query) => {
       if (timedOutRef.current) {
@@ -79,7 +145,15 @@ function VnpayReturnContent() {
 
   const { data: order } = useQuery({
     queryKey: queryKeys.order(payment?.orderId ?? ""),
-    queryFn: () => getOrder(payment!.orderId),
+    queryFn: async () => {
+      const response = await ordersApi.getOrder(payment!.orderId);
+      return {
+        id: response.data.id,
+        status: response.data.status,
+        source: response.data.source,
+        totalVnd: response.data.totalVnd,
+      };
+    },
     enabled: !!payment?.orderId,
   });
 
@@ -124,7 +198,7 @@ function VnpayReturnContent() {
   useEffect(() => {
     if (succeeded && order?.source === "SURVEY" && !generatedRef.current) {
       generatedRef.current = true;
-      generateRoutine(order.id).catch((err) => {
+      routinesApi.generateRoutine(order.id).catch((err: unknown) => {
         console.error("Failed to generate routine:", err);
       });
     }
@@ -155,7 +229,7 @@ function VnpayReturnContent() {
           <div className="mt-2 flex gap-2">
             <Link href="/products">
               <Button size="sm" className="rounded-lg text-xs font-semibold">
-                {vi.commerce.cart.continueShopping}
+                {"Tiếp tục mua sắm"}
               </Button>
             </Link>
           </div>

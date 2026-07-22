@@ -1,8 +1,7 @@
 import Link from "next/link";
 import { ChevronRight } from "lucide-react";
 import { Card, CardContent } from "@/shared/components/ui/card";
-import { vi } from "@/config/locales/vi";
-import { HydratedOrder } from "../hooks/use-orders";
+import { HydratedOrder } from "../hooks/useOrders";
 import { formatOrderCode } from "../lib/order-hydration";
 import { formatVnd } from "@/shared/utils/format";
 import { OrderStatusBadge } from "./order-status-badge";
@@ -11,7 +10,46 @@ import { OrderItemRow } from "./order-item-row";
 const PREVIEW_LIMIT = 2;
 
 export function OrderCard({ entry }: { entry: HydratedOrder }) {
-  const t = vi.commerce.orders;
+  const t = {
+    title: "Đơn hàng của tôi",
+    subtitle: "Theo dõi các đơn hàng bạn đã đặt.",
+    filterLabel: "Trạng thái",
+    filterAll: "Tất cả",
+    perPage: "đơn/trang",
+    codeLabel: "Mã đơn",
+    placedAt: "Đặt ngày",
+    moreItems: "món khác",
+    viewDetail: "Xem chi tiết",
+    unknownProduct: "Sản phẩm",
+    quantityShort: "SL",
+    status: {
+      PENDING: "Chờ thanh toán",
+      PAID: "Đã thanh toán",
+      PROCESSING: "Đang xử lý",
+      SHIPPED: "Đang giao",
+      DELIVERED: "Đã giao",
+      CANCELLED: "Đã huỷ",
+      REFUNDED: "Đã hoàn tiền",
+    },
+    loginTitle: "Đăng nhập để xem đơn hàng",
+    loginHint: "Bạn cần đăng nhập để xem lịch sử đơn hàng của mình.",
+    loginCta: "Đăng nhập",
+    emptyTitle: "Chưa có đơn hàng nào",
+    emptyHint: "Khám phá cửa hàng và đặt đơn hàng đầu tiên của bạn.",
+    emptyCta: "Mua sắm ngay",
+    emptyFilteredTitle: "Không có đơn hàng nào ở trạng thái này",
+    emptyFilteredHint: "Thử chọn một trạng thái khác hoặc xem tất cả đơn hàng.",
+    notFoundTitle: "Không tìm thấy đơn hàng",
+    notFoundHint: "Đơn hàng không tồn tại hoặc không thuộc về tài khoản này.",
+    backToList: "Quay lại danh sách đơn hàng",
+    detailTitle: "Chi tiết đơn hàng",
+    itemsHeading: "Sản phẩm đã đặt",
+    summaryHeading: "Tổng kết đơn hàng",
+    subtotal: "Tạm tính",
+    discount: "Giảm giá",
+    shipping: "Phí vận chuyển",
+    total: "Tổng cộng",
+  };
   const { order, items } = entry;
   const preview = items.slice(0, PREVIEW_LIMIT);
   const hiddenCount = items.length - preview.length;

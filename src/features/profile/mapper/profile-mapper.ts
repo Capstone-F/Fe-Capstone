@@ -1,4 +1,4 @@
-import type { SurveyAnswerResponse } from "../types/profile";
+import type { SurveyAnswerResponse } from "../types/profile.types";
 
 export function extractBaumannFromAnswers(
   answers: SurveyAnswerResponse[],

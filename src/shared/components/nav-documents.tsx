@@ -22,7 +22,6 @@ import {
   ShareIcon,
   Trash2Icon,
 } from "lucide-react";
-import { vi } from "@/config/locales/vi";
 
 export function NavDocuments({
   items,
@@ -36,7 +35,7 @@ export function NavDocuments({
   const { isMobile } = useSidebar();
   return (
     <SidebarGroup className="group-data-[collapsible=icon]:hidden">
-      <SidebarGroupLabel>{vi.sidebar.sections.documents}</SidebarGroupLabel>
+      <SidebarGroupLabel>{"Tài liệu"}</SidebarGroupLabel>
       <SidebarMenu>
         {items.map((item) => (
           <SidebarMenuItem key={item.name}>
@@ -54,7 +53,7 @@ export function NavDocuments({
                 }
               >
                 <MoreHorizontalIcon />
-                <span className="sr-only">{vi.sidebar.actions.more}</span>
+                <span className="sr-only">{"Thêm"}</span>
               </DropdownMenuTrigger>
               <DropdownMenuContent
                 className="w-24"
@@ -63,16 +62,16 @@ export function NavDocuments({
               >
                 <DropdownMenuItem>
                   <FolderIcon />
-                  <span>{vi.sidebar.actions.open}</span>
+                  <span>{"Mở"}</span>
                 </DropdownMenuItem>
                 <DropdownMenuItem>
                   <ShareIcon />
-                  <span>{vi.sidebar.actions.share}</span>
+                  <span>{"Chia sẻ"}</span>
                 </DropdownMenuItem>
                 <DropdownMenuSeparator />
                 <DropdownMenuItem variant="destructive">
                   <Trash2Icon />
-                  <span>{vi.sidebar.actions.delete}</span>
+                  <span>{"Xóa"}</span>
                 </DropdownMenuItem>
               </DropdownMenuContent>
             </DropdownMenu>
@@ -81,7 +80,7 @@ export function NavDocuments({
         <SidebarMenuItem>
           <SidebarMenuButton className="text-sidebar-foreground/70">
             <MoreHorizontalIcon className="text-sidebar-foreground/70" />
-            <span>{vi.sidebar.actions.more}</span>
+            <span>{"Thêm"}</span>
           </SidebarMenuButton>
         </SidebarMenuItem>
       </SidebarMenu>

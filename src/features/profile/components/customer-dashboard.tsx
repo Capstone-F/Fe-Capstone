@@ -2,7 +2,7 @@
 
 import React, { useState } from "react";
 import { useRouter } from "next/navigation";
-import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+
 import {
   User,
   Award,
@@ -25,11 +25,11 @@ import {
   CardTitle,
   CardDescription,
 } from "@/shared/components/ui/card";
-import { getProfile, patchProfile } from "../api/profile-client";
-import { getOrders } from "@/features/commerce/api/orders-client";
-import { getBookings } from "@/features/booking/api/booking-client";
+import { useProfile, useUpdateProfile } from "../hooks/useProfile";
+import { useOrders } from "@/features/commerce/hooks/useOrders";
+import { useBookings } from "@/features/booking/hooks/useBooking";
 import { formatVnd } from "@/shared/utils/format";
-import type { UserProfile } from "../types/profile";
+import type { UserProfile } from "../types/profile.types";
 
 interface ProfileFormProps {
   profile: UserProfile;
@@ -153,40 +153,25 @@ type TabType = "profile" | "baumann" | "orders" | "bookings";
 
 export function CustomerDashboard() {
   const router = useRouter();
-  const queryClient = useQueryClient();
   const [activeTab, setActiveTab] = useState<TabType>("profile");
 
   // Profile data
-  const { data: profile, isLoading: isLoadingProfile } = useQuery({
-    queryKey: ["profile"],
-    queryFn: getProfile,
-  });
+  const { data: profile, isLoading: isLoadingProfile } = useProfile();
 
   // Orders data
-  const { data: ordersData, isLoading: isLoadingOrders } = useQuery({
-    queryKey: ["profile-orders"],
-    queryFn: () => getOrders({ page: 1, limit: 10 }),
-    enabled: activeTab === "orders",
+  const { orders: hydratedOrders, isLoading: isLoadingOrders } = useOrders({
+    page: 1,
+    limit: 10,
   });
+  const ordersData = hydratedOrders
+    ? { orders: hydratedOrders.map((ho) => ho.order) }
+    : undefined;
 
   // Bookings data
-  const { data: bookings, isLoading: isLoadingBookings } = useQuery({
-    queryKey: ["profile-bookings"],
-    queryFn: getBookings,
-    enabled: activeTab === "bookings",
-  });
+  const { data: bookings, isLoading: isLoadingBookings } = useBookings();
 
   // Update profile mutation
-  const updateProfileMutation = useMutation({
-    mutationFn: patchProfile,
-    onSuccess: (data) => {
-      queryClient.setQueryData(["profile"], data);
-      toast.success("Cập nhật thông tin cá nhân thành công!");
-    },
-    onError: () => {
-      toast.error("Không thể cập nhật thông tin. Vui lòng thử lại.");
-    },
-  });
+  const updateProfileMutation = useUpdateProfile();
 
   const isLoading = isLoadingProfile;
 

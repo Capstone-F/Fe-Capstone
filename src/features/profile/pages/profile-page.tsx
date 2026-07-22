@@ -18,8 +18,8 @@ import {
   useUpdateProfile,
   useSurveyHistory,
   useAllergyOptions,
-} from "@/features/profile/hooks/use-profile";
-import { useRoutines } from "@/features/profile/hooks/use-routines";
+} from "@/features/profile/hooks/useProfile";
+import { useRoutines } from "@/features/profile/hooks/useRoutines";
 import { Button } from "@/shared/components/ui/button";
 import {
   Card,

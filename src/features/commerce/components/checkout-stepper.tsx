@@ -1,13 +1,12 @@
 import { Check } from "lucide-react";
-import { vi } from "@/config/locales/vi";
 import { cn } from "@/lib/utils";
 
 const STEPS = [
-  vi.commerce.checkout.steps.review,
-  vi.commerce.checkout.steps.shipping,
-  vi.commerce.checkout.steps.payment,
-  vi.commerce.checkout.steps.confirm,
-  vi.commerce.checkout.steps.done,
+  "Xem lại giỏ",
+  "Giao hàng",
+  "Thanh toán",
+  "Xác nhận",
+  "Hoàn tất",
 ];
 
 /** 5-step progress header. `current` is 0-based. */

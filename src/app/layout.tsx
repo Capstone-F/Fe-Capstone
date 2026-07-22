@@ -29,6 +29,10 @@ export const metadata: Metadata = {
   },
   description:
     "GlowScan ket hop phan tich da AI, routine ca nhan hoa, cua hang skincare va mang luoi chuyen gia da lieu.",
+  icons: {
+    icon: "/icon.png",
+    apple: "/icon.png",
+  },
 };
 
 export default function RootLayout({

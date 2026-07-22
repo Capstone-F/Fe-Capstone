@@ -14,11 +14,10 @@ import {
   Truck,
 } from "lucide-react";
 import { toast } from "sonner";
-import { vi } from "@/config/locales/vi";
-import { useProduct } from "@/features/commerce/hooks/use-products";
-import { useAddToCart } from "@/features/commerce/hooks/use-cart";
-import { useSession } from "@/features/auth/hooks/use-session";
-import { useProfile } from "@/features/profile/hooks/use-profile";
+import { useProduct } from "@/features/commerce/hooks/useProducts";
+import { useAddToCart } from "@/features/commerce/hooks/useCart";
+import { useSession } from "@/features/auth/hooks/useSession";
+import { useProfile } from "@/features/profile/hooks/useProfile";
 import { primaryVariant } from "@/features/commerce/mapper/variant";
 import { formatVnd } from "@/shared/utils/format";
 import {
@@ -39,7 +38,24 @@ import {
 import { cn } from "@/lib/utils";
 import type { ProductVariant } from "@/types/domain";
 
-const d = vi.commerce.detail;
+const d = {
+  quantity: "Số lượng",
+  ingredients: "Thành phần",
+  description: "Mô tả",
+  noDescription: "Sản phẩm này chưa có mô tả.",
+  noIngredients: "Chưa có thông tin thành phần.",
+  related: "Sản phẩm liên quan",
+  relatedInCategory: "Sản phẩm cùng danh mục",
+  backToShop: "Quay lại cửa hàng",
+  breadcrumbHome: "Trang chủ",
+  breadcrumbShop: "Sản phẩm",
+  variantLabel: "Phân loại",
+  sku: "Mã SKU",
+  keyIngredients: "Thành phần chính",
+  trustGenuine: "Chính hãng",
+  trustShipping: "Miễn phí vận chuyển",
+  trustReturn: "Đổi trả trong 7 ngày",
+};
 
 function variantLabel(variant: ProductVariant): string {
   return (
@@ -85,9 +101,9 @@ export function ProductDetailPage({
     addToCart.mutate(
       { productVariantId: selectedVariant.id, quantity },
       {
-        onSuccess: () =>
-          toast.success(`${vi.commerce.products.added}: ${product.name}`),
-        onError: () => toast.error(vi.commerce.products.addError),
+        onSuccess: () => toast.success(`${"Đã thêm vào giỏ"}: ${product.name}`),
+        onError: () =>
+          toast.error("Không thể thêm vào giỏ hàng. Vui lòng thử lại."),
       },
     );
   };
@@ -212,7 +228,7 @@ export function ProductDetailPage({
             className="rounded-lg font-semibold"
           >
             <ShoppingCart className="mr-2 h-4 w-4" />
-            {vi.commerce.products.addToCart}
+            {"Thêm vào giỏ"}
           </Button>
 
           <div className="flex flex-wrap gap-x-5 gap-y-2 border-t border-slate-100 pt-4 text-xs text-slate-600">

@@ -22,9 +22,9 @@ import {
   HeartPulse,
 } from "lucide-react";
 import { toast } from "sonner";
-import { useSession } from "@/features/auth/hooks/use-session";
-import { useProfile } from "@/features/profile/hooks/use-profile";
-import { useRoutines } from "@/features/profile/hooks/use-routines";
+import { useSession } from "@/features/auth/hooks/useSession";
+import { useProfile } from "@/features/profile/hooks/useProfile";
+import { useRoutines } from "@/features/profile/hooks/useRoutines";
 import { Button } from "@/shared/components/ui/button";
 import {
   Card,
