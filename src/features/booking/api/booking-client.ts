@@ -1,10 +1,8 @@
 import { apiJson } from "@/lib/api/client";
 import { appConfig } from "@/lib/env";
+import { API_ENDPOINTS } from "@/config/api-endpoints";
 
-import {
-  BOOKING_API_PATHS,
-  LOCAL_STORAGE_KEY_BOOKINGS,
-} from "../constants/booking";
+import { LOCAL_STORAGE_KEY_BOOKINGS } from "../constants/booking";
 import { mapBackendBookingToFrontend } from "../mapper/booking-mapper";
 import type {
   BackendBooking,
@@ -13,8 +11,6 @@ import type {
   ConsultationBooking,
   TimeSlot,
 } from "../types/booking";
-
-export { BOOKING_API_PATHS };
 
 // Helper to load/save bookings in localStorage (for mock mode)
 function loadBookings(): ConsultationBooking[] {
@@ -73,7 +69,7 @@ export async function getSlots(expertId: string): Promise<TimeSlot[]> {
 
   // Real API Logic
   const todayStr = new Date().toISOString().split("T")[0];
-  const url = `${BOOKING_API_PATHS.GET_SLOTS(expertId)}?date=${todayStr}&range=week`;
+  const url = `${API_ENDPOINTS.BOOKINGS.SLOTS(expertId)}?date=${todayStr}&range=week`;
 
   const response = await apiJson<BackendSlotsResponse>(url);
   const slots: TimeSlot[] = [];
@@ -125,7 +121,7 @@ export async function createBooking(input: {
 
   // Real API Logic
   const response = await apiJson<BackendBooking>(
-    BOOKING_API_PATHS.CREATE_BOOKING,
+    API_ENDPOINTS.BOOKINGS.CREATE,
     {
       method: "POST",
       body: {
@@ -147,7 +143,7 @@ export async function getBookings(): Promise<ConsultationBooking[]> {
 
   // Real API Logic
   const response = await apiJson<BackendBookingsResponse>(
-    `${BOOKING_API_PATHS.GET_BOOKINGS}?as=customer`,
+    `${API_ENDPOINTS.BOOKINGS.ME}?as=customer`,
   );
   return response.items.map(mapBackendBookingToFrontend);
 }

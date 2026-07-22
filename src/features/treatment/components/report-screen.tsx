@@ -2,60 +2,54 @@
 
 import {
   ArrowLeft,
-  Droplet,
-  Heart,
-  AlertTriangle,
   ArrowRight,
+  ClipboardList,
+  ShieldCheck,
   Sparkles,
 } from "lucide-react";
+
 import { Button } from "@/shared/components/ui/button";
 import { useTreatment } from "@/features/treatment/components/treatment-context";
+import {
+  getSurveyReviewStep,
+  validateSurveyRecommendation,
+} from "@/features/treatment/lib/survey-flow";
 
 export function ReportScreen() {
-  const { state, setFlowState, setSurveyStep } = useTreatment();
-  const answers = state.surveyAnswers;
-  const aiObs = state.aiObservation;
-
-  // Compute a dynamic skin health score based on answers
-  let score = 85;
-  if (answers.baumannSensitiveResistant === "S") score -= 10;
-  if (answers.irritationStatus && answers.irritationStatus !== "none")
-    score -= 8;
-  if (answers.primaryConcern === "Mụn trứng cá") score -= 7;
-
-  // Guard score range
-  score = Math.max(45, Math.min(98, score));
-
-  // Baumann code & Skin type derived from backend survey completion
+  const { state, setFlowState, setSurveyStep, getRecommendedProducts } =
+    useTreatment();
   const skinType = state.customerProfile?.customer?.skinType;
-  const baumannCode =
-    skinType?.code ||
-    (answers.baumannOilyDry || "O") +
-      (answers.baumannSensitiveResistant || "S") +
-      (answers.baumannPigmentNon || "P") +
-      (answers.baumannWrinkleTight || "T");
+  const baumannScores = state.customerProfile?.customer?.baumannScores;
+  const recommendedProducts = getRecommendedProducts();
+  const recommendationStatus = validateSurveyRecommendation(
+    state.recommendations,
+    state.surveySessionId,
+  );
 
-  // Format Baumann text translation (fallback if backend description missing)
-  const getBaumannTranslation = (code: string) => {
-    if (skinType?.description) return skinType.description;
-    const parts = [];
-    parts.push(code[0] === "O" ? "Da dầu (Oily)" : "Da khô (Dry)");
-    parts.push(
-      code[1] === "S" ? "Nhạy cảm (Sensitive)" : "Khỏe/Đề kháng (Resistant)",
+  if (recommendationStatus !== "ok") {
+    return (
+      <div className="flex flex-1 flex-col justify-center gap-4 px-4 text-center">
+        <h3 className="font-heading text-2xl font-bold text-[#131336]">
+          Chưa thể dựng báo cáo khảo sát
+        </h3>
+        <p className="text-sm text-[#131336]/70">
+          Backend chưa trả về bộ khuyến nghị hợp lệ cho phiên khảo sát này. Vui
+          lòng quay lại và thử hoàn tất khảo sát thêm một lần nữa.
+        </p>
+        <div className="flex justify-center">
+          <Button
+            onClick={() => {
+              setSurveyStep(getSurveyReviewStep(state.dynamicQuestions.length));
+              setFlowState("survey");
+            }}
+            className="rounded-full bg-[#6b5cf6] px-6 text-sm font-bold text-white hover:bg-[#5a4ae5]"
+          >
+            Quay lại khảo sát
+          </Button>
+        </div>
+      </div>
     );
-    parts.push(
-      code[2] === "P" ? "Tăng sắc tố (Pigmented)" : "Đều màu (Non-pigmented)",
-    );
-    parts.push(code[3] === "W" ? "Có nếp nhăn (Wrinkled)" : "Căng mịn (Tight)");
-    return parts.join(" • ");
-  };
-
-  // Circular progress calculations for score
-  const radius = 50;
-  const stroke = 8;
-  const normalizedRadius = radius - stroke * 2;
-  const circumference = normalizedRadius * 2 * Math.PI;
-  const strokeDashoffset = circumference - (score / 100) * circumference;
+  }
 
   return (
     <div className="animate-in fade-in slide-in-from-bottom-4 flex flex-1 flex-col justify-between px-4 duration-500">
@@ -65,7 +59,7 @@ export function ReportScreen() {
             variant="ghost"
             size="icon"
             onClick={() => {
-              setSurveyStep(7);
+              setSurveyStep(getSurveyReviewStep(state.dynamicQuestions.length));
               setFlowState("survey");
             }}
             className="border-border/40 hover:bg-secondary/40 h-8 w-8 shrink-0 rounded-xl border"
@@ -73,242 +67,100 @@ export function ReportScreen() {
             <ArrowLeft className="h-4.5 w-4.5" />
           </Button>
         </div>
-        {/* Header */}
+
         <div className="space-y-1 text-center">
           <span className="text-primary bg-primary/10 rounded-full px-3 py-1 text-[10px] font-bold tracking-wider uppercase">
-            KẾT QUẢ PHÂN TÍCH
+            KẾT QUẢ TỪ BACKEND
           </span>
           <h3 className="font-heading text-foreground pt-1 text-xl font-extrabold tracking-tight">
-            Báo Cáo Sức Khỏe Da
+            Hồ Sơ Da Sau Khảo Sát
           </h3>
           <p className="text-muted-foreground text-[10px]">
-            Báo cáo y khoa dựa trên hồ sơ Baumann và dữ liệu chuyên sâu của bạn.
+            Chỉ hiển thị dữ liệu đã được backend xác nhận cho phiên khảo sát
+            hiện tại.
           </p>
         </div>
 
-        {/* Premium Score Gauge */}
-        <div className="relative mx-auto flex w-full max-w-sm flex-col items-center justify-center rounded-3xl border border-white/60 bg-white/70 py-4 shadow-sm backdrop-blur-md sm:max-w-md md:max-w-xl">
-          <div className="relative flex h-28 w-28 items-center justify-center">
-            <svg className="h-full w-full -rotate-90 transform">
-              {/* Background circle */}
-              <circle
-                stroke="oklch(var(--primary) / 0.15)"
-                fill="transparent"
-                strokeWidth={stroke}
-                r={normalizedRadius}
-                cx={radius}
-                cy={radius}
-                className="translate-x-4 translate-y-4"
-              />
-              {/* Foreground progress circle */}
-              <circle
-                stroke="oklch(var(--primary))"
-                fill="transparent"
-                strokeWidth={stroke}
-                strokeDasharray={circumference + " " + circumference}
-                style={{ strokeDashoffset }}
-                strokeLinecap="round"
-                r={normalizedRadius}
-                cx={radius}
-                cy={radius}
-                className="translate-x-4 translate-y-4 transition-all duration-1000 ease-out"
-              />
-            </svg>
-            <div className="absolute flex flex-col items-center justify-center">
-              <span className="font-heading text-foreground text-3xl font-extrabold tracking-tight">
-                {score}
+        <div className="relative mx-auto flex w-full max-w-sm flex-col gap-3 rounded-3xl border border-white/60 bg-white/70 p-5 shadow-sm backdrop-blur-md sm:max-w-md md:max-w-xl">
+          <div className="flex items-center gap-2 text-[#6b5cf6]">
+            <Sparkles className="h-5 w-5" />
+            <span className="text-xs font-bold tracking-wider uppercase">
+              Tóm tắt hồ sơ da
+            </span>
+          </div>
+
+          <div className="space-y-2">
+            <div className="flex items-center justify-between rounded-2xl bg-[#f6f4ff] px-4 py-3">
+              <span className="text-xs font-semibold text-slate-600">
+                Mã Baumann
               </span>
-              <span className="text-muted-foreground text-[8px] font-semibold tracking-wider uppercase">
-                Điểm Sức Khỏe
+              <span className="text-sm font-extrabold text-[#6b5cf6]">
+                {skinType?.code ?? "Chưa có"}
               </span>
             </div>
-          </div>
-          <div className="mt-2.5 space-y-1 px-4 text-center">
-            <span className="bg-primary/10 text-primary inline-block rounded-xl px-2.5 py-0.5 text-[11px] font-bold">
-              Mã Baumann: {baumannCode}
-            </span>
-            {skinType?.name && (
-              <div className="font-heading text-foreground pt-1 text-xs font-bold">
-                Loại da của bạn:{" "}
-                <span className="text-primary">{skinType.name}</span>
-              </div>
-            )}
-            <p className="text-muted-foreground text-[10px] leading-relaxed font-medium">
-              {getBaumannTranslation(baumannCode)}
-            </p>
+            <div className="rounded-2xl border border-slate-100 px-4 py-3 text-left">
+              <p className="text-xs font-semibold text-slate-900">
+                {skinType?.name ??
+                  "GlowScan đã ghi nhận phiên khảo sát của bạn"}
+              </p>
+              <p className="mt-1 text-xs leading-relaxed text-slate-600">
+                {skinType?.description ??
+                  "Loại da chi tiết sẽ hiển thị khi backend hoàn tất chấm điểm Baumann cho hồ sơ hiện tại."}
+              </p>
+            </div>
           </div>
         </div>
 
-        {/* AI Observation Results (Conditionally rendered) */}
-        {aiObs && (
-          <div className="border-primary/20 bg-primary/5 shadow-inner-sm space-y-2 rounded-3xl border p-4">
-            <div className="text-primary flex items-center gap-1.5 text-xs font-bold tracking-wider uppercase">
-              <Sparkles className="h-4.5 w-4.5 animate-pulse" />
-              <span>Kết Quả Quan Sát Từ AI (AI Observation)</span>
+        <div className="grid gap-3 md:grid-cols-3">
+          <div className="rounded-2xl border border-slate-200 bg-white/60 p-4 shadow-sm">
+            <div className="flex items-center gap-2 text-slate-700">
+              <ClipboardList className="h-4 w-4 text-[#6b5cf6]" />
+              <span className="text-xs font-bold">Protocol khuyến nghị</span>
             </div>
-
-            <div className="grid grid-cols-2 gap-2.5 pt-1 text-[10px]">
-              <div className="border-border/40 flex flex-col gap-0.5 rounded-xl border bg-white/60 p-2">
-                <span className="text-muted-foreground">Mức độ mụn:</span>
-                <span className="text-foreground flex justify-between text-xs font-bold">
-                  <span>{aiObs.acneSeverity}</span>
-                  <span className="text-primary text-[9px] font-normal">
-                    → Niacinamide & BHA
-                  </span>
-                </span>
-              </div>
-              <div className="border-border/40 flex flex-col gap-0.5 rounded-xl border bg-white/60 p-2">
-                <span className="text-muted-foreground">Thâm sạm da:</span>
-                <span className="text-foreground flex justify-between text-xs font-bold">
-                  <span>{aiObs.darkSpots}</span>
-                  <span className="text-primary text-[9px] font-normal">
-                    → Vitamin C / Nia
-                  </span>
-                </span>
-              </div>
-              <div className="border-border/40 flex flex-col gap-0.5 rounded-xl border bg-white/60 p-2">
-                <span className="text-muted-foreground">Lỗ chân lông:</span>
-                <span className="text-foreground flex justify-between text-xs font-bold">
-                  <span>{aiObs.poreSize}</span>
-                  <span className="text-primary text-[9px] font-normal">
-                    → BHA & AHA
-                  </span>
-                </span>
-              </div>
-              <div className="border-border/40 flex flex-col gap-0.5 rounded-xl border bg-white/60 p-2">
-                <span className="text-muted-foreground">Độ sâu nếp nhăn:</span>
-                <span className="text-foreground flex justify-between text-xs font-bold">
-                  <span>{aiObs.wrinkleDepth}</span>
-                  <span className="text-primary text-[9px] font-normal">
-                    → Chống lão hóa
-                  </span>
-                </span>
-              </div>
-            </div>
-            <span className="text-muted-foreground block pt-1 text-center text-[8px] leading-normal italic">
-              *Ảnh da đã được đối chiếu chéo và chuẩn hóa với các câu trả lời tự
-              khai báo.
-            </span>
-          </div>
-        )}
-
-        {/* Detail Metric Cards */}
-        <div className="space-y-2">
-          <h4 className="text-foreground pl-1 text-[10px] font-bold tracking-wider uppercase">
-            Chỉ số chi tiết:
-          </h4>
-
-          {/* Hydration */}
-          <div className="border-border/60 flex items-center justify-between rounded-2xl border bg-white/50 p-3 shadow-sm">
-            <div className="flex items-center gap-2.5">
-              <div className="shrink-0 rounded-xl bg-blue-50 p-1.5 text-blue-500">
-                <Droplet className="h-4 w-4" />
-              </div>
-              <div className="flex flex-col">
-                <span className="text-foreground text-xs font-semibold">
-                  Độ ẩm tự nhận biết
-                </span>
-                <span className="text-muted-foreground text-[10px]">
-                  Mức nước biểu bì tự cảm nhận
-                </span>
-              </div>
-            </div>
-            <div className="text-right">
-              <span className="block text-xs font-bold text-blue-600">
-                {answers.hydration !== ""
-                  ? `${answers.hydration}%`
-                  : "Chưa khai báo"}
-              </span>
-              <span className="text-muted-foreground text-[9px] font-medium">
-                {answers.hydration !== "" && answers.hydration <= 25
-                  ? "Thấp (Khóa ẩm gấp)"
-                  : "Cân bằng ổn định"}
-              </span>
-            </div>
+            <p className="mt-3 text-2xl font-black text-slate-900">
+              {state.recommendations?.protocols.length ?? 0}
+            </p>
+            <p className="mt-1 text-xs text-slate-500">
+              Backend đã chốt số protocol áp dụng cho phiên khảo sát này.
+            </p>
           </div>
 
-          {/* Sensitivity */}
-          <div className="border-border/60 flex items-center justify-between rounded-2xl border bg-white/50 p-3 shadow-sm">
-            <div className="flex items-center gap-2.5">
-              <div className="shrink-0 rounded-xl bg-emerald-50 p-1.5 text-emerald-500">
-                <Heart className="h-4 w-4" />
-              </div>
-              <div className="flex flex-col">
-                <span className="text-foreground text-xs font-semibold">
-                  Độ nhạy cảm hàng rào
-                </span>
-                <span className="text-muted-foreground text-[10px]">
-                  Phản ứng kích ứng với hoạt chất ngoại lai
-                </span>
-              </div>
+          <div className="rounded-2xl border border-slate-200 bg-white/60 p-4 shadow-sm">
+            <div className="flex items-center gap-2 text-slate-700">
+              <Sparkles className="h-4 w-4 text-[#6b5cf6]" />
+              <span className="text-xs font-bold">Sản phẩm hợp lệ</span>
             </div>
-            <div className="text-right">
-              <span className="block text-xs font-bold text-emerald-600">
-                {answers.baumannSensitiveResistant === "S"
-                  ? "Nhạy cảm (S)"
-                  : "Đề kháng (R)"}
-              </span>
-              <span className="text-muted-foreground text-[9px] font-medium">
-                {answers.baumannSensitiveResistant === "S"
-                  ? "Hàng rào mỏng nhẹ"
-                  : "Đề kháng khỏe"}
-              </span>
-            </div>
+            <p className="mt-3 text-2xl font-black text-slate-900">
+              {recommendedProducts.length}
+            </p>
+            <p className="mt-1 text-xs text-slate-500">
+              Chỉ các variant thật từ backend mới được đưa sang bước mua hàng.
+            </p>
           </div>
 
-          {/* Irritation or Pregnancy risk */}
-          <div className="border-border/60 flex items-center justify-between rounded-2xl border bg-white/50 p-3 shadow-sm">
-            <div className="flex items-center gap-2.5">
-              <div className="shrink-0 rounded-xl bg-amber-50 p-1.5 text-amber-500">
-                <AlertTriangle className="h-4 w-4" />
-              </div>
-              <div className="flex flex-col">
-                <span className="text-foreground text-xs font-semibold">
-                  Đánh giá an toàn
-                </span>
-                <span className="text-muted-foreground text-[10px]">
-                  Nguy cơ thai kỳ & kích ứng hoạt chất
-                </span>
-              </div>
+          <div className="rounded-2xl border border-slate-200 bg-white/60 p-4 shadow-sm">
+            <div className="flex items-center gap-2 text-slate-700">
+              <ShieldCheck className="h-4 w-4 text-[#6b5cf6]" />
+              <span className="text-xs font-bold">Điểm Baumann</span>
             </div>
-            <div className="text-right">
-              {answers.pregnancy === "yes" ? (
-                <>
-                  <span className="block text-xs font-bold text-red-600">
-                    Thai kỳ (Có)
-                  </span>
-                  <span className="text-muted-foreground text-[9px] font-bold font-medium text-red-500">
-                    Lọc hoạt chất mạnh
-                  </span>
-                </>
-              ) : (
-                <>
-                  <span className="block text-xs font-bold text-amber-600">
-                    {answers.irritationStatus === "none" ||
-                    !answers.irritationStatus
-                      ? "Bình thường"
-                      : "Có kích ứng nhẹ"}
-                  </span>
-                  <span className="text-muted-foreground text-[9px] font-medium">
-                    {answers.irritationStatus === "none" ||
-                    !answers.irritationStatus
-                      ? "Không kích ứng"
-                      : "Cần giãn cách thuốc"}
-                  </span>
-                </>
-              )}
-            </div>
+            <p className="mt-3 text-sm font-black text-slate-900">
+              {baumannScores
+                ? `${baumannScores.oilyDryScore ?? "-"} / ${baumannScores.sensitiveResistantScore ?? "-"} / ${baumannScores.pigmentedNonPigmentedScore ?? "-"} / ${baumannScores.wrinkledTightScore ?? "-"}`
+                : "Chưa có điểm chi tiết"}
+            </p>
+            <p className="mt-1 text-xs text-slate-500">
+              Backend sẽ cập nhật điểm chi tiết khi hồ sơ da đã được chấm xong.
+            </p>
           </div>
         </div>
       </div>
 
-      {/* Button footer */}
       <div className="shrink-0 pt-4">
         <Button
           onClick={() => setFlowState("plan")}
           className="shadow-primary/20 hover:shadow-primary/30 bg-primary hover:bg-primary/95 flex w-full items-center justify-center gap-1.5 rounded-2xl py-6 text-base font-bold text-white shadow-lg transition-all duration-300"
         >
-          <span>Xem Quy Trình Chăm Sóc Da</span>
+          <span>Xem Protocol Khuyến Nghị</span>
           <ArrowRight className="h-5 w-5" />
         </Button>
       </div>

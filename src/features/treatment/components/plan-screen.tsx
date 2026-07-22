@@ -1,29 +1,67 @@
 "use client";
 
-import {
-  ArrowLeft,
-  Sun,
-  Moon,
-  Check,
-  AlertTriangle,
-  ShieldCheck,
-} from "lucide-react";
+import { ArrowLeft, Check, Sparkles } from "lucide-react";
+
 import { Button } from "@/shared/components/ui/button";
 import { useTreatment } from "@/features/treatment/components/treatment-context";
+import { validateSurveyRecommendation } from "@/features/treatment/lib/survey-flow";
 
 export function PlanScreen() {
-  const { state, setFlowState } = useTreatment();
-  const morningList = state.morningRoutine;
-  const eveningList = state.eveningRoutine;
+  const { state, setFlowState, getRecommendedProducts } = useTreatment();
+  const products = getRecommendedProducts();
+  const recommendationStatus = validateSurveyRecommendation(
+    state.recommendations,
+    state.surveySessionId,
+  );
 
-  const answers = state.surveyAnswers;
-  const baumannCode =
-    (answers.baumannOilyDry || "O") +
-    (answers.baumannSensitiveResistant || "S") +
-    (answers.baumannPigmentNon || "P") +
-    (answers.baumannWrinkleTight || "T");
+  const protocolGroups =
+    state.recommendations?.protocols
+      .map((protocol) => ({
+        id: protocol.id,
+        code: protocol.code,
+        name: protocol.name,
+        description: protocol.description,
+        products: products.filter(
+          (product) => product.protocolId === protocol.id,
+        ),
+      }))
+      .filter((group) => group.products.length > 0) ?? [];
 
-  const isPregnant = answers.pregnancy === "yes";
+  const groupedCards =
+    protocolGroups.length > 0
+      ? protocolGroups
+      : [
+          {
+            id: "fallback",
+            code: "SURVEY",
+            name: "Sản phẩm khuyến nghị",
+            description:
+              "Danh sách sản phẩm backend đã chốt cho phiên khảo sát hiện tại.",
+            products,
+          },
+        ];
+
+  if (recommendationStatus !== "ok") {
+    return (
+      <div className="flex flex-1 flex-col justify-center gap-4 px-4 text-center">
+        <h3 className="font-heading text-2xl font-bold text-[#131336]">
+          Chưa có protocol hợp lệ
+        </h3>
+        <p className="text-sm text-[#131336]/70">
+          Khảo sát đã hoàn tất nhưng chưa lấy được bộ protocol và sản phẩm thật
+          từ backend.
+        </p>
+        <div className="flex justify-center">
+          <Button
+            onClick={() => setFlowState("report")}
+            className="rounded-full bg-[#6b5cf6] px-6 text-sm font-bold text-white hover:bg-[#5a4ae5]"
+          >
+            Quay lại báo cáo
+          </Button>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="animate-in fade-in slide-in-from-right-4 flex flex-1 flex-col justify-between px-4 duration-500">
@@ -38,128 +76,83 @@ export function PlanScreen() {
             <ArrowLeft className="h-4.5 w-4.5" />
           </Button>
         </div>
-        {/* Header */}
+
         <div className="space-y-1 text-center">
           <span className="text-primary bg-primary/10 rounded-full px-3 py-1 text-[10px] font-bold tracking-wider uppercase">
-            PHÁC ĐỒ ĐIỀU TRỊ CỦA BẠN
+            PROTOCOL KHUYẾN NGHỊ
           </span>
           <h3 className="font-heading text-foreground pt-1 text-xl font-extrabold tracking-tight">
-            Liệu Trình Cá Nhân Hóa
+            Phác Đồ Từ Backend
           </h3>
           <p className="text-muted-foreground text-[10px]">
-            Thiết kế y khoa chuyên biệt cho loại da:{" "}
-            <span className="text-foreground text-primary bg-primary/5 border-primary/10 rounded-lg border px-2 py-0.5 font-black">
-              {baumannCode}
-            </span>
+            Routine chi tiết chỉ được kích hoạt sau khi thanh toán survey thành
+            công.
           </p>
         </div>
 
-        {/* Dynamic Warning for Safety (Pregnancy) */}
-        {isPregnant && (
-          <div className="flex items-start gap-2 rounded-2xl border border-emerald-200 bg-emerald-50 p-3 text-[10px] leading-relaxed text-emerald-800 shadow-sm">
-            <ShieldCheck className="mt-0.5 h-4.5 w-4.5 shrink-0 text-emerald-600" />
-            <span>
-              <strong>Chế độ thai kỳ an toàn hoạt động:</strong> Quy trình chăm
-              sóc da đã tự động loại bỏ các hoạt chất có nguy cơ ảnh hưởng thai
-              nhi (Retinoids, BHA liều cao). Các sản phẩm dưới đây hoàn toàn an
-              toàn cho mẹ và bé.
-            </span>
-          </div>
-        )}
-
-        {/* Routine Containers (Scrollable) */}
         <div className="max-h-[360px] space-y-4.5 overflow-y-auto pr-1">
-          {/* Morning Routine */}
-          <div className="relative space-y-3.5 overflow-hidden rounded-3xl border border-amber-200/50 bg-amber-50/20 p-4 shadow-sm backdrop-blur">
-            <div className="pointer-events-none absolute top-0 right-0 h-16 w-16 rounded-bl-full bg-gradient-to-bl from-amber-200/10 to-transparent" />
-            <div className="flex items-center gap-1.5 text-amber-600">
-              <Sun className="h-5 w-5" />
-              <span className="text-xs font-bold tracking-wider uppercase">
-                Routine Buổi Sáng
-              </span>
-            </div>
+          {groupedCards.map((group) => (
+            <div
+              key={group.id}
+              className="relative space-y-3.5 overflow-hidden rounded-3xl border border-indigo-200/50 bg-indigo-50/20 p-4 shadow-sm backdrop-blur"
+            >
+              <div className="pointer-events-none absolute top-0 right-0 h-16 w-16 rounded-bl-full bg-gradient-to-bl from-indigo-200/10 to-transparent" />
+              <div className="flex items-center gap-1.5 text-indigo-600">
+                <Sparkles className="h-5 w-5" />
+                <span className="text-xs font-bold tracking-wider uppercase">
+                  {group.code}
+                </span>
+              </div>
 
-            <div className="space-y-3">
-              {morningList.map((item, idx) => (
-                <div key={item.id} className="flex items-start gap-2.5">
-                  <span className="mt-0.5 flex h-4.5 w-4.5 shrink-0 items-center justify-center rounded-full bg-amber-100 text-[9px] font-bold text-amber-700">
-                    {idx + 1}
-                  </span>
-                  <div className="flex flex-col">
-                    <span className="text-foreground text-xs font-bold">
-                      {item.text}
-                    </span>
-                    {item.description && (
-                      <span className="text-primary text-[9px] font-semibold">
-                        Thành phần chính: {item.description}
-                      </span>
-                    )}
-                    {item.reason && (
-                      <span className="text-muted-foreground text-[9px] leading-relaxed">
-                        {item.reason}
-                      </span>
-                    )}
-                  </div>
-                </div>
-              ))}
-            </div>
-          </div>
+              <div>
+                <h4 className="text-foreground text-sm font-extrabold">
+                  {group.name}
+                </h4>
+                <p className="text-muted-foreground mt-1 text-[10px] leading-relaxed">
+                  {group.description ||
+                    "Backend không trả mô tả chi tiết cho protocol này."}
+                </p>
+              </div>
 
-          {/* Evening Routine */}
-          <div className="relative space-y-3.5 overflow-hidden rounded-3xl border border-indigo-200/50 bg-indigo-50/20 p-4 shadow-sm backdrop-blur">
-            <div className="pointer-events-none absolute top-0 right-0 h-16 w-16 rounded-bl-full bg-gradient-to-bl from-indigo-200/10 to-transparent" />
-            <div className="flex items-center gap-1.5 text-indigo-600">
-              <Moon className="h-5 w-5" />
-              <span className="text-xs font-bold tracking-wider uppercase">
-                Routine Buổi Tối
-              </span>
-            </div>
-
-            <div className="space-y-3">
-              {eveningList.map((item, idx) => (
-                <div key={item.id} className="flex flex-col gap-1.5">
-                  <div className="flex items-start gap-2.5">
-                    <span className="mt-0.5 flex h-4.5 w-4.5 shrink-0 items-center justify-center rounded-full bg-indigo-100 text-[9px] font-bold text-indigo-700">
-                      {idx + 1}
-                    </span>
-                    <div className="flex flex-col">
-                      <span className="text-foreground text-xs font-bold">
-                        {item.text}
+              <div className="space-y-3">
+                {group.products.map((product, index) => (
+                  <div key={product.id} className="flex flex-col gap-1.5">
+                    <div className="flex items-start gap-2.5">
+                      <span className="mt-0.5 flex h-4.5 w-4.5 shrink-0 items-center justify-center rounded-full bg-indigo-100 text-[9px] font-bold text-indigo-700">
+                        {index + 1}
                       </span>
-                      {item.description && (
+                      <div className="flex flex-col">
+                        <span className="text-foreground text-xs font-bold">
+                          {product.name}
+                        </span>
                         <span className="text-primary text-[9px] font-semibold">
-                          Thành phần chính: {item.description}
+                          {product.brand} • {product.category}
                         </span>
-                      )}
-                      {item.reason && (
                         <span className="text-muted-foreground text-[9px] leading-relaxed">
-                          {item.reason}
+                          {product.reason}
                         </span>
-                      )}
+                      </div>
                     </div>
-                  </div>
 
-                  {/* Render warning if active ingredient conflicts */}
-                  {item.conflictWarning && (
-                    <div className="ml-7 flex items-start gap-1.5 rounded-xl border border-amber-200 bg-amber-50 p-2.5 text-[9px] leading-relaxed text-amber-800">
-                      <AlertTriangle className="mt-0.5 h-3.5 w-3.5 shrink-0 text-amber-600" />
-                      <span>{item.conflictWarning}</span>
-                    </div>
-                  )}
-                </div>
-              ))}
+                    {product.conflictWarning && (
+                      <div className="ml-7 rounded-xl border border-amber-200 bg-amber-50 p-2.5 text-[9px] leading-relaxed text-amber-800">
+                        {product.conflictWarning}
+                      </div>
+                    )}
+                  </div>
+                ))}
+              </div>
             </div>
-          </div>
+          ))}
         </div>
       </div>
 
-      {/* Footer */}
       <div className="shrink-0 pt-4">
         <Button
           onClick={() => setFlowState("purchase")}
           className="shadow-primary/20 hover:shadow-primary/30 bg-primary hover:bg-primary/95 flex w-full items-center justify-center gap-1.5 rounded-2xl py-6 text-base font-bold text-white shadow-lg transition-all duration-300"
         >
-          <span>Chốt Mua Sản Phẩm Liệu Trình</span>
+          <span>Chọn Sản Phẩm Khuyến Nghị</span>
           <Check className="h-5 w-5" />
         </Button>
       </div>

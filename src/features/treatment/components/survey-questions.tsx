@@ -3,12 +3,13 @@
 import { useState, useEffect } from "react";
 import { Loader2 } from "lucide-react";
 import { Button } from "@/shared/components/ui/button";
-import { useRouter, usePathname } from "next/navigation";
+import { usePathname } from "next/navigation";
+import { cn } from "@/lib/utils";
 
 import { useSession } from "@/features/auth/hooks/use-session";
-import { ApiError } from "@/lib/api/client";
 import { appConfig } from "@/lib/env";
 import { useTreatment } from "@/features/treatment/components/treatment-context";
+import { shouldRedirectToLogin } from "@/features/auth/lib/session-access";
 
 export function SurveyQuestions() {
   const {
@@ -24,7 +25,6 @@ export function SurveyQuestions() {
 
   const step = state.surveyStep;
   const sessionQuery = useSession();
-  const router = useRouter();
   const pathname = usePathname();
 
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
@@ -50,16 +50,20 @@ export function SurveyQuestions() {
 
   // Handle route protection client side
   useEffect(() => {
-    if (!appConfig.devBypassAuth) {
-      if (
-        sessionQuery.error instanceof ApiError &&
-        sessionQuery.error.status === 401
-      ) {
-        const loginTarget = `/login?redirectTo=${encodeURIComponent(pathname || "/scan")}`;
-        window.location.href = loginTarget;
-      }
+    if (appConfig.devBypassAuth) {
+      return;
     }
-  }, [sessionQuery.error, router, pathname]);
+
+    if (
+      shouldRedirectToLogin({
+        isLoading: sessionQuery.isLoading,
+        hasSession: Boolean(sessionQuery.data),
+      })
+    ) {
+      const loginTarget = `/login?redirectTo=${encodeURIComponent(pathname || "/scan")}`;
+      window.location.href = loginTarget;
+    }
+  }, [pathname, sessionQuery.data, sessionQuery.isLoading]);
 
   const questionsCount = state.dynamicQuestions.length;
   const currentQ =
@@ -203,111 +207,158 @@ export function SurveyQuestions() {
     );
   }
 
+  const progressRatio = step / (questionsCount || 1);
+  const sections = [
+    { label: "Loại da & Bã nhờn", active: progressRatio <= 0.25 },
+    {
+      label: "Độ nhạy cảm",
+      active: progressRatio > 0.25 && progressRatio <= 0.5,
+    },
+    {
+      label: "Sắc tố da",
+      active: progressRatio > 0.5 && progressRatio <= 0.75,
+    },
+    { label: "Nếp nhăn & Lão hóa", active: progressRatio > 0.75 },
+  ];
+
   return (
-    <div className="mx-auto flex w-full max-w-3xl flex-1 flex-col">
-      {/* Top Progress Bar */}
-      <div className="mt-2 h-1.5 w-full overflow-hidden rounded-full bg-[#e5e5e5]">
-        <div
-          className="h-full bg-[#6b5cf6] transition-all duration-300 ease-out"
-          style={{
-            width: `${Math.min(100, (step / questionsCount) * 100)}%`,
-          }}
-        />
+    <div className="mx-auto flex w-full max-w-5xl flex-1 flex-col gap-8 px-4 pt-6 md:flex-row">
+      {/* Left Progress Rail */}
+      <div className="hidden shrink-0 flex-col gap-6 border-r border-[#e5e5e5] pt-4 pr-6 md:flex md:w-64">
+        <div className="flex flex-col gap-1">
+          <h3 className="text-xs font-bold tracking-wider text-slate-400 uppercase">
+            Tiến trình khảo sát
+          </h3>
+          <span className="text-sm font-semibold text-slate-600">
+            Câu {step}/{questionsCount}
+          </span>
+        </div>
+        <div className="relative mt-2 ml-1 flex flex-col gap-5 border-l border-slate-200 pl-4">
+          {sections.map((sec, idx) => (
+            <div key={idx} className="relative flex items-center gap-3 py-0.5">
+              <div
+                className={cn(
+                  "absolute -left-[21px] h-2.5 w-2.5 rounded-full border bg-white transition-all duration-300",
+                  sec.active
+                    ? "scale-125 border-[#6b5cf6] bg-[#6b5cf6] shadow-xs"
+                    : "border-slate-300",
+                )}
+              />
+              <span
+                className={cn(
+                  "text-xs font-bold tracking-wide transition-colors duration-300",
+                  sec.active ? "text-[#6b5cf6]" : "text-slate-500",
+                )}
+              >
+                {sec.label}
+              </span>
+            </div>
+          ))}
+        </div>
       </div>
 
-      <div className="flex flex-1 flex-col px-4 pt-12 pb-8">
-        {errorMsg && (
-          <div className="mb-6 rounded-lg bg-red-50 p-4 text-sm font-medium text-red-700">
-            {errorMsg}
-          </div>
-        )}
+      {/* Right Question Container */}
+      <div className="flex flex-1 flex-col justify-between">
+        {/* Top Progress Bar (Mobile only) */}
+        <div className="mt-2 h-1.5 w-full overflow-hidden rounded-full bg-[#e5e5e5] md:hidden">
+          <div
+            className="h-full bg-[#6b5cf6] transition-all duration-300 ease-out"
+            style={{
+              width: `${Math.min(100, (step / questionsCount) * 100)}%`,
+            }}
+          />
+        </div>
 
-        {currentQ && (
-          <div className="animate-in fade-in space-y-8 duration-300">
-            <div className="space-y-3 text-center">
-              <h2 className="font-heading text-3xl leading-tight font-bold text-[#131336] md:text-4xl">
-                {currentQ.text}
-              </h2>
-              {currentQ.description && (
-                <p className="mx-auto max-w-xl text-lg text-[#131336]/70">
-                  {currentQ.description}
-                </p>
-              )}
+        <div className="flex flex-1 flex-col pt-6 pb-8 md:pt-4">
+          {errorMsg && (
+            <div className="mb-6 rounded-lg bg-red-50 p-4 text-sm font-medium text-red-700">
+              {errorMsg}
             </div>
+          )}
 
-            {/* Options Grid */}
-            <div className="mx-auto grid w-full max-w-2xl gap-4 pt-6 sm:grid-cols-2 lg:grid-cols-2">
-              {currentQ.options && currentQ.options.length > 0 ? (
-                currentQ.options.map((option) => {
-                  const selected = (
-                    state.dynamicAnswers[currentQ.id] || []
-                  ).includes(option.labelCode);
+          {currentQ && (
+            <div className="animate-in fade-in space-y-8 duration-300">
+              <div className="space-y-3 text-center md:text-left">
+                <h2 className="font-heading text-2xl leading-tight font-bold text-[#131336] md:text-3xl">
+                  {currentQ.text}
+                </h2>
+                {currentQ.description && (
+                  <p className="max-w-xl text-base text-[#131336]/70">
+                    {currentQ.description}
+                  </p>
+                )}
+              </div>
 
-                  return (
-                    <div
-                      key={option.labelCode}
-                      onClick={() => handleOptionClick(option.labelCode)}
-                      className={`relative flex cursor-pointer flex-col rounded-xl border-2 bg-white p-6 shadow-sm transition-all duration-200 hover:shadow-md ${
-                        selected
-                          ? "border-[#6b5cf6] ring-1 ring-[#6b5cf6]"
-                          : "border-transparent ring-1 ring-[#e5e5e5] hover:ring-[#6b5cf6]/50"
-                      }`}
-                    >
-                      <span
-                        className={`text-lg font-bold transition-colors ${
-                          selected ? "text-[#131336]" : "text-[#131336]"
+              {/* Options Grid */}
+              <div className="grid w-full gap-4 pt-4 sm:grid-cols-2">
+                {currentQ.options && currentQ.options.length > 0 ? (
+                  currentQ.options.map((option) => {
+                    const selected = (
+                      state.dynamicAnswers[currentQ.id] || []
+                    ).includes(option.labelCode);
+
+                    return (
+                      <div
+                        key={option.labelCode}
+                        onClick={() => handleOptionClick(option.labelCode)}
+                        className={`relative flex cursor-pointer flex-col rounded-xl border bg-white p-5 shadow-xs transition-all duration-200 hover:shadow-md ${
+                          selected
+                            ? "border-[#6b5cf6] ring-1 ring-[#6b5cf6]"
+                            : "border-slate-200 hover:border-[#6b5cf6]/50"
                         }`}
                       >
-                        {option.name}
-                      </span>
-                      {option.description && (
-                        <span className="mt-2 text-sm leading-relaxed text-[#131336]/60">
-                          {option.description}
+                        <span className={`text-base font-bold text-[#131336]`}>
+                          {option.name}
                         </span>
-                      )}
-                    </div>
-                  );
-                })
-              ) : (
-                <div className="col-span-full">
-                  <textarea
-                    rows={4}
-                    placeholder="Nhập câu trả lời của bạn tại đây..."
-                    value={state.dynamicTextAnswers[currentQ.id] || ""}
-                    onChange={(e) =>
-                      setDynamicAnswer(currentQ.id, [], e.target.value)
-                    }
-                    className="w-full rounded-xl border border-[#e5e5e5] bg-white p-4 text-base text-[#131336] placeholder:text-[#131336]/40 focus:border-[#6b5cf6] focus:ring-1 focus:ring-[#6b5cf6] focus:outline-none"
-                  />
-                </div>
-              )}
+                        {option.description && (
+                          <span className="mt-1.5 text-xs leading-relaxed text-[#131336]/60">
+                            {option.description}
+                          </span>
+                        )}
+                      </div>
+                    );
+                  })
+                ) : (
+                  <div className="col-span-full">
+                    <textarea
+                      rows={4}
+                      placeholder="Nhập câu trả lời của bạn tại đây..."
+                      value={state.dynamicTextAnswers[currentQ.id] || ""}
+                      onChange={(e) =>
+                        setDynamicAnswer(currentQ.id, [], e.target.value)
+                      }
+                      className="w-full rounded-xl border border-slate-200 bg-white p-4 text-base text-[#131336] placeholder:text-[#131336]/40 focus:border-[#6b5cf6] focus:ring-1 focus:ring-[#6b5cf6] focus:outline-none"
+                    />
+                  </div>
+                )}
+              </div>
             </div>
-          </div>
-        )}
-      </div>
+          )}
+        </div>
 
-      {/* Bottom Actions Fixed/Sticky Footer */}
-      <div className="sticky bottom-0 left-0 z-10 w-full border-t border-[#e5e5e5] bg-[#F4F3ED] p-4">
-        <div className="mx-auto flex w-full max-w-2xl items-center justify-between gap-4">
-          <Button
-            variant="ghost"
-            onClick={handlePrev}
-            disabled={isSubmittingStep}
-            className="h-14 flex-1 rounded-full text-base font-bold text-[#131336] hover:bg-[#131336]/5"
-          >
-            Quay lại
-          </Button>
-          <Button
-            onClick={handleNext}
-            disabled={isSubmittingStep}
-            className="h-14 flex-[2] rounded-full bg-[#6b5cf6] text-lg font-bold text-white shadow-md hover:bg-[#5a4ae5] disabled:cursor-not-allowed disabled:opacity-70"
-          >
-            {isSubmittingStep ? (
-              <Loader2 className="mx-auto h-5 w-5 animate-spin" />
-            ) : (
-              <span>Tiếp tục</span>
-            )}
-          </Button>
+        {/* Bottom Actions Footer */}
+        <div className="sticky bottom-0 left-0 z-10 w-full border-t border-slate-100 bg-[#F4F3ED]/80 py-4 backdrop-blur-xs">
+          <div className="flex w-full items-center justify-between gap-4">
+            <Button
+              variant="ghost"
+              onClick={handlePrev}
+              disabled={isSubmittingStep}
+              className="h-12 flex-1 rounded-xl text-sm font-bold text-[#131336] hover:bg-[#131336]/5"
+            >
+              Quay lại
+            </Button>
+            <Button
+              onClick={handleNext}
+              disabled={isSubmittingStep}
+              className="h-12 flex-[2] rounded-xl bg-[#6b5cf6] text-sm font-bold text-white shadow-md hover:bg-[#5a4ae5] disabled:cursor-not-allowed disabled:opacity-70"
+            >
+              {isSubmittingStep ? (
+                <Loader2 className="mx-auto h-5 w-5 animate-spin" />
+              ) : (
+                <span>Tiếp tục</span>
+              )}
+            </Button>
+          </div>
         </div>
       </div>
     </div>

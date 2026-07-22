@@ -5,14 +5,15 @@ import {
   ArrowLeft,
   ShoppingBag,
   CreditCard,
-  AlertTriangle,
   ShieldCheck,
   Check,
   Loader2,
 } from "lucide-react";
+import { useRouter } from "next/navigation";
+
 import { Button } from "@/shared/components/ui/button";
 import { useTreatment } from "@/features/treatment/components/treatment-context";
-import { useRouter } from "next/navigation";
+import { validateSurveyRecommendation } from "@/features/treatment/lib/survey-flow";
 
 export function PurchaseScreen() {
   const {
@@ -28,16 +29,14 @@ export function PurchaseScreen() {
     "checkout",
   );
 
-  const answers = state.surveyAnswers;
-  const isPregnant = answers.pregnancy === "yes";
-  const isLowHydration = answers.hydration !== "" && answers.hydration <= 25;
-
-  // Retrieve dynamic recommended products based on survey rules
   const dynamicProducts = getRecommendedProducts();
+  const recommendationStatus = validateSurveyRecommendation(
+    state.recommendations,
+    state.surveySessionId,
+  );
 
-  // State to track selected product IDs
   const [selectedProductIds, setSelectedProductIds] = useState<string[]>(() =>
-    dynamicProducts.map((p) => p.id),
+    dynamicProducts.map((product) => product.id),
   );
 
   const toggleProduct = (productId: string) => {
@@ -48,16 +47,16 @@ export function PurchaseScreen() {
     );
   };
 
-  const selectedProducts = dynamicProducts.filter((p) =>
-    selectedProductIds.includes(p.id),
+  const selectedProducts = dynamicProducts.filter((product) =>
+    selectedProductIds.includes(product.id),
   );
 
-  const totalOriginal = selectedProducts.reduce(
-    (acc, p) => acc + (p.originalPrice || p.price),
+  const totalSelected = selectedProducts.reduce(
+    (sum, product) => sum + product.price,
     0,
   );
-  const totalDiscounted = selectedProducts.reduce((acc, p) => acc + p.price, 0);
-  const totalSavings = totalOriginal - totalDiscounted;
+
+  const router = useRouter();
 
   const handleAddToCart = async () => {
     if (selectedProductIds.length === 0) return;
@@ -66,15 +65,13 @@ export function PurchaseScreen() {
     try {
       await addRecommendationsToCart(selectedProductIds);
       setCartMessage("Đã thêm các sản phẩm vào giỏ hàng thành công!");
-    } catch (e) {
-      console.error(e);
+    } catch (error) {
+      console.error(error);
       setCartMessage("Có lỗi khi thêm vào giỏ hàng. Vui lòng thử lại.");
     } finally {
       setIsAddingToCart(false);
     }
   };
-
-  const router = useRouter();
 
   const handleCheckout = async () => {
     setIsProcessing(true);
@@ -84,8 +81,8 @@ export function PurchaseScreen() {
         await addRecommendationsToCart(selectedProductIds);
       }
       router.push("/checkout");
-    } catch (e) {
-      console.error("Lỗi khi thêm vào giỏ trước checkout:", e);
+    } catch (error) {
+      console.error("Lỗi khi thêm vào giỏ trước checkout:", error);
       setIsProcessing(false);
       setPaymentStep("checkout");
       setCartMessage("Có lỗi khi chuyển sang thanh toán. Vui lòng thử lại.");
@@ -98,6 +95,28 @@ export function PurchaseScreen() {
       currency: "VND",
     }).format(value);
   };
+
+  if (recommendationStatus !== "ok" || dynamicProducts.length === 0) {
+    return (
+      <div className="flex flex-1 flex-col justify-center gap-4 px-4 text-center">
+        <h3 className="font-heading text-2xl font-bold text-[#131336]">
+          Chưa có sản phẩm hợp lệ để thanh toán
+        </h3>
+        <p className="text-sm text-[#131336]/70">
+          Phiên khảo sát này chưa có danh sách variant thật từ backend nên không
+          thể thêm vào giỏ hoặc tạo checkout.
+        </p>
+        <div className="flex justify-center">
+          <Button
+            onClick={() => setFlowState("plan")}
+            className="rounded-full bg-[#6b5cf6] px-6 text-sm font-bold text-white hover:bg-[#5a4ae5]"
+          >
+            Quay lại protocol
+          </Button>
+        </div>
+      </div>
+    );
+  }
 
   if (paymentStep === "processing") {
     return (
@@ -125,7 +144,6 @@ export function PurchaseScreen() {
 
   return (
     <div className="animate-in fade-in slide-in-from-right-4 flex flex-1 flex-col justify-between px-4 duration-300">
-      {/* Header */}
       <div className="shrink-0 space-y-3">
         <div className="flex items-center justify-between">
           <Button
@@ -137,48 +155,39 @@ export function PurchaseScreen() {
             <ArrowLeft className="h-4.5 w-4.5" />
           </Button>
           <span className="text-muted-foreground text-[10px] font-semibold tracking-wider uppercase">
-            Mua Hàng Phác Đồ (Combo Ưu Đãi)
+            Mua Hàng Theo Survey
           </span>
           <div className="h-8 w-8 shrink-0" />
         </div>
 
         <div className="space-y-1 text-center">
           <h3 className="font-heading text-foreground text-lg font-extrabold">
-            Sản Phẩm Khuyến Nghị Theo Phác Đồ
+            Sản Phẩm Khuyến Nghị Theo Backend
           </h3>
           <p className="text-muted-foreground text-[10px]">
-            Sản phẩm được tự động map từ các hoạt chất khuyên dùng trong Routine
-            của bạn.
+            Chỉ các variant thật từ recommendation hiện tại mới được chuyển vào
+            giỏ hàng.
           </p>
         </div>
       </div>
 
-      {/* Safety / Hydration Special Badges */}
       <div className="my-2 shrink-0 space-y-1.5">
-        {isPregnant && (
-          <div className="flex items-center gap-1.5 rounded-xl border border-emerald-200 bg-emerald-50 px-3 py-2 text-[9px] font-semibold text-emerald-800">
-            <ShieldCheck className="h-4 w-4 shrink-0 text-emerald-600" />
-            <span>Đã loại trừ hoạt chất mạnh không an toàn cho thai kỳ.</span>
-          </div>
-        )}
-        {isLowHydration && (
-          <div className="flex items-center gap-1.5 rounded-xl border border-blue-200 bg-blue-50 px-3 py-2 text-[9px] font-semibold text-blue-800">
-            <ShieldCheck className="h-4 w-4 shrink-0 text-blue-600" />
-            <span>
-              Tự động nâng cấp kem dưỡng phục hồi lipid sâu (độ ẩm &le; 25%).
-            </span>
-          </div>
-        )}
+        <div className="flex items-center gap-1.5 rounded-xl border border-emerald-200 bg-emerald-50 px-3 py-2 text-[9px] font-semibold text-emerald-800">
+          <ShieldCheck className="h-4 w-4 shrink-0 text-emerald-600" />
+          <span>
+            Frontend không còn dựng sản phẩm demo, routine demo, hoặc giảm giá
+            giả lập cho survey flow.
+          </span>
+        </div>
       </div>
 
-      {/* Product List (Scrollable) */}
       <div className="my-2 grid max-h-[220px] flex-1 gap-2 overflow-y-auto py-1 pr-1">
-        {dynamicProducts.map((prod) => {
-          const isSelected = selectedProductIds.includes(prod.id);
+        {dynamicProducts.map((product) => {
+          const isSelected = selectedProductIds.includes(product.id);
           return (
             <div
-              key={prod.id}
-              onClick={() => toggleProduct(prod.id)}
+              key={product.id}
+              onClick={() => toggleProduct(product.id)}
               className={`border-border/50 shadow-inner-sm flex cursor-pointer flex-col gap-2 rounded-2xl border p-3 transition-all duration-200 select-none ${
                 isSelected
                   ? "border-primary/40 ring-primary/10 bg-white/90 shadow-md ring-1"
@@ -187,7 +196,6 @@ export function PurchaseScreen() {
             >
               <div className="flex items-start justify-between gap-3">
                 <div className="flex items-center gap-3">
-                  {/* Custom checkbox indicator */}
                   <div
                     className={`flex h-4.5 w-4.5 shrink-0 items-center justify-center rounded-lg border transition-all ${
                       isSelected
@@ -198,7 +206,6 @@ export function PurchaseScreen() {
                     {isSelected && <Check className="h-3 w-3 stroke-[3]" />}
                   </div>
 
-                  {/* Mock product thumbnail */}
                   <div
                     className={`relative flex h-10 w-10 shrink-0 items-center justify-center rounded-xl border transition-all ${
                       isSelected
@@ -214,10 +221,10 @@ export function PurchaseScreen() {
                         isSelected ? "text-foreground" : "text-muted-foreground"
                       }`}
                     >
-                      {prod.name}
+                      {product.name}
                     </span>
                     <span className="text-muted-foreground text-[9px] font-semibold">
-                      {prod.brand} • {prod.category}
+                      {product.brand} • {product.category}
                     </span>
                   </div>
                 </div>
@@ -227,26 +234,18 @@ export function PurchaseScreen() {
                       isSelected ? "text-foreground" : "text-muted-foreground"
                     }`}
                   >
-                    {formatPrice(prod.price)}
+                    {formatPrice(product.price)}
                   </span>
-                  {prod.originalPrice && (
-                    <span className="text-muted-foreground block text-[9px] line-through">
-                      {formatPrice(prod.originalPrice)}
-                    </span>
-                  )}
                 </div>
               </div>
 
-              {/* Reason for recommendation */}
               <div className="text-muted-foreground pl-7 text-[9px] leading-relaxed">
-                <strong>Lý do kê đơn:</strong> {prod.reason}
+                <strong>Lý do kê đơn:</strong> {product.reason}
               </div>
 
-              {/* Active ingredient conflict warning */}
-              {prod.conflict && prod.conflictWarning && (
+              {product.conflict && product.conflictWarning && (
                 <div className="mt-1 ml-7 flex items-start gap-1.5 rounded-xl border border-amber-200 bg-amber-50 p-2 text-[9px] leading-relaxed text-amber-800">
-                  <AlertTriangle className="mt-0.5 h-3.5 w-3.5 shrink-0 text-amber-600" />
-                  <span>{prod.conflictWarning}</span>
+                  <span>{product.conflictWarning}</span>
                 </div>
               )}
             </div>
@@ -254,16 +253,15 @@ export function PurchaseScreen() {
         })}
       </div>
 
-      {/* Total Breakdown and checkout */}
       <div className="border-border/60 shrink-0 space-y-3 border-t pt-3">
         <div className="space-y-1.5 rounded-2xl border border-white/50 bg-white/40 p-3 text-[10px] shadow-sm">
           <div className="text-muted-foreground flex justify-between">
             <span>Tạm tính ({selectedProducts.length} sản phẩm):</span>
-            <span>{formatPrice(totalOriginal)}</span>
+            <span>{formatPrice(totalSelected)}</span>
           </div>
-          <div className="flex justify-between font-semibold text-emerald-600">
-            <span>Giảm giá theo quy trình chăm sóc da combo:</span>
-            <span>-{formatPrice(totalSavings)}</span>
+          <div className="rounded-xl border border-dashed border-slate-200 bg-slate-50 px-3 py-2 text-[9px] leading-relaxed text-slate-600">
+            Ưu đãi survey hoặc discount combo, nếu có, sẽ do backend xác nhận ở
+            bước tạo đơn. Frontend không còn dựng giảm giá giả lập.
           </div>
           <div className="text-muted-foreground flex justify-between">
             <span>Vận chuyển (GHTK):</span>
@@ -271,9 +269,9 @@ export function PurchaseScreen() {
           </div>
           <div className="bg-border/50 my-1 h-[1px]" />
           <div className="text-foreground flex justify-between text-xs font-bold">
-            <span>Tổng thanh toán:</span>
+            <span>Tạm tính trước checkout:</span>
             <span className="text-primary text-sm font-black">
-              {formatPrice(totalDiscounted)}
+              {formatPrice(totalSelected)}
             </span>
           </div>
         </div>
@@ -283,6 +281,7 @@ export function PurchaseScreen() {
             {cartMessage}
           </div>
         )}
+
         <div className="grid grid-cols-2 gap-2">
           <Button
             variant="outline"
@@ -312,7 +311,7 @@ export function PurchaseScreen() {
             ) : (
               <CreditCard className="h-4.5 w-4.5" />
             )}
-            <span>Mua combo & Kích hoạt</span>
+            <span>Qua Checkout</span>
           </Button>
         </div>
       </div>

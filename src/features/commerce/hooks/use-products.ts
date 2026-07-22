@@ -4,6 +4,7 @@ import {
   getCategories,
   getProductById,
   getProducts,
+  getSuggestions,
   ProductQuery,
 } from "../api/products-client";
 
@@ -26,5 +27,16 @@ export function useCategories() {
   return useQuery({
     queryKey: queryKeys.productCategories,
     queryFn: getCategories,
+  });
+}
+
+export function useProductSuggestions(
+  limit: number = 10,
+  enabled: boolean = true,
+) {
+  return useQuery({
+    queryKey: queryKeys.suggestions(limit),
+    queryFn: () => getSuggestions(limit),
+    enabled,
   });
 }

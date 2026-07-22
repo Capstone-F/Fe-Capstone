@@ -1,11 +1,6 @@
 import { apiJson } from "@/lib/api/client";
+import { API_ENDPOINTS } from "@/config/api-endpoints";
 import { Order, OrderStatus } from "@/types/domain";
-
-export const ORDER_API_PATHS = {
-  CREATE_ORDER: "/orders",
-  LIST_ORDERS: "/orders",
-  GET_ORDER_DETAIL: (id: string) => `/orders/${id}`,
-};
 
 interface OrderItemResponse {
   id: string;
@@ -54,7 +49,7 @@ function toOrder(response: OrderResponse): Order {
 
 /** Be-Capstone creates the order from the session's server-side cart — no body. */
 export async function createOrder(): Promise<Order> {
-  const response = await apiJson<OrderResponse>(ORDER_API_PATHS.CREATE_ORDER, {
+  const response = await apiJson<OrderResponse>(API_ENDPOINTS.ORDERS.CREATE, {
     method: "POST",
   });
   return toOrder(response);
@@ -62,7 +57,7 @@ export async function createOrder(): Promise<Order> {
 
 export async function getOrder(id: string): Promise<Order> {
   const response = await apiJson<OrderResponse>(
-    ORDER_API_PATHS.GET_ORDER_DETAIL(id),
+    API_ENDPOINTS.ORDERS.DETAIL(id),
   );
   return toOrder(response);
 }
@@ -98,7 +93,7 @@ export async function getOrders(query?: ListOrdersQuery): Promise<OrdersPage> {
   params.set("limit", String(query?.limit ?? 10));
 
   const response = await apiJson<PaginatedOrdersResponse>(
-    `${ORDER_API_PATHS.LIST_ORDERS}?${params.toString()}`,
+    `${API_ENDPOINTS.ORDERS.LIST}?${params.toString()}`,
   );
 
   return {

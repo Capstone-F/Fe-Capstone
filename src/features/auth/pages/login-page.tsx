@@ -1,4 +1,3 @@
-import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
 import type { Route } from "next";
 
@@ -19,12 +18,5 @@ export async function LoginPage({ searchParams }: LoginPageProps) {
   if (appConfig.devBypassAuth) {
     redirect(targetRedirect as Route);
   }
-
-  const cookieStore = await cookies();
-
-  if (cookieStore.has("sid")) {
-    redirect(targetRedirect as Route);
-  }
-
   return <LoginPanel redirectTo={targetRedirect} />;
 }

@@ -33,7 +33,7 @@ export function TreatmentPage() {
           </div>
 
           {/* Main frame */}
-          <main className="surface-glass relative flex min-h-[580px] w-full max-w-md flex-col overflow-hidden rounded-[32px] border border-white/70 bg-white/70 p-2 shadow-2xl backdrop-blur-md sm:max-w-lg md:max-w-2xl">
+          <main className="surface-glass relative flex min-h-[580px] w-full max-w-md flex-col overflow-hidden rounded-[32px] border border-white/70 bg-white/70 p-2 shadow-2xl backdrop-blur-md sm:max-w-lg md:max-w-5xl">
             <TreatmentFlow />
           </main>
 

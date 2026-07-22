@@ -8,7 +8,6 @@ import {
   CardHeader,
   CardTitle,
 } from "@/shared/components/ui/card";
-import { getAuthErrorContent } from "@/features/auth/constants/auth-error";
 
 export type AuthErrorPageProps = {
   searchParams: Promise<{
@@ -18,24 +17,29 @@ export type AuthErrorPageProps = {
 
 export async function AuthErrorPage({ searchParams }: AuthErrorPageProps) {
   const { reason } = await searchParams;
-  const content = getAuthErrorContent(reason);
+  const title = "Xác thực không thành công";
+  const description =
+    reason ||
+    "Đã xảy ra lỗi trong quá trình xác thực phiên làm việc. Vui lòng đăng nhập lại.";
 
   return (
     <main className="page-shell items-center justify-center">
       <Card className="surface-glass w-full max-w-2xl">
         <CardHeader className="space-y-3">
           <Badge variant="outline" className="w-fit">
-            Auth callback
+            Auth Error
           </Badge>
-          <CardTitle className="text-3xl">{content.title}</CardTitle>
+          <CardTitle className="text-3xl">{title}</CardTitle>
         </CardHeader>
         <CardContent className="text-muted-foreground space-y-4 text-sm">
-          <p>{content.description}</p>
+          <p>{description}</p>
           <div className="flex flex-wrap gap-3">
-            <Button render={<Link href="/login" />}>Back to login</Button>
-            <Button variant="outline" render={<Link href="/dashboard" />}>
-              Try dashboard again
-            </Button>
+            <Link href="/login">
+              <Button>Quay lại đăng nhập</Button>
+            </Link>
+            <Link href="/">
+              <Button variant="outline">Trang chủ</Button>
+            </Link>
           </div>
         </CardContent>
       </Card>

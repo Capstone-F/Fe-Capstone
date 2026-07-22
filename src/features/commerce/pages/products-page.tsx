@@ -2,6 +2,7 @@
 
 import Image from "next/image";
 import { useMemo, useState } from "react";
+import { useSearchParams } from "next/navigation";
 import { Filter, RefreshCw, PackageSearch, Search, Layers } from "lucide-react";
 import { toast } from "sonner";
 import { Product } from "@/types/domain";
@@ -9,6 +10,7 @@ import { vi } from "@/config/locales/vi";
 import {
   useCategories,
   useProducts,
+  useProductSuggestions,
 } from "@/features/commerce/hooks/use-products";
 import { useAddToCart } from "@/features/commerce/hooks/use-cart";
 import { useSession } from "@/features/auth/hooks/use-session";
@@ -38,14 +40,39 @@ const c = vi.commerce.products;
 const ALL = "Tất cả";
 
 export function ProductsPage() {
+  const searchParams = useSearchParams();
+  const paramCategoryId = searchParams.get("categoryId");
+  const paramSection = searchParams.get("section");
+
   const [search, setSearch] = useState("");
-  const [categoryId, setCategoryId] = useState<string>(ALL);
+  const [prevParamCategoryId, setPrevParamCategoryId] = useState<string | null>(
+    paramCategoryId,
+  );
+  const [categoryId, setCategoryId] = useState<string>(
+    () => paramCategoryId || ALL,
+  );
+
+  if (paramCategoryId !== prevParamCategoryId) {
+    setPrevParamCategoryId(paramCategoryId);
+    setCategoryId(paramCategoryId || ALL);
+  }
+
   const [brand, setBrand] = useState(ALL);
   const [ingredient, setIngredient] = useState("");
   const [page, setPage] = useState(1);
   const [pageSize, setPageSize] = useState(8);
+  const [sortBy, setSortBy] = useState<"newest" | "priceAsc" | "priceDesc">(
+    "newest",
+  );
 
   const { data: categories } = useCategories();
+  const session = useSession();
+  const isAuthenticated = !!session.data;
+
+  const isRecommendedSection = paramSection === "recommended";
+
+  const { data: recommendedData, isLoading: isRecsLoading } =
+    useProductSuggestions(20, isAuthenticated && isRecommendedSection);
 
   const queryFilters = {
     categoryId: categoryId !== ALL ? categoryId : undefined,
@@ -56,18 +83,44 @@ export function ProductsPage() {
     limit: pageSize,
   };
 
-  const { data, isLoading } = useProducts(queryFilters);
+  const { data: normalData, isLoading: isNormalLoading } =
+    useProducts(queryFilters);
   const addToCart = useAddToCart();
-  const session = useSession();
 
-  const filterKey = `${search}|${categoryId}|${brand}|${ingredient}|${pageSize}`;
+  const data = useMemo(() => {
+    return isRecommendedSection
+      ? { products: recommendedData ?? [], total: recommendedData?.length ?? 0 }
+      : normalData;
+  }, [isRecommendedSection, recommendedData, normalData]);
+  const isLoading = isRecommendedSection ? isRecsLoading : isNormalLoading;
+
+  const filterKey = `${search}|${categoryId}|${brand}|${ingredient}|${pageSize}|${paramSection}`;
   const [prevFilterKey, setPrevFilterKey] = useState(filterKey);
   if (filterKey !== prevFilterKey) {
     setPrevFilterKey(filterKey);
     if (page !== 1) setPage(1);
   }
 
-  const pageItems = data?.products ?? [];
+  const pageItems = useMemo(() => data?.products ?? [], [data]);
+
+  const sortedItems = useMemo(() => {
+    const items = [...pageItems];
+    if (sortBy === "priceAsc") {
+      return items.sort((a, b) => {
+        const pA = primaryVariant(a)?.priceVnd ?? 0;
+        const pB = primaryVariant(b)?.priceVnd ?? 0;
+        return pA - pB;
+      });
+    }
+    if (sortBy === "priceDesc") {
+      return items.sort((a, b) => {
+        const pA = primaryVariant(a)?.priceVnd ?? 0;
+        const pB = primaryVariant(b)?.priceVnd ?? 0;
+        return pB - pA;
+      });
+    }
+    return items;
+  }, [pageItems, sortBy]);
 
   const brandOptions = useMemo(() => {
     const names = new Set((data?.products ?? []).map((p) => p.brandName));
@@ -185,6 +238,26 @@ export function ProductsPage() {
             <span className="text-muted-foreground text-xs">
               {data ? `${data.total} ${vi.commerce.cart.itemsCount}` : ""}
             </span>
+            <div className="flex items-center gap-2">
+              <span className="text-xs font-semibold text-slate-500">
+                Sắp xếp:
+              </span>
+              <Select
+                value={sortBy}
+                onValueChange={(v) =>
+                  setSortBy(v as "newest" | "priceAsc" | "priceDesc")
+                }
+              >
+                <SelectTrigger className="h-8 w-40 rounded-lg border-slate-200 text-xs font-semibold">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="newest">Mới nhất</SelectItem>
+                  <SelectItem value="priceAsc">Giá: Thấp đến Cao</SelectItem>
+                  <SelectItem value="priceDesc">Giá: Cao đến Thấp</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
           </div>
 
           {isLoading ? (
@@ -193,10 +266,10 @@ export function ProductsPage() {
                 <ProductCardSkeleton key={index} />
               ))}
             </div>
-          ) : pageItems.length > 0 ? (
+          ) : sortedItems.length > 0 ? (
             <div className="flex flex-col gap-4">
               <div className="grid grid-cols-2 gap-4 lg:grid-cols-3 xl:grid-cols-4">
-                {pageItems.map((product) => (
+                {sortedItems.map((product) => (
                   <ProductCard
                     key={product.id}
                     product={product}
@@ -205,13 +278,15 @@ export function ProductsPage() {
                   />
                 ))}
               </div>
-              <ProductPagination
-                page={page}
-                totalPages={totalPages}
-                pageSize={pageSize}
-                onPageChange={setPage}
-                onPageSizeChange={setPageSize}
-              />
+              {!isRecommendedSection && (
+                <ProductPagination
+                  page={page}
+                  totalPages={totalPages}
+                  pageSize={pageSize}
+                  onPageChange={setPage}
+                  onPageSizeChange={setPageSize}
+                />
+              )}
             </div>
           ) : (
             <EmptyState

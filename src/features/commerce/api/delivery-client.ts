@@ -1,10 +1,6 @@
 import { apiJson } from "@/lib/api/client";
+import { API_ENDPOINTS } from "@/config/api-endpoints";
 import { DeliveryOption, DeliveryType, Order } from "@/types/domain";
-
-export const DELIVERY_API_PATHS = {
-  OPTIONS: "/delivery/options",
-  ATTACH: (orderId: string) => `/orders/${orderId}/delivery`,
-};
 
 interface DeliveryOptionResponse {
   providerId: string;
@@ -41,7 +37,7 @@ export interface AttachDeliveryInput {
 
 /** List active, priced shipping options (provider + type + feeVnd). */
 export async function getDeliveryOptions(): Promise<DeliveryOption[]> {
-  return apiJson<DeliveryOptionResponse[]>(DELIVERY_API_PATHS.OPTIONS);
+  return apiJson<DeliveryOptionResponse[]>(API_ENDPOINTS.DELIVERY.OPTIONS);
 }
 
 /**
@@ -54,7 +50,7 @@ export async function attachDelivery(
   input: AttachDeliveryInput,
 ): Promise<Order> {
   const response = await apiJson<OrderResponse>(
-    DELIVERY_API_PATHS.ATTACH(orderId),
+    API_ENDPOINTS.DELIVERY.ATTACH(orderId),
     { method: "POST", body: input },
   );
   return {

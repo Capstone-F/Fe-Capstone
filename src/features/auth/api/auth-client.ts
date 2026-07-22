@@ -1,16 +1,45 @@
-import { apiJson, ApiError } from "@/lib/api/client";
+import { apiJson } from "@/lib/api/client";
 import { appConfig } from "@/lib/env";
-import { sanitizeRedirectPath } from "@/shared/utils/safe-redirect";
+import { API_ENDPOINTS } from "@/config/api-endpoints";
 
-import { DEV_BYPASS_SESSION_USER } from "../constants/session-dev";
-import type { AuthStatus, SessionUser, StartLoginInput } from "../types/auth";
+import type { AuthStatus, SessionUser } from "../types/auth";
 
-export async function getSession() {
+import { ApiError } from "@/lib/api/client";
+
+export async function getSession(): Promise<SessionUser | null> {
   if (appConfig.devBypassAuth) {
-    return DEV_BYPASS_SESSION_USER;
+    return {
+      id: "dev-user-id",
+      email: "dev@glowscan.local",
+      name: "Dev User",
+      provider: "local",
+      roles: ["CUSTOMER"],
+      clinicId: null,
+      isActive: true,
+      createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString(),
+    };
   }
 
-  return apiJson<SessionUser>("/users/me");
+  if (
+    typeof window !== "undefined" &&
+    !localStorage.getItem("glowscan_access_token")
+  ) {
+    return null;
+  }
+
+  try {
+    return await apiJson<SessionUser>(API_ENDPOINTS.USERS.ME);
+  } catch (error) {
+    if (error instanceof ApiError && error.status === 401) {
+      if (typeof window !== "undefined") {
+        localStorage.removeItem("glowscan_access_token");
+        localStorage.removeItem("glowscan_refresh_token");
+      }
+      return null;
+    }
+    return null;
+  }
 }
 
 export async function getAuthStatus() {
@@ -25,32 +54,7 @@ export async function getAuthStatus() {
     return { authenticated: true } satisfies AuthStatus;
   }
 
-  return apiJson<AuthStatus>("/auth/status");
-}
-
-export async function startLogin({
-  redirectTo = "/",
-  idpHint,
-}: StartLoginInput = {}) {
-  if (appConfig.devBypassAuth) {
-    window.location.assign(sanitizeRedirectPath(redirectTo));
-    return;
-  }
-
-  const clientRedirectUri = new URL(
-    sanitizeRedirectPath(redirectTo),
-    window.location.origin,
-  ).toString();
-
-  const response = await apiJson<{ login_uri: string }>("/auth/login", {
-    method: "POST",
-    body: {
-      client_redirect_uri: clientRedirectUri,
-      ...(idpHint ? { idpHint } : {}),
-    },
-  });
-
-  window.location.assign(response.login_uri);
+  return { authenticated: false } satisfies AuthStatus;
 }
 
 interface MobileTokenResponse {
@@ -64,10 +68,13 @@ export async function loginDirect(
   username: string,
   password: string,
 ): Promise<MobileTokenResponse> {
-  const response = await apiJson<MobileTokenResponse>("/auth/mobile/login", {
-    method: "POST",
-    body: { username, password },
-  });
+  const response = await apiJson<MobileTokenResponse>(
+    API_ENDPOINTS.AUTH.MOBILE_LOGIN,
+    {
+      method: "POST",
+      body: { username, password },
+    },
+  );
 
   if (typeof window !== "undefined" && response.accessToken) {
     localStorage.setItem("glowscan_access_token", response.accessToken);
@@ -82,10 +89,13 @@ export async function registerDirect(
   password: string,
   name: string,
 ): Promise<MobileTokenResponse> {
-  const response = await apiJson<MobileTokenResponse>("/auth/mobile/register", {
-    method: "POST",
-    body: { email, password, name },
-  });
+  const response = await apiJson<MobileTokenResponse>(
+    API_ENDPOINTS.AUTH.MOBILE_REGISTER,
+    {
+      method: "POST",
+      body: { email, password, name },
+    },
+  );
 
   if (typeof window !== "undefined" && response.accessToken) {
     localStorage.setItem("glowscan_access_token", response.accessToken);
@@ -101,19 +111,5 @@ export async function logout() {
     localStorage.removeItem("glowscan_refresh_token");
   }
 
-  if (appConfig.devBypassAuth) {
-    return { success: true };
-  }
-
-  try {
-    return await apiJson<{ success: boolean }>("/auth/logout", {
-      method: "POST",
-    });
-  } catch (error) {
-    if (error instanceof ApiError && error.status === 401) {
-      return { success: true };
-    }
-    console.warn("Logout request failed or session already cleared:", error);
-    return { success: true };
-  }
+  return { success: true };
 }

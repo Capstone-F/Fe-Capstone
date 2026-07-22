@@ -103,7 +103,7 @@ export function AnalyzingScreen() {
         <div className="text-muted-foreground flex flex-col gap-2 rounded-2xl border border-white/40 bg-white/30 p-4 text-left text-[10px] shadow-inner backdrop-blur">
           <div className="flex items-center gap-2">
             <div className="h-1.5 w-1.5 animate-ping rounded-full bg-emerald-500" />
-            <span>Tải thông tin người dùng từ Keycloak thành công</span>
+            <span>Xác thực và tải thông tin người dùng thành công</span>
           </div>
           <div className="flex items-center gap-2">
             <div className="h-1.5 w-1.5 animate-ping rounded-full bg-emerald-500" />

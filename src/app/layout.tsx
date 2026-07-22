@@ -24,11 +24,11 @@ const fontMono = JetBrains_Mono({
 export const metadata: Metadata = {
   metadataBase: new URL(appConfig.appUrl),
   title: {
-    default: "GlowScan Admin",
-    template: "%s | GlowScan Admin",
+    default: "GlowScan",
+    template: "%s | GlowScan",
   },
   description:
-    "Admin portal scaffold for GlowScan with Next.js 16, shadcn/ui, and BFF auth proxying to NestJS.",
+    "GlowScan ket hop phan tich da AI, routine ca nhan hoa, cua hang skincare va mang luoi chuyen gia da lieu.",
 };
 
 export default function RootLayout({

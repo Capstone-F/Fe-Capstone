@@ -37,4 +37,6 @@ export interface ExpertFilters {
   minRating?: number;
   maxFee?: number;
   maxDistance?: number;
+  lat?: number;
+  lng?: number;
 }

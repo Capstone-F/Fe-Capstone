@@ -9,6 +9,7 @@ import { vi } from "@/config/locales/vi";
 import { queryKeys } from "@/lib/query/keys";
 import { getPaymentStatus } from "@/features/commerce/api/payments-client";
 import { getOrder } from "@/features/commerce/api/orders-client";
+import { generateRoutine } from "@/features/profile/api/routines-client";
 import { formatVnd } from "@/shared/utils/format";
 import { CheckoutStepper } from "@/features/commerce/components/checkout-stepper";
 import { Button } from "@/shared/components/ui/button";
@@ -118,6 +119,16 @@ function VnpayReturnContent() {
   } else {
     viewState = "failed";
   }
+
+  const generatedRef = useRef(false);
+  useEffect(() => {
+    if (succeeded && order?.source === "SURVEY" && !generatedRef.current) {
+      generatedRef.current = true;
+      generateRoutine(order.id).catch((err) => {
+        console.error("Failed to generate routine:", err);
+      });
+    }
+  }, [succeeded, order?.source, order?.id]);
 
   const content = STATE_CONTENT[viewState];
 

@@ -10,10 +10,10 @@ import {
   CardTitle,
 } from "@/shared/components/ui/card";
 import { Skeleton } from "@/shared/components/ui/skeleton";
-import { ApiError } from "@/lib/api/client";
 import { appConfig } from "@/lib/env";
 
 import { useSession } from "../hooks/use-session";
+import { shouldRedirectToLogin } from "../lib/session-access";
 
 export function SessionGuard({
   children,
@@ -28,32 +28,35 @@ export function SessionGuard({
       return;
     }
 
-    if (!(sessionQuery.error instanceof ApiError)) {
-      return;
-    }
-
-    if (sessionQuery.error.status === 401) {
+    if (
+      shouldRedirectToLogin({
+        isLoading: sessionQuery.isLoading,
+        hasSession: Boolean(sessionQuery.data),
+      })
+    ) {
       const loginTarget = pathname
         ? `/login?redirectTo=${encodeURIComponent(pathname)}`
         : "/login";
       window.location.href = loginTarget;
     }
-  }, [pathname, sessionQuery.error]);
+  }, [pathname, sessionQuery.data, sessionQuery.isLoading]);
 
   if (appConfig.devBypassAuth) {
     return <>{children}</>;
   }
 
   if (sessionQuery.isLoading) {
-    return <AdminShellLoading label="Restoring admin session..." />;
+    return <AdminShellLoading label="Đang khôi phục phiên đăng nhập..." />;
   }
 
   if (
-    sessionQuery.error instanceof ApiError &&
-    sessionQuery.error.status === 401
+    shouldRedirectToLogin({
+      isLoading: sessionQuery.isLoading,
+      hasSession: Boolean(sessionQuery.data),
+    })
   ) {
     return (
-      <AdminShellLoading label="Session expired. Redirecting to login..." />
+      <AdminShellLoading label="Phiên đăng nhập không còn hợp lệ. Đang chuyển tới đăng nhập..." />
     );
   }
 
@@ -61,12 +64,11 @@ export function SessionGuard({
     return (
       <Card className="surface-glass max-w-2xl">
         <CardHeader>
-          <CardTitle>Session validation failed.</CardTitle>
+          <CardTitle>Không thể xác thực phiên đăng nhập.</CardTitle>
         </CardHeader>
         <CardContent className="text-muted-foreground text-sm">
-          The admin shell is reachable, but the frontend could not load the
-          current user from <code>/auth/me</code>. Check the backend session and
-          proxy response first.
+          Frontend không thể tải người dùng hiện tại từ <code>/users/me</code>.
+          Kiểm tra lại API xác thực và token đăng nhập hiện tại.
         </CardContent>
       </Card>
     );

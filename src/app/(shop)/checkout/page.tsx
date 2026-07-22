@@ -1,5 +1,10 @@
 import { CheckoutPage } from "@/features/commerce/pages/checkout-page";
+import { ShopContainer } from "@/shared/components/layout/shop-container";
 
 export default function Page() {
-  return <CheckoutPage />;
+  return (
+    <ShopContainer>
+      <CheckoutPage />
+    </ShopContainer>
+  );
 }
