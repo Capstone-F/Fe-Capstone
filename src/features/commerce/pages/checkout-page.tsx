@@ -16,7 +16,6 @@ import { formatVnd } from "@/shared/utils/format";
 import { OrderSummary } from "@/features/commerce/components/order-summary";
 import { CheckoutStepper } from "@/features/commerce/components/checkout-stepper";
 import { useSession } from "@/features/auth/hooks/use-session";
-import { startLogin } from "@/features/auth/api/auth-client";
 import { Button } from "@/shared/components/ui/button";
 import { Input } from "@/shared/components/ui/input";
 import { Label } from "@/shared/components/ui/label";
@@ -85,7 +84,7 @@ export function CheckoutPage() {
           <Button
             size="sm"
             className="mt-4 text-xs"
-            onClick={() => void startLogin({ redirectTo: "/checkout" })}
+            onClick={() => router.push("/login?redirectTo=/checkout")}
           >
             {ck.loginCta}
           </Button>

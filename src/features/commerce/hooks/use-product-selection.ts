@@ -1,22 +1,19 @@
 import { useState } from "react";
+import { hasSmartCatalogConflict } from "@/features/commerce/lib/smart-catalog";
 
 export function useProductSelection() {
   const [selectedProduct, setSelectedProduct] = useState<string[]>([]);
   const [hasConflict, setHasConflict] = useState(false);
 
   const handleProductSelect = (id: string) => {
-    let nextList = [...selectedProduct];
-    if (nextList.includes(id)) {
-      nextList = nextList.filter((item) => item !== id);
-    } else {
+    const nextList = [...selectedProduct];
+    if (!nextList.includes(id)) {
       nextList.push(id);
     }
     setSelectedProduct(nextList);
 
     // Conflict rules: BHA and Retinol should not be selected together
-    const hasBha = nextList.includes("bha");
-    const hasRetinol = nextList.includes("retinol");
-    setHasConflict(hasBha && hasRetinol);
+    setHasConflict(hasSmartCatalogConflict(nextList));
   };
 
   return {

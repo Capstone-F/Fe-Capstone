@@ -1,4 +1,5 @@
 import { apiJson } from "@/lib/api/client";
+import { API_ENDPOINTS } from "@/config/api-endpoints";
 import {
   SurveyQuestionDto,
   SurveyResponseDto,
@@ -8,11 +9,13 @@ import {
 
 export const fetchQuestionsApi = (surveyId?: string) =>
   apiJson<SurveyQuestionDto[]>(
-    surveyId ? `/surveys/questions?surveyId=${surveyId}` : "/surveys/questions",
+    surveyId
+      ? `${API_ENDPOINTS.SURVEYS.QUESTIONS}?surveyId=${surveyId}`
+      : API_ENDPOINTS.SURVEYS.QUESTIONS,
   );
 
 export const createSurveySessionApi = () =>
-  apiJson<SurveyResponseDto>("/surveys", {
+  apiJson<SurveyResponseDto>(API_ENDPOINTS.SURVEYS.BASE, {
     method: "POST",
   });
 
@@ -20,19 +23,19 @@ export const submitSurveyAnswersApi = (
   sessionId: string,
   answers: { questionId: string; labelCodes: string[]; value?: string }[],
 ) =>
-  apiJson(`/surveys/${sessionId}/answers`, {
+  apiJson(`${API_ENDPOINTS.SURVEYS.BASE}/${sessionId}/answers`, {
     method: "POST",
     body: { answers },
   });
 
 export const fetchCustomerProfileApi = () =>
-  apiJson<CustomerProfileResponseDto>("/customers/me");
+  apiJson<CustomerProfileResponseDto>(API_ENDPOINTS.CUSTOMERS.ME);
 
 export const fetchLatestRecommendationsApi = () =>
-  apiJson<RecommendationResponseDto>("/recommendations/latest");
+  apiJson<RecommendationResponseDto>(API_ENDPOINTS.RECOMMENDATIONS.LATEST);
 
 export const completeSurveyApi = (sessionId: string) =>
-  apiJson(`/surveys/${sessionId}/complete`, {
+  apiJson(`${API_ENDPOINTS.SURVEYS.BASE}/${sessionId}/complete`, {
     method: "POST",
   });
 
@@ -40,7 +43,7 @@ export const addRecommendationToCartApi = (
   productVariantId: string,
   surveyRecommendationId?: string,
 ) =>
-  apiJson("/cart/items", {
+  apiJson(API_ENDPOINTS.CART.ITEMS, {
     method: "POST",
     body: {
       productVariantId,

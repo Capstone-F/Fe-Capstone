@@ -18,6 +18,7 @@ import { vi } from "@/config/locales/vi";
 import { useProduct } from "@/features/commerce/hooks/use-products";
 import { useAddToCart } from "@/features/commerce/hooks/use-cart";
 import { useSession } from "@/features/auth/hooks/use-session";
+import { useProfile } from "@/features/profile/hooks/use-profile";
 import { primaryVariant } from "@/features/commerce/mapper/variant";
 import { formatVnd } from "@/shared/utils/format";
 import {
@@ -61,12 +62,18 @@ export function ProductDetailPage({
   const { data: detail, isLoading } = useProduct(id);
   const addToCart = useAddToCart();
   const session = useSession();
+  const { data: profile } = useProfile();
 
   if (isLoading || !detail) {
     return <DetailSkeleton />;
   }
 
   const { product, ingredients } = detail;
+  const userAllergies = profile?.allergies ?? [];
+  const allergicIngredients = ingredients.filter((ing) =>
+    userAllergies.some((a) => ing.name.toLowerCase().includes(a.toLowerCase())),
+  );
+
   const selectedVariant =
     product.variants.find((v) => v.id === selectedVariantId) ??
     primaryVariant(product);
@@ -108,7 +115,7 @@ export function ProductDetailPage({
           </div>
         </Card>
 
-        <div className="flex flex-col gap-4">
+        <div className="flex h-fit flex-col gap-4 md:sticky md:top-24">
           <div className="flex flex-col gap-2">
             <div className="flex items-center gap-2">
               <span className="inline-flex items-center gap-1.5 rounded-full bg-slate-100 px-2.5 py-1 text-xs font-semibold text-slate-600">
@@ -128,6 +135,15 @@ export function ProductDetailPage({
               {selectedVariant ? formatVnd(selectedVariant.priceVnd) : "—"}
             </p>
           </div>
+
+          {allergicIngredients.length > 0 && (
+            <div className="rounded-xl border border-red-200 bg-red-50 p-3 text-xs text-red-700">
+              <span className="font-bold">⚠️ Cảnh báo Dị Ứng Cá Nhân:</span> Sản
+              phẩm này chứa thành phần (
+              {allergicIngredients.map((i) => i.name).join(", ")}) trùng với
+              danh mục dị ứng trong Hồ sơ Da của bạn!
+            </div>
+          )}
 
           {product.variants.length > 0 && (
             <div className="flex flex-col gap-2">

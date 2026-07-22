@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import Link from "next/link";
 import { useParams, useRouter } from "next/navigation";
 import {
@@ -15,6 +15,7 @@ import {
   useCreateBooking,
 } from "@/features/booking/hooks/use-booking";
 import { useExpertDetail } from "@/features/experts/hooks/use-experts";
+import { useSession } from "@/features/auth/hooks/use-session";
 import { Button } from "@/shared/components/ui/button";
 import {
   Card,
@@ -32,6 +33,16 @@ export function BookSlotPage() {
   const params = useParams();
   const router = useRouter();
   const expertId = params?.expertId as string;
+
+  const session = useSession();
+
+  useEffect(() => {
+    if (!session.isLoading && !session.data) {
+      router.replace(
+        `/login?redirectTo=${encodeURIComponent(`/booking/${expertId}`)}`,
+      );
+    }
+  }, [session.isLoading, session.data, expertId, router]);
 
   const { data: expert, isLoading: isExpertLoading } =
     useExpertDetail(expertId);
@@ -105,7 +116,7 @@ export function BookSlotPage() {
     }
   };
 
-  if (isExpertLoading || isSlotsLoading) {
+  if (isExpertLoading || isSlotsLoading || session.isLoading || !session.data) {
     return (
       <div className="text-muted-foreground mx-auto flex max-w-2xl flex-col items-center justify-center p-12">
         <div className="border-primary mb-3 h-8 w-8 animate-spin rounded-full border-b-2"></div>

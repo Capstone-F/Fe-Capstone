@@ -12,5 +12,6 @@ export function useSession() {
     queryKey: queryKeys.session,
     queryFn: getSession,
     staleTime: appConfig.devBypassAuth ? Infinity : 60_000,
+    retry: false,
   });
 }

@@ -1,5 +1,8 @@
 import { CartItem } from "@/types/domain";
 import { addToCart, getCartItems } from "../api/cart-client";
+import { getAllProducts } from "../api/products-client";
+import { indexProductVariants } from "../mapper/cart-hydration";
+import { partitionGuestCartItems } from "@/features/commerce/lib/guest-cart-merge";
 
 /**
  * Push each guest cart line to the server cart. For a variant that already
@@ -11,15 +14,28 @@ import { addToCart, getCartItems } from "../api/cart-client";
  */
 export async function mergeGuestCartIntoServer(
   items: CartItem[],
-): Promise<void> {
+): Promise<{ droppedVariantIds: string[] }> {
+  const productPool = await getAllProducts();
+  const validVariantIds = new Set(indexProductVariants(productPool).keys());
+  const { mergeableItems, staleVariantIds } = partitionGuestCartItems(
+    items,
+    validVariantIds,
+  );
+
+  if (mergeableItems.length === 0) {
+    return { droppedVariantIds: staleVariantIds };
+  }
+
   const serverItems = await getCartItems();
   const serverQtyByVariant = new Map(
     serverItems.map((item) => [item.productVariantId, item.quantity]),
   );
 
-  for (const item of items) {
+  for (const item of mergeableItems) {
     const serverQty = serverQtyByVariant.get(item.productVariantId) ?? 0;
     const mergedQty = Math.max(item.quantity, serverQty);
     await addToCart(item.productVariantId, mergedQty);
   }
+
+  return { droppedVariantIds: staleVariantIds };
 }

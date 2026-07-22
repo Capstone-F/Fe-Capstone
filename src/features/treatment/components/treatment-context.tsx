@@ -11,6 +11,10 @@ import {
   TreatmentData,
   SkincareProduct,
 } from "../types/treatment";
+import type {
+  CustomerProfileResponseDto,
+  RecommendationResponseDto,
+} from "@/types/domain";
 import { DEFAULT_ANSWERS, LOCAL_STORAGE_KEY } from "../constants/treatment";
 import {
   fetchQuestionsApi,
@@ -21,6 +25,11 @@ import {
   completeSurveyApi,
   addRecommendationToCartApi,
 } from "../api/treatment-client";
+import {
+  getRequiredSurveyProfileFields,
+  mapRecommendationProducts,
+  validateSurveyRecommendation,
+} from "../lib/survey-flow";
 
 type TreatmentContextType = {
   state: TreatmentData;
@@ -41,8 +50,8 @@ type TreatmentContextType = {
   ) => void;
   submitDynamicAnswersAndNext: (questionIds: string[]) => Promise<boolean>;
   completeDynamicSurvey: () => Promise<boolean>;
-  fetchLatestRecommendations: () => Promise<void>;
-  fetchCustomerProfile: () => Promise<void>;
+  fetchLatestRecommendations: () => Promise<RecommendationResponseDto | null>;
+  fetchCustomerProfile: () => Promise<CustomerProfileResponseDto | null>;
   addRecommendationsToCart: (productVariantIds: string[]) => Promise<boolean>;
 };
 
@@ -288,6 +297,17 @@ export function TreatmentProvider({ children }: { children: React.ReactNode }) {
       dynamicError: null,
     }));
     try {
+      const profile = await fetchCustomerProfileApi();
+      const missingProfileFields = getRequiredSurveyProfileFields(
+        profile?.customer,
+      );
+
+      if (missingProfileFields.length > 0) {
+        throw new Error(
+          "Vui lòng cập nhật ngày sinh và giới tính trong hồ sơ trước khi bắt đầu khảo sát.",
+        );
+      }
+
       // 1. Get CORE questions
       const questions = await fetchQuestionsApi();
       // 2. Start survey session
@@ -298,6 +318,7 @@ export function TreatmentProvider({ children }: { children: React.ReactNode }) {
         dynamicQuestions: questions || [],
         dynamicAnswers: {},
         dynamicTextAnswers: {},
+        recommendations: null,
         surveyStep: 1,
         isLoadingDynamic: false,
       }));
@@ -376,8 +397,10 @@ export function TreatmentProvider({ children }: { children: React.ReactNode }) {
     try {
       const profile = await fetchCustomerProfileApi();
       setState((prev) => ({ ...prev, customerProfile: profile }));
+      return profile;
     } catch (e) {
       console.error("Failed to fetch customer profile:", e);
+      return null;
     }
   }, []);
 
@@ -385,8 +408,10 @@ export function TreatmentProvider({ children }: { children: React.ReactNode }) {
     try {
       const rec = await fetchLatestRecommendationsApi();
       setState((prev) => ({ ...prev, recommendations: rec }));
+      return rec;
     } catch (e) {
       console.error("Failed to fetch latest recommendations:", e);
+      return null;
     }
   }, []);
 
@@ -401,14 +426,39 @@ export function TreatmentProvider({ children }: { children: React.ReactNode }) {
       // Complete on backend
       await completeSurveyApi(state.surveySessionId);
 
-      // Generate local routines based on current answers as fallback/supplement
-      generateRoutines();
+      // Fetch the canonical backend outputs for this survey.
+      const [profile, recommendation] = await Promise.all([
+        fetchCustomerProfile(),
+        fetchLatestRecommendations(),
+      ]);
 
-      // Fetch profile (for skinType description) & recommendations
-      await Promise.all([fetchCustomerProfile(), fetchLatestRecommendations()]);
+      const recommendationStatus = validateSurveyRecommendation(
+        recommendation,
+        state.surveySessionId,
+      );
+
+      if (recommendationStatus !== "ok") {
+        const message =
+          recommendationStatus === "stale"
+            ? "Khuyến nghị vừa tải không thuộc phiên khảo sát hiện tại. Vui lòng thử lại."
+            : recommendationStatus === "empty"
+              ? "Phiên khảo sát đã hoàn tất nhưng chưa có sản phẩm khuyến nghị hợp lệ."
+              : "Không tải được khuyến nghị sau khi hoàn tất khảo sát.";
+
+        setState((prev) => ({
+          ...prev,
+          customerProfile: profile,
+          recommendations: recommendation,
+          isLoadingDynamic: false,
+          dynamicError: message,
+        }));
+        return false;
+      }
 
       setState((prev) => ({
         ...prev,
+        customerProfile: profile,
+        recommendations: recommendation,
         isLoadingDynamic: false,
         flowState: "analyzing",
       }));
@@ -426,18 +476,33 @@ export function TreatmentProvider({ children }: { children: React.ReactNode }) {
       }));
       return false;
     }
-  }, [
-    state.surveySessionId,
-    fetchCustomerProfile,
-    fetchLatestRecommendations,
-    generateRoutines,
-  ]);
+  }, [state.surveySessionId, fetchCustomerProfile, fetchLatestRecommendations]);
 
   const addRecommendationsToCart = useCallback(
     async (productVariantIds: string[]): Promise<boolean> => {
       try {
-        const recommendationId = state.recommendations?.id;
+        const recommendationStatus = validateSurveyRecommendation(
+          state.recommendations,
+          state.surveySessionId,
+        );
+
+        if (recommendationStatus !== "ok") {
+          throw new Error(
+            "Khuyến nghị hiện tại không hợp lệ để thêm vào giỏ hàng.",
+          );
+        }
+
+        const recommendationId = state.recommendations!.id;
+        const validVariantIds = new Set(
+          mapRecommendationProducts(state.recommendations).map(
+            (product) => product.id,
+          ),
+        );
+
         for (const variantId of productVariantIds) {
+          if (!validVariantIds.has(variantId)) {
+            continue;
+          }
           await addRecommendationToCartApi(variantId, recommendationId);
         }
         return true;
@@ -446,127 +511,12 @@ export function TreatmentProvider({ children }: { children: React.ReactNode }) {
         throw e;
       }
     },
-    [state.recommendations],
+    [state.recommendations, state.surveySessionId],
   );
 
   // Helper to generate recommended products dynamically for the checkout cart
   const getRecommendedProducts = (): SkincareProduct[] => {
-    if (
-      state.recommendations?.products &&
-      state.recommendations.products.length > 0
-    ) {
-      return state.recommendations.products.map((p) => {
-        const variant = p.variants?.[0];
-        return {
-          id: variant?.productVariantId || p.productId,
-          name: p.productName || variant?.productName || "Sản phẩm khuyên dùng",
-          category: p.protocolName || "Chăm sóc chuyên sâu",
-          price: variant?.priceVnd || p.priceVnd || 0,
-          brand: p.protocolCode || "GlowScan Derm",
-          reason: `Độ phù hợp: ${Math.round(p.matchScore * 100)}% — Phác đồ ${p.protocolName}`,
-        };
-      });
-    }
-
-    const products: SkincareProduct[] = [];
-    const answers = state.surveyAnswers;
-    const isPregnant = answers.pregnancy === "yes";
-    const isLowHydration = answers.hydration !== "" && answers.hydration <= 25;
-    const hasRetinol = answers.currentActiveIngredients.includes("Retinol");
-
-    // Product 1: Cleanser (Always)
-    products.push({
-      id: "prod_cleanser",
-      name: "Sữa rửa mặt tạo bọt dịu nhẹ GlowScan Derm",
-      category: "Sữa rửa mặt",
-      price: 210000,
-      originalPrice: 250000,
-      brand: "GlowScan Derm",
-      reason: `Đề xuất cho da nhóm ${answers.baumannOilyDry || "O"}${answers.baumannSensitiveResistant || "S"} để làm sạch êm dịu, không rát đỏ.`,
-    });
-
-    // Product 2: Niacinamide Serum (If needed)
-    const needsNiacinamide =
-      answers.primaryConcern === "Mụn trứng cá" ||
-      answers.primaryConcern === "Thâm sạm" ||
-      answers.primaryConcern === "Lỗ chân lông to" ||
-      answers.treatmentGoals.includes("Giảm mụn") ||
-      answers.treatmentGoals.includes("Cải thiện thâm sạm");
-
-    if (needsNiacinamide) {
-      products.push({
-        id: "prod_niacinamide",
-        name: "Tinh chất phục hồi Niacinamide 10% + Zinc 1%",
-        category: "Tinh chất đặc trị",
-        price: 390000,
-        brand: "GlowScan Active",
-        reason: "Kháng viêm cho mụn, giảm thâm đỏ và kiềm dầu hiệu quả.",
-      });
-    }
-
-    // Product 3: AHA/BHA Toner (If needed & NOT pregnant)
-    if (!isPregnant) {
-      const needsExfoliator =
-        answers.primaryConcern === "Mụn trứng cá" ||
-        answers.primaryConcern === "Lỗ chân lông to" ||
-        answers.primaryConcern === "Dầu thừa" ||
-        answers.treatmentGoals.includes("Giảm mụn") ||
-        answers.treatmentGoals.includes("Thu nhỏ lỗ chân lông");
-
-      if (needsExfoliator) {
-        products.push({
-          id: "prod_exfoliator",
-          name: "Nước hoa hồng tẩy tế bào chết AHA 7% + BHA 1%",
-          category: "Tẩy tế bào chết",
-          price: 290000,
-          brand: "GlowScan Peel",
-          reason:
-            "Giải quyết bít tắc nang lông, thu nhỏ lỗ chân lông cho da dầu.",
-          conflict: hasRetinol,
-          conflictWarning: hasRetinol
-            ? "Cảnh báo: Khả năng kích ứng với Retinol bạn đang dùng. Vui lòng giãn cách ngày sử dụng."
-            : undefined,
-        });
-      }
-    } else {
-      // If pregnant, explain why AHA/BHA is excluded
-      // No product pushed
-    }
-
-    // Product 4: Moisturizer (Deep barrier or oil-free depending on hydration)
-    if (isLowHydration) {
-      products.push({
-        id: "prod_moisturizer_deep",
-        name: "Kem dưỡng ẩm ban đêm phục hồi lipid khóa ẩm sâu GlowScan Barrier",
-        category: "Kem dưỡng ẩm",
-        price: 320000,
-        brand: "GlowScan Barrier",
-        reason: `Cung cấp Ceramide phục hồi màng ẩm cho da có mức độ ẩm rất thấp (${answers.hydration}%).`,
-      });
-    } else {
-      products.push({
-        id: "prod_moisturizer_light",
-        name: "Gel dưỡng ẩm Hydrating Gel không chứa dầu GlowScan Aqua",
-        category: "Kem dưỡng ẩm",
-        price: 280000,
-        brand: "GlowScan Aqua",
-        reason:
-          "Cấp nước nhẹ thông thoáng, thích hợp để duy trì kiềm dầu hàng ngày.",
-      });
-    }
-
-    // Product 5: Sunscreen (Always)
-    products.push({
-      id: "prod_sunscreen",
-      name: "Kem chống nắng dạng sữa SPF 50 GlowScan Sun",
-      category: "Kem chống nắng",
-      price: 420000,
-      originalPrice: 480000,
-      brand: "GlowScan Sun",
-      reason: `Bảo vệ phổ rộng chống tia cực tím trong khí hậu ẩm nóng.`,
-    });
-
-    return products;
+    return mapRecommendationProducts(state.recommendations);
   };
 
   const resetAll = () => {

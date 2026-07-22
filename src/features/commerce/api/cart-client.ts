@@ -1,14 +1,8 @@
 import { apiJson } from "@/lib/api/client";
+import { API_ENDPOINTS } from "@/config/api-endpoints";
 
 import type { CartItem, CartResponse } from "../types/cart";
 import { ensureCustomerProvisioned } from "./customers-client";
-
-export const CART_API_PATHS = {
-  GET_CART: "/cart",
-  ADD_ITEM: "/cart/items",
-  REMOVE_ITEM: (variantId: string) => `/cart/items/${variantId}`,
-  CLEAR: "/cart",
-};
 
 let provisioned = false;
 
@@ -20,7 +14,7 @@ async function ensureProvisionedOnce(): Promise<void> {
 
 export async function getCartItems(): Promise<CartItem[]> {
   await ensureProvisionedOnce();
-  const response = await apiJson<CartResponse>(CART_API_PATHS.GET_CART);
+  const response = await apiJson<CartResponse>(API_ENDPOINTS.CART.GET);
   return response.items;
 }
 
@@ -37,7 +31,7 @@ export async function addToCart(
   surveyRecommendationId?: string,
 ): Promise<CartItem[]> {
   await ensureProvisionedOnce();
-  const response = await apiJson<CartResponse>(CART_API_PATHS.ADD_ITEM, {
+  const response = await apiJson<CartResponse>(API_ENDPOINTS.CART.ITEMS, {
     method: "POST",
     body: {
       productVariantId,
@@ -66,7 +60,7 @@ export async function updateQuantity(
 
   if (!finalSource) {
     try {
-      const response = await apiJson<CartResponse>(CART_API_PATHS.GET_CART);
+      const response = await apiJson<CartResponse>(API_ENDPOINTS.CART.GET);
       finalSource = response.source || "CATALOG";
       finalRecId = response.surveyRecommendationId || undefined;
     } catch {
@@ -82,7 +76,7 @@ export async function removeFromCart(
 ): Promise<CartItem[]> {
   await ensureProvisionedOnce();
   const response = await apiJson<CartResponse>(
-    CART_API_PATHS.REMOVE_ITEM(productVariantId),
+    API_ENDPOINTS.CART.ITEM(productVariantId),
     { method: "DELETE" },
   );
   return response.items;
@@ -90,5 +84,5 @@ export async function removeFromCart(
 
 export async function clearCart(): Promise<void> {
   await ensureProvisionedOnce();
-  await apiJson<CartResponse>(CART_API_PATHS.CLEAR, { method: "DELETE" });
+  await apiJson<CartResponse>(API_ENDPOINTS.CART.GET, { method: "DELETE" });
 }

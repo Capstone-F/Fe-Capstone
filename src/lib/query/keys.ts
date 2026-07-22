@@ -11,6 +11,7 @@ export const queryKeys = {
   allergyOptions: ["allergyOptions"] as const,
   routines: ["routines"] as const,
   products: (filters: unknown) => ["products", filters] as const,
+  suggestions: (limit: number) => ["products", "suggestions", limit] as const,
   product: (id: string) => ["product", id] as const,
   productCategories: ["productCategories"] as const,
   productPool: ["productPool"] as const,

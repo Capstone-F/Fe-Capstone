@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { Star, MapPin } from "lucide-react";
+import { Star, MapPin, ArrowRight } from "lucide-react";
 import { Button } from "@/shared/components/ui/button";
 
 import { MOCK_EXPERTS } from "../constants/expert-mock";
@@ -8,18 +8,30 @@ export function ExpertNetworkSection() {
   return (
     <section id="experts" className="py-20">
       <div className="mx-auto max-w-7xl space-y-12 px-4 sm:px-6 lg:px-8">
-        <div className="mx-auto max-w-xl space-y-3 text-center">
-          <span className="text-primary text-xs font-bold tracking-widest uppercase">
-            Mạng lưới tin cậy
-          </span>
-          <h2 className="font-heading text-foreground text-3xl font-bold tracking-tight sm:text-4xl">
-            Hỗ trợ tư vấn hai cấp từ Chuyên gia Da liễu
-          </h2>
-          <p className="text-muted-foreground text-sm">
-            Giao phó làn da cho những người có chuyên môn. Nhân viên hệ thống hỗ
-            trợ miễn phí các thắc mắc thông thường, chuyên gia da liễu phụ trách
-            chăm sóc các tình trạng da phức tạp.
-          </p>
+        <div className="flex flex-col items-center gap-6 md:flex-row md:items-end md:justify-between">
+          <div className="max-w-xl space-y-3 text-center md:text-left">
+            <span className="text-primary text-xs font-bold tracking-widest uppercase">
+              Mạng lưới tin cậy
+            </span>
+            <h2 className="font-heading text-foreground text-3xl font-bold tracking-tight sm:text-4xl">
+              Hỗ trợ tư vấn hai cấp từ Chuyên gia Da liễu
+            </h2>
+            <p className="text-muted-foreground text-sm">
+              Giao phó làn da cho những người có chuyên môn. Nhân viên hệ thống
+              hỗ trợ miễn phí các thắc mắc thông thường, chuyên gia da liễu phụ
+              trách chăm sóc các tình trạng da phức tạp.
+            </p>
+          </div>
+          <Link href="/experts" className="shrink-0">
+            <Button
+              variant="outline"
+              size="sm"
+              className="border-border/80 hover:bg-secondary/40 gap-1.5 rounded-xl font-semibold"
+            >
+              Xem tất cả chuyên gia
+              <ArrowRight className="h-4 w-4" />
+            </Button>
+          </Link>
         </div>
 
         <div className="mx-auto grid max-w-4xl grid-cols-1 gap-8 md:grid-cols-2">

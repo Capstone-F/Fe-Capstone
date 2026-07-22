@@ -2,7 +2,7 @@
 
 import React from "react";
 import Link from "next/link";
-import { useParams } from "next/navigation";
+import { useParams, useRouter } from "next/navigation";
 import {
   ArrowLeft,
   Star,
@@ -13,6 +13,7 @@ import {
   CalendarDays,
 } from "lucide-react";
 import { useExpertDetail } from "@/features/experts/hooks/use-experts";
+import { useSession } from "@/features/auth/hooks/use-session";
 import { Button } from "@/shared/components/ui/button";
 import {
   Card,
@@ -22,12 +23,36 @@ import {
 } from "@/shared/components/ui/card";
 import { Skeleton } from "@/shared/components/ui/skeleton";
 import { vi } from "@/config/locales/vi";
+import { useEffect } from "react";
 
 export function ExpertDetailPage() {
   const params = useParams();
+  const router = useRouter();
   const id = params?.id as string;
-  const { data: expert, isLoading, error } = useExpertDetail(id);
+  const session = useSession();
+  const {
+    data: expert,
+    isLoading,
+    error,
+  } = useExpertDetail(id, Boolean(session.data));
   const t = vi.userPortal.expertDetail;
+
+  useEffect(() => {
+    if (!session.isLoading && !session.data) {
+      router.replace(
+        `/login?redirectTo=${encodeURIComponent(`/experts/${id}`)}`,
+      );
+    }
+  }, [id, router, session.data, session.isLoading]);
+
+  if (session.isLoading || !session.data) {
+    return (
+      <div className="text-muted-foreground mx-auto flex max-w-2xl flex-col items-center justify-center p-12 text-center">
+        <div className="border-primary mb-3 h-8 w-8 animate-spin rounded-full border-b-2"></div>
+        Đang xác thực phiên đăng nhập để mở hồ sơ chuyên gia...
+      </div>
+    );
+  }
 
   if (isLoading) {
     return (

@@ -1,4 +1,5 @@
 import { apiJson } from "@/lib/api/client";
+import { API_ENDPOINTS } from "@/config/api-endpoints";
 
 interface CustomerProfileResponse {
   customer: { id: string } | null;
@@ -12,11 +13,13 @@ interface CustomerProfileResponse {
  * PATCH — an existing customer's allergyLabelCodes must not be wiped.
  */
 export async function ensureCustomerProvisioned(): Promise<void> {
-  const profile = await apiJson<CustomerProfileResponse>("/customers/me");
+  const profile = await apiJson<CustomerProfileResponse>(
+    API_ENDPOINTS.CUSTOMERS.ME,
+  );
   if (profile.customer !== null) {
     return;
   }
-  await apiJson("/customers/me", {
+  await apiJson(API_ENDPOINTS.CUSTOMERS.ME, {
     method: "PATCH",
     body: { allergyLabelCodes: [] },
   });

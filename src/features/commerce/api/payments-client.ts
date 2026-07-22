@@ -1,10 +1,6 @@
 import { apiJson } from "@/lib/api/client";
+import { API_ENDPOINTS } from "@/config/api-endpoints";
 import { PaymentStatus } from "@/types/domain";
-
-export const PAYMENT_API_PATHS = {
-  CHECKOUT: "/payments/checkout",
-  STATUS: (id: string) => `/payments/${id}`,
-};
 
 export interface CheckoutResponse {
   paymentId: string;
@@ -24,7 +20,7 @@ interface PaymentStatusResponse {
 export async function startCheckout(
   orderId: string,
 ): Promise<CheckoutResponse> {
-  return apiJson<CheckoutResponse>(PAYMENT_API_PATHS.CHECKOUT, {
+  return apiJson<CheckoutResponse>(API_ENDPOINTS.PAYMENTS.CHECKOUT, {
     method: "POST",
     body: { orderId, client: "web" },
   });
@@ -34,7 +30,7 @@ export async function getPaymentStatus(
   paymentId: string,
 ): Promise<PaymentStatus> {
   const response = await apiJson<PaymentStatusResponse>(
-    PAYMENT_API_PATHS.STATUS(paymentId),
+    API_ENDPOINTS.PAYMENTS.STATUS(paymentId),
   );
   return {
     id: response.id,

@@ -1,5 +1,6 @@
 import { apiJson } from "@/lib/api/client";
 import { appConfig } from "@/lib/env";
+import { API_ENDPOINTS } from "@/config/api-endpoints";
 
 import { MOCK_EXPERTS } from "../constants/expert-mock";
 import {
@@ -7,13 +8,6 @@ import {
   mapSpecialtyToBackend,
 } from "../mapper/expert-mapper";
 import type { BackendExpert, Expert, ExpertFilters } from "../types/expert";
-
-// Centralized endpoints for Experts
-export const EXPERT_API_PATHS = {
-  GET_EXPERTS: "/experts",
-  GET_EXPERT_DETAIL: (id: string) => `/experts/${id}`,
-  GET_SPECIALTIES: "/experts/meta/specialties",
-};
 
 export async function getExperts(filters?: ExpertFilters): Promise<Expert[]> {
   if (appConfig.useMockApi) {
@@ -54,11 +48,11 @@ export async function getExperts(filters?: ExpertFilters): Promise<Expert[]> {
   }
 
   // Real API Logic
-  let url = EXPERT_API_PATHS.GET_EXPERTS;
+  let url = API_ENDPOINTS.EXPERTS.LIST;
   const queryParams = new URLSearchParams();
 
   if (filters) {
-    const { specialty, minRating, maxFee, maxDistance } = filters;
+    const { specialty, minRating, maxFee, maxDistance, lat, lng } = filters;
     if (specialty && specialty !== "Tất cả") {
       const spec = mapSpecialtyToBackend(specialty);
       if (spec) queryParams.set("specialization", spec);
@@ -69,11 +63,10 @@ export async function getExperts(filters?: ExpertFilters): Promise<Expert[]> {
     if (maxFee) {
       queryParams.set("maxFee", maxFee.toString());
     }
-    if (maxDistance) {
+    if (maxDistance && lat !== undefined && lng !== undefined) {
       queryParams.set("radiusKm", maxDistance.toString());
-      // Default to central coords for distance calculation if geolocation not provided
-      queryParams.set("lat", "10.7769");
-      queryParams.set("lng", "106.7009");
+      queryParams.set("lat", lat.toString());
+      queryParams.set("lng", lng.toString());
     }
   }
 
@@ -111,7 +104,7 @@ export async function getExpertById(id: string): Promise<Expert> {
   }
 
   const beExpert = await apiJson<BackendExpert>(
-    EXPERT_API_PATHS.GET_EXPERT_DETAIL(id),
+    API_ENDPOINTS.EXPERTS.DETAIL(id),
   );
   return mapBackendExpertToFrontend(beExpert);
 }

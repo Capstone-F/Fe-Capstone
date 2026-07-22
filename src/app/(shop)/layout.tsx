@@ -1,16 +1,9 @@
-import { ShopNavbar } from "@/shared/components/shop-navbar";
+import { AppShell } from "@/shared/components/layout/app-shell";
 
 export default function ShopLayout({
   children,
 }: {
   children: React.ReactNode;
 }) {
-  return (
-    <div className="flex min-h-svh flex-col">
-      <ShopNavbar />
-      <div className="flex flex-1 flex-col bg-slate-50/50 p-4 md:p-6 lg:p-8">
-        {children}
-      </div>
-    </div>
-  );
+  return <AppShell>{children}</AppShell>;
 }

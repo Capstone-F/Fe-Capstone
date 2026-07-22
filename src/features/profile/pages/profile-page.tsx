@@ -134,7 +134,7 @@ export function ProfilePage() {
                 </div>
               </div>
 
-              {/* Email (Read-only for Keycloak) */}
+              {/* Email (Read-only) */}
               <div className="flex flex-col gap-1.5 opacity-80">
                 <Label
                   htmlFor="email"

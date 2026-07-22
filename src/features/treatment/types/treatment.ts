@@ -84,12 +84,15 @@ export type TreatmentData = {
 
 export type SkincareProduct = {
   id: string;
+  protocolId?: string;
+  protocolName?: string;
   name: string;
   category: string;
   price: number;
   originalPrice?: number;
   brand: string;
   reason: string;
+  matchScore?: number;
   conflict?: boolean;
   conflictWarning?: string;
 };

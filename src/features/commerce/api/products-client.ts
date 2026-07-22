@@ -1,4 +1,5 @@
 import { apiJson } from "@/lib/api/client";
+import { API_ENDPOINTS } from "@/config/api-endpoints";
 
 import type {
   PaginatedProductsResponse,
@@ -14,14 +15,6 @@ import type {
 export type { ProductQuery, ProductsPage };
 
 const CATALOG_PAGE_SIZE = 100;
-
-// Paths are unprefixed to match Be-Capstone in dev (setGlobalPrefix('api')
-// only applies when NODE_ENV=production — see Global Constraints).
-export const PRODUCT_API_PATHS = {
-  GET_PRODUCTS: "/products",
-  GET_PRODUCT_DETAIL: (id: string) => `/products/${id}`,
-  GET_CATEGORIES: "/products/categories",
-};
 
 function toProduct(response: ProductDetailResponse): Product {
   return response.product;
@@ -43,7 +36,7 @@ export async function getProducts(query?: ProductQuery): Promise<ProductsPage> {
   params.set("limit", String(query?.limit ?? 20));
 
   const response = await apiJson<PaginatedProductsResponse>(
-    `${PRODUCT_API_PATHS.GET_PRODUCTS}?${params.toString()}`,
+    `${API_ENDPOINTS.PRODUCTS.LIST}?${params.toString()}`,
   );
 
   return {
@@ -77,14 +70,29 @@ export async function getAllProducts(): Promise<Product[]> {
 
 export async function getProductById(id: string): Promise<ProductDetail> {
   const response = await apiJson<ProductDetailResponse>(
-    PRODUCT_API_PATHS.GET_PRODUCT_DETAIL(id),
+    API_ENDPOINTS.PRODUCTS.DETAIL(id),
   );
   return { product: response.product, ingredients: response.ingredients };
 }
 
 export async function getCategories(): Promise<ProductCategory[]> {
   const response = await apiJson<ProductCategoryResponse[]>(
-    PRODUCT_API_PATHS.GET_CATEGORIES,
+    API_ENDPOINTS.PRODUCTS.CATEGORIES,
   );
   return response.map((c) => ({ id: c.id, code: c.code, name: c.name }));
+}
+
+export async function getSuggestions(limit: number = 10): Promise<Product[]> {
+  try {
+    const response = await apiJson<PaginatedProductsResponse>(
+      `${API_ENDPOINTS.PRODUCTS.SUGGESTION}?limit=${limit}`,
+    );
+    return response.items.map(toProduct);
+  } catch (e) {
+    console.error(
+      "Failed to get product suggestions, falling back to empty list",
+      e,
+    );
+    return [];
+  }
 }
