@@ -27,13 +27,29 @@ type LoginPanelProps = {
   redirectTo: string;
 };
 
+function getRoleBasedRedirectPath(roles: string[], fallback?: string): string {
+  if (
+    roles.includes("app_admin") ||
+    roles.includes("staff") ||
+    roles.includes("clinic_manager")
+  ) {
+    return "/dashboard/experts";
+  }
+  if (roles.includes("expert")) {
+    return "/expert";
+  }
+  return fallback && fallback !== "/" ? fallback : "/";
+}
+
 export function LoginPanel({ redirectTo }: LoginPanelProps) {
   const router = useRouter();
   const session = useSession();
 
   useEffect(() => {
     if (session.data) {
-      const target = redirectTo || "/";
+      const roles: string[] =
+        session.data.user?.roles || session.data.roles || [];
+      const target = getRoleBasedRedirectPath(roles, redirectTo);
       router.replace(target);
     }
   }, [router, redirectTo, session.data]);
@@ -89,22 +105,9 @@ export function LoginPanel({ redirectTo }: LoginPanelProps) {
       }
 
       // Determine redirect path by user roles
-      const roles: string[] = tokenData?.user?.roles || [];
-      let targetPath = redirectTo;
-
-      if (!targetPath) {
-        if (
-          roles.includes("app_admin") ||
-          roles.includes("staff") ||
-          roles.includes("clinic_manager")
-        ) {
-          targetPath = "/dashboard/experts";
-        } else if (roles.includes("expert")) {
-          targetPath = "/expert";
-        } else {
-          targetPath = "/";
-        }
-      }
+      const roles: string[] =
+        tokenData?.user?.roles || session.data?.user?.roles || [];
+      const targetPath = getRoleBasedRedirectPath(roles, redirectTo);
 
       // Redirect to target path
       window.location.href = targetPath;
