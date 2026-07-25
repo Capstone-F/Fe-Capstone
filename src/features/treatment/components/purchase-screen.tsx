@@ -56,6 +56,17 @@ export function PurchaseScreen() {
     0,
   );
 
+  const totalProtocolsCount = state.recommendations?.protocols?.length ?? 0;
+  const selectedProtocolIdsSet = new Set(
+    selectedProducts.map((p) => p.protocolId).filter(Boolean),
+  );
+  const selectedProtocolCount = selectedProtocolIdsSet.size;
+  const isComboEligible =
+    totalProtocolsCount > 0 && selectedProtocolCount >= totalProtocolsCount;
+
+  const comboDiscount = isComboEligible ? Math.floor(totalSelected * 0.1) : 0;
+  const finalTotal = Math.max(0, totalSelected - comboDiscount);
+
   const router = useRouter();
 
   const handleAddToCart = async () => {
@@ -172,13 +183,25 @@ export function PurchaseScreen() {
       </div>
 
       <div className="my-2 shrink-0 space-y-1.5">
-        <div className="flex items-center gap-1.5 rounded-xl border border-emerald-200 bg-emerald-50 px-3 py-2 text-[9px] font-semibold text-emerald-800">
-          <ShieldCheck className="h-4 w-4 shrink-0 text-emerald-600" />
-          <span>
-            Frontend không còn dựng sản phẩm demo, routine demo, hoặc giảm giá
-            giả lập cho survey flow.
-          </span>
-        </div>
+        {isComboEligible ? (
+          <div className="flex items-center gap-2 rounded-xl border border-emerald-300 bg-emerald-50/90 px-3 py-2 text-[10px] font-semibold text-emerald-800 shadow-xs">
+            <ShieldCheck className="h-4 w-4 shrink-0 text-emerald-600" />
+            <span>
+              🎉 <strong>Ưu đãi Combo Survey:</strong> Đã chọn đủ{" "}
+              {selectedProtocolCount}/{totalProtocolsCount} phác đồ — Giảm trực
+              tiếp 10% khi đặt đơn!
+            </span>
+          </div>
+        ) : (
+          <div className="flex items-center gap-2 rounded-xl border border-amber-300 bg-amber-50/90 px-3 py-2 text-[10px] font-semibold text-amber-800 shadow-xs">
+            <ShieldCheck className="h-4 w-4 shrink-0 text-amber-600" />
+            <span>
+              💡 <strong>Mẹo tiết kiệm:</strong> Chọn đủ sản phẩm cho tất cả{" "}
+              {totalProtocolsCount} phác đồ (hiện có {selectedProtocolCount}/
+              {totalProtocolsCount}) để nhận ngay Ưu đãi Combo 10%!
+            </span>
+          </div>
+        )}
       </div>
 
       <div className="my-2 grid max-h-[220px] flex-1 gap-2 overflow-y-auto py-1 pr-1">
@@ -259,19 +282,30 @@ export function PurchaseScreen() {
             <span>Tạm tính ({selectedProducts.length} sản phẩm):</span>
             <span>{formatPrice(totalSelected)}</span>
           </div>
-          <div className="rounded-xl border border-dashed border-slate-200 bg-slate-50 px-3 py-2 text-[9px] leading-relaxed text-slate-600">
-            Ưu đãi survey hoặc discount combo, nếu có, sẽ do backend xác nhận ở
-            bước tạo đơn. Frontend không còn dựng giảm giá giả lập.
-          </div>
+
+          {isComboEligible ? (
+            <div className="flex justify-between font-bold text-emerald-700">
+              <span>Giảm giá Combo Survey (10%):</span>
+              <span>-{formatPrice(comboDiscount)}</span>
+            </div>
+          ) : (
+            <div className="flex justify-between text-amber-700">
+              <span>Giảm giá Combo Survey:</span>
+              <span className="text-muted-foreground font-semibold">
+                0 đ (Chưa đủ điều kiện)
+              </span>
+            </div>
+          )}
+
           <div className="text-muted-foreground flex justify-between">
             <span>Vận chuyển (GHTK):</span>
             <span className="font-semibold text-emerald-600">Miễn phí</span>
           </div>
           <div className="bg-border/50 my-1 h-[1px]" />
           <div className="text-foreground flex justify-between text-xs font-bold">
-            <span>Tạm tính trước checkout:</span>
+            <span>Tổng thanh toán trước checkout:</span>
             <span className="text-primary text-sm font-black">
-              {formatPrice(totalSelected)}
+              {formatPrice(finalTotal)}
             </span>
           </div>
         </div>

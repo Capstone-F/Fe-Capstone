@@ -3,6 +3,7 @@ export const API_ENDPOINTS = {
     MOBILE_LOGIN: "/auth/mobile/login",
     MOBILE_REGISTER: "/auth/mobile/register",
     MOBILE_REFRESH: "/auth/mobile/refresh",
+    LOGOUT: "/auth/logout",
   },
   USERS: { ME: "/users/me" },
   CUSTOMERS: { ME: "/customers/me", ALLERGIES: "/customers/allergies" },

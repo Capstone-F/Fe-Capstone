@@ -1,5 +1,6 @@
 import { apiClient, publicApiClient } from "@/core/api/client";
 import { API_ENDPOINTS } from "@/core/api/endpoints";
+import { tokenStorage } from "../utils/token-storage";
 import type {
   SessionUser,
   AuthStatus,
@@ -15,13 +16,24 @@ export const authApi = {
   },
 
   getAuthStatus: (): Promise<AxiosResponse<AuthStatus>> => {
-    return apiClient.get<AuthStatus>(API_ENDPOINTS.USERS.ME).then((res) => {
-      // Map AxiosResponse to match expected structure
+    return apiClient.get<SessionUser>(API_ENDPOINTS.USERS.ME).then((res) => {
       return {
         ...res,
-        data: { authenticated: res.status === 200 },
+        data: {
+          authenticated: res.status === 200,
+        },
       };
     });
+  },
+
+  mobileLogin: (payload: {
+    username?: string;
+    password?: string;
+  }): Promise<AxiosResponse<MobileTokenResponse>> => {
+    return publicApiClient.post<MobileTokenResponse>(
+      API_ENDPOINTS.AUTH.MOBILE_LOGIN,
+      payload,
+    );
   },
 
   loginDirect: (
@@ -31,6 +43,17 @@ export const authApi = {
     return publicApiClient.post<MobileTokenResponse>(
       API_ENDPOINTS.AUTH.MOBILE_LOGIN,
       { username, password },
+    );
+  },
+
+  mobileRegister: (payload: {
+    username?: string;
+    email?: string;
+    password?: string;
+  }): Promise<AxiosResponse<MobileTokenResponse>> => {
+    return publicApiClient.post<MobileTokenResponse>(
+      API_ENDPOINTS.AUTH.MOBILE_REGISTER,
+      payload,
     );
   },
 
@@ -45,6 +68,15 @@ export const authApi = {
     );
   },
 
+  mobileRefreshToken: (
+    payload: RefreshTokenRequestDto,
+  ): Promise<AxiosResponse<RefreshTokenResponse>> => {
+    return publicApiClient.post<RefreshTokenResponse>(
+      API_ENDPOINTS.AUTH.MOBILE_REFRESH,
+      payload,
+    );
+  },
+
   refreshToken: (
     payload: RefreshTokenRequestDto,
   ): Promise<AxiosResponse<RefreshTokenResponse>> => {
@@ -54,7 +86,12 @@ export const authApi = {
     );
   },
 
-  logout: (): Promise<void> => {
-    return Promise.resolve();
+  logout: async (): Promise<void> => {
+    tokenStorage.clear();
+    try {
+      await apiClient.post(API_ENDPOINTS.AUTH.LOGOUT);
+    } catch {
+      // Ignore errors if session already destroyed
+    }
   },
 };

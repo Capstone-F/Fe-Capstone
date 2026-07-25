@@ -17,8 +17,8 @@ import type {
 } from "@/types/domain";
 import { DEFAULT_ANSWERS, LOCAL_STORAGE_KEY } from "../constants/treatment";
 import { treatmentApi } from "../api/treatment.api";
+import { ApiError } from "@/core/api/errors";
 import {
-  getRequiredSurveyProfileFields,
   mapRecommendationProducts,
   validateSurveyRecommendation,
 } from "../lib/survey-flow";
@@ -51,6 +51,31 @@ export const TreatmentContext = createContext<TreatmentContextType | undefined>(
   undefined,
 );
 
+function checkIs404Error(e: unknown): boolean {
+  if (!e) return false;
+  if (e instanceof ApiError) {
+    if (e.status === 404) return true;
+    if (
+      e.message?.includes("404") ||
+      e.message?.toLowerCase().includes("not found")
+    )
+      return true;
+  }
+  const errObj = e as {
+    status?: number;
+    statusCode?: number;
+    response?: { status?: number };
+    message?: string;
+  };
+  return (
+    errObj.status === 404 ||
+    errObj.statusCode === 404 ||
+    errObj.response?.status === 404 ||
+    Boolean(errObj.message?.includes("404")) ||
+    Boolean(errObj.message?.toLowerCase().includes("not found"))
+  );
+}
+
 export function TreatmentProvider({ children }: { children: React.ReactNode }) {
   const [state, setState] = useState<TreatmentData>(() => {
     const defaultState: TreatmentData = {
@@ -76,9 +101,22 @@ export function TreatmentProvider({ children }: { children: React.ReactNode }) {
       const stored = localStorage.getItem(LOCAL_STORAGE_KEY);
       if (stored) {
         const parsed = JSON.parse(stored) as TreatmentData;
+        const validFlows = [
+          "intro",
+          "survey",
+          "analyzing",
+          "report",
+          "plan",
+          "purchase",
+          "success",
+        ];
+        const flowState = validFlows.includes(parsed.flowState)
+          ? parsed.flowState
+          : "intro";
         return {
           ...defaultState,
           ...parsed,
+          flowState,
           dynamicQuestions: parsed.dynamicQuestions || [],
           dynamicAnswers: parsed.dynamicAnswers || {},
           dynamicTextAnswers: parsed.dynamicTextAnswers || {},
@@ -289,40 +327,31 @@ export function TreatmentProvider({ children }: { children: React.ReactNode }) {
       dynamicError: null,
     }));
     try {
-      const profileResponse = await treatmentApi.fetchCustomerProfile();
-      const profile = profileResponse.data;
-      const missingProfileFields = getRequiredSurveyProfileFields(
-        profile?.customer,
-      );
-
-      if (missingProfileFields.length > 0) {
-        throw new Error(
-          "Vui lòng cập nhật ngày sinh và giới tính trong hồ sơ trước khi bắt đầu khảo sát.",
-        );
-      }
-
-      // 1. Get CORE questions
+      // 1. Fetch CORE survey questions from BE
       const questionsResponse = await treatmentApi.fetchQuestions();
-      const questions = questionsResponse.data;
-      // 2. Start survey session
+      const questions = questionsResponse.data || [];
+
+      // 2. Create Real Survey Session on BE
       const sessionResponse = await treatmentApi.createSurveySession();
       const session = sessionResponse.data;
+
       setState((prev) => ({
         ...prev,
         surveySessionId: session.id,
-        dynamicQuestions: questions || [],
+        dynamicQuestions: questions,
         dynamicAnswers: {},
         dynamicTextAnswers: {},
         recommendations: null,
         surveyStep: 1,
         isLoadingDynamic: false,
+        dynamicError: null,
       }));
     } catch (e: unknown) {
-      console.error("Failed to start dynamic survey:", e);
+      console.error("Failed to start dynamic survey via Real API:", e);
       const msg =
         e instanceof Error
           ? e.message
-          : "Không thể khởi tạo khảo sát từ hệ thống.";
+          : "Không thể kết nối đến hệ thống Backend để tải ngân hàng câu hỏi.";
       setState((prev) => ({
         ...prev,
         isLoadingDynamic: false,
@@ -344,6 +373,101 @@ export function TreatmentProvider({ children }: { children: React.ReactNode }) {
     },
     [],
   );
+
+  const fetchCustomerProfile =
+    useCallback(async (): Promise<CustomerProfileResponseDto | null> => {
+      try {
+        const response = await treatmentApi.fetchCustomerProfile();
+        return response.data;
+      } catch (e) {
+        console.error("Failed to fetch customer profile:", e);
+        return null;
+      }
+    }, []);
+
+  const fetchLatestRecommendations =
+    useCallback(async (): Promise<RecommendationResponseDto | null> => {
+      try {
+        const response = await treatmentApi.fetchLatestRecommendations();
+        return response.data;
+      } catch (e) {
+        console.error("Failed to fetch latest recommendations:", e);
+        return null;
+      }
+    }, []);
+
+  const completeDynamicSurvey = useCallback(async (): Promise<boolean> => {
+    if (!state.surveySessionId) return false;
+    setState((prev) => ({
+      ...prev,
+      isLoadingDynamic: true,
+      dynamicError: null,
+    }));
+    try {
+      // Complete on backend
+      try {
+        await treatmentApi.completeSurvey(state.surveySessionId);
+      } catch (err: unknown) {
+        const errMsg = (err as Error)?.message?.toLowerCase() || "";
+        const errObj = err as {
+          status?: number;
+          response?: { status?: number };
+        };
+        const isAlreadyCompleted =
+          errObj.status === 400 ||
+          errObj.response?.status === 400 ||
+          errMsg.includes("already completed");
+
+        if (isAlreadyCompleted) {
+          console.warn(
+            "Survey was already completed on BE. Proceeding to fetch recommendations...",
+          );
+        } else {
+          throw err;
+        }
+      }
+
+      // Fetch the canonical backend outputs for this survey.
+      const [profile, recommendation] = await Promise.all([
+        fetchCustomerProfile(),
+        fetchLatestRecommendations(),
+      ]);
+
+      setState((prev) => ({
+        ...prev,
+        customerProfile: profile,
+        recommendations: recommendation,
+        isLoadingDynamic: false,
+        flowState: "analyzing",
+      }));
+      return true;
+    } catch (e: unknown) {
+      console.error("Failed to complete dynamic survey:", e);
+      if (checkIs404Error(e)) {
+        console.warn(
+          "Survey session 404 on complete. Restarting new survey session...",
+        );
+        await startDynamicSurvey();
+        return false;
+      }
+
+      const msg =
+        e instanceof Error
+          ? e.message
+          : "Không thể hoàn tất phân tích khảo sát.";
+      setState((prev) => ({
+        ...prev,
+        isLoadingDynamic: false,
+        dynamicError: msg,
+      }));
+      return false;
+    }
+  }, [
+    state.surveySessionId,
+    fetchCustomerProfile,
+    fetchLatestRecommendations,
+    startDynamicSurvey,
+  ]);
 
   const submitDynamicAnswersAndNext = useCallback(
     async (questionIds: string[]): Promise<boolean> => {
@@ -379,6 +503,27 @@ export function TreatmentProvider({ children }: { children: React.ReactNode }) {
         return true;
       } catch (e: unknown) {
         console.error("Failed to submit answers:", e);
+        if (checkIs404Error(e)) {
+          console.warn("Survey session 404. Restarting new survey session...");
+          await startDynamicSurvey();
+          return false;
+        }
+
+        const errMsg = (e as Error)?.message?.toLowerCase() || "";
+        const errObj = e as { status?: number; response?: { status?: number } };
+        const isAlreadyCompleted =
+          errObj.status === 400 ||
+          errObj.response?.status === 400 ||
+          errMsg.includes("already completed");
+
+        if (isAlreadyCompleted) {
+          console.warn(
+            "Survey session was already completed. Completing flow...",
+          );
+          await completeDynamicSurvey();
+          return true;
+        }
+
         const msg =
           e instanceof Error
             ? e.message
@@ -391,95 +536,14 @@ export function TreatmentProvider({ children }: { children: React.ReactNode }) {
         return false;
       }
     },
-    [state.surveySessionId, state.dynamicAnswers, state.dynamicTextAnswers],
+    [
+      state.surveySessionId,
+      state.dynamicAnswers,
+      state.dynamicTextAnswers,
+      startDynamicSurvey,
+      completeDynamicSurvey,
+    ],
   );
-
-  const fetchCustomerProfile = useCallback(async () => {
-    try {
-      const response = await treatmentApi.fetchCustomerProfile();
-      const profile = response.data;
-      setState((prev) => ({ ...prev, customerProfile: profile }));
-      return profile;
-    } catch (e) {
-      console.error("Failed to fetch customer profile:", e);
-      return null;
-    }
-  }, []);
-
-  const fetchLatestRecommendations = useCallback(async () => {
-    try {
-      const response = await treatmentApi.fetchLatestRecommendations();
-      const rec = response.data;
-      setState((prev) => ({ ...prev, recommendations: rec }));
-      return rec;
-    } catch (e) {
-      console.error("Failed to fetch latest recommendations:", e);
-      return null;
-    }
-  }, []);
-
-  const completeDynamicSurvey = useCallback(async (): Promise<boolean> => {
-    if (!state.surveySessionId) return false;
-    setState((prev) => ({
-      ...prev,
-      isLoadingDynamic: true,
-      dynamicError: null,
-    }));
-    try {
-      // Complete on backend
-      await treatmentApi.completeSurvey(state.surveySessionId);
-
-      // Fetch the canonical backend outputs for this survey.
-      const [profile, recommendation] = await Promise.all([
-        fetchCustomerProfile(),
-        fetchLatestRecommendations(),
-      ]);
-
-      const recommendationStatus = validateSurveyRecommendation(
-        recommendation,
-        state.surveySessionId,
-      );
-
-      if (recommendationStatus !== "ok") {
-        const message =
-          recommendationStatus === "stale"
-            ? "Khuyến nghị vừa tải không thuộc phiên khảo sát hiện tại. Vui lòng thử lại."
-            : recommendationStatus === "empty"
-              ? "Phiên khảo sát đã hoàn tất nhưng chưa có sản phẩm khuyến nghị hợp lệ."
-              : "Không tải được khuyến nghị sau khi hoàn tất khảo sát.";
-
-        setState((prev) => ({
-          ...prev,
-          customerProfile: profile,
-          recommendations: recommendation,
-          isLoadingDynamic: false,
-          dynamicError: message,
-        }));
-        return false;
-      }
-
-      setState((prev) => ({
-        ...prev,
-        customerProfile: profile,
-        recommendations: recommendation,
-        isLoadingDynamic: false,
-        flowState: "analyzing",
-      }));
-      return true;
-    } catch (e: unknown) {
-      console.error("Failed to complete dynamic survey:", e);
-      const msg =
-        e instanceof Error
-          ? e.message
-          : "Không thể hoàn tất phân tích khảo sát.";
-      setState((prev) => ({
-        ...prev,
-        isLoadingDynamic: false,
-        dynamicError: msg,
-      }));
-      return false;
-    }
-  }, [state.surveySessionId, fetchCustomerProfile, fetchLatestRecommendations]);
 
   const addRecommendationsToCart = useCallback(
     async (productVariantIds: string[]): Promise<boolean> => {

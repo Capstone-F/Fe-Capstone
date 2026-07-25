@@ -32,21 +32,14 @@ export function validateSurveyRecommendation(
     | Pick<RecommendationResponseDto, "customerSurveyId" | "products">
     | null
     | undefined,
-  surveySessionId: string | null | undefined,
+  _surveySessionId?: string | null,
 ): SurveyRecommendationStatus {
-  if (!recommendation || !surveySessionId) {
+  void _surveySessionId;
+  if (!recommendation) {
     return "missing";
   }
 
-  if (recommendation.customerSurveyId !== surveySessionId) {
-    return "stale";
-  }
-
-  if (
-    !recommendation.products.some((product) =>
-      Boolean(product.productVariantId),
-    )
-  ) {
+  if (!recommendation.products || recommendation.products.length === 0) {
     return "empty";
   }
 
@@ -72,21 +65,30 @@ export function mapRecommendationProducts(
 
   const deduped = new Map<string, SkincareProduct>();
 
-  for (const product of recommendation.products) {
-    if (!product.productVariantId || deduped.has(product.productVariantId)) {
+  for (let i = 0; i < (recommendation.products || []).length; i++) {
+    const product = recommendation.products[i];
+    const key =
+      product.productVariantId ||
+      product.productId ||
+      product.recommendationItemId ||
+      product.protocolId ||
+      `product_${i}`;
+
+    if (deduped.has(key)) {
       continue;
     }
 
     const hasConflict = conflictCodes.has(product.protocolCode);
-    const matchScore = Math.round(product.matchScore * 100);
+    const rawScore = product.matchScore ?? 1;
+    const matchScore = Math.round(rawScore > 1 ? rawScore : rawScore * 100);
 
-    deduped.set(product.productVariantId, {
-      id: product.productVariantId,
+    deduped.set(key, {
+      id: key,
       protocolId: product.protocolId,
       protocolName: product.protocolName,
-      name: product.productName,
+      name: product.productName || product.protocolName,
       category: product.protocolName,
-      price: product.priceVnd,
+      price: product.priceVnd || 0,
       brand: product.protocolCode,
       reason: `Do phác đồ ${product.protocolName} đánh giá phù hợp ${matchScore}%.`,
       matchScore: product.matchScore,

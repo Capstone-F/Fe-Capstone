@@ -3,7 +3,6 @@ import { queryKeys } from "@/lib/query/keys";
 import { appConfig } from "@/lib/env";
 import { profileApi } from "../api/profile.api";
 import { profileMock } from "../api/profile.mock";
-import { tokenStorage } from "@/features/auth/utils/token-storage";
 import { extractBaumannFromAnswers } from "../mapper/profile-mapper";
 import type { UserProfile, AllergyLabelResponse } from "../types/profile.types";
 import type { SurveyAnswers, SurveyRecord } from "@/types/domain";
@@ -14,10 +13,6 @@ export function useProfile() {
     queryFn: async (): Promise<UserProfile | null> => {
       if (appConfig.useMockApi) {
         return profileMock.getProfile();
-      }
-
-      if (typeof window !== "undefined" && !tokenStorage.getAccessToken()) {
-        return null;
       }
 
       try {

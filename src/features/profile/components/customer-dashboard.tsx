@@ -364,7 +364,14 @@ export function CustomerDashboard() {
                 <div className="flex flex-wrap gap-3 border-t border-slate-100 pt-4">
                   <Button
                     onClick={() => router.push("/scan")}
-                    className="rounded-xl bg-[#6b5cf6] px-6 text-xs font-bold text-white hover:bg-[#5a4ae5]"
+                    className="rounded-xl bg-[#6b5cf6] px-6 text-xs font-bold text-white shadow-md hover:bg-[#5a4ae5]"
+                  >
+                    🎉 Xem Phác Đồ & Mua Combo (Giảm 10%)
+                  </Button>
+                  <Button
+                    variant="outline"
+                    onClick={() => router.push("/scan")}
+                    className="rounded-xl border-slate-300 px-6 text-xs font-bold text-slate-700 hover:bg-slate-50"
                   >
                     Bắt Đầu Khảo Sát / Quét Da Lại
                   </Button>

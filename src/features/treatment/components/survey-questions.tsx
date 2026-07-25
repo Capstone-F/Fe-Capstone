@@ -30,21 +30,14 @@ export function SurveyQuestions() {
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
   const [isSubmittingStep, setIsSubmittingStep] = useState(false);
 
-  // Start dynamic survey if not initialized
+  // Start dynamic survey if questions list is empty
   useEffect(() => {
-    if (
-      !state.surveySessionId &&
-      !state.isLoadingDynamic &&
-      state.dynamicQuestions.length === 0 &&
-      !state.dynamicError
-    ) {
+    if (state.dynamicQuestions.length === 0 && !state.isLoadingDynamic) {
       startDynamicSurvey();
     }
   }, [
-    state.surveySessionId,
-    state.isLoadingDynamic,
     state.dynamicQuestions.length,
-    state.dynamicError,
+    state.isLoadingDynamic,
     startDynamicSurvey,
   ]);
 
@@ -192,6 +185,20 @@ export function SurveyQuestions() {
           Hệ thống AI GlowScan sẽ tính toán điểm Baumann và thiết kế phác đồ phù
           hợp với làn da của bạn.
         </p>
+
+        {errorMsg && (
+          <div className="mx-auto max-w-md rounded-2xl border border-red-200 bg-red-50 p-4 text-sm text-red-600">
+            <p className="font-semibold">{errorMsg}</p>
+            <Button
+              variant="outline"
+              onClick={() => startDynamicSurvey()}
+              className="mt-3 rounded-full border-red-300 text-xs font-bold text-red-700 hover:bg-red-100"
+            >
+              Làm lại khảo sát mới
+            </Button>
+          </div>
+        )}
+
         <Button
           onClick={handleComplete}
           disabled={isSubmittingStep}

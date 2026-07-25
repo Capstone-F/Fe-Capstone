@@ -2,6 +2,7 @@
 
 import React from "react";
 import { useMergeGuestCartOnLogin } from "@/features/commerce/hooks/useMergeGuestCartOnLogin";
+import { ProfileOnboardingGuard } from "@/features/profile/components/profile-onboarding-guard";
 import { Navbar } from "./navbar";
 import { Footer } from "./footer";
 import { BottomNav } from "./bottom-nav";
@@ -20,6 +21,7 @@ export function AppShell({ children, showFooter = true }: AppShellProps) {
       <main className="flex-1 pb-16 md:pb-0">{children}</main>
       {showFooter && <Footer />}
       <BottomNav />
+      <ProfileOnboardingGuard />
     </div>
   );
 }

@@ -67,7 +67,7 @@ export function IntroScreen() {
 
           <Button
             onClick={() => setFlowState("survey")}
-            disabled={profileQuery.isLoading || needsProfileUpdate}
+            disabled={profileQuery.isLoading}
             className="group relative h-14 w-full rounded-[100px] bg-[#6b5cf6] px-8 text-lg font-bold text-white shadow-md transition-all duration-200 hover:bg-[#5a4ae5] active:scale-[0.98] sm:w-auto sm:min-w-[300px]"
           >
             {profileQuery.isLoading ? (
