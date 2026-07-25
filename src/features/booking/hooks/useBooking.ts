@@ -223,3 +223,25 @@ export function useCompleteBooking() {
     },
   });
 }
+
+export function useSubmitFeedback() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async ({
+      id,
+      rating,
+      comment,
+    }: {
+      id: string;
+      rating: number;
+      comment?: string;
+    }) => {
+      const response = await bookingApi.submitFeedback(id, rating, comment);
+      return mapBackendBookingToFrontend(response.data);
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: queryKeys.bookings });
+      queryClient.invalidateQueries({ queryKey: ["experts"] });
+    },
+  });
+}

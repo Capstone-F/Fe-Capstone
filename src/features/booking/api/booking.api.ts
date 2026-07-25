@@ -75,4 +75,15 @@ export const bookingApi = {
   completeBooking: (id: string): Promise<AxiosResponse<BackendBooking>> => {
     return apiClient.patch<BackendBooking>(API_ENDPOINTS.BOOKINGS.COMPLETE(id));
   },
+
+  submitFeedback: (
+    id: string,
+    rating: number,
+    comment?: string,
+  ): Promise<AxiosResponse<BackendBooking>> => {
+    return apiClient.post<BackendBooking>(API_ENDPOINTS.BOOKINGS.FEEDBACK(id), {
+      rating,
+      comment,
+    });
+  },
 };

@@ -12,9 +12,12 @@ import {
   AlertCircle,
   Calendar,
   ChevronRight,
+  Star,
+  Video,
 } from "lucide-react";
 import { toast } from "sonner";
 
+import { FeedbackModal } from "@/features/booking/components/feedback-modal";
 import { Button } from "@/shared/components/ui/button";
 import { Input } from "@/shared/components/ui/input";
 import { Label } from "@/shared/components/ui/label";
@@ -169,6 +172,17 @@ export function CustomerDashboard() {
 
   // Bookings data
   const { data: bookings, isLoading: isLoadingBookings } = useBookings();
+
+  // Feedback modal state
+  const [feedbackModalOpen, setFeedbackModalOpen] = useState(false);
+  const [selectedBookingId, setSelectedBookingId] = useState("");
+  const [selectedDoctorName, setSelectedDoctorName] = useState("");
+
+  const handleOpenFeedback = (bookingId: string, doctorName?: string) => {
+    setSelectedBookingId(bookingId);
+    setSelectedDoctorName(doctorName || "Bác sĩ");
+    setFeedbackModalOpen(true);
+  };
 
   // Update profile mutation
   const updateProfileMutation = useUpdateProfile();
@@ -497,60 +511,131 @@ export function CustomerDashboard() {
                   </div>
                 ) : (
                   <div className="space-y-4">
-                    {bookings.map((booking) => (
-                      <div
-                        key={booking.id}
-                        className="flex flex-col justify-between rounded-xl border border-slate-100 bg-white p-4 shadow-2xs sm:flex-row sm:items-center"
-                      >
-                        <div className="space-y-1">
-                          <div className="flex items-center gap-2">
-                            <h4 className="text-xs font-bold text-slate-900">
-                              Bác sĩ: {booking.expertName}
-                            </h4>
-                            <span
-                              className={`rounded-full px-2 py-0.5 text-[10px] font-bold uppercase ${
-                                booking.status === "confirmed" ||
-                                booking.status === "paid"
-                                  ? "border border-emerald-100 bg-emerald-50 text-emerald-700"
-                                  : booking.status === "pending"
-                                    ? "border border-amber-100 bg-amber-50 text-amber-700"
-                                    : "border border-red-100 bg-red-50 text-red-700"
-                              }`}
-                            >
-                              {booking.status === "confirmed"
-                                ? "Đã xác nhận"
-                                : booking.status === "paid"
-                                  ? "Đã thanh toán"
-                                  : booking.status === "pending"
-                                    ? "Chờ xác nhận"
-                                    : "Đã hủy"}
-                            </span>
+                    {bookings.map((booking) => {
+                      const statusNorm = (booking.status || "").toUpperCase();
+
+                      return (
+                        <div
+                          key={booking.id}
+                          className="flex flex-col justify-between rounded-xl border border-slate-200/80 bg-white p-4 shadow-2xs sm:flex-row sm:items-center"
+                        >
+                          <div className="space-y-1">
+                            <div className="flex flex-wrap items-center gap-2">
+                              <h4 className="text-xs font-bold text-slate-900">
+                                Bác sĩ: {booking.expertName}
+                              </h4>
+                              <span
+                                className={`rounded-full px-2.5 py-0.5 text-[10px] font-extrabold uppercase ${
+                                  statusNorm === "CONFIRMED" ||
+                                  statusNorm === "PAID"
+                                    ? "border border-emerald-200 bg-emerald-50 text-emerald-700"
+                                    : statusNorm === "IN_PROGRESS"
+                                      ? "animate-pulse border border-indigo-200 bg-indigo-50 text-indigo-700"
+                                      : statusNorm === "COMPLETED"
+                                        ? "border border-teal-200 bg-teal-50 text-teal-800"
+                                        : statusNorm === "PENDING"
+                                          ? "border border-amber-200 bg-amber-50 text-amber-800"
+                                          : "border border-red-100 bg-red-50 text-red-600"
+                                }`}
+                              >
+                                {statusNorm === "CONFIRMED"
+                                  ? "Đã xác nhận"
+                                  : statusNorm === "PAID"
+                                    ? "Đã thanh toán"
+                                    : statusNorm === "IN_PROGRESS"
+                                      ? "🟣 Đang tư vấn"
+                                      : statusNorm === "COMPLETED"
+                                        ? "✅ Đã hoàn thành"
+                                        : statusNorm === "PENDING"
+                                          ? "Chờ xác nhận"
+                                          : "Đã hủy"}
+                              </span>
+                            </div>
+                            <div className="flex items-center gap-1.5 text-[11px] text-slate-500">
+                              <Calendar className="h-3.5 w-3.5" />
+                              <span>
+                                Thời gian:{" "}
+                                {new Date(booking.dateTime).toLocaleString(
+                                  "vi-VN",
+                                )}
+                              </span>
+                            </div>
+                            {booking.symptoms && (
+                              <p className="mt-1 rounded-lg border border-slate-100 bg-slate-50 p-2 text-[11px] text-slate-500 italic">
+                                Triệu chứng: &quot;{booking.symptoms}&quot;
+                              </p>
+                            )}
+
+                            {/* Display Submitted Feedback if any */}
+                            {booking.feedback && (
+                              <div className="mt-2 flex items-center gap-2 rounded-lg border border-amber-100 bg-amber-50/60 p-2 text-xs">
+                                <div className="flex items-center gap-0.5">
+                                  {[1, 2, 3, 4, 5].map((s) => (
+                                    <Star
+                                      key={s}
+                                      className={`h-3.5 w-3.5 ${
+                                        s <= (booking.feedback?.rating || 0)
+                                          ? "fill-amber-400 text-amber-400"
+                                          : "fill-slate-200 text-slate-200"
+                                      }`}
+                                    />
+                                  ))}
+                                </div>
+                                {booking.feedback.comment && (
+                                  <span className="text-[11px] font-semibold text-slate-700">
+                                    &quot;{booking.feedback.comment}&quot;
+                                  </span>
+                                )}
+                              </div>
+                            )}
                           </div>
-                          <div className="flex items-center gap-1.5 text-[11px] text-slate-500">
-                            <Calendar className="h-3.5 w-3.5" />
-                            <span>
-                              Thời gian:{" "}
-                              {new Date(booking.dateTime).toLocaleString(
-                                "vi-VN",
+
+                          <div className="mt-3 flex flex-col items-end justify-between gap-2 sm:mt-0">
+                            <div className="text-right">
+                              <span className="block text-[10px] text-slate-400">
+                                Chi phí tư vấn
+                              </span>
+                              <strong className="text-xs font-extrabold text-[#2C3E35]">
+                                {formatVnd(booking.amount || 200000)}
+                              </strong>
+                            </div>
+
+                            {/* Action Buttons */}
+                            {statusNorm === "IN_PROGRESS" && (
+                              <Button
+                                size="sm"
+                                onClick={() =>
+                                  toast.info(
+                                    `Đang kết nối phòng khám với Bác sĩ ${booking.expertName}...`,
+                                  )
+                                }
+                                className="rounded-xl bg-indigo-600 text-xs font-bold text-white shadow-xs hover:bg-indigo-700"
+                              >
+                                <Video className="mr-1.5 h-3.5 w-3.5" />
+                                Vào Phòng Khám
+                              </Button>
+                            )}
+
+                            {statusNorm === "COMPLETED" &&
+                              !booking.feedback && (
+                                <Button
+                                  size="sm"
+                                  onClick={() =>
+                                    handleOpenFeedback(
+                                      booking.id,
+                                      booking.expertName,
+                                    )
+                                  }
+                                  className="rounded-xl bg-amber-500 text-xs font-bold text-white shadow-xs hover:bg-amber-600"
+                                >
+                                  <Star className="mr-1.5 h-3.5 w-3.5 fill-white" />
+                                  Đánh Giá Bác Sĩ
+                                </Button>
                               )}
-                            </span>
                           </div>
-                          {booking.symptoms && (
-                            <p className="mt-1 rounded-lg border border-slate-100 bg-slate-50 p-2 text-[11px] text-slate-500 italic">
-                              Triệu chứng: &quot;{booking.symptoms}&quot;
-                            </p>
-                          )}
                         </div>
-                        <div className="mt-2 flex flex-col items-end justify-end text-right sm:mt-0">
-                          <span className="text-[10px] text-slate-400">
-                            Chi phí tư vấn
-                          </span>
-                          <strong className="text-xs font-extrabold text-[#2C3E35]">
-                            {formatVnd(booking.amount || 200000)}
-                          </strong>
-                        </div>
-                      </div>
-                    ))}
+                      );
+                    })}
                   </div>
                 )}
               </CardContent>
@@ -558,6 +643,14 @@ export function CustomerDashboard() {
           )}
         </div>
       </div>
+
+      {/* Feedback Modal */}
+      <FeedbackModal
+        isOpen={feedbackModalOpen}
+        onClose={() => setFeedbackModalOpen(false)}
+        bookingId={selectedBookingId}
+        doctorName={selectedDoctorName}
+      />
     </div>
   );
 }

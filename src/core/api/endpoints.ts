@@ -32,6 +32,7 @@ export const API_ENDPOINTS = {
     CANCEL: (id: string | number) => `/bookings/${id}/cancel`,
     START: (id: string | number) => `/bookings/${id}/start`,
     COMPLETE: (id: string | number) => `/bookings/${id}/complete`,
+    FEEDBACK: (id: string | number) => `/bookings/${id}/feedback`,
   },
   PROVINCES: { LIST: "https://provinces.open-api.vn/api/v2/" },
   CART: {
