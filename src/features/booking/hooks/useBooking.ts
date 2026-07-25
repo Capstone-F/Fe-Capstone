@@ -14,17 +14,18 @@ export function isSlotBookable(slotDateTimeISO: string): boolean {
   return slotTime >= minValidTime;
 }
 
-export function useSlots(expertId: string) {
+export function useSlots(expertId: string, anchorDate?: string) {
+  const targetDate = anchorDate || new Date().toISOString().split("T")[0];
+
   return useQuery({
-    queryKey: queryKeys.slots(expertId),
+    queryKey: ["slots", expertId, targetDate],
     queryFn: async () => {
       if (appConfig.useMockApi) {
         const allMockSlots = await bookingMock.getSlots(expertId);
         return allMockSlots.filter((s) => isSlotBookable(s.dateTime));
       }
 
-      const todayStr = new Date().toISOString().split("T")[0];
-      const response = await bookingApi.getSlots(expertId, todayStr);
+      const response = await bookingApi.getSlots(expertId, targetDate, "week");
       const slots: TimeSlot[] = [];
 
       response.data.days.forEach((day) => {

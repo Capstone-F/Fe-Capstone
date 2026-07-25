@@ -11,6 +11,7 @@ import {
   Clock,
   CheckCircle2,
   ChevronRight,
+  ChevronLeft,
   Sparkles,
 } from "lucide-react";
 import {
@@ -49,9 +50,20 @@ export function BookSlotPage() {
     }
   }, [session.isLoading, session.data, expertId, router]);
 
+  const [weekOffset, setWeekOffset] = useState<number>(0);
+
+  const anchorDateStr = React.useMemo(() => {
+    const d = new Date();
+    d.setDate(d.getDate() + weekOffset * 7);
+    return d.toISOString().split("T")[0];
+  }, [weekOffset]);
+
   const { data: expert, isLoading: isExpertLoading } =
     useExpertDetail(expertId);
-  const { data: slots, isLoading: isSlotsLoading } = useSlots(expertId);
+  const { data: slots, isLoading: isSlotsLoading } = useSlots(
+    expertId,
+    anchorDateStr,
+  );
   const createBookingMutation = useCreateBooking();
 
   const [selectedDateStr, setSelectedDateStr] = useState<string>("");
@@ -213,6 +225,44 @@ export function BookSlotPage() {
                     {formatDateShort(selectedSlot.dateTime)})
                   </span>
                 )}
+              </div>
+
+              {/* Week Navigation Controls */}
+              <div className="flex items-center justify-between rounded-xl border border-slate-200/80 bg-slate-50/80 p-2 text-xs">
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="sm"
+                  disabled={weekOffset <= 0}
+                  onClick={() => {
+                    setWeekOffset((prev) => Math.max(0, prev - 1));
+                    setSelectedDateStr("");
+                  }}
+                  className="rounded-lg text-xs font-semibold text-slate-700 hover:bg-white disabled:opacity-30"
+                >
+                  <ChevronLeft className="mr-1 h-4 w-4" />
+                  Tuần Trước
+                </Button>
+                <span className="font-bold text-slate-800">
+                  {weekOffset === 0
+                    ? "📅 Tuần Hiện Tại"
+                    : weekOffset === 1
+                      ? "📅 Tuần Sau"
+                      : `📅 Tuần +${weekOffset}`}
+                </span>
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => {
+                    setWeekOffset((prev) => prev + 1);
+                    setSelectedDateStr("");
+                  }}
+                  className="rounded-lg text-xs font-bold text-emerald-700 hover:bg-emerald-100/60 hover:text-emerald-800"
+                >
+                  Tuần Sau
+                  <ChevronRight className="ml-1 h-4 w-4" />
+                </Button>
               </div>
 
               {availableDates.length === 0 ? (

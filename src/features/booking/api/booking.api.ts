@@ -11,13 +11,14 @@ export const bookingApi = {
   getSlots: (
     expertId: string,
     date: string,
+    range: "week" | "month" = "week",
   ): Promise<AxiosResponse<BackendSlotsResponse>> => {
     return apiClient.get<BackendSlotsResponse>(
       API_ENDPOINTS.BOOKINGS.SLOTS(expertId),
       {
         params: {
           date,
-          range: "month",
+          range,
         },
       },
     );
