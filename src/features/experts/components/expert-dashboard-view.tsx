@@ -163,6 +163,9 @@ export function ExpertDashboardView() {
   const completedCount = bookings.filter(
     (b) => (b.status || "").toUpperCase() === "COMPLETED",
   ).length;
+  const inProgressCount = bookings.filter(
+    (b) => (b.status || "").toUpperCase() === "IN_PROGRESS",
+  ).length;
 
   return (
     <div className="space-y-6">
@@ -250,7 +253,10 @@ export function ExpertDashboardView() {
                 { id: "ALL", label: "Tất cả" },
                 { id: "PENDING", label: `Chờ duyệt (${pendingCount})` },
                 { id: "CONFIRMED", label: `Đã duyệt (${confirmedCount})` },
-                { id: "IN_PROGRESS", label: "Đang tư vấn" },
+                {
+                  id: "IN_PROGRESS",
+                  label: `Đang tư vấn (${inProgressCount})`,
+                },
                 { id: "COMPLETED", label: `Hoàn tất (${completedCount})` },
                 { id: "CANCELLED", label: "Đã hủy" },
               ] as const

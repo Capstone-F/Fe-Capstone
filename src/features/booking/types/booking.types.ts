@@ -13,9 +13,16 @@ export interface ConsultationBooking {
   slotId: string;
   dateTime: string;
   symptoms: string;
-  status: "pending" | "confirmed" | "cancelled" | "paid";
+  status:
+    | "pending"
+    | "confirmed"
+    | "in_progress"
+    | "completed"
+    | "cancelled"
+    | "paid";
   amount: number;
   createdAt: string;
+  feedback?: { rating: number; comment?: string | null } | null;
 }
 
 export interface BackendSlot {
@@ -51,6 +58,7 @@ export interface BackendBooking {
   completedAt: string | null;
   createdAt: string;
   updatedAt: string;
+  feedback?: { rating: number; comment?: string | null } | null;
 }
 
 export interface BackendBookingsResponse {
