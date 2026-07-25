@@ -13,6 +13,7 @@ import {
   Search,
   Stethoscope,
   MessageSquare,
+  Star,
 } from "lucide-react";
 import { toast } from "sonner";
 
@@ -348,6 +349,32 @@ export function ExpertDashboardView() {
                         </span>
                       )}
                     </div>
+
+                    {/* Customer Feedback for Doctor */}
+                    {booking.feedback && (
+                      <div className="mt-2 flex flex-wrap items-center gap-2 rounded-lg border border-amber-200/80 bg-amber-50/80 p-2 text-xs">
+                        <span className="font-bold text-amber-800">
+                          ⭐ Đánh giá từ bệnh nhân:
+                        </span>
+                        <div className="flex items-center gap-0.5">
+                          {[1, 2, 3, 4, 5].map((s) => (
+                            <Star
+                              key={s}
+                              className={`h-3.5 w-3.5 ${
+                                s <= (booking.feedback?.rating || 0)
+                                  ? "fill-amber-400 text-amber-400"
+                                  : "fill-slate-200 text-slate-200"
+                              }`}
+                            />
+                          ))}
+                        </div>
+                        {booking.feedback.comment && (
+                          <span className="text-[11px] font-semibold text-slate-700 italic">
+                            &quot;{booking.feedback.comment}&quot;
+                          </span>
+                        )}
+                      </div>
+                    )}
                   </div>
 
                   {/* Right: Actions */}

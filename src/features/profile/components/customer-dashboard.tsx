@@ -616,22 +616,35 @@ export function CustomerDashboard() {
                               </Button>
                             )}
 
-                            {statusNorm === "COMPLETED" &&
-                              !booking.feedback && (
+                            {statusNorm === "COMPLETED" && (
+                              <div className="flex flex-wrap items-center gap-1.5">
+                                {!booking.feedback && (
+                                  <Button
+                                    size="sm"
+                                    onClick={() =>
+                                      handleOpenFeedback(
+                                        booking.id,
+                                        booking.expertName,
+                                      )
+                                    }
+                                    className="rounded-xl bg-amber-500 text-xs font-bold text-white shadow-xs hover:bg-amber-600"
+                                  >
+                                    <Star className="mr-1.5 h-3.5 w-3.5 fill-white" />
+                                    Đánh Giá Bác Sĩ
+                                  </Button>
+                                )}
                                 <Button
                                   size="sm"
+                                  variant="outline"
                                   onClick={() =>
-                                    handleOpenFeedback(
-                                      booking.id,
-                                      booking.expertName,
-                                    )
+                                    router.push(`/booking/${booking.expertId}`)
                                   }
-                                  className="rounded-xl bg-amber-500 text-xs font-bold text-white shadow-xs hover:bg-amber-600"
+                                  className="rounded-xl border-emerald-200 text-xs font-bold text-emerald-700 hover:bg-emerald-50"
                                 >
-                                  <Star className="mr-1.5 h-3.5 w-3.5 fill-white" />
-                                  Đánh Giá Bác Sĩ
+                                  🔁 Đặt Lịch Tái Khám
                                 </Button>
-                              )}
+                              </div>
+                            )}
                           </div>
                         </div>
                       );
