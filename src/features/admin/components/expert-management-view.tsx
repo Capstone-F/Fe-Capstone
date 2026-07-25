@@ -14,7 +14,9 @@ import {
   Search,
   ExternalLink,
   Loader2,
-  Sparkles,
+  Zap,
+  Calendar,
+  MessageSquare,
 } from "lucide-react";
 import { toast } from "sonner";
 
@@ -34,7 +36,9 @@ import {
   useClinics,
   useAdminUsers,
   useCreateUser,
+  useAdminQuickBook,
 } from "@/features/admin/hooks/useAdminUsers";
+import { useExperts } from "@/features/experts/hooks/useExperts";
 
 const EXPERT_SPECIALTIES = [
   { value: "DERMATOLOGY", label: "Dermatology (Da Liễu Chung)" },
@@ -46,11 +50,13 @@ const EXPERT_SPECIALTIES = [
 ];
 
 export function ExpertManagementView() {
-  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [isCreateExpertOpen, setIsCreateExpertOpen] = useState(false);
+  const [isQuickBookOpen, setIsQuickBookOpen] = useState(false);
+
   const [searchTerm, setSearchTerm] = useState("");
   const [copiedId, setCopiedId] = useState<string | null>(null);
 
-  // Form State
+  // Form State: Create Expert
   const [emailPrefix, setEmailPrefix] = useState("");
   const [emailDomain, setEmailDomain] = useState("@glowscan.com");
   const [fullName, setFullName] = useState("");
@@ -58,16 +64,33 @@ export function ExpertManagementView() {
   const [selectedClinicId, setSelectedClinicId] = useState("");
   const [selectedSpecialty, setSelectedSpecialty] = useState("DERMATOLOGY");
 
+  // Form State: Quick Book Cheat
+  const defaultDateStr = () => {
+    const tomorrow = new Date();
+    tomorrow.setDate(tomorrow.getDate() + 1);
+    tomorrow.setHours(10, 0, 0, 0);
+    return tomorrow.toISOString().slice(0, 16);
+  };
+  const [quickExpertId, setQuickExpertId] = useState("");
+  const [quickScheduledAt, setQuickScheduledAt] = useState(defaultDateStr());
+  const [quickReason, setQuickReason] = useState(
+    "Khảo sát da OSNT - Khám tư vấn mụn nhọt & phác đồ điều trị",
+  );
+
   // Queries & Mutations
   const { data: clinics = [], isLoading: isLoadingClinics } = useClinics();
   const { data: users = [], isLoading: isLoadingUsers } = useAdminUsers({
     role: "expert",
   });
-  const createUserMutation = useCreateUser();
+  const { data: expertsData } = useExperts({ limit: 50 });
+  const expertsList = expertsData?.data || [];
 
-  // Handlers
-  const handleOpenModal = () => {
-    setIsModalOpen(true);
+  const createUserMutation = useCreateUser();
+  const quickBookMutation = useAdminQuickBook();
+
+  // Handlers: Create Expert
+  const handleOpenCreateExpertModal = () => {
+    setIsCreateExpertOpen(true);
     setEmailPrefix("");
     setFullName("");
     setTemporaryPassword("password123");
@@ -109,11 +132,55 @@ export function ExpertManagementView() {
       {
         onSuccess: (newUser) => {
           toast.success(`Tạo tài khoản Bác sĩ ${newUser.name} thành công! 🎉`);
-          setIsModalOpen(false);
+          setIsCreateExpertOpen(false);
         },
         onError: (err: unknown) => {
           const msg =
             (err as Error)?.message || "Không thể tạo tài khoản Bác sĩ.";
+          toast.error(msg);
+        },
+      },
+    );
+  };
+
+  // Handlers: Quick Book Cheat
+  const handleOpenQuickBookModal = () => {
+    setIsQuickBookOpen(true);
+    if (expertsList.length > 0) {
+      setQuickExpertId(expertsList[0].id);
+    }
+  };
+
+  const handleExecuteQuickBook = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!quickExpertId) {
+      toast.error("Vui lòng chọn Bác sĩ phụ trách.");
+      return;
+    }
+
+    const isoDate = new Date(quickScheduledAt).toISOString();
+
+    quickBookMutation.mutate(
+      {
+        expertId: quickExpertId,
+        scheduledAt: isoDate,
+        reason: quickReason,
+      },
+      {
+        onSuccess: () => {
+          toast.success(
+            "⚡ Tạo Ca Hẹn Cheat Thành Công! Ca hẹn ở trạng thái PENDING.",
+            {
+              action: {
+                label: "Mở Workspace Bác Sĩ (/expert)",
+                onClick: () => window.open("/expert", "_blank"),
+              },
+            },
+          );
+          setIsQuickBookOpen(false);
+        },
+        onError: (err: unknown) => {
+          const msg = (err as Error)?.message || "Không thể tạo ca hẹn cheat.";
           toast.error(msg);
         },
       },
@@ -140,28 +207,38 @@ export function ExpertManagementView() {
   return (
     <div className="space-y-6">
       {/* ── Header Welcome ── */}
-      <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <div>
           <h2 className="text-2xl font-bold text-slate-900">
             Quản Lý & Tạo Tài Khoản Bác Sĩ (Expert Portal)
           </h2>
           <p className="text-sm text-slate-500">
-            Tạo mới tài khoản Chuyên gia / Bác sĩ da liễu, gán phòng khám hợp
-            tác và cấp mật khẩu đăng nhập.
+            Tạo tài khoản Bác sĩ mới, tạo ca hẹn Cheat 1-Click để test luồng
+            Chấp Nhận Lịch Hẹn nhanh chóng.
           </p>
         </div>
-        <div className="flex items-center gap-2">
+        <div className="flex flex-wrap items-center gap-2">
+          {/* Quick Book Cheat Button */}
+          <Button
+            onClick={handleOpenQuickBookModal}
+            className="rounded-xl bg-amber-500 text-xs font-bold text-white shadow-xs hover:bg-amber-600"
+          >
+            <Zap className="mr-1.5 h-4 w-4 fill-white" />⚡ Tạo Ca Hẹn Cheat
+            (1-Click)
+          </Button>
+
           <Link href="/expert" target="_blank">
             <Button
               variant="outline"
               className="rounded-xl border-slate-200 text-xs font-semibold text-slate-700 hover:bg-slate-50"
             >
               <ExternalLink className="mr-1.5 h-3.5 w-3.5 text-emerald-600" />
-              Mở Workspace Bác Sĩ (/expert)
+              Mở /expert
             </Button>
           </Link>
+
           <Button
-            onClick={handleOpenModal}
+            onClick={handleOpenCreateExpertModal}
             className="rounded-xl bg-emerald-600 text-xs font-bold text-white shadow-xs hover:bg-emerald-700"
           >
             <UserPlus className="mr-1.5 h-4 w-4" />➕ Tạo Bác Sĩ Mới
@@ -198,15 +275,13 @@ export function ExpertManagementView() {
         </div>
 
         <div className="flex items-center gap-4 rounded-2xl border border-slate-200/80 bg-white p-4 shadow-sm">
-          <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-violet-50 text-violet-600">
-            <Sparkles className="h-6 w-6" />
+          <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-amber-50 text-amber-600">
+            <Zap className="h-6 w-6" />
           </div>
           <div>
-            <p className="text-xs font-semibold text-slate-500">
-              Trạng thái hệ thống
-            </p>
-            <p className="text-sm font-bold text-emerald-600">
-              Sẵn sàng nhận lịch
+            <p className="text-xs font-semibold text-slate-500">Công cụ Test</p>
+            <p className="text-sm font-bold text-amber-600">
+              Quick Book Cheat Sẵn Sàng
             </p>
           </div>
         </div>
@@ -245,7 +320,7 @@ export function ExpertManagementView() {
             </p>
             <Button
               size="sm"
-              onClick={handleOpenModal}
+              onClick={handleOpenCreateExpertModal}
               className="mt-2 rounded-xl bg-emerald-600 text-xs font-bold text-white"
             >
               ➕ Tạo Bác Sĩ Đầu Tiên
@@ -326,8 +401,8 @@ export function ExpertManagementView() {
         )}
       </div>
 
-      {/* ── Dialog Form: Tạo Tài Khoản Bác Sĩ Mới ── */}
-      <Dialog open={isModalOpen} onOpenChange={setIsModalOpen}>
+      {/* ── Modal Dialog 1: Tạo Tài Khoản Bác Sĩ Mới ── */}
+      <Dialog open={isCreateExpertOpen} onOpenChange={setIsCreateExpertOpen}>
         <DialogContent className="sm:max-w-lg">
           <DialogHeader>
             <DialogTitle className="text-lg font-bold text-slate-900">
@@ -460,7 +535,7 @@ export function ExpertManagementView() {
                 type="button"
                 variant="ghost"
                 size="sm"
-                onClick={() => setIsModalOpen(false)}
+                onClick={() => setIsCreateExpertOpen(false)}
                 className="rounded-xl text-xs font-medium text-slate-500"
               >
                 Hủy bỏ
@@ -475,6 +550,106 @@ export function ExpertManagementView() {
                   <Loader2 className="h-4 w-4 animate-spin" />
                 ) : (
                   "Tạo Tài Khoản Bác Sĩ"
+                )}
+              </Button>
+            </DialogFooter>
+          </form>
+        </DialogContent>
+      </Dialog>
+
+      {/* ── Modal Dialog 2: ⚡ Tạo Ca Hẹn Cheat (Quick Booking Cheat) ── */}
+      <Dialog open={isQuickBookOpen} onOpenChange={setIsQuickBookOpen}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2 text-base font-bold text-amber-900">
+              <Zap className="h-5 w-5 fill-amber-500 text-amber-500" />⚡ Tạo Ca
+              Hẹn Cheat 1-Click (Admin Quick Book)
+            </DialogTitle>
+            <DialogDescription className="text-xs text-slate-500">
+              Tạo nhanh ca hẹn ở trạng thái{" "}
+              <strong className="text-amber-700">PENDING</strong> gán cho Bác sĩ
+              để test ngay nút Chấp Nhận Lịch Hẹn tại `/expert`.
+            </DialogDescription>
+          </DialogHeader>
+
+          <form onSubmit={handleExecuteQuickBook} className="space-y-4 py-2">
+            {/* Select Expert */}
+            <div className="space-y-1.5">
+              <label className="text-xs font-bold text-slate-700">
+                Chọn Bác Sĩ Phụ Trách <span className="text-red-500">*</span>
+              </label>
+              <select
+                value={quickExpertId}
+                onChange={(e) => setQuickExpertId(e.target.value)}
+                className="w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-xs font-medium text-slate-800 focus:outline-none"
+                required
+              >
+                {expertsList.map((exp) => (
+                  <option key={exp.id} value={exp.id}>
+                    {exp.name} ({exp.specialization || "Da liễu"}) -{" "}
+                    {exp.clinic?.name || "GlowScan Clinic"}
+                  </option>
+                ))}
+              </select>
+            </div>
+
+            {/* Scheduled Date/Time */}
+            <div className="space-y-1.5">
+              <label className="text-xs font-bold text-slate-700">
+                Thời Gian Ca Hẹn (Scheduled At){" "}
+                <span className="text-red-500">*</span>
+              </label>
+              <div className="relative">
+                <Calendar className="absolute top-1/2 left-3 h-4 w-4 -translate-y-1/2 text-slate-400" />
+                <Input
+                  type="datetime-local"
+                  value={quickScheduledAt}
+                  onChange={(e) => setQuickScheduledAt(e.target.value)}
+                  className="rounded-xl border-slate-200 pl-9 text-xs"
+                  required
+                />
+              </div>
+            </div>
+
+            {/* Reason */}
+            <div className="space-y-1.5">
+              <label className="text-xs font-bold text-slate-700">
+                Lý Do / Triệu Chứng Tư Vấn
+              </label>
+              <div className="relative">
+                <MessageSquare className="absolute top-1/2 left-3 h-4 w-4 -translate-y-1/2 text-slate-400" />
+                <Input
+                  type="text"
+                  value={quickReason}
+                  onChange={(e) => setQuickReason(e.target.value)}
+                  className="rounded-xl border-slate-200 pl-9 text-xs"
+                />
+              </div>
+            </div>
+
+            <DialogFooter className="gap-2 pt-2">
+              <Button
+                type="button"
+                variant="ghost"
+                size="sm"
+                onClick={() => setIsQuickBookOpen(false)}
+                className="rounded-xl text-xs font-medium text-slate-500"
+              >
+                Đóng
+              </Button>
+              <Button
+                type="submit"
+                size="sm"
+                disabled={quickBookMutation.isPending}
+                className="rounded-xl bg-amber-500 text-xs font-bold text-white shadow-xs hover:bg-amber-600"
+              >
+                {quickBookMutation.isPending ? (
+                  <Loader2 className="h-4 w-4 animate-spin" />
+                ) : (
+                  <>
+                    <Zap className="mr-1.5 h-3.5 w-3.5 fill-white" />⚡ Tạo Ca
+                    Hẹn Ngay
+                  </>
                 )}
               </Button>
             </DialogFooter>

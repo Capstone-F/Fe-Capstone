@@ -1,4 +1,5 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { bookingApi } from "@/features/booking/api/booking.api";
 import {
   adminUsersApi,
   type CreateManagedUserPayload,
@@ -35,6 +36,43 @@ export function useCreateUser() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["admin-users"] });
       queryClient.invalidateQueries({ queryKey: ["experts"] });
+    },
+  });
+}
+
+export function useCustomers() {
+  return useQuery({
+    queryKey: ["admin-customers"],
+    queryFn: async () => {
+      try {
+        const response = await adminUsersApi.getCustomers();
+        return response.data.items || [];
+      } catch {
+        return [];
+      }
+    },
+  });
+}
+
+export function useAdminQuickBook() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async (payload: {
+      expertId: string;
+      scheduledAt: string;
+      reason?: string;
+    }) => {
+      const response = await bookingApi.createBooking({
+        expertId: payload.expertId,
+        scheduledAt: payload.scheduledAt,
+        reason: payload.reason || "Lịch tư vấn chăm sóc da",
+      });
+      return response.data;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["expert-bookings"] });
+      queryClient.invalidateQueries({ queryKey: ["bookings"] });
     },
   });
 }

@@ -60,4 +60,10 @@ export const adminUsersApi = {
   getClinics: (): Promise<AxiosResponse<PaginatedClinicsResponse>> => {
     return apiClient.get<PaginatedClinicsResponse>(API_ENDPOINTS.CLINICS.LIST);
   },
+
+  getCustomers: (): Promise<AxiosResponse<PaginatedUsersResponse>> => {
+    return apiClient.get<PaginatedUsersResponse>(API_ENDPOINTS.USERS.LIST, {
+      params: { role: "customer" },
+    });
+  },
 };
