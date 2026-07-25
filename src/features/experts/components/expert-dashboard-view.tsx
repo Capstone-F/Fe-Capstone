@@ -105,6 +105,7 @@ export function ExpertDashboardView() {
     startMutation.mutate(bookingId, {
       onSuccess: () => {
         toast.success("Đã bắt đầu ca tư vấn!");
+        setActiveTab("IN_PROGRESS");
       },
       onError: (err: unknown) => {
         const msg = (err as Error)?.message || "Không thể bắt đầu ca tư vấn.";
@@ -117,6 +118,7 @@ export function ExpertDashboardView() {
     completeMutation.mutate(bookingId, {
       onSuccess: () => {
         toast.success("Đã hoàn thành ca tư vấn thành công! 🎉");
+        setActiveTab("COMPLETED");
       },
       onError: (err: unknown) => {
         const msg =
