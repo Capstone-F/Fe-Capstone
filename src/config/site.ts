@@ -26,23 +26,7 @@ export const siteConfig = {
       },
     ],
     navSecondary: [],
-    documents: [
-      {
-        name: "Thư viện dữ liệu",
-        url: "#",
-        icon: "Database",
-      },
-      {
-        name: "Báo cáo",
-        url: "#",
-        icon: "FileChartColumn",
-      },
-      {
-        name: "Trợ lý AI",
-        url: "#",
-        icon: "File",
-      },
-    ],
+    documents: [],
   },
 
   // Config for user portal

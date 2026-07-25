@@ -82,11 +82,27 @@ export function ExpertManagementView() {
   const { data: users = [], isLoading: isLoadingUsers } = useAdminUsers({
     role: "expert",
   });
-  const { data: expertsData } = useExperts({ limit: 50 });
-  const expertsList = expertsData?.data || [];
+  const { data: expertsList = [] } = useExperts();
 
   const createUserMutation = useCreateUser();
   const quickBookMutation = useAdminQuickBook();
+
+  // Doctor options for Quick Booking dropdown
+  const doctorOptions =
+    expertsList.length > 0
+      ? expertsList.map((exp) => ({
+          id: exp.id,
+          name: exp.name,
+          subtitle: `${exp.title || "Chuyên gia Da Liễu"} (${exp.clinic || "GlowScan Clinic"})`,
+        }))
+      : users.map((u) => {
+          const assignedClinic = clinics.find((c) => c.id === u.clinicId);
+          return {
+            id: u.id,
+            name: u.name,
+            subtitle: `${u.email} (${assignedClinic?.name || "GlowScan Clinic"})`,
+          };
+        });
 
   // Handlers: Create Expert
   const handleOpenCreateExpertModal = () => {
@@ -584,10 +600,9 @@ export function ExpertManagementView() {
                 className="w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-xs font-medium text-slate-800 focus:outline-none"
                 required
               >
-                {expertsList.map((exp) => (
-                  <option key={exp.id} value={exp.id}>
-                    {exp.name} ({exp.specialization || "Da liễu"}) -{" "}
-                    {exp.clinic?.name || "GlowScan Clinic"}
+                {doctorOptions.map((doc) => (
+                  <option key={doc.id} value={doc.id}>
+                    {doc.name} - {doc.subtitle}
                   </option>
                 ))}
               </select>
