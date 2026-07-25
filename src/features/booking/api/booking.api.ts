@@ -17,7 +17,7 @@ export const bookingApi = {
       {
         params: {
           date,
-          range: "week",
+          range: "month",
         },
       },
     );
