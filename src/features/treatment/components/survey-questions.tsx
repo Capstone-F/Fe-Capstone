@@ -30,12 +30,16 @@ export function SurveyQuestions() {
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
   const [isSubmittingStep, setIsSubmittingStep] = useState(false);
 
-  // Start dynamic survey if questions list is empty
+  // Start dynamic survey if questions list is empty or session is null
   useEffect(() => {
-    if (state.dynamicQuestions.length === 0 && !state.isLoadingDynamic) {
+    if (
+      (!state.surveySessionId || state.dynamicQuestions.length === 0) &&
+      !state.isLoadingDynamic
+    ) {
       startDynamicSurvey();
     }
   }, [
+    state.surveySessionId,
     state.dynamicQuestions.length,
     state.isLoadingDynamic,
     startDynamicSurvey,

@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState, useCallback } from "react";
-import { useRouter } from "next/navigation";
+import { useRouter, usePathname } from "next/navigation";
 import {
   Sparkles,
   UserRound,
@@ -45,12 +45,12 @@ function needsOnboarding(
 
 /**
  * Global onboarding guard that checks if the logged-in user has completed
- * their base profile (gender + dateOfBirth). If not, shows a mandatory popup.
- * After profile completion, shows a survey guide popup.
- *
- * Place this component in AppShell so it renders on all customer-facing pages.
+ * their base profile (gender + dateOfBirth). If not, redirects to /profile first,
+ * then shows the mandatory profile onboarding popup.
  */
 export function ProfileOnboardingGuard() {
+  const router = useRouter();
+  const pathname = usePathname();
   const { data: session, isLoading: isSessionLoading } = useSession();
   const { data: profile, isLoading: isProfileLoading } = useProfile();
 
@@ -58,8 +58,16 @@ export function ProfileOnboardingGuard() {
   if (isSessionLoading || isProfileLoading) return null;
   if (!session || !profile) return null;
 
-  // Only render inner component if profile needs onboarding
+  // Only trigger if profile needs onboarding
   if (!needsOnboarding(profile)) return null;
+
+  // Redirect to /profile first if currently on another page
+  if (pathname !== "/profile") {
+    if (typeof window !== "undefined") {
+      router.replace("/profile");
+    }
+    return null;
+  }
 
   return <OnboardingDialogs profile={profile} />;
 }

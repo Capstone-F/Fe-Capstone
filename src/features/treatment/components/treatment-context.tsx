@@ -378,7 +378,9 @@ export function TreatmentProvider({ children }: { children: React.ReactNode }) {
     useCallback(async (): Promise<CustomerProfileResponseDto | null> => {
       try {
         const response = await treatmentApi.fetchCustomerProfile();
-        return response.data;
+        const data = response.data;
+        setState((prev) => ({ ...prev, customerProfile: data }));
+        return data;
       } catch (e) {
         console.error("Failed to fetch customer profile:", e);
         return null;
@@ -387,11 +389,19 @@ export function TreatmentProvider({ children }: { children: React.ReactNode }) {
 
   const fetchLatestRecommendations =
     useCallback(async (): Promise<RecommendationResponseDto | null> => {
+      setState((prev) => ({ ...prev, isLoadingDynamic: true }));
       try {
         const response = await treatmentApi.fetchLatestRecommendations();
-        return response.data;
+        const data = response.data;
+        setState((prev) => ({
+          ...prev,
+          recommendations: data,
+          isLoadingDynamic: false,
+        }));
+        return data;
       } catch (e) {
         console.error("Failed to fetch latest recommendations:", e);
+        setState((prev) => ({ ...prev, isLoadingDynamic: false }));
         return null;
       }
     }, []);
@@ -509,19 +519,61 @@ export function TreatmentProvider({ children }: { children: React.ReactNode }) {
           return false;
         }
 
-        const errMsg = (e as Error)?.message?.toLowerCase() || "";
+        const errMsg =
+          e instanceof ApiError
+            ? e.message.toLowerCase()
+            : (e as Error)?.message?.toLowerCase() || "";
         const errObj = e as { status?: number; response?: { status?: number } };
         const isAlreadyCompleted =
           errObj.status === 400 ||
           errObj.response?.status === 400 ||
-          errMsg.includes("already completed");
+          errMsg.includes("already completed") ||
+          errMsg.includes("đã hoàn thành");
 
         if (isAlreadyCompleted) {
           console.warn(
-            "Survey session was already completed. Completing flow...",
+            "Survey session was already completed on BE. Automatically creating a NEW survey session...",
           );
-          await completeDynamicSurvey();
-          return true;
+          try {
+            // 1. Create a fresh survey session on BE
+            const sessionResponse = await treatmentApi.createSurveySession();
+            const newSession = sessionResponse.data;
+
+            // 2. Re-submit current step answers to the new session
+            const payloadAnswers = questionIds.map((qId) => ({
+              questionId: qId,
+              labelCodes: state.dynamicAnswers[qId] || [],
+              value: state.dynamicTextAnswers[qId],
+            }));
+
+            await treatmentApi.submitSurveyAnswers(
+              newSession.id,
+              payloadAnswers,
+            );
+
+            // 3. Fetch any unlocked conditional questions
+            const nextQuestionsResponse = await treatmentApi.fetchQuestions(
+              newSession.id,
+            );
+
+            setState((prev) => ({
+              ...prev,
+              surveySessionId: newSession.id,
+              dynamicQuestions:
+                nextQuestionsResponse.data || prev.dynamicQuestions,
+              isLoadingDynamic: false,
+              dynamicError: null,
+            }));
+            return true;
+          } catch (recoveryErr) {
+            console.error(
+              "Failed to recover with new survey session:",
+              recoveryErr,
+            );
+            // Fallback to start fresh
+            await startDynamicSurvey();
+            return false;
+          }
         }
 
         const msg =

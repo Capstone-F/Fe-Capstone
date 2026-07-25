@@ -29,7 +29,10 @@ export function getRequiredSurveyProfileFields(
 
 export function validateSurveyRecommendation(
   recommendation:
-    | Pick<RecommendationResponseDto, "customerSurveyId" | "products">
+    | Pick<
+        RecommendationResponseDto,
+        "customerSurveyId" | "products" | "protocols"
+      >
     | null
     | undefined,
   _surveySessionId?: string | null,
@@ -39,7 +42,14 @@ export function validateSurveyRecommendation(
     return "missing";
   }
 
-  if (!recommendation.products || recommendation.products.length === 0) {
+  const hasProtocols = Boolean(
+    recommendation.protocols && recommendation.protocols.length > 0,
+  );
+  const hasProducts = Boolean(
+    recommendation.products && recommendation.products.length > 0,
+  );
+
+  if (!hasProtocols && !hasProducts) {
     return "empty";
   }
 

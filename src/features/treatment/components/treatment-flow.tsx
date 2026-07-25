@@ -1,5 +1,7 @@
 "use client";
 
+import { useEffect, useRef } from "react";
+import { useSearchParams } from "next/navigation";
 import { useTreatment } from "@/features/treatment/components/treatment-context";
 import { IntroScreen } from "./intro-screen";
 import { SurveyQuestions } from "./survey-questions";
@@ -10,7 +12,41 @@ import { PurchaseScreen } from "./purchase-screen";
 import { SuccessScreen } from "./success-screen";
 
 export function TreatmentFlow() {
-  const { state } = useTreatment();
+  const {
+    state,
+    setFlowState,
+    startDynamicSurvey,
+    fetchLatestRecommendations,
+    fetchCustomerProfile,
+  } = useTreatment();
+  const searchParams = useSearchParams();
+  const hasHandledParamsRef = useRef(false);
+
+  useEffect(() => {
+    if (hasHandledParamsRef.current) return;
+    hasHandledParamsRef.current = true;
+
+    const view = searchParams.get("view");
+    const mode = searchParams.get("mode");
+
+    if (mode === "restart") {
+      startDynamicSurvey();
+      setFlowState("survey");
+    } else if (view === "plan" || view === "purchase") {
+      // Fetch latest profile and recommendations for existing user
+      Promise.all([fetchCustomerProfile(), fetchLatestRecommendations()]).then(
+        ([_profile, _recommendation]) => {
+          setFlowState("plan");
+        },
+      );
+    }
+  }, [
+    searchParams,
+    setFlowState,
+    startDynamicSurvey,
+    fetchLatestRecommendations,
+    fetchCustomerProfile,
+  ]);
 
   const validFlows = [
     "intro",
