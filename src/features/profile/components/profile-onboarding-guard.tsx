@@ -58,6 +58,13 @@ export function ProfileOnboardingGuard() {
   if (isSessionLoading || isProfileLoading) return null;
   if (!session || !profile) return null;
 
+  // Skip onboarding entirely for Admin, Staff, Expert, and Clinic Manager roles
+  const userRoles = session.user?.roles || session.roles || [];
+  const isManagementRole = userRoles.some((role: string) =>
+    ["app_admin", "staff", "expert", "clinic_manager"].includes(role),
+  );
+  if (isManagementRole) return null;
+
   // Only trigger if profile needs onboarding
   if (!needsOnboarding(profile)) return null;
 

@@ -88,8 +88,26 @@ export function LoginPanel({ redirectTo }: LoginPanelProps) {
         tokenStorage.setRefreshToken(tokenData.refreshToken);
       }
 
+      // Determine redirect path by user roles
+      const roles: string[] = tokenData?.user?.roles || [];
+      let targetPath = redirectTo;
+
+      if (!targetPath) {
+        if (
+          roles.includes("app_admin") ||
+          roles.includes("staff") ||
+          roles.includes("clinic_manager")
+        ) {
+          targetPath = "/dashboard/experts";
+        } else if (roles.includes("expert")) {
+          targetPath = "/expert";
+        } else {
+          targetPath = "/";
+        }
+      }
+
       // Redirect to target path
-      window.location.href = redirectTo || "/";
+      window.location.href = targetPath;
     } catch (error: unknown) {
       console.error(error);
       const e = error as Error;

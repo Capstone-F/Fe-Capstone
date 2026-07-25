@@ -10,48 +10,22 @@ export const siteConfig = {
   dashboard: {
     navMain: [
       {
-        title: "Bảng điều khiển",
+        title: "Quản lý Bác sĩ",
+        url: "/dashboard/experts",
+        icon: "Users",
+      },
+      {
+        title: "Workspace Bác sĩ",
+        url: "/expert",
+        icon: "Stethoscope",
+      },
+      {
+        title: "Trang chủ Admin",
         url: "/dashboard",
         icon: "LayoutDashboard",
       },
-      {
-        title: "Vòng đời khách hàng",
-        url: "#",
-        icon: "List",
-      },
-      {
-        title: "Phân tích & Thống kê",
-        url: "#",
-        icon: "ChartBar",
-      },
-      {
-        title: "Dự án",
-        url: "#",
-        icon: "Folder",
-      },
-      {
-        title: "Đội ngũ",
-        url: "#",
-        icon: "Users",
-      },
     ],
-    navSecondary: [
-      {
-        title: "Cài đặt hệ thống",
-        url: "#",
-        icon: "Settings2",
-      },
-      {
-        title: "Trợ giúp & Hỗ trợ",
-        url: "#",
-        icon: "CircleHelp",
-      },
-      {
-        title: "Tìm kiếm...",
-        url: "#",
-        icon: "Search",
-      },
-    ],
+    navSecondary: [],
     documents: [
       {
         name: "Thư viện dữ liệu",
