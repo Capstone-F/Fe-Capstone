@@ -6,12 +6,21 @@ import { bookingMock } from "../api/booking.mock";
 import { mapBackendBookingToFrontend } from "../mapper/booking-mapper";
 import type { TimeSlot } from "../types/booking.types";
 
+const MIN_BOOKING_LEAD_TIME_MS = 2 * 60 * 60 * 1000; // 2 hours
+
+export function isSlotBookable(slotDateTimeISO: string): boolean {
+  const slotTime = new Date(slotDateTimeISO).getTime();
+  const minValidTime = Date.now() + MIN_BOOKING_LEAD_TIME_MS;
+  return slotTime >= minValidTime;
+}
+
 export function useSlots(expertId: string) {
   return useQuery({
     queryKey: queryKeys.slots(expertId),
     queryFn: async () => {
       if (appConfig.useMockApi) {
-        return bookingMock.getSlots(expertId);
+        const allMockSlots = await bookingMock.getSlots(expertId);
+        return allMockSlots.filter((s) => isSlotBookable(s.dateTime));
       }
 
       const todayStr = new Date().toISOString().split("T")[0];
@@ -20,12 +29,14 @@ export function useSlots(expertId: string) {
 
       response.data.days.forEach((day) => {
         day.slots.forEach((s) => {
-          slots.push({
-            id: `${expertId}_${s.startAt}`,
-            expertId,
-            dateTime: s.startAt,
-            isBooked: !s.available,
-          });
+          if (isSlotBookable(s.startAt)) {
+            slots.push({
+              id: `${expertId}_${s.startAt}`,
+              expertId,
+              dateTime: s.startAt,
+              isBooked: !s.available,
+            });
+          }
         });
       });
 

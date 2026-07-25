@@ -23,12 +23,12 @@ export const bookingMock = {
     const slots: TimeSlot[] = [];
     const today = new Date();
 
-    for (let d = 0; d < 3; d++) {
+    for (let d = 1; d <= 4; d++) {
       const targetDate = new Date(today);
       targetDate.setDate(today.getDate() + d);
       const formattedDate = targetDate.toISOString().split("T")[0];
 
-      const hours = ["09:00", "10:30", "14:00", "15:30"];
+      const hours = ["09:00", "10:30", "14:00", "15:30", "17:00"];
       hours.forEach((h, idx) => {
         slots.push({
           id: `slot_${expertId}_${d}_${idx}`,
