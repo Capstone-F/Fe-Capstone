@@ -5,7 +5,14 @@ export const API_ENDPOINTS = {
     MOBILE_REFRESH: "/auth/mobile/refresh",
     LOGOUT: "/auth/logout",
   },
-  USERS: { ME: "/users/me" },
+  USERS: {
+    ME: "/users/me",
+    CREATE: "/users",
+    LIST: "/users",
+  },
+  CLINICS: {
+    LIST: "/clinics",
+  },
   CUSTOMERS: { ME: "/customers/me", ALLERGIES: "/customers/allergies" },
   PRODUCTS: {
     LIST: "/products",
@@ -21,6 +28,10 @@ export const API_ENDPOINTS = {
     CREATE: "/bookings",
     ME: "/bookings/me",
     SLOTS: (expertId: string | number) => `/bookings/${expertId}`,
+    CONFIRM: (id: string | number) => `/bookings/${id}/confirm`,
+    CANCEL: (id: string | number) => `/bookings/${id}/cancel`,
+    START: (id: string | number) => `/bookings/${id}/start`,
+    COMPLETE: (id: string | number) => `/bookings/${id}/complete`,
   },
   PROVINCES: { LIST: "https://provinces.open-api.vn/api/v2/" },
   CART: {

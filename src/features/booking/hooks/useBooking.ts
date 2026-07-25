@@ -134,3 +134,80 @@ export function useUpdatePaymentStatus() {
     },
   });
 }
+
+// ─────────────────────────────────────────────────────────────
+// EXPERT HOOKS (For Doctors & Specialists)
+// ─────────────────────────────────────────────────────────────
+
+export function useExpertBookings(params?: {
+  tab?: "upcoming" | "past" | "cancelled";
+  status?: string;
+}) {
+  return useQuery({
+    queryKey: ["expert-bookings", params],
+    queryFn: async () => {
+      if (appConfig.useMockApi) {
+        return bookingMock.getBookings();
+      }
+
+      const response = await bookingApi.getExpertBookings(params);
+      return response.data.items.map(mapBackendBookingToFrontend);
+    },
+  });
+}
+
+export function useConfirmBooking() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async (id: string) => {
+      const response = await bookingApi.confirmBooking(id);
+      return mapBackendBookingToFrontend(response.data);
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["expert-bookings"] });
+      queryClient.invalidateQueries({ queryKey: queryKeys.bookings });
+    },
+  });
+}
+
+export function useCancelBooking() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async ({ id, reason }: { id: string; reason?: string }) => {
+      const response = await bookingApi.cancelBooking(id, reason);
+      return mapBackendBookingToFrontend(response.data);
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["expert-bookings"] });
+      queryClient.invalidateQueries({ queryKey: queryKeys.bookings });
+    },
+  });
+}
+
+export function useStartBooking() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async (id: string) => {
+      const response = await bookingApi.startBooking(id);
+      return mapBackendBookingToFrontend(response.data);
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["expert-bookings"] });
+      queryClient.invalidateQueries({ queryKey: queryKeys.bookings });
+    },
+  });
+}
+
+export function useCompleteBooking() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async (id: string) => {
+      const response = await bookingApi.completeBooking(id);
+      return mapBackendBookingToFrontend(response.data);
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["expert-bookings"] });
+      queryClient.invalidateQueries({ queryKey: queryKeys.bookings });
+    },
+  });
+}

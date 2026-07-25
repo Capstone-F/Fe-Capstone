@@ -41,4 +41,37 @@ export const bookingApi = {
       },
     });
   },
+
+  getExpertBookings: (params?: {
+    tab?: "upcoming" | "past" | "cancelled";
+    status?: string;
+  }): Promise<AxiosResponse<BackendBookingsResponse>> => {
+    return apiClient.get<BackendBookingsResponse>(API_ENDPOINTS.BOOKINGS.ME, {
+      params: {
+        as: "expert",
+        ...params,
+      },
+    });
+  },
+
+  confirmBooking: (id: string): Promise<AxiosResponse<BackendBooking>> => {
+    return apiClient.patch<BackendBooking>(API_ENDPOINTS.BOOKINGS.CONFIRM(id));
+  },
+
+  cancelBooking: (
+    id: string,
+    reason?: string,
+  ): Promise<AxiosResponse<BackendBooking>> => {
+    return apiClient.patch<BackendBooking>(API_ENDPOINTS.BOOKINGS.CANCEL(id), {
+      reason,
+    });
+  },
+
+  startBooking: (id: string): Promise<AxiosResponse<BackendBooking>> => {
+    return apiClient.patch<BackendBooking>(API_ENDPOINTS.BOOKINGS.START(id));
+  },
+
+  completeBooking: (id: string): Promise<AxiosResponse<BackendBooking>> => {
+    return apiClient.patch<BackendBooking>(API_ENDPOINTS.BOOKINGS.COMPLETE(id));
+  },
 };
