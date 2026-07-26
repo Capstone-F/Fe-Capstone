@@ -53,4 +53,21 @@ export const treatmentApi = {
       data: mapBackendTreatmentToFrontend(res.data),
     };
   },
+
+  payTreatmentPlan: async (
+    id: string,
+  ): Promise<AxiosResponse<TreatmentPlan>> => {
+    if (appConfig.useMockApi) {
+      const data = await treatmentMock.getPlanById(id);
+      if (data) data.status = "ACTIVE";
+      return { data } as AxiosResponse<TreatmentPlan>;
+    }
+    const res = await apiClient.post<Record<string, unknown>>(
+      `/treatments/${id}/pay`,
+    );
+    return {
+      ...res,
+      data: mapBackendTreatmentToFrontend(res.data),
+    };
+  },
 };

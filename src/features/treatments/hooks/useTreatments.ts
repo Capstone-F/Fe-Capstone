@@ -35,3 +35,17 @@ export function useCreateTreatmentPlan() {
     },
   });
 }
+
+export function usePayTreatmentPlan() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async (treatmentId: string) => {
+      const response = await treatmentApi.payTreatmentPlan(treatmentId);
+      return response.data;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["treatment-plans"] });
+      queryClient.invalidateQueries({ queryKey: ["wallet"] });
+    },
+  });
+}

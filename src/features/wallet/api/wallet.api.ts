@@ -10,7 +10,7 @@ export const walletApi = {
       const data = await walletMock.getWallet();
       return { data } as AxiosResponse<Wallet>;
     }
-    return apiClient.get<Wallet>("/wallets/me");
+    return apiClient.get<Wallet>("/wallet/me");
   },
 
   getTransactions: async (): Promise<AxiosResponse<WalletTransaction[]>> => {
@@ -18,7 +18,7 @@ export const walletApi = {
       const data = await walletMock.getTransactions();
       return { data } as AxiosResponse<WalletTransaction[]>;
     }
-    return apiClient.get<WalletTransaction[]>("/wallets/me/transactions");
+    return apiClient.get<WalletTransaction[]>("/wallet/me/transactions");
   },
 
   topUp: async (amountVnd: number): Promise<AxiosResponse<Wallet>> => {
@@ -26,7 +26,7 @@ export const walletApi = {
       const data = await walletMock.topUp(amountVnd);
       return { data } as AxiosResponse<Wallet>;
     }
-    return apiClient.post<Wallet>("/wallets/top-up", { amountVnd });
+    return apiClient.post<Wallet>("/wallet/top-up", { amountVnd });
   },
 
   payConsultation: async (
