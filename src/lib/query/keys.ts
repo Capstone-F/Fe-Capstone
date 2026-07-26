@@ -10,6 +10,11 @@ export const queryKeys = {
   surveyHistory: ["surveyHistory"] as const,
   allergyOptions: ["allergyOptions"] as const,
   routines: ["routines"] as const,
+  routineToday: (period: string) => ["routines", "today", period] as const,
+  routineHistory: (routineId: string, from: string, to: string) =>
+    ["routines", routineId, "history", from, to] as const,
+  routineCheckIns: (routineId: string, from: string, to: string) =>
+    ["routines", routineId, "check-ins", from, to] as const,
   products: (filters: unknown) => ["products", filters] as const,
   suggestions: (limit: number) => ["products", "suggestions", limit] as const,
   product: (id: string) => ["product", id] as const,
