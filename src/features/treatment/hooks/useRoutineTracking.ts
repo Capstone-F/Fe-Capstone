@@ -19,14 +19,22 @@ import type {
   TodayRoutinesResponse,
 } from "../types/routine-tracking.types";
 
+/**
+ * Cache key for the Today query. `undefined` means "let the backend pick the period
+ * from its own Asia/Ho_Chi_Minh clock" — a distinct cache entry from an explicit tab.
+ */
+function todayQueryKey(period: RoutinePeriod | undefined) {
+  return queryKeys.routineToday(period ?? "auto");
+}
+
 /** Replace one routine inside the cached Today payload for instant progress feedback. */
 function applyRoutineUpdate(
   queryClient: QueryClient,
-  period: RoutinePeriod,
+  period: RoutinePeriod | undefined,
   updated: TodayRoutine,
 ): void {
   queryClient.setQueryData<TodayRoutinesResponse>(
-    queryKeys.routineToday(period),
+    todayQueryKey(period),
     (previous) =>
       previous
         ? {
@@ -41,14 +49,18 @@ function applyRoutineUpdate(
   void queryClient.invalidateQueries({ queryKey: queryKeys.routines });
 }
 
-export function useTodayRoutines(period: RoutinePeriod) {
+/**
+ * Today's session. Omit `period` on first load so the backend applies its documented
+ * default (VN hour < 14 → MORNING, else EVENING) instead of the client guessing.
+ */
+export function useTodayRoutines(period?: RoutinePeriod) {
   return useQuery<TodayRoutinesResponse, ApiError>({
-    queryKey: queryKeys.routineToday(period),
+    queryKey: todayQueryKey(period),
     queryFn: async () => (await routineTrackingApi.getToday(period)).data,
   });
 }
 
-export function useCompleteStep(period: RoutinePeriod) {
+export function useCompleteStep(period?: RoutinePeriod) {
   const queryClient = useQueryClient();
   return useMutation<
     TodayRoutine,
@@ -61,7 +73,7 @@ export function useCompleteStep(period: RoutinePeriod) {
   });
 }
 
-export function useSkipStep(period: RoutinePeriod) {
+export function useSkipStep(period?: RoutinePeriod) {
   const queryClient = useQueryClient();
   return useMutation<
     TodayRoutine,
@@ -133,7 +145,7 @@ export function useHistoryDay(
   period: RoutinePeriod,
 ) {
   return useQuery<HistoryDayDetail, ApiError>({
-    queryKey: ["routines", routineId ?? "", "history-day", date ?? "", period],
+    queryKey: queryKeys.routineHistoryDay(routineId ?? "", date ?? "", period),
     queryFn: async () =>
       (
         await routineTrackingApi.getHistoryDay(

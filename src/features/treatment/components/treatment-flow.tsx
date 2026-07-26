@@ -35,7 +35,7 @@ export function TreatmentFlow() {
     } else if (view === "plan" || view === "purchase") {
       // Fetch latest profile and recommendations for existing user
       Promise.all([fetchCustomerProfile(), fetchLatestRecommendations()]).then(
-        ([_profile, _recommendation]) => {
+        () => {
           setFlowState("plan");
         },
       );

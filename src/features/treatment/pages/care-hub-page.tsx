@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useEffect, useMemo, useRef, useState } from "react";
 import Link from "next/link";
 import {
   Sun,
@@ -59,7 +59,31 @@ import {
   useTodayCheckIns,
   useTodayRoutines,
 } from "../hooks/useRoutineTracking";
-import type { TodayStep } from "../types/routine-tracking.types";
+import { formatVnLongDate } from "../lib/routine-history";
+import type { RoutinePeriod, TodayStep } from "../types/routine-tracking.types";
+
+/** Read the locally stored habit ticks for one server calendar date. */
+function readHabitIds(storageKey: string): string[] {
+  const saved = localStorage.getItem(storageKey);
+  if (!saved) {
+    return [];
+  }
+  try {
+    return JSON.parse(saved) as string[];
+  } catch {
+    return [];
+  }
+}
+
+/** Banner for blocks that still render hardcoded content because the BE endpoint is missing. */
+function DemoDataNotice({ children }: { children: React.ReactNode }) {
+  return (
+    <div className="flex items-start gap-2 rounded-xl border border-amber-200 bg-amber-50 p-3 text-[11px] font-semibold text-amber-800">
+      <AlertTriangle className="mt-0.5 h-3.5 w-3.5 shrink-0" />
+      <span>{children}</span>
+    </div>
+  );
+}
 
 const SUPPORT_HABITS = [
   { id: "water", label: "Uống đủ 2L nước", icon: Droplets },
@@ -72,8 +96,10 @@ export function CareHubPage() {
   const session = useSession();
   const { data: profile } = useProfile();
 
-  const [selectedPeriod, setSelectedPeriod] = useState<"MORNING" | "EVENING">(
-    "MORNING",
+  // null = no explicit tab choice yet, so the backend picks the period from its own
+  // Asia/Ho_Chi_Minh clock (VN hour < 14 → MORNING, else EVENING).
+  const [periodOverride, setPeriodOverride] = useState<RoutinePeriod | null>(
+    null,
   );
   const [sideEffectNote, setSideEffectNote] = useState("");
   const [isSideEffectOpen, setIsSideEffectOpen] = useState(false);
@@ -82,10 +108,14 @@ export function CareHubPage() {
     data: todayData,
     isLoading: isTodayLoading,
     isError: isTodayError,
-  } = useTodayRoutines(selectedPeriod);
+  } = useTodayRoutines(periodOverride ?? undefined);
 
-  const completeStep = useCompleteStep(selectedPeriod);
-  const skipStep = useSkipStep(selectedPeriod);
+  // The period the screen is actually showing: user's tab, else whatever the server chose.
+  const activePeriod: RoutinePeriod =
+    periodOverride ?? todayData?.period ?? "MORNING";
+
+  const completeStep = useCompleteStep(periodOverride ?? undefined);
+  const skipStep = useSkipStep(periodOverride ?? undefined);
 
   // Multiple ACTIVE routines are possible; check-in and history target the newest
   // one (backend orders by createdAt DESC). TODO(BE/UX): per-routine check-in.
@@ -95,7 +125,7 @@ export function CareHubPage() {
     todayData?.date,
   );
   const currentCheckIn = todayCheckIns?.find(
-    (checkIn) => checkIn.period === selectedPeriod,
+    (checkIn) => checkIn.period === activePeriod,
   );
 
   const [isCheckInOpen, setIsCheckInOpen] = useState(false);
@@ -104,21 +134,35 @@ export function CareHubPage() {
     step: TodayStep;
   } | null>(null);
 
-  // Habits state
-  const [completedHabitIds, setCompletedHabitIds] = useState<string[]>(() => {
-    if (typeof window !== "undefined") {
-      const today = new Date().toDateString();
-      const saved = localStorage.getItem(`glowscan_habits_${today}`);
-      if (saved) {
-        try {
-          return JSON.parse(saved);
-        } catch {
-          // ignore
-        }
-      }
+  // Habits state — keyed by the server's VN calendar date, never the device clock.
+  // The key only exists after Today loads (client-side), so there is nothing to read
+  // during SSR and no hydration mismatch.
+  const serverDate = todayData?.date;
+  const habitsStorageKey = serverDate ? `glowscan_habits_${serverDate}` : null;
+  const [habitsByKey, setHabitsByKey] = useState<Record<string, string[]>>({});
+  const persistedHabitIds = useMemo(
+    () => (habitsStorageKey ? readHabitIds(habitsStorageKey) : []),
+    [habitsStorageKey],
+  );
+  const completedHabitIds = habitsStorageKey
+    ? (habitsByKey[habitsStorageKey] ?? persistedHabitIds)
+    : [];
+
+  // Flow §5: after the last step is acted on, prompt the daily check-in. Only on the
+  // transition, so re-opening an already-completed day does not pop the dialog again.
+  const previousSessionStateRef = useRef(todayData?.sessionState);
+  useEffect(() => {
+    const previous = previousSessionStateRef.current;
+    previousSessionStateRef.current = todayData?.sessionState;
+    if (
+      previous !== undefined &&
+      previous !== "COMPLETED" &&
+      todayData?.sessionState === "COMPLETED" &&
+      !currentCheckIn
+    ) {
+      setIsCheckInOpen(true);
     }
-    return [];
-  });
+  }, [todayData?.sessionState, currentCheckIn]);
 
   const isLoggedIn = !!session.data;
   const hasRoutine =
@@ -172,22 +216,23 @@ export function CareHubPage() {
       toast.error("Vui lòng mô tả triệu chứng gặp phải.");
       return;
     }
+    // TODO(BE): gap G2 — nothing is persisted or escalated; this only closes the form.
     toast.success(
-      "Đã ghi nhận báo cáo tác dụng phụ. Bác sĩ sẽ phản hồi sớm nhất!",
+      "Đã ghi nhận mô tả. Hãy thêm tác dụng phụ vào check-in hằng ngày để lưu lại.",
     );
     setSideEffectNote("");
     setIsSideEffectOpen(false);
   };
 
   const toggleHabit = (habitId: string) => {
-    setCompletedHabitIds((prev) => {
-      const next = prev.includes(habitId)
-        ? prev.filter((id) => id !== habitId)
-        : [...prev, habitId];
-      const today = new Date().toDateString();
-      localStorage.setItem(`glowscan_habits_${today}`, JSON.stringify(next));
-      return next;
-    });
+    if (!habitsStorageKey) {
+      return;
+    }
+    const next = completedHabitIds.includes(habitId)
+      ? completedHabitIds.filter((id) => id !== habitId)
+      : [...completedHabitIds, habitId];
+    localStorage.setItem(habitsStorageKey, JSON.stringify(next));
+    setHabitsByKey((prev) => ({ ...prev, [habitsStorageKey]: next }));
     toast.success("Đã ghi nhận thói quen tốt!");
   };
 
@@ -315,11 +360,8 @@ export function CareHubPage() {
             <span>
               Hôm nay:{" "}
               <strong className="text-slate-700">
-                {new Date().toLocaleDateString("vi-VN", {
-                  weekday: "long",
-                  day: "numeric",
-                  month: "long",
-                })}
+                {/* Server VN calendar date from GET /routines/me/today — never the device clock. */}
+                {todayData ? formatVnLongDate(todayData.date) : "—"}
               </strong>
             </span>
           </div>
@@ -357,9 +399,13 @@ export function CareHubPage() {
                 onSubmit={handleReportSideEffect}
                 className="space-y-4 pt-2"
               >
+                <DemoDataNotice>
+                  Backend chưa có luồng cảnh báo kích ứng tới chuyên gia. Để lưu
+                  lại tác dụng phụ, hãy dùng &quot;Check-in Da&quot; hằng ngày.
+                </DemoDataNotice>
                 <p className="text-xs text-slate-600">
-                  Mô tả triệu chứng da bị đỏ, rát, bong tróc hoặc mụn bùng phát.
-                  Bác sĩ tư vấn sẽ cập nhật phác đồ ngay lập tức.
+                  Mô tả triệu chứng da bị đỏ, rát, bong tróc hoặc mụn bùng phát
+                  để tiện theo dõi.
                 </p>
                 <Textarea
                   placeholder="Mô tả hiện trạng làn da của bạn..."
@@ -452,9 +498,9 @@ export function CareHubPage() {
                   <div className="flex rounded-xl bg-slate-100 p-1">
                     <button
                       type="button"
-                      onClick={() => setSelectedPeriod("MORNING")}
+                      onClick={() => setPeriodOverride("MORNING")}
                       className={`flex flex-1 items-center justify-center gap-1.5 rounded-lg py-2 text-xs font-bold transition-all ${
-                        selectedPeriod === "MORNING"
+                        activePeriod === "MORNING"
                           ? "bg-white text-amber-600 shadow-xs"
                           : "text-slate-500 hover:text-slate-800"
                       }`}
@@ -464,9 +510,9 @@ export function CareHubPage() {
                     </button>
                     <button
                       type="button"
-                      onClick={() => setSelectedPeriod("EVENING")}
+                      onClick={() => setPeriodOverride("EVENING")}
                       className={`flex flex-1 items-center justify-center gap-1.5 rounded-lg py-2 text-xs font-bold transition-all ${
-                        selectedPeriod === "EVENING"
+                        activePeriod === "EVENING"
                           ? "bg-white text-indigo-600 shadow-xs"
                           : "text-slate-500 hover:text-slate-800"
                       }`}
@@ -478,7 +524,7 @@ export function CareHubPage() {
 
                   <div className="space-y-2 border-t border-slate-100 pt-4">
                     <div className="flex justify-between text-xs font-bold text-slate-700">
-                      <span>Tiến độ {PERIOD_LABELS[selectedPeriod]}</span>
+                      <span>Tiến độ {PERIOD_LABELS[activePeriod]}</span>
                       <span>{progressPct}%</span>
                     </div>
                     <div className="h-2.5 w-full overflow-hidden rounded-full bg-slate-100">
@@ -603,7 +649,7 @@ export function CareHubPage() {
                     <div className="py-4 text-center">
                       <p className="mb-3 text-xs text-slate-500">
                         Bạn chưa ghi nhận trạng thái da cho{" "}
-                        {PERIOD_LABELS[selectedPeriod].toLowerCase()} hôm nay.
+                        {PERIOD_LABELS[activePeriod].toLowerCase()} hôm nay.
                       </p>
                       <Button
                         size="sm"
@@ -625,7 +671,7 @@ export function CareHubPage() {
                     Các Bước Skincare Khung Giờ
                   </h2>
                   <span className="text-xs font-medium text-slate-500">
-                    Khung giờ: {PERIOD_LABELS[selectedPeriod]}
+                    Khung giờ: {PERIOD_LABELS[activePeriod]}
                   </span>
                 </div>
                 {isTodayLoading ? (
@@ -666,7 +712,15 @@ export function CareHubPage() {
         </TabsContent>
 
         {/* Tab 2: Treatment Phase details */}
+        {/* TODO(BE): gaps G6/G10 — every value below (doctor, clinic, week 4/12, the three
+            phases) is hardcoded demo content. There is no endpoint exposing an expert
+            treatment plan or its phases yet, so nothing here reflects the logged-in user.
+            See docs/confluence/context/10-routine-tracking-module.md §9. */}
         <TabsContent value="treatment" className="space-y-6 outline-none">
+          <DemoDataNotice>
+            Dữ liệu minh hoạ — backend chưa có API phác đồ điều trị của chuyên
+            gia, nội dung dưới đây không phải hồ sơ thật của bạn.
+          </DemoDataNotice>
           <div className="grid grid-cols-1 gap-6 md:grid-cols-3">
             {/* Overview Box */}
             <Card className="border-slate-200 shadow-2xs md:col-span-1">
@@ -831,7 +885,10 @@ export function CareHubPage() {
                 Lịch Sử Chăm Sóc & Biến Động Da
               </CardTitle>
             </CardHeader>
-            <CardContent className="p-6">
+            <CardContent className="space-y-4 p-6">
+              <DemoDataNotice>
+                Dữ liệu minh hoạ — chưa có API sự kiện tư vấn/điều trị.
+              </DemoDataNotice>
               <div className="relative ml-4 space-y-6 border-l border-slate-100 pl-6">
                 {/* Event 1 */}
                 <div className="relative">
@@ -909,11 +966,11 @@ export function CareHubPage() {
 
       {primaryRoutine && (
         <DailyCheckInDialog
-          key={`${primaryRoutine.id}-${selectedPeriod}`}
+          key={`${primaryRoutine.id}-${activePeriod}`}
           open={isCheckInOpen}
           onOpenChange={setIsCheckInOpen}
           routineId={primaryRoutine.id}
-          period={selectedPeriod}
+          period={activePeriod}
         />
       )}
 

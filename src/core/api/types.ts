@@ -22,6 +22,15 @@ export interface ApiErrorResponse {
   errors?: Record<string, string[]>;
 }
 
+/**
+ * Routine transport enums — mirror Be-Capstone/src/routines/enums.ts.
+ * Shared by the profile feature (routine list / generate) and the treatment
+ * feature (daily tracking), so they live here instead of being re-declared.
+ */
+export type RoutinePeriod = "MORNING" | "EVENING";
+export type RoutineType = "AI_RECOMMENDED" | "EXPERT_PRESCRIBED";
+export type RoutineStatus = "DRAFT" | "ACTIVE" | "PAUSED" | "COMPLETED";
+
 export type FileStorageType = "Local" | "External" | "S3" | "Azure";
 
 export interface FileAttachment {

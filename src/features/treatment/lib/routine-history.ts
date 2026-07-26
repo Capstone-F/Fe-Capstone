@@ -10,6 +10,19 @@ export function shiftIsoDate(date: string, deltaDays: number): string {
   return cursor.toISOString().slice(0, 10);
 }
 
+/**
+ * Render a server VN calendar date (YYYY-MM-DD) as Vietnamese long form.
+ * Forced to UTC so the device timezone never shifts the day the backend decided.
+ */
+export function formatVnLongDate(date: string): string {
+  return new Date(`${date}T00:00:00.000Z`).toLocaleDateString("vi-VN", {
+    weekday: "long",
+    day: "numeric",
+    month: "long",
+    timeZone: "UTC",
+  });
+}
+
 /** Inclusive range of `days` calendar days ending at (and including) endDate. */
 export function buildRangeEndingAt(
   endDate: string,

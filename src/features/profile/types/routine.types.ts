@@ -1,7 +1,13 @@
+import type {
+  RoutinePeriod,
+  RoutineStatus,
+  RoutineType,
+} from "@/core/api/types";
+
 export interface RoutineStep {
   id: string;
   name: string;
-  period: "MORNING" | "EVENING";
+  period: RoutinePeriod;
   stepOrder: number;
   instructions: string | null;
   productVariantId: string | null;
@@ -10,8 +16,8 @@ export interface RoutineStep {
 
 export interface Routine {
   id: string;
-  type: string;
-  status: string;
+  type: RoutineType;
+  status: RoutineStatus;
   title: string;
   description: string | null;
   sourceOrderId: string | null;

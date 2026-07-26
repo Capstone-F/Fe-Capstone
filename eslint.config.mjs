@@ -15,6 +15,9 @@ const eslintConfig = defineConfig([
     "scaffold-app/**",
     ".tmp/**",
     "public/**",
+    // Agent scratch workspaces (git worktrees / notes) — gitignored, not project source.
+    ".claude/**",
+    ".superpowers/**",
   ]),
 ]);
 

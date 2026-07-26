@@ -593,7 +593,6 @@ export function TreatmentProvider({ children }: { children: React.ReactNode }) {
       state.dynamicAnswers,
       state.dynamicTextAnswers,
       startDynamicSurvey,
-      completeDynamicSurvey,
     ],
   );
 
