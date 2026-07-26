@@ -44,7 +44,19 @@ export const API_ENDPOINTS = {
   },
   SURVEYS: { BASE: "/surveys", QUESTIONS: "/surveys/questions" },
   RECOMMENDATIONS: { LATEST: "/recommendations/latest" },
-  ROUTINES: { GENERATE: "/routines/generate", ME: "/routines/me" },
+  ROUTINES: {
+    GENERATE: "/routines/generate",
+    ME: "/routines/me",
+    TODAY: "/routines/me/today",
+    STEP_COMPLETE: (routineId: string, stepId: string) =>
+      `/routines/${routineId}/steps/${stepId}/complete`,
+    STEP_SKIP: (routineId: string, stepId: string) =>
+      `/routines/${routineId}/steps/${stepId}/skip`,
+    CHECK_INS: (routineId: string) => `/routines/${routineId}/check-ins`,
+    HISTORY: (routineId: string) => `/routines/${routineId}/history`,
+    HISTORY_DAY: (routineId: string, date: string) =>
+      `/routines/${routineId}/history/${date}`,
+  },
   FILES: {
     UPLOAD: "/files",
   },
