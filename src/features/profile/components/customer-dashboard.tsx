@@ -14,10 +14,14 @@ import {
   ChevronRight,
   Star,
   Video,
+  Wallet as WalletIcon,
+  Sparkles,
 } from "lucide-react";
 import { toast } from "sonner";
 
 import { FeedbackModal } from "@/features/booking/components/feedback-modal";
+import { WalletCard } from "@/features/wallet/components/wallet-card";
+import { CustomerTreatmentView } from "@/features/treatments/components/customer-treatment-view";
 import { Button } from "@/shared/components/ui/button";
 import { Input } from "@/shared/components/ui/input";
 import { Label } from "@/shared/components/ui/label";
@@ -245,6 +249,30 @@ export function CustomerDashboard() {
           >
             <Award className="h-4.5 w-4.5" />
             Hồ Sơ Da Baumann
+          </button>
+          <button
+            type="button"
+            onClick={() => setActiveTab("wallet")}
+            className={`flex w-full items-center gap-3 rounded-xl px-4 py-3 text-xs font-bold transition-all ${
+              activeTab === "wallet"
+                ? "bg-[#2C3E35] text-white"
+                : "text-slate-600 hover:bg-slate-50 hover:text-slate-900"
+            }`}
+          >
+            <WalletIcon className="h-4.5 w-4.5" />
+            Ví GlowScan & Nạp Tiền
+          </button>
+          <button
+            type="button"
+            onClick={() => setActiveTab("treatment")}
+            className={`flex w-full items-center gap-3 rounded-xl px-4 py-3 text-xs font-bold transition-all ${
+              activeTab === "treatment"
+                ? "bg-[#2C3E35] text-white"
+                : "text-slate-600 hover:bg-slate-50 hover:text-slate-900"
+            }`}
+          >
+            <Sparkles className="h-4.5 w-4.5 text-amber-400" />
+            Phác Đồ Da & Routine
           </button>
           <button
             type="button"
@@ -478,6 +506,12 @@ export function CustomerDashboard() {
               </CardContent>
             </Card>
           )}
+
+          {/* Tab: Wallet & Top-up */}
+          {activeTab === "wallet" && <WalletCard />}
+
+          {/* Tab: Treatment Plan & Routine */}
+          {activeTab === "treatment" && <CustomerTreatmentView />}
 
           {/* Tab 4: Doctor Appointments */}
           {activeTab === "bookings" && (

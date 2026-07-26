@@ -56,6 +56,29 @@ export const siteConfig = {
     navSecondary: [],
     documents: [],
   },
+
+  // Config for expert portal
+  expertPortal: {
+    navMain: [
+      {
+        title: "Ca Tư Vấn Bệnh Nhân",
+        url: "/expert",
+        icon: "Stethoscope",
+      },
+      {
+        title: "Phác Đồ Điều Trị",
+        url: "/expert/treatments",
+        icon: "FileText",
+      },
+      {
+        title: "Lịch Khám & Slots",
+        url: "/expert/schedule",
+        icon: "Calendar",
+      },
+    ],
+    navSecondary: [],
+    documents: [],
+  },
 };
 
 export type SiteConfig = typeof siteConfig;

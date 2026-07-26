@@ -14,9 +14,11 @@ import {
   Stethoscope,
   MessageSquare,
   Star,
+  Sparkles,
 } from "lucide-react";
 import { toast } from "sonner";
 
+import { TreatmentWizard } from "@/features/treatments/components/treatment-wizard";
 import { Button } from "@/shared/components/ui/button";
 import { Input } from "@/shared/components/ui/input";
 import { Badge } from "@/shared/components/ui/badge";
@@ -53,6 +55,11 @@ export function ExpertDashboardView() {
     null,
   );
   const [cancelReason, setCancelReason] = useState("");
+  const [wizardOpen, setWizardOpen] = useState(false);
+  const [selectedCustomer, setSelectedCustomer] = useState<{
+    id: string;
+    name: string;
+  } | null>(null);
 
   // Queries & Mutations
   const {
@@ -438,7 +445,26 @@ export function ExpertDashboardView() {
                       </>
                     )}
 
-                    {/* Action: In Progress -> Complete */}
+                    {/* Action: In Progress -> Complete or Create Treatment Plan */}
+                    {(statusNorm === "IN_PROGRESS" ||
+                      statusNorm === "COMPLETED") && (
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        onClick={() => {
+                          setSelectedCustomer({
+                            id: booking.customerId || "user_customer_demo",
+                            name: booking.customerName || "Bệnh nhân",
+                          });
+                          setWizardOpen(true);
+                        }}
+                        className="rounded-xl border-amber-300 bg-amber-50 text-xs font-bold text-amber-900 hover:bg-amber-100"
+                      >
+                        <Sparkles className="mr-1.5 h-3.5 w-3.5 text-amber-600" />
+                        Lập Phác Đồ Điều Trị
+                      </Button>
+                    )}
+
                     {statusNorm === "IN_PROGRESS" && (
                       <Button
                         size="sm"
@@ -517,6 +543,23 @@ export function ExpertDashboardView() {
               )}
             </Button>
           </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Treatment Wizard Dialog */}
+      <Dialog
+        open={wizardOpen}
+        onOpenChange={(open) => !open && setWizardOpen(false)}
+      >
+        <DialogContent className="max-w-4xl border-none bg-transparent p-0">
+          {selectedCustomer && (
+            <TreatmentWizard
+              customerId={selectedCustomer.id}
+              customerName={selectedCustomer.name}
+              onSuccess={() => setWizardOpen(false)}
+              onCancel={() => setWizardOpen(false)}
+            />
+          )}
         </DialogContent>
       </Dialog>
     </div>
