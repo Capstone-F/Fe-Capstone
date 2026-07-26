@@ -1,68 +1,100 @@
-# 📄 BÁO CÁO HỦY MOCK & HƯỚNG DẪN TÍCH HỢP TƯƠNG LAI (HANDOFF & BE INTEGRATION GUIDE)
+# 📄 TÀI LIỆU YÊU CẦU & HƯỚNG DẪN TÍCH HỢP CHO DEV BACKEND (BE INTEGRATION SPEC)
 
-Tài liệu này tổng hợp toàn bộ ngữ cảnh công việc đã triển khai trên Frontend (nhánh `feat/expert-acp-booking`), danh sách các Endpoint & Field yêu cầu Backend (BE) cung cấp, hướng dẫn chuyển đổi từ **Mock API ➔ Real Backend**, và thông tin tài khoản test ngầm định.
-
----
-
-## 1. 📌 Tóm Tắt Các Tính Năng Đã Hoàn Thành Trên Frontend
-
-1. **Sidebar Layout Chuẩn Cho Bác Sĩ (`(expert)` App Route):**
-   - Đã chuyển giao diện Bác sĩ sang dạng Sidebar Layout chuyên nghiệp (Shadcn UI `SidebarProvider`), tích hợp menu Ca tư vấn, Phác đồ điều trị, Lịch khám và nút **Đăng Xuất (Logout)** ở chân Sidebar.
-2. **Thanh Toán Đặt Lịch Bằng Ví Nội Bộ (`Wallet & Top-up Modal`):**
-   - Quản lý số dư Ví (`balanceVnd`) & Lịch sử giao dịch.
-   - Đặt lịch khám bắt buộc trừ tiền Ví. Bổ sung Modal Nạp Tiền Ví (`WalletTopUpModal`) khi số dư không đủ.
-3. **Stepper Wizard 4 Bước Lập Phác Đồ & Tự Động Lưu Nháp (Draft Protection):**
-   - Bác sĩ lập Phác đồ 4 bước (Tổng quan ➔ Chọn Active Ingredients ➔ Lọc Sản phẩm tương thích ➔ Rule-Engine sinh Routine Sáng/Tối & Tinh chỉnh).
-   - Tự động lưu bản nháp vào `LocalStorage` (`glowscan_draft_treatment_[customerId]`). Khôi phục 100% dữ liệu nếu mất mạng/F5.
-4. **Phác Đồ Da & Nút Tái Khám Miễn Phí 0đ (Customer View):**
-   - Giao diện Khách hàng xem Phác đồ active kèm **Ribbon Badge `PHÁC ĐỒ ACTIVE`**.
-   - Nút **`🔁 Đặt Lịch Tái Khám (Miễn Phí 0đ)`** giúp Khách hàng đã mua Phác đồ tái khám không mất phí tư vấn.
-5. **Lớp Đệm Adapter Shield (`treatment.mapper.ts`):**
-   - Lớp Mapper biến đổi dữ liệu an toàn, chống crash/vỡ UI dù BE có trả thừa hay thiếu field.
+Tài liệu này dành riêng cho **Team Dev Backend (BE)** nhằm cung cấp bức tranh toàn cảnh về **Luồng Đặt Lịch ➔ Thanh Toán Ví ➔ Tư Vấn ➔ Lập Phác Đồ ➔ Tái Khám Miễn Phí**, cùng chi tiết quy tắc nghiệp vụ (Business Rules), danh sách API Endpoints, Cấu trúc Database Entity và Bảng Chuyển Đổi Trạng Thái (Status Machine).
 
 ---
 
-## 2. 🔄 HƯỚNG DẪN TẮT MOCK & NỐI DATABASE THẬT (REAL BE)
+## 1. 📌 Tổng Quan Kiến Trúc & Luồng Nghiệp Vụ (Business Flow & Gates)
 
-Để chuyển hệ thống từ chạy Mock sang kết nối thẳng tới Backend Database thật, bạn chỉ cần thay đổi **1 dòng cấu hình biến môi trường**:
-
-### Tệp cấu hình: `.env.local` (trong thư mục `capstone-fe`)
-
-```env
-# 🔴 Cấu hình chạy Mock (Hiện tại):
-NEXT_PUBLIC_USE_MOCK_API=true
-
-# 🟢 Cấu hình Nối Database Thật (Khi BE đã push code):
-NEXT_PUBLIC_USE_MOCK_API=false
+```
+[Khách Hàng Đặt Lịch] ──▶ [BE: Booking PENDING]
+                                 │
+                                 ▼
+                     [Khách Hàng Gọi API Trừ Ví]
+                                 │
+               ┌─────────────────┴─────────────────┐
+               ▼                                   ▼
+   [Ví Đủ Tiền (>= Fee)]                [Ví Không Đủ Tiền]
+               │                                   │
+               ▼                                   ▼
+[Cộng Ledger: CONSULTATION_PAYMENT]      [BE Ném Lỗi HTTP 400]
+[Booking Status: PAID / PENDING]         ["Số dư ví không đủ"]
+               │
+               ▼
+ [Bác Sĩ Duyệt: CONFIRMED]
+               │
+               ▼
+[Bác Sĩ Bắt Đầu: IN_PROGRESS] ──▶ [Bác Sĩ Tạo Phác Đồ: POST /treatments]
+               │                                   │
+               ▼                                   ▼
+[Bác Sĩ Complete: COMPLETED] ◄──── [Khách Hàng Mua Phác Đồ: ACTIVE]
+                                                   │
+                                                   ▼
+                                [Khách Hàng Đặt Lịch Tái Khám]
+                                [BE Check: Phác Đồ Active với Bác Sĩ]
+                                [BE Set Fee = 0đ (Miễn Phí)]
 ```
 
-👉 **Sau khi sửa `NEXT_PUBLIC_USE_MOCK_API=false`**, hãy lưu tệp và F5 (Refresh) lại trình duyệt. Tất cả các API call (`/wallets/me`, `/bookings/:id/pay`, `/treatments`) sẽ lập tức gọi trực tiếp tới Backend local (`http://localhost:3000` hoặc `/api/be/...`).
+---
+
+## 2. ⚡ 4 Quy Tắc Nghiệp Vụ Bắt Buộc Backend Phải Thực Thi (Business Rules)
+
+### 🔴 Quy Tắc 1: Ràng Buộc Thanh Toán Qua Ví (`Wallet Gate`)
+
+- **Booking ca hẹn:** Bắt buộc 100% dùng Ví `Wallet` (`POST /bookings/:id/pay`). Không dùng VNPay hay Chuyển khoản.
+- **Thanh toán thành công:** BE trừ `Wallet.balanceVnd`, ghi 1 dòng `Transaction` với `type = CONSULTATION_PAYMENT`, `consultationId = booking.id`, `status = COMPLETED`.
+- **Ràng buộc Confirm:** Bác sĩ chỉ được phép bấm `CONFIRMED` khi ca hẹn đã thanh toán (`PAID`). Nếu ca hẹn chưa thanh toán mà Bác sĩ bấm Confirm ➔ BE trả lỗi `HTTP 400: "Yêu cầu khách hàng thanh toán ca hẹn trước khi duyệt"`.
+
+### 🟢 Quy Tắc 2: Tái Khám Miễn Phí (`Free Re-booking Gate`)
+
+- Khi Khách hàng tạo Booking mới với Expert X:
+  - BE kiểm tra xem Khách hàng đó **đang có Phác đồ điều trị `ACTIVE` với Expert X** hay không.
+  - **Nếu CÓ Phác đồ Active:** BE tự động đặt `booking.amount = 0` (Miễn phí tư vấn tái khám) và chuyển ca hẹn thành trạng thái sẵn sàng mà không trừ tiền Ví.
+  - **Nếu KHÔNG có Phác đồ Active:** BE lấy `expert.consultationFee` làm phí đặt lịch tiêu chuẩn.
+
+### 🟡 Quy Tắc 3: Hoàn Tiền Ví Khi Hủy Ca (`Wallet Refund Rule`)
+
+- Khi Ca hẹn ở trạng thái `PENDING` hoặc `CONFIRMED` bị Hủy (`PATCH /bookings/:id/cancel` từ Khách hàng hoặc Bác sĩ):
+  - **Nếu Ca hẹn đã được thanh toán:** BE tự động **hoàn lại tiền vào Ví** (`Wallet.balanceVnd += amount`) và ghi dòng `Transaction` với `type = REFUND`, `consultationId = booking.id`.
+
+### 🟣 Quy Tắc 4: Rule-Engine Sinh Routine & Chỉnh Sửa Phác Đồ
+
+- Khi Bác sĩ gọi `POST /treatments`, BE dùng **Rule-Engine** lọc danh sách Sản phẩm dựa theo `targetIngredients` do Bác sĩ chỉ định, sau đó tự động phân bổ thành các bước Skincare Sáng/Tối (`amSteps`, `pmSteps`).
+- Bác sĩ có quyền tùy chỉnh tần suất (`frequencyPreset`) và liều lượng (`instructionPreset`) cho từng bước.
 
 ---
 
-## 3. 📋 DANH SÁCH API & FIELDS BE CẦN CUNG CẤP (BE GAP AUDIT REPORT)
+## 3. 📋 DANH SÁCH API ENDPOINTS BE CẦN MỞ (API SPECIFICATION)
 
-Dưới đây là danh sách chi tiết các Endpoint và Cấu trúc Field mà Frontend kỳ vọng Backend sẽ trả về:
+### 3.1 Nhóm API Ví Thanh Toán (`Wallet Controller`)
 
-### 3.1 Nhóm API Ví Thanh Toán (`Wallet`)
+| Method | Endpoint                   | Auth     | Yêu Cầu Xử Lý BE                                                 | Response Body                                                           |
+| ------ | -------------------------- | -------- | ---------------------------------------------------------------- | ----------------------------------------------------------------------- |
+| `GET`  | `/wallets/me`              | Customer | Lấy số dư ví khách hàng hiện tại                                 | `{ id: string, userId: string, balanceVnd: number, isActive: boolean }` |
+| `POST` | `/bookings/:id/pay`        | Customer | Trừ tiền ví cho ca hẹn (Giao dịch Nguyên tử / Transaction Block) | `{ id: string, balanceVnd: number, status: 'PAID' }`                    |
+| `POST` | `/wallets/top-up`          | Customer | Nạp tiền vào ví (Demo / VNPay)                                   | `{ id: string, balanceVnd: number }`                                    |
+| `GET`  | `/wallets/me/transactions` | Customer | Lấy danh sách lịch sử giao dịch ví                               | Array of `Transaction`                                                  |
 
-| Method | Endpoint Yêu Cầu           | Mục Đích                       | Field Cần Trả Về Trong Response                                                                   |
-| ------ | -------------------------- | ------------------------------ | ------------------------------------------------------------------------------------------------- |
-| `GET`  | `/wallets/me`              | Lấy số dư ví khách hàng        | `{ id: string, userId: string, balanceVnd: number, isActive: boolean }`                           |
-| `POST` | `/bookings/:id/pay`        | Trừ tiền ví thanh toán booking | `{ id: string, balanceVnd: number }` (Ném lỗi HTTP 400 nếu số dư không đủ)                        |
-| `POST` | `/wallets/top-up`          | Nạp tiền vào ví                | Body: `{ amountVnd: number }` ➔ Trả về: Wallet mới đã cập nhật số dư                              |
-| `GET`  | `/wallets/me/transactions` | Lấy lịch sử giao dịch ví       | Array of `{ id, amountVnd, type: 'CONSULTATION_PAYMENT'\|'TOP_UP'\|'REFUND', status, createdAt }` |
+### 3.2 Nhóm API Phác Đồ Điều Trị (`Treatments Controller`)
 
-### 3.2 Nhóm API Phác Đồ Điều Trị (`Treatments`)
+| Method  | Endpoint                                 | Auth              | Yêu Cầu Xử Lý BE                                            | Response Body                      |
+| ------- | ---------------------------------------- | ----------------- | ----------------------------------------------------------- | ---------------------------------- |
+| `GET`   | `/treatments`                            | Customer / Expert | Lấy danh sách phác đồ da (Filter: `customerId`, `expertId`) | Array of `TreatmentPlan`           |
+| `GET`   | `/treatments/:id`                        | Auth              | Chi tiết 1 phác đồ                                          | Object `TreatmentPlan`             |
+| `POST`  | `/treatments`                            | Expert            | Bác sĩ lập phác đồ mới cho bệnh nhân                        | Object `TreatmentPlan` mới         |
+| `PATCH` | `/treatments/:id/phases/:phaseId/active` | Expert            | Chuyển đổi / Kích hoạt Phase điều trị                       | Object `TreatmentPlan` đã cập nhật |
 
-| Method  | Endpoint Yêu Cầu                         | Mục Đích                       | Field Cần Trả Về Trong Response                                                         |
-| ------- | ---------------------------------------- | ------------------------------ | --------------------------------------------------------------------------------------- |
-| `GET`   | `/treatments?customerId=...`             | Danh sách phác đồ da của khách | Array of `TreatmentPlan` (Xem cấu trúc bên dưới)                                        |
-| `GET`   | `/treatments/:id`                        | Chi tiết 1 phác đồ             | Object `TreatmentPlan`                                                                  |
-| `POST`  | `/treatments`                            | Bác sĩ tạo phác đồ mới         | Body: `{ customerId, title, totalFeeVnd, phases: [...] }` ➔ Trả về: `TreatmentPlan` mới |
-| `PATCH` | `/treatments/:id/phases/:phaseId/active` | Kích hoạt Phase mới            | Trả về: `TreatmentPlan` đã cập nhật status Phase                                        |
+---
 
-### 3.3 Cấu Trúc JSON Mẫu Backend Cần Trả Về (`TreatmentPlan` Interface)
+## 4. 🗄️ QUAN HỆ DATABASE & CẤU TRÚC JSON MẪU (DATABASE ENTITIES & DTO)
+
+### 4.1 Quan Hệ Các Bảng Database (ERD / Relations)
+
+- `User` ── 1:1 ── `Wallet` ── 1:N ── `Transaction` (`consultationId`)
+- `Customer` ── 1:N ── `ConsultationRequest` (Booking)
+- `Customer` ── 1:N ── `TreatmentPlan` ── 1:N ── `TreatmentPhase` ── 1:N ── `RoutineStep`
+
+### 4.2 Cấu Trúc JSON `TreatmentPlan` Mẫu FE Mong Muốn Trả Về
 
 ```json
 {
@@ -126,35 +158,28 @@ Dưới đây là danh sách chi tiết các Endpoint và Cấu trúc Field mà 
 
 ---
 
-## 4. 🔑 THÔNG TIN TÀI KHOẢN TEST & SETUP SWAGGER LOCAL
+## 5. 🔄 BẢNG CHUYỂN ĐỔI TRẠNG THÁI (STATUS MACHINE)
 
-### 4.1 Tài Khoản Kiểm Thử Ngầm Định (Test Credentials)
+### 5.1 Vòng Đời Ca Hẹn Khám (`ConsultationRequest`)
 
-| Vai Trò (Role)     | Username / ID                              | Mật Khẩu (Default) | Mục Đích Test                                                                            |
-| ------------------ | ------------------------------------------ | ------------------ | ---------------------------------------------------------------------------------------- |
-| **Bác Sĩ Da Liễu** | `seed-expert-d1-derma` (Dr. Nguyen Van An) | `Password123!`     | Đăng nhập Portal `/expert`, duyệt ca hẹn, bấm **"Lập Phác Đồ Điều Trị"**                 |
-| **Khách Hàng**     | `user_customer_demo` (Customer normal111)  | `Password123!`     | Đặt lịch khám `/booking`, thanh toán Ví `/booking/[id]/checkout`, xem Phác đồ `/profile` |
+`PENDING` ➔ `PAID` ➔ `CONFIRMED` ➔ `IN_PROGRESS` ➔ `COMPLETED` (Hoặc ➔ `CANCELLED` + Refund Ví).
 
-### 4.2 Địa Chỉ Swagger & Kiểm Thử API Local (BE Swagger URLs)
+### 5.2 Vòng Đời Phác Đồ Điều Trị (`TreatmentPlan`)
 
-- **Swagger Docs:** `http://localhost:3000/api/docs` hoặc `http://localhost:3000/docs` (Khi chạy Backend local NestJS).
-- **Kiểm thử cURL kiểm tra Ví local:**
-
-  ```bash
-  # 1. Lấy số dư ví hiện tại:
-  curl -X GET http://localhost:3000/wallets/me -H "Cookie: sid=<your_session_id>"
-
-  # 2. Thanh toán ca hẹn bằng ví:
-  curl -X POST http://localhost:3000/bookings/booking_123/pay \
-    -H "Content-Type: application/json" \
-    -d '{"amountVnd": 200000}'
-  ```
+`DRAFT` ➔ `PENDING_PAYMENT` ➔ `ACTIVE` ➔ `COMPLETED` / `CANCELLED`.
 
 ---
 
-## 🚀 QUY TRÌNH HÀNH ĐỘNG KHI BE BẮT ĐẦU PUSH CODE:
+## 🔑 6. THÔNG TIN TEST & TẮT MOCK TRÊN FRONTEND
 
-1. **Bước 1:** Pull code mới từ nhánh BE về.
-2. **Bước 2:** Vào `.env.local` của Frontend, đổi `NEXT_PUBLIC_USE_MOCK_API=false`.
-3. **Bước 3:** Đăng nhập tài khoản Bác sĩ `Dr. Nguyen Van An` hoặc Khách hàng `normal111`.
-4. **Bước 4:** Thử luồng Đặt lịch ➔ Trừ Ví ➔ Lập Phác đồ. Nếu BE trả khác tên field, chỉ cần sửa nhẹ trong file mapper `treatment.mapper.ts` mà **không cần đụng tới bất kỳ UI component nào**!
+### 6.1 Tài Khoản Kiểm Thử Ngầm Định
+
+- **Bác Sĩ Da Liễu:** ID `seed-expert-d1-derma` (Dr. Nguyen Van An) / Mật khẩu: `Password123!`
+- **Khách Hàng:** ID `user_customer_demo` (Customer normal111) / Mật khẩu: `Password123!`
+
+### 6.2 Bật/Tắt Mock Trên Frontend
+
+Trong tệp `.env.local` của `capstone-fe`:
+
+- `NEXT_PUBLIC_USE_MOCK_API=true`: Chạy Mock API local.
+- `NEXT_PUBLIC_USE_MOCK_API=false`: Tắt Mock, gọi trực tiếp API Backend NestJS (`http://localhost:3000`).
