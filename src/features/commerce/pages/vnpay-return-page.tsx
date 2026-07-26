@@ -8,7 +8,7 @@ import { CheckCircle2, Clock, Loader2, XCircle } from "lucide-react";
 import { queryKeys } from "@/lib/query/keys";
 import { paymentsApi } from "@/features/commerce/api/payments.api";
 import { ordersApi } from "@/features/commerce/api/orders.api";
-import { routinesApi } from "@/features/profile/api/routines.api";
+import { useGenerateRoutine } from "@/features/profile/hooks/useRoutines";
 import { formatVnd } from "@/shared/utils/format";
 import { CheckoutStepper } from "@/features/commerce/components/checkout-stepper";
 import { Button } from "@/shared/components/ui/button";
@@ -194,15 +194,19 @@ function VnpayReturnContent() {
     viewState = "failed";
   }
 
+  // A paid SURVEY order is the only trigger for POST /routines/generate. Fire it once,
+  // then surface the outcome — a silent failure would leave /care permanently empty.
+  const generateRoutine = useGenerateRoutine();
+  const generateMutate = generateRoutine.mutate;
   const generatedRef = useRef(false);
+  const isSurveyOrder = succeeded && order?.source === "SURVEY";
+
   useEffect(() => {
-    if (succeeded && order?.source === "SURVEY" && !generatedRef.current) {
+    if (isSurveyOrder && order?.id && !generatedRef.current) {
       generatedRef.current = true;
-      routinesApi.generateRoutine(order.id).catch((err: unknown) => {
-        console.error("Failed to generate routine:", err);
-      });
+      generateMutate(order.id);
     }
-  }, [succeeded, order?.source, order?.id]);
+  }, [isSurveyOrder, order?.id, generateMutate]);
 
   const content = STATE_CONTENT[viewState];
 
@@ -226,9 +230,55 @@ function VnpayReturnContent() {
               </span>
             </div>
           )}
+          {isSurveyOrder && (
+            <div className="mt-2 w-full max-w-md">
+              {generateRoutine.isPending && (
+                <p className="text-muted-foreground flex items-center justify-center gap-2 text-xs">
+                  <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                  Đang tạo lộ trình chăm sóc từ đơn hàng...
+                </p>
+              )}
+              {generateRoutine.isError && (
+                <div className="flex flex-col items-center gap-2 rounded-xl border border-amber-200 bg-amber-50 p-3 text-xs text-amber-800">
+                  <span>
+                    Chưa tạo được lộ trình chăm sóc cho đơn này. Đơn hàng của
+                    bạn vẫn được thanh toán thành công.
+                  </span>
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    className="rounded-lg text-xs font-semibold"
+                    onClick={() => order && generateMutate(order.id)}
+                  >
+                    Thử tạo lại lộ trình
+                  </Button>
+                </div>
+              )}
+              {generateRoutine.isSuccess && (
+                <p className="text-xs font-semibold text-emerald-700">
+                  Đã tạo lộ trình chăm sóc hằng ngày cho bạn.
+                </p>
+              )}
+            </div>
+          )}
           <div className="mt-2 flex gap-2">
+            {isSurveyOrder && generateRoutine.isSuccess && (
+              <Link href="/care">
+                <Button size="sm" className="rounded-lg text-xs font-semibold">
+                  {"Xem lộ trình chăm sóc"}
+                </Button>
+              </Link>
+            )}
             <Link href="/products">
-              <Button size="sm" className="rounded-lg text-xs font-semibold">
+              <Button
+                size="sm"
+                variant={
+                  isSurveyOrder && generateRoutine.isSuccess
+                    ? "outline"
+                    : "default"
+                }
+                className="rounded-lg text-xs font-semibold"
+              >
                 {"Tiếp tục mua sắm"}
               </Button>
             </Link>

@@ -1,9 +1,15 @@
 // Transport + domain types for the routine tracking loop.
 // Mirrors Be-Capstone/src/routines/dto/routine-tracking-response.dto.ts.
 
-export type RoutinePeriod = "MORNING" | "EVENING";
-export type RoutineTypeValue = "AI_RECOMMENDED" | "EXPERT_PRESCRIBED";
-export type RoutineStatusValue = "DRAFT" | "ACTIVE" | "PAUSED" | "COMPLETED";
+import type {
+  RoutinePeriod,
+  RoutineStatus,
+  RoutineType,
+} from "@/core/api/types";
+
+// Shared with the profile feature — single declaration lives in core.
+export type { RoutinePeriod, RoutineStatus, RoutineType };
+
 export type StepSessionStatus = "PENDING" | "COMPLETED" | "SKIPPED";
 export type SkipReason = "OUT_OF_STOCK" | "FORGOT" | "OTHER";
 export type CheckInMood = "GOOD" | "OK" | "BAD";
@@ -61,8 +67,8 @@ export interface TodayStep {
 
 export interface TodayRoutine {
   id: string;
-  type: RoutineTypeValue;
-  status: RoutineStatusValue;
+  type: RoutineType;
+  status: RoutineStatus;
   title: string;
   description: string | null;
   sessionState: SessionState;
