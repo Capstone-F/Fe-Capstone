@@ -126,9 +126,12 @@ function CheckoutPageContent() {
     );
   }
 
-  const consultationFee = booking.amount || 200000;
+  const consultationFee = booking.isFollowUp
+    ? 0
+    : booking.feeChargedVnd || booking.amount || 200000;
   const walletBalance = wallet?.balanceVnd || 0;
-  const isBalanceEnough = walletBalance >= consultationFee;
+  const isBalanceEnough =
+    booking.isFollowUp || booking.isPaid || walletBalance >= consultationFee;
 
   return (
     <div className="mx-auto flex w-full max-w-md flex-col gap-4">

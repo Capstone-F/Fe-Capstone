@@ -15,7 +15,7 @@ flowchart TD
         C -- Đủ số dư --> D[Thanh toán trừ ví CONSULTATION_PAYMENT]
         C -- Thiếu số dư --> E[Hiện Modal Nạp Ví TopUpModal]
         E --> D
-        D --> F[Ca Hẹn Sẵn Sàng Duyệt - Status: PAID]
+        D --> F[Ca Hẹn Sẵn Sàng Duyệt - Status: PENDING (isPaid = true)]
     end
 
     %% Subgraph Bác Sĩ - Duyệt & Tư Vấn

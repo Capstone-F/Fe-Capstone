@@ -60,18 +60,35 @@ export function AppointmentsPage() {
     });
   };
 
-  const getStatusBadge = (status: string) => {
-    switch (status) {
-      case "paid":
-        return (
-          <span className="rounded-md bg-green-100 px-2 py-0.5 text-[10px] font-bold text-green-700">
-            {t.status.paid}
-          </span>
-        );
+  const getStatusBadge = (bk: {
+    status: string;
+    isPaid?: boolean;
+    isFollowUp?: boolean;
+  }) => {
+    if (bk.isFollowUp) {
+      return (
+        <span className="rounded-md bg-emerald-100 px-2 py-0.5 text-[10px] font-bold text-emerald-800">
+          🟢 Tái khám 0đ
+        </span>
+      );
+    }
+    switch (bk.status) {
       case "confirmed":
         return (
           <span className="rounded-md bg-blue-100 px-2 py-0.5 text-[10px] font-bold text-blue-700">
             {t.status.confirmed}
+          </span>
+        );
+      case "in_progress":
+        return (
+          <span className="animate-pulse rounded-md bg-indigo-100 px-2 py-0.5 text-[10px] font-bold text-indigo-700">
+            🟣 Đang tư vấn
+          </span>
+        );
+      case "completed":
+        return (
+          <span className="rounded-md bg-teal-100 px-2 py-0.5 text-[10px] font-bold text-teal-800">
+            ✅ Đã hoàn thành
           </span>
         );
       case "cancelled":
@@ -82,7 +99,11 @@ export function AppointmentsPage() {
         );
       case "pending":
       default:
-        return (
+        return bk.isPaid ? (
+          <span className="rounded-md bg-blue-100 px-2 py-0.5 text-[10px] font-bold text-blue-700">
+            🔵 Đã trả ví - Chờ duyệt
+          </span>
+        ) : (
           <span className="animate-pulse rounded-md bg-yellow-100 px-2 py-0.5 text-[10px] font-bold text-yellow-700">
             {t.status.pending}
           </span>
@@ -126,7 +147,7 @@ export function AppointmentsPage() {
                     {t.bookedAtLabel}{" "}
                     {new Date(bk.createdAt).toLocaleDateString("vi-VN")}
                   </span>
-                  {getStatusBadge(bk.status)}
+                  {getStatusBadge(bk)}
                 </div>
               </div>
 
@@ -167,30 +188,40 @@ export function AppointmentsPage() {
                       {t.serviceFee}
                     </span>
                     <span className="block text-xs font-bold text-slate-700">
-                      {bk.amount.toLocaleString("vi-VN")} đ
+                      {bk.isFollowUp
+                        ? "0 đ (Tái khám)"
+                        : `${bk.amount.toLocaleString("vi-VN")} đ`}
                     </span>
                   </div>
                 </div>
 
                 <div className="flex items-center justify-end md:col-span-2">
-                  {bk.status === "pending" ? (
+                  {bk.status === "pending" && !bk.isPaid && !bk.isFollowUp ? (
                     <Link
                       href={`/booking/${bk.expertId}/checkout?bookingId=${bk.id}`}
                     >
                       <Button
                         size="sm"
-                        className="rounded-lg bg-yellow-600 text-xs font-semibold hover:bg-yellow-700"
+                        className="rounded-lg bg-amber-600 text-xs font-semibold text-white hover:bg-amber-700"
                       >
                         {t.payNow}
                       </Button>
                     </Link>
-                  ) : bk.status === "paid" ? (
+                  ) : bk.status === "pending" ? (
                     <Button
                       size="sm"
                       variant="outline"
-                      className="cursor-default rounded-lg border-green-200 text-xs font-semibold text-green-700 hover:bg-green-50/50"
+                      className="cursor-default rounded-lg border-blue-200 text-xs font-semibold text-blue-700 hover:bg-blue-50/50"
                     >
-                      {t.waiting}
+                      Chờ BS Duyệt
+                    </Button>
+                  ) : bk.status === "confirmed" ? (
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      className="cursor-default rounded-lg border-emerald-200 text-xs font-semibold text-emerald-700 hover:bg-emerald-50/50"
+                    >
+                      Đã Duyệt
                     </Button>
                   ) : (
                     <Button
@@ -199,7 +230,7 @@ export function AppointmentsPage() {
                       disabled
                       className="rounded-lg text-xs font-semibold"
                     >
-                      {t.completed}
+                      {bk.status === "completed" ? t.completed : "Đã Hủy"}
                     </Button>
                   )}
                 </div>

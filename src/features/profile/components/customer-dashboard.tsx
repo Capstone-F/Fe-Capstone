@@ -13,7 +13,6 @@ import {
   Calendar,
   ChevronRight,
   Star,
-  Video,
   Wallet as WalletIcon,
   Sparkles,
 } from "lucide-react";
@@ -205,10 +204,33 @@ export function CustomerDashboard() {
   }
 
   if (!profile) {
-    if (typeof window !== "undefined") {
-      router.replace("/login?redirectTo=/profile");
-    }
-    return null;
+    return (
+      <div className="mx-auto flex max-w-md flex-col items-center justify-center p-12 text-center">
+        <div className="mb-4 flex h-14 w-14 items-center justify-center rounded-2xl border border-amber-200 bg-amber-50 text-amber-600">
+          <User className="h-7 w-7" />
+        </div>
+        <h3 className="text-lg font-bold text-slate-900">Chưa Đăng Nhập</h3>
+        <p className="mt-1 text-xs text-slate-500">
+          Vui lòng đăng nhập để xem thông tin cá nhân, số dư ví và phác đồ điều
+          trị của bạn.
+        </p>
+        <div className="mt-6 flex flex-wrap items-center justify-center gap-3">
+          <Button
+            onClick={() => router.push("/login?redirectTo=/profile")}
+            className="rounded-xl bg-[#6b5cf6] text-xs font-bold text-white hover:bg-[#5a4ae5]"
+          >
+            Đăng Nhập Ngay
+          </Button>
+          <Button
+            variant="outline"
+            onClick={() => router.push("/")}
+            className="rounded-xl text-xs font-semibold"
+          >
+            Về Trang Chủ
+          </Button>
+        </div>
+      </div>
+    );
   }
 
   return (
@@ -558,32 +580,39 @@ export function CustomerDashboard() {
                               <h4 className="text-xs font-bold text-slate-900">
                                 Bác sĩ: {booking.expertName}
                               </h4>
-                              <span
-                                className={`rounded-full px-2.5 py-0.5 text-[10px] font-extrabold uppercase ${
-                                  statusNorm === "CONFIRMED" ||
-                                  statusNorm === "PAID"
-                                    ? "border border-emerald-200 bg-emerald-50 text-emerald-700"
-                                    : statusNorm === "IN_PROGRESS"
-                                      ? "animate-pulse border border-indigo-200 bg-indigo-50 text-indigo-700"
-                                      : statusNorm === "COMPLETED"
-                                        ? "border border-teal-200 bg-teal-50 text-teal-800"
-                                        : statusNorm === "PENDING"
-                                          ? "border border-amber-200 bg-amber-50 text-amber-800"
-                                          : "border border-red-100 bg-red-50 text-red-600"
-                                }`}
-                              >
-                                {statusNorm === "CONFIRMED"
-                                  ? "Đã xác nhận"
-                                  : statusNorm === "PAID"
-                                    ? "Đã thanh toán"
+                              {booking.isFollowUp ? (
+                                <span className="rounded-full border border-emerald-300 bg-emerald-100 px-2.5 py-0.5 text-[10px] font-extrabold text-emerald-900 uppercase">
+                                  🟢 TÁI KHÁM MIỄN PHÍ 0Đ
+                                </span>
+                              ) : (
+                                <span
+                                  className={`rounded-full px-2.5 py-0.5 text-[10px] font-extrabold uppercase ${
+                                    statusNorm === "CONFIRMED"
+                                      ? "border border-emerald-200 bg-emerald-50 text-emerald-700"
+                                      : statusNorm === "IN_PROGRESS"
+                                        ? "animate-pulse border border-indigo-200 bg-indigo-50 text-indigo-700"
+                                        : statusNorm === "COMPLETED"
+                                          ? "border border-teal-200 bg-teal-50 text-teal-800"
+                                          : statusNorm === "PENDING"
+                                            ? booking.isPaid
+                                              ? "border border-blue-200 bg-blue-50 text-blue-700"
+                                              : "border border-amber-200 bg-amber-50 text-amber-800"
+                                            : "border border-red-100 bg-red-50 text-red-600"
+                                  }`}
+                                >
+                                  {statusNorm === "CONFIRMED"
+                                    ? "Đã xác nhận"
                                     : statusNorm === "IN_PROGRESS"
                                       ? "🟣 Đang tư vấn"
                                       : statusNorm === "COMPLETED"
                                         ? "✅ Đã hoàn thành"
                                         : statusNorm === "PENDING"
-                                          ? "Chờ xác nhận"
+                                          ? booking.isPaid
+                                            ? "🔵 Đã trả ví - Chờ duyệt"
+                                            : "🟡 Chờ thanh toán ví"
                                           : "Đã hủy"}
-                              </span>
+                                </span>
+                              )}
                             </div>
                             <div className="flex items-center gap-1.5 text-[11px] text-slate-500">
                               <Calendar className="h-3.5 w-3.5" />
@@ -630,26 +659,17 @@ export function CustomerDashboard() {
                                 Chi phí tư vấn
                               </span>
                               <strong className="text-xs font-extrabold text-[#2C3E35]">
-                                {formatVnd(booking.amount || 200000)}
+                                {booking.isFollowUp
+                                  ? "0đ (Tái khám)"
+                                  : formatVnd(
+                                      booking.feeChargedVnd ||
+                                        booking.amount ||
+                                        200000,
+                                    )}
                               </strong>
                             </div>
 
                             {/* Action Buttons */}
-                            {statusNorm === "IN_PROGRESS" && (
-                              <Button
-                                size="sm"
-                                onClick={() =>
-                                  toast.info(
-                                    `Đang kết nối phòng khám với Bác sĩ ${booking.expertName}...`,
-                                  )
-                                }
-                                className="rounded-xl bg-indigo-600 text-xs font-bold text-white shadow-xs hover:bg-indigo-700"
-                              >
-                                <Video className="mr-1.5 h-3.5 w-3.5" />
-                                Vào Phòng Khám
-                              </Button>
-                            )}
-
                             {statusNorm === "COMPLETED" && (
                               <div className="flex flex-wrap items-center gap-1.5">
                                 {!booking.feedback && (

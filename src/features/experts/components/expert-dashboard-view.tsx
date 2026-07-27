@@ -141,11 +141,7 @@ export function ExpertDashboardView() {
     // Filter by tab status
     const normStatus = (b.status || "").toUpperCase();
     if (activeTab !== "ALL" && normStatus !== activeTab) {
-      if (activeTab === "CONFIRMED" && normStatus === "PAID") {
-        // match
-      } else {
-        return false;
-      }
+      return false;
     }
 
     // Filter by search
@@ -164,9 +160,7 @@ export function ExpertDashboardView() {
     (b) => (b.status || "").toUpperCase() === "PENDING",
   ).length;
   const confirmedCount = bookings.filter(
-    (b) =>
-      (b.status || "").toUpperCase() === "CONFIRMED" ||
-      (b.status || "").toUpperCase() === "PAID",
+    (b) => (b.status || "").toUpperCase() === "CONFIRMED",
   ).length;
   const completedCount = bookings.filter(
     (b) => (b.status || "").toUpperCase() === "COMPLETED",
@@ -338,7 +332,7 @@ export function ExpertDashboardView() {
                       <span className="font-mono text-xs font-bold text-slate-800">
                         #{booking.id.substring(0, 8)}
                       </span>
-                      {getStatusBadge(statusNorm)}
+                      {renderStatusBadge(booking)}
                     </div>
 
                     <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-xs text-slate-600">
@@ -391,16 +385,26 @@ export function ExpertDashboardView() {
                       <>
                         <Button
                           size="sm"
-                          disabled={confirmMutation.isPending}
+                          disabled={
+                            confirmMutation.isPending ||
+                            (!booking.isPaid && !booking.isFollowUp)
+                          }
                           onClick={() => handleConfirm(booking.id)}
-                          className="rounded-xl bg-emerald-600 text-xs font-bold text-white shadow-xs hover:bg-emerald-700"
+                          title={
+                            !booking.isPaid && !booking.isFollowUp
+                              ? "Chờ bệnh nhân thanh toán phí tư vấn qua ví trước khi duyệt"
+                              : "Chấp nhận ca tư vấn"
+                          }
+                          className="rounded-xl bg-emerald-600 text-xs font-bold text-white shadow-xs hover:bg-emerald-700 disabled:opacity-50"
                         >
                           {confirmMutation.isPending ? (
                             <Loader2 className="h-3.5 w-3.5 animate-spin" />
                           ) : (
                             <>
                               <UserCheck className="mr-1.5 h-3.5 w-3.5" />
-                              Chấp Nhận
+                              {booking.isPaid || booking.isFollowUp
+                                ? "Chấp Nhận"
+                                : "Chờ BN Trả Ví"}
                             </>
                           )}
                         </Button>
@@ -417,7 +421,7 @@ export function ExpertDashboardView() {
                     )}
 
                     {/* Action: Confirmed -> Start */}
-                    {(statusNorm === "CONFIRMED" || statusNorm === "PAID") && (
+                    {statusNorm === "CONFIRMED" && (
                       <>
                         <Button
                           size="sm"
@@ -569,25 +573,44 @@ export function ExpertDashboardView() {
 /**
  * Status Badge Renderer
  */
-function getStatusBadge(statusNorm: string) {
+function renderStatusBadge(booking: Booking) {
+  const statusNorm = (booking.status || "").toUpperCase();
+
+  if (booking.isFollowUp) {
+    return (
+      <Badge
+        variant="outline"
+        className="border-emerald-300 bg-emerald-100 text-[10px] font-extrabold text-emerald-900"
+      >
+        🟢 TÁI KHÁM MIỄN PHÍ 0Đ
+      </Badge>
+    );
+  }
+
   switch (statusNorm) {
     case "PENDING":
-      return (
+      return booking.isPaid ? (
+        <Badge
+          variant="outline"
+          className="border-blue-200 bg-blue-50 text-[10px] font-bold text-blue-800"
+        >
+          🔵 Đã Trả Ví - Chờ Duyệt
+        </Badge>
+      ) : (
         <Badge
           variant="outline"
           className="border-amber-200 bg-amber-50 text-[10px] font-bold text-amber-800"
         >
-          Chờ xác nhận
+          🟡 Chờ BN Trả Ví
         </Badge>
       );
     case "CONFIRMED":
-    case "PAID":
       return (
         <Badge
           variant="outline"
           className="border-emerald-200 bg-emerald-50 text-[10px] font-bold text-emerald-800"
         >
-          Đã xác nhận
+          🟢 Đã xác nhận
         </Badge>
       );
     case "IN_PROGRESS":
@@ -596,7 +619,7 @@ function getStatusBadge(statusNorm: string) {
           variant="outline"
           className="border-teal-200 bg-teal-50 text-[10px] font-bold text-teal-800"
         >
-          Đang tư vấn
+          🟣 Đang tư vấn
         </Badge>
       );
     case "COMPLETED":
@@ -605,7 +628,7 @@ function getStatusBadge(statusNorm: string) {
           variant="outline"
           className="border-violet-200 bg-violet-50 text-[10px] font-bold text-violet-800"
         >
-          Đã hoàn thành
+          ✅ Đã hoàn thành
         </Badge>
       );
     case "CANCELLED":

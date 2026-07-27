@@ -12,8 +12,7 @@ export function mapBackendBookingToFrontend(
     | "confirmed"
     | "in_progress"
     | "completed"
-    | "cancelled"
-    | "paid" = "pending";
+    | "cancelled" = "pending";
   const beStatus = (be.status || "").toLowerCase();
 
   if (beStatus === "confirmed") {
@@ -24,11 +23,18 @@ export function mapBackendBookingToFrontend(
     status = "completed";
   } else if (beStatus === "cancelled" || beStatus === "failed") {
     status = "cancelled";
-  } else if (beStatus === "paid") {
-    status = "paid";
-  } else if (beStatus === "pending") {
+  } else {
     status = "pending";
   }
+
+  const isFollowUp = Boolean(be.isFollowUp);
+  const isPaid = Boolean(be.isPaid || isFollowUp);
+  const feeChargedVnd =
+    be.feeChargedVnd !== null && be.feeChargedVnd !== undefined
+      ? Number(be.feeChargedVnd)
+      : isFollowUp
+        ? 0
+        : DEFAULT_CONSULTATION_FEE;
 
   return {
     id: be.id,
@@ -39,8 +45,14 @@ export function mapBackendBookingToFrontend(
     dateTime: be.scheduledAt,
     symptoms: be.reason || "",
     status,
-    amount: DEFAULT_CONSULTATION_FEE,
+    isPaid,
+    isFollowUp,
+    feeChargedVnd,
+    amount: feeChargedVnd,
     createdAt: be.createdAt,
+    cancelledAt: be.cancelledAt,
+    cancelReason: be.cancelReason,
+    cancelledBy: be.cancelledBy,
     feedback: be.feedback,
   };
 }

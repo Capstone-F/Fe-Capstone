@@ -13,15 +13,15 @@ export interface ConsultationBooking {
   slotId: string;
   dateTime: string;
   symptoms: string;
-  status:
-    | "pending"
-    | "confirmed"
-    | "in_progress"
-    | "completed"
-    | "cancelled"
-    | "paid";
+  status: "pending" | "confirmed" | "in_progress" | "completed" | "cancelled";
+  isPaid: boolean;
+  isFollowUp: boolean;
+  feeChargedVnd: number;
   amount: number;
   createdAt: string;
+  cancelledAt?: string | null;
+  cancelReason?: string | null;
+  cancelledBy?: string | null;
   feedback?: { rating: number; comment?: string | null } | null;
 }
 
@@ -56,6 +56,13 @@ export interface BackendBooking {
   scheduledAt: string;
   startedAt: string | null;
   completedAt: string | null;
+  cancelledAt?: string | null;
+  cancelReason?: string | null;
+  cancelledBy?: string | null;
+  feeChargedVnd?: number | null;
+  isPaid?: boolean;
+  isFollowUp?: boolean;
+  treatmentId?: string | null;
   createdAt: string;
   updatedAt: string;
   feedback?: { rating: number; comment?: string | null } | null;

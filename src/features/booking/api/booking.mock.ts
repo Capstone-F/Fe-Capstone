@@ -71,6 +71,9 @@ export const bookingMock = {
       dateTime: input.dateTime,
       symptoms: input.symptoms,
       status: "pending",
+      isPaid: false,
+      isFollowUp: false,
+      feeChargedVnd: input.amount,
       amount: input.amount,
       createdAt: new Date().toISOString(),
     };
@@ -99,6 +102,12 @@ export const bookingMock = {
     bookingId: string,
   ): Promise<{ success: boolean; redirectUrl: string }> => {
     await new Promise((resolve) => setTimeout(resolve, 150));
+    const bookings = loadBookings();
+    const idx = bookings.findIndex((b) => b.id === bookingId);
+    if (idx !== -1) {
+      bookings[idx].isPaid = true;
+      saveBookings(bookings);
+    }
     return {
       success: true,
       redirectUrl: `/booking/success?bookingId=${bookingId}`,
@@ -116,7 +125,7 @@ export const bookingMock = {
       throw new Error(`Đơn đặt lịch ${bookingId} không tồn tại.`);
     }
 
-    bookings[idx].status = status === "paid" ? "paid" : "pending";
+    bookings[idx].isPaid = status === "paid";
     saveBookings(bookings);
     return bookings[idx];
   },

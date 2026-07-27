@@ -122,13 +122,16 @@ export function useUpdatePaymentStatus() {
   return useMutation({
     mutationFn: async ({
       bookingId,
-      status,
+      isPaid = true,
     }: {
       bookingId: string;
-      status: "paid" | "pending";
+      isPaid?: boolean;
     }) => {
       if (appConfig.useMockApi) {
-        return bookingMock.updatePaymentStatus(bookingId, status);
+        return bookingMock.updatePaymentStatus(
+          bookingId,
+          isPaid ? "paid" : "pending",
+        );
       }
 
       // Real API Logic: Fetch bookings and find
@@ -143,6 +146,7 @@ export function useUpdatePaymentStatus() {
     onSuccess: (data) => {
       queryClient.invalidateQueries({ queryKey: queryKeys.bookings });
       queryClient.invalidateQueries({ queryKey: queryKeys.booking(data.id) });
+      queryClient.invalidateQueries({ queryKey: ["wallet"] });
     },
   });
 }
@@ -192,6 +196,7 @@ export function useCancelBooking() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["expert-bookings"] });
       queryClient.invalidateQueries({ queryKey: queryKeys.bookings });
+      queryClient.invalidateQueries({ queryKey: ["wallet"] });
     },
   });
 }
