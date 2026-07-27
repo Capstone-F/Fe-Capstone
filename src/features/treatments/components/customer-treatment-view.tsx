@@ -18,13 +18,14 @@ import {
   CardDescription,
   CardContent,
 } from "@/shared/components/ui/card";
-import { useTreatmentPlans } from "../hooks/useTreatments";
+import { useTreatmentPlans, usePayTreatmentPlan } from "../hooks/useTreatments";
 import { formatVnd } from "@/shared/utils/format";
 import { toast } from "sonner";
 
 export function CustomerTreatmentView() {
   const router = useRouter();
   const { data: plans, isLoading } = useTreatmentPlans("user_customer_demo");
+  const payPlanMutation = usePayTreatmentPlan();
   const activePlan = plans?.[0];
 
   if (isLoading) {
@@ -99,20 +100,45 @@ export function CustomerTreatmentView() {
             </span>
           </div>
 
-          {/* Free Re-booking Button */}
-          <Button
-            size="sm"
-            onClick={() => {
-              toast.success(
-                "Bán đã có Phác đồ Active! Ca tái khám được tính 0đ (Miễn phí)",
-              );
-              router.push(`/booking/${activePlan.expertId}`);
-            }}
-            className="rounded-xl bg-amber-500 text-xs font-bold text-white shadow-xs hover:bg-amber-400"
-          >
-            <RotateCcw className="mr-1.5 h-3.5 w-3.5" />
-            Đặt Lịch Tái Khám (Miễn Phí 0đ)
-          </Button>
+          {/* Payment or Free Re-booking Button */}
+          {activePlan.status === "DRAFT" ||
+          activePlan.status === "PENDING_PAYMENT" ? (
+            <Button
+              size="sm"
+              onClick={() => {
+                payPlanMutation.mutate(activePlan.id, {
+                  onSuccess: () => {
+                    toast.success(
+                      "Thanh toán phác đồ bằng Ví thành công! Phác đồ đã chuyển sang Active.",
+                    );
+                  },
+                  onError: (err: unknown) => {
+                    toast.error(
+                      (err as Error)?.message || "Thanh toán thất bại.",
+                    );
+                  },
+                });
+              }}
+              disabled={payPlanMutation.isPending}
+              className="rounded-xl bg-emerald-600 text-xs font-bold text-white shadow-xs hover:bg-emerald-500"
+            >
+              Thanh Toán Gói ({formatVnd(activePlan.totalFeeVnd)}) Qua Ví
+            </Button>
+          ) : (
+            <Button
+              size="sm"
+              onClick={() => {
+                toast.success(
+                  "Bán đã có Phác đồ Active! Ca tái khám được tính 0đ (Miễn phí)",
+                );
+                router.push(`/booking/${activePlan.expertId}`);
+              }}
+              className="rounded-xl bg-amber-500 text-xs font-bold text-white shadow-xs hover:bg-amber-400"
+            >
+              <RotateCcw className="mr-1.5 h-3.5 w-3.5" />
+              Đặt Lịch Tái Khám (Miễn Phí 0đ)
+            </Button>
+          )}
         </div>
       </div>
 

@@ -41,11 +41,16 @@ export function WalletTopUpModal({
     }
 
     topUpMutation.mutate(selectedAmount, {
-      onSuccess: (updatedWallet) => {
-        toast.success(
-          `Nạp ${formatVnd(selectedAmount)} vào ví GlowScan thành công! Số dư hiện tại: ${formatVnd(updatedWallet.balanceVnd)}`,
-        );
-        onClose();
+      onSuccess: (res: unknown) => {
+        const payload = res as { paymentUrl?: string; balanceVnd?: number };
+        if (payload?.paymentUrl) {
+          window.location.href = payload.paymentUrl;
+        } else {
+          toast.success(
+            `Nạp ${formatVnd(selectedAmount)} vào ví GlowScan thành công! Số dư hiện tại: ${formatVnd(payload?.balanceVnd || selectedAmount)}`,
+          );
+          onClose();
+        }
       },
       onError: (err: unknown) => {
         const msg = (err as Error)?.message || "Không thể nạp tiền vào ví.";

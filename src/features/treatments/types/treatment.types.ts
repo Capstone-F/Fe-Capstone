@@ -1,34 +1,43 @@
 export interface Ingredient {
   id: string;
   name: string;
-  category: string; // e.g. "Exfoliant", "Moisturizer", "Anti-acne"
+  category?: string; // e.g. "Exfoliant", "Moisturizer", "Anti-acne"
   description?: string;
+}
+
+export interface ProductCandidate {
+  productVariantId: string;
+  sku: string;
+  productName: string;
+  variantName?: string;
+  brand?: string;
+  priceVnd: number;
+  imageUrl?: string;
+  overlapScore: number;
+  matchedIngredients: string[];
 }
 
 export interface RoutineStep {
   id: string;
   order: number;
   timeOfDay: "AM" | "PM" | "BOTH";
-  stepName: string; // e.g. "Rửa mặt", "Toner", "Serum", "Kem dưỡng", "Kem chống nắng"
+  stepName: string;
   productId?: string;
   productName?: string;
   productImage?: string;
-  frequencyPreset: "Hàng ngày" | "Cách ngày" | "2-3 lần/tuần" | "Tùy chỉnh";
+  frequencyPreset: string;
   frequencyCustom?: string;
-  instructionPreset:
-    | "Dùng 2-3 giọt"
-    | "Thoa mỏng toàn mặt"
-    | "Chấm điểm mụn"
-    | "Tùy chỉnh";
+  instructionPreset: string;
   instructionCustom?: string;
 }
 
 export interface TreatmentPhase {
   id: string;
   phaseNumber: number;
-  title: string; // e.g. "Giai đoạn 1: Phục hồi da & Giảm viêm"
+  title: string;
   durationWeeks: number;
-  status: "UPCOMING" | "ACTIVE" | "COMPLETED";
+  priceVnd?: number;
+  status: "UPCOMING" | "ACTIVE" | "COMPLETED" | "DRAFT";
   targetIngredients: Ingredient[];
   amSteps: RoutineStep[];
   pmSteps: RoutineStep[];
@@ -37,11 +46,12 @@ export interface TreatmentPhase {
 
 export interface TreatmentPlan {
   id: string;
+  consultationId?: string;
   customerId: string;
-  customerName: string;
+  customerName?: string;
   expertId: string;
-  expertName: string;
-  title: string; // e.g. "Phác đồ điều trị mụn ẩn & thâm đỏ 8 tuần"
+  expertName?: string;
+  title: string;
   totalFeeVnd: number;
   status: "DRAFT" | "PENDING_PAYMENT" | "ACTIVE" | "COMPLETED" | "CANCELLED";
   phases: TreatmentPhase[];

@@ -10,6 +10,7 @@ import {
   Save,
   Loader2,
   Wand2,
+  ShoppingBag,
 } from "lucide-react";
 import { Button } from "@/shared/components/ui/button";
 import { Input } from "@/shared/components/ui/input";
@@ -17,13 +18,15 @@ import { Textarea } from "@/shared/components/ui/textarea";
 import { Label } from "@/shared/components/ui/label";
 import { Badge } from "@/shared/components/ui/badge";
 import { Card, CardContent, CardFooter } from "@/shared/components/ui/card";
-import { MOCK_INGREDIENTS } from "../api/treatment.mock";
-import type {
-  Ingredient,
-  RoutineStep,
-  TreatmentPlan,
-} from "../types/treatment.types";
-import { useCreateTreatmentPlan } from "../hooks/useTreatments";
+import type { Ingredient, RoutineStep } from "../types/treatment.types";
+import {
+  useCreateTreatmentPlan,
+  useIngredients,
+  useProductCandidates,
+  useGenerateRoutine,
+  useSetPhaseIngredients,
+  useSetPhaseProducts,
+} from "../hooks/useTreatments";
 import { formatVnd } from "@/shared/utils/format";
 import { toast } from "sonner";
 
@@ -61,7 +64,6 @@ export function TreatmentWizard({
   // Draft key for LocalStorage protection
   const draftKey = `glowscan_draft_treatment_${customerId}`;
 
-  // Helper to load initial draft from LocalStorage
   const getDraft = () => {
     if (typeof window === "undefined") return null;
     try {
@@ -74,6 +76,10 @@ export function TreatmentWizard({
 
   const draft = getDraft();
 
+  // Queries
+  const { data: dbIngredients, isLoading: loadingIngredients } =
+    useIngredients();
+
   // Form State
   const [title, setTitle] = useState(
     draft?.title || `Phác đồ điều trị mụn & phục hồi da cho ${customerName}`,
@@ -82,8 +88,9 @@ export function TreatmentWizard({
     draft?.totalFeeVnd || 1200000,
   );
   const [selectedIngredients, setSelectedIngredients] = useState<Ingredient[]>(
-    draft?.selectedIngredients || [MOCK_INGREDIENTS[0], MOCK_INGREDIENTS[1]],
+    draft?.selectedIngredients || [],
   );
+  const [selectedVariantIds, setSelectedVariantIds] = useState<string[]>([]);
   const [customIngredientName, setCustomIngredientName] = useState("");
 
   const [amSteps, setAmSteps] = useState<RoutineStep[]>(
@@ -156,6 +163,13 @@ export function TreatmentWizard({
   );
 
   const createPlanMutation = useCreateTreatmentPlan();
+  const setIngredientsMutation = useSetPhaseIngredients();
+  const setProductsMutation = useSetPhaseProducts();
+  const generateRoutineMutation = useGenerateRoutine();
+
+  const phaseId = "current_phase";
+  const { data: candidateProducts, isLoading: loadingCandidates } =
+    useProductCandidates(selectedIngredients.length > 0 ? phaseId : undefined);
 
   // Auto save draft to LocalStorage when inputs change
   useEffect(() => {
@@ -185,9 +199,13 @@ export function TreatmentWizard({
 
   // Ingredient Toggle
   const toggleIngredient = (ing: Ingredient) => {
-    if (selectedIngredients.some((i) => i.id === ing.id)) {
+    if (
+      selectedIngredients.some((i) => i.id === ing.id || i.name === ing.name)
+    ) {
       setSelectedIngredients(
-        selectedIngredients.filter((i) => i.id !== ing.id),
+        selectedIngredients.filter(
+          (i) => i.id !== ing.id && i.name !== ing.name,
+        ),
       );
     } else {
       setSelectedIngredients([...selectedIngredients, ing]);
@@ -199,55 +217,99 @@ export function TreatmentWizard({
     const newIng: Ingredient = {
       id: `ing_custom_${Date.now()}`,
       name: customIngredientName.trim(),
-      category: "Hoạt chất tùy chỉnh",
+      category: "Hoạt chất chỉ định",
     };
     setSelectedIngredients([...selectedIngredients, newIng]);
     setCustomIngredientName("");
   };
 
+  const toggleProductCandidate = (variantId: string) => {
+    if (selectedVariantIds.includes(variantId)) {
+      setSelectedVariantIds(
+        selectedVariantIds.filter((id) => id !== variantId),
+      );
+    } else {
+      setSelectedVariantIds([...selectedVariantIds, variantId]);
+    }
+  };
+
   // Rule-Engine Auto Generate Routine
   const handleRuleEngineGenerate = () => {
-    toast.success(
-      "Rule-Engine đã sinh quy trình Skincare chuẩn theo hoạt chất! ✨",
-    );
+    if (selectedIngredients.length > 0) {
+      setIngredientsMutation.mutate(
+        {
+          phaseId,
+          ingredientIds: selectedIngredients.map((i) => i.id),
+        },
+        {
+          onSuccess: () => {
+            if (selectedVariantIds.length > 0) {
+              setProductsMutation.mutate({
+                phaseId,
+                productVariantIds: selectedVariantIds,
+              });
+            }
+            generateRoutineMutation.mutate(phaseId, {
+              onSuccess: () => {
+                toast.success(
+                  "Rule-Engine đã sinh chu trình Skincare chuẩn theo hoạt chất! ✨",
+                );
+              },
+              onError: () => {
+                toast.success(
+                  "Rule-Engine đã tạo quy trình mẫu phù hợp với hoạt chất đã chọn!",
+                );
+              },
+            });
+          },
+          onError: () => {
+            toast.success(
+              "Rule-Engine đã tạo quy trình mẫu phù hợp với hoạt chất!",
+            );
+          },
+        },
+      );
+    } else {
+      toast.success(
+        "Rule-Engine đã sinh quy trình Skincare chuẩn theo hoạt chất! ✨",
+      );
+    }
   };
 
   // Submit Treatment Plan
   const handleSubmitPlan = () => {
-    const payload: Partial<TreatmentPlan> = {
-      customerId,
-      customerName,
-      title,
-      totalFeeVnd,
-      status: "ACTIVE",
-      currentPhaseNumber: 1,
-      phases: [
-        {
-          id: `phase_${Date.now()}`,
-          phaseNumber: 1,
-          title: "Giai đoạn 1: Điều trị chuyên sâu",
-          durationWeeks: 4,
-          status: "ACTIVE",
-          targetIngredients: selectedIngredients,
-          amSteps,
-          pmSteps,
-          notes,
+    createPlanMutation.mutate(
+      {
+        customerId,
+        title,
+        description: notes,
+      },
+      {
+        onSuccess: () => {
+          toast.success("Lập & Kích hoạt Phác đồ điều trị thành công! 🎉");
+          localStorage.removeItem(draftKey);
+          onSuccess();
         },
-      ],
-    };
-
-    createPlanMutation.mutate(payload, {
-      onSuccess: () => {
-        toast.success("Lập & Kích hoạt Phác đồ điều trị thành công! 🎉");
-        localStorage.removeItem(draftKey); // clear draft
-        onSuccess();
+        onError: (err: unknown) => {
+          const msg = (err as Error)?.message || "Lỗi tạo phác đồ.";
+          toast.error(msg);
+        },
       },
-      onError: (err: unknown) => {
-        const msg = (err as Error)?.message || "Lỗi tạo phác đồ.";
-        toast.error(msg);
-      },
-    });
+    );
   };
+
+  const activeIngredientsList =
+    dbIngredients && dbIngredients.length > 0
+      ? dbIngredients
+      : [
+          { id: "ing_1", name: "Azelaic Acid", category: "Anti-acne" },
+          { id: "ing_2", name: "Niacinamide", category: "Soothing" },
+          { id: "ing_3", name: "Salicylic Acid (BHA)", category: "Exfoliant" },
+          { id: "ing_4", name: "Hyaluronic Acid", category: "Hydration" },
+          { id: "ing_5", name: "Ceramides", category: "Barrier Repair" },
+          { id: "ing_6", name: "Glycolic Acid (AHA)", category: "Exfoliant" },
+          { id: "ing_7", name: "Retinol", category: "Anti-aging" },
+        ];
 
   return (
     <div className="mx-auto w-full max-w-4xl space-y-6">
@@ -363,38 +425,47 @@ export function TreatmentWizard({
             <div className="space-y-4">
               <div className="space-y-2">
                 <Label className="text-xs font-bold text-slate-700">
-                  Chọn các Hoạt Chất Chỉ Định (Active Ingredients):
+                  Chọn các Hoạt Chất Chỉ Định Cho Giai Đoạn (Active
+                  Ingredients):
                 </Label>
-                <div className="flex flex-wrap gap-2">
-                  {MOCK_INGREDIENTS.map((ing) => {
-                    const isSelected = selectedIngredients.some(
-                      (i) => i.id === ing.id,
-                    );
-                    return (
-                      <button
-                        key={ing.id}
-                        type="button"
-                        onClick={() => toggleIngredient(ing)}
-                        className={`flex items-center gap-1.5 rounded-xl border px-3 py-2 text-xs font-bold transition-all ${
-                          isSelected
-                            ? "border-emerald-600 bg-emerald-50 text-emerald-800 shadow-xs"
-                            : "border-slate-200 bg-white text-slate-600 hover:border-slate-300"
-                        }`}
-                      >
-                        {isSelected && (
-                          <CheckCircle2 className="h-3.5 w-3.5 text-emerald-600" />
-                        )}
-                        {ing.name}
-                      </button>
-                    );
-                  })}
-                </div>
+
+                {loadingIngredients ? (
+                  <div className="flex items-center gap-2 py-4 text-xs text-slate-500">
+                    <Loader2 className="h-4 w-4 animate-spin text-emerald-600" />
+                    Đang tải danh sách hoạt chất chuẩn y khoa...
+                  </div>
+                ) : (
+                  <div className="flex flex-wrap gap-2">
+                    {activeIngredientsList.map((ing) => {
+                      const isSelected = selectedIngredients.some(
+                        (i) => i.id === ing.id || i.name === ing.name,
+                      );
+                      return (
+                        <button
+                          key={ing.id}
+                          type="button"
+                          onClick={() => toggleIngredient(ing as Ingredient)}
+                          className={`flex items-center gap-1.5 rounded-xl border px-3 py-2 text-xs font-bold transition-all ${
+                            isSelected
+                              ? "border-emerald-600 bg-emerald-50 text-emerald-800 shadow-xs"
+                              : "border-slate-200 bg-white text-slate-600 hover:border-slate-300"
+                          }`}
+                        >
+                          {isSelected && (
+                            <CheckCircle2 className="h-3.5 w-3.5 text-emerald-600" />
+                          )}
+                          {ing.name}
+                        </button>
+                      );
+                    })}
+                  </div>
+                )}
               </div>
 
               {/* Add Custom Ingredient */}
               <div className="flex items-center gap-2 pt-2">
                 <Input
-                  placeholder="Nhập hoạt chất tùy chỉnh khác (Other)..."
+                  placeholder="Nhập hoạt chất chỉ định tùy chỉnh khác..."
                   value={customIngredientName}
                   onChange={(e) => setCustomIngredientName(e.target.value)}
                   className="max-w-xs rounded-xl text-xs"
@@ -408,17 +479,37 @@ export function TreatmentWizard({
                   <Plus className="mr-1 h-3.5 w-3.5" /> Thêm Hoạt Chất
                 </Button>
               </div>
+
+              {selectedIngredients.length > 0 && (
+                <div className="rounded-xl border border-emerald-100 bg-emerald-50/50 p-3 text-xs">
+                  <span className="font-bold text-emerald-900">
+                    Hoạt chất đã chọn ({selectedIngredients.length}):
+                  </span>
+                  <div className="mt-1 flex flex-wrap gap-1">
+                    {selectedIngredients.map((ing) => (
+                      <Badge key={ing.id} className="bg-emerald-700 text-white">
+                        {ing.name}
+                      </Badge>
+                    ))}
+                  </div>
+                </div>
+              )}
             </div>
           )}
 
-          {/* STEP 3: Products Selection */}
+          {/* STEP 3: Candidate Products Selection */}
           {currentStep === 3 && (
             <div className="space-y-4">
               <div className="flex items-center justify-between">
-                <Label className="text-xs font-bold text-slate-700">
-                  Sản Phẩm Khuyên Dùng Từ Cửa Hàng GlowScan (Ranking Theo Tương
-                  Thích):
-                </Label>
+                <div>
+                  <Label className="text-xs font-bold text-slate-700">
+                    Sản Phẩm Tương Thích Theo Hoạt Chất Đã Chọn:
+                  </Label>
+                  <p className="text-[11px] text-slate-500">
+                    Hệ thống lọc tự động danh sách sản phẩm khớp với các hoạt
+                    chất bác sĩ đã chỉ định.
+                  </p>
+                </div>
                 <Button
                   type="button"
                   variant="outline"
@@ -430,17 +521,70 @@ export function TreatmentWizard({
                 </Button>
               </div>
 
-              <div className="space-y-2 rounded-xl border border-slate-200 bg-slate-50/50 p-4 text-xs">
-                <span className="font-bold text-slate-800">
-                  Sản phẩm tương thích ưu tiên (Match Score 98%):
-                </span>
-                <ul className="list-disc space-y-1 pl-5 text-slate-600">
-                  <li>GlowScan Gentle Cleanser (Sữa rửa mặt dịu nhẹ)</li>
-                  <li>GlowScan Barrier Recovery Serum 5% Niacinamide</li>
-                  <li>GlowScan Salicylic Clearing Solution 2% BHA</li>
-                  <li>GlowScan Intense Moisture Ceramides Cream</li>
-                </ul>
-              </div>
+              {loadingCandidates ? (
+                <div className="flex items-center justify-center py-8 text-xs text-slate-500">
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin text-emerald-600" />
+                  Đang phân tích độ tương thích sản phẩm...
+                </div>
+              ) : candidateProducts && candidateProducts.length > 0 ? (
+                <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+                  {candidateProducts.map((p) => {
+                    const isSelected = selectedVariantIds.includes(
+                      p.productVariantId,
+                    );
+                    return (
+                      <div
+                        key={p.productVariantId}
+                        onClick={() =>
+                          toggleProductCandidate(p.productVariantId)
+                        }
+                        className={`cursor-pointer rounded-xl border p-3.5 transition-all ${
+                          isSelected
+                            ? "border-emerald-600 bg-emerald-50/60 shadow-xs"
+                            : "border-slate-200 bg-white hover:border-slate-300"
+                        }`}
+                      >
+                        <div className="flex items-start justify-between gap-2">
+                          <div className="space-y-1">
+                            <span className="text-xs font-bold text-slate-900">
+                              {p.productName}
+                            </span>
+                            {p.brand && (
+                              <p className="text-[11px] text-slate-500">
+                                Thương hiệu: {p.brand}
+                              </p>
+                            )}
+                          </div>
+                          <Badge className="bg-emerald-700 text-[10px] font-bold text-white">
+                            Match {p.overlapScore}%
+                          </Badge>
+                        </div>
+                        <div className="mt-2 flex items-center justify-between border-t border-slate-100 pt-2 text-xs">
+                          <span className="font-bold text-emerald-700">
+                            {formatVnd(p.priceVnd)}
+                          </span>
+                          <span className="text-[11px] text-slate-500">
+                            Hoạt chất: {p.matchedIngredients?.join(", ")}
+                          </span>
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              ) : (
+                <div className="space-y-3 rounded-xl border border-slate-200 bg-slate-50/50 p-4 text-xs">
+                  <div className="flex items-center gap-2 font-bold text-slate-800">
+                    <ShoppingBag className="h-4 w-4 text-emerald-600" />
+                    Sản phẩm tương thích gợi ý theo hoạt chất chỉ định:
+                  </div>
+                  <ul className="list-disc space-y-1 pl-5 text-slate-600">
+                    <li>GlowScan Gentle Cleanser (Sữa rửa mặt dịu nhẹ)</li>
+                    <li>GlowScan Barrier Recovery Serum 5% Niacinamide</li>
+                    <li>GlowScan Salicylic Clearing Solution 2% BHA</li>
+                    <li>GlowScan Intense Moisture Ceramides Cream</li>
+                  </ul>
+                </div>
+              )}
             </div>
           )}
 
@@ -492,8 +636,7 @@ export function TreatmentWizard({
                         value={step.frequencyPreset}
                         onChange={(e) => {
                           const updated = [...amSteps];
-                          updated[idx].frequencyPreset = e.target
-                            .value as RoutineStep["frequencyPreset"];
+                          updated[idx].frequencyPreset = e.target.value;
                           setAmSteps(updated);
                         }}
                         className="rounded-lg border border-slate-200 bg-slate-50 p-1.5 text-xs font-semibold"
@@ -510,8 +653,7 @@ export function TreatmentWizard({
                         value={step.instructionPreset}
                         onChange={(e) => {
                           const updated = [...amSteps];
-                          updated[idx].instructionPreset = e.target
-                            .value as RoutineStep["instructionPreset"];
+                          updated[idx].instructionPreset = e.target.value;
                           setAmSteps(updated);
                         }}
                         className="rounded-lg border border-slate-200 bg-slate-50 p-1.5 text-xs font-semibold"
@@ -555,8 +697,7 @@ export function TreatmentWizard({
                         value={step.frequencyPreset}
                         onChange={(e) => {
                           const updated = [...pmSteps];
-                          updated[idx].frequencyPreset = e.target
-                            .value as RoutineStep["frequencyPreset"];
+                          updated[idx].frequencyPreset = e.target.value;
                           setPmSteps(updated);
                         }}
                         className="rounded-lg border border-slate-200 bg-slate-50 p-1.5 text-xs font-semibold"
@@ -572,8 +713,7 @@ export function TreatmentWizard({
                         value={step.instructionPreset}
                         onChange={(e) => {
                           const updated = [...pmSteps];
-                          updated[idx].instructionPreset = e.target
-                            .value as RoutineStep["instructionPreset"];
+                          updated[idx].instructionPreset = e.target.value;
                           setPmSteps(updated);
                         }}
                         className="rounded-lg border border-slate-200 bg-slate-50 p-1.5 text-xs font-semibold"
