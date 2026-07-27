@@ -15,7 +15,7 @@ flowchart TD
         C -- Đủ số dư --> D[Thanh toán trừ ví CONSULTATION_PAYMENT]
         C -- Thiếu số dư --> E[Hiện Modal Nạp Ví TopUpModal]
         E --> D
-        D --> F[Ca Hẹn Sẵn Sàng Duyệt - Status: PENDING (isPaid = true)]
+        D --> F[Ca Hẹn Sẵn Sàng Duyệt - Status: PENDING, isPaid = true]
     end
 
     %% Subgraph Bác Sĩ - Duyệt & Tư Vấn
@@ -33,7 +33,7 @@ flowchart TD
         K --> M[Khách hàng xem Phác Đồ & Routine AM/PM trên App]
         M --> N[Check-in Skincare Hàng Ngày]
         M --> O[Nút Đặt Lịch Tái Khám với Bác sĩ đó]
-        O --> P[Ca Hẹn Tái Khám: Booking Fee = 0đ]
+        O --> P[BE kiểm tra window ACTIVE -> Trả về isFollowUp = true, feeChargedVnd = 0đ]
         P --> H
     end
 
@@ -48,43 +48,43 @@ flowchart TD
 
 ---
 
-## 2. ⚡ 4 Quy Tắc Nghiệp Vụ Bắt Buộc Backend Phải Thực Thi (Business Rules & Gates)
+## 2. ⚡ 4 Quy Tắc Nghiệp Vụ Bắt Buộc Chuẩn Hóa Với BE (Business Rules & Gates)
 
-### 🔴 Quy Tắc 1: Ràng Buộc Thanh Toán Qua Ví (`Wallet Gate`)
+### 🔴 Quy Tắc 1: Ràng Buộc Thanh Toán Qua Ví & Trạng Thái Booking (`Wallet Gate & Status Machine`)
 
-- **Booking ca hẹn:** Bắt buộc 100% dùng Ví `Wallet` (`POST /bookings/:id/pay`). Không dùng VNPay hay Chuyển khoản.
-- **Thanh toán thành công:** BE trừ `Wallet.balanceVnd`, ghi 1 dòng `Transaction` với `type = CONSULTATION_PAYMENT`, `consultationId = booking.id`, `status = COMPLETED`.
-- **Ràng buộc Confirm:** Bác sĩ chỉ được phép bấm `CONFIRMED` khi ca hẹn đã thanh toán (`PAID`). Nếu ca hẹn chưa thanh toán mà Bác sĩ bấm Confirm ➔ BE trả lỗi `HTTP 400: "Yêu cầu khách hàng thanh toán ca hẹn trước khi duyệt"`.
+- **Booking Status Machine chuẩn:** CHỈ GỒM 5 TRẠNG THÁI: `PENDING` ➔ `CONFIRMED` ➔ `IN_PROGRESS` ➔ `COMPLETED` | `CANCELLED`. **Không có trạng thái `PAID`**.
+- **Lưu vết thanh toán:** Quản lý qua cờ `isPaid: boolean` và `feeChargedVnd`. Sau khi gọi `POST /bookings/:id/pay`, ca hẹn giữ nguyên trạng thái `PENDING` kèm `isPaid = true`.
+- **Ràng buộc Confirm:** Bác sĩ chỉ được phép bấm `CONFIRMED` (`PATCH /bookings/:id/confirm`) khi ca hẹn có `isPaid === true` hoặc `isFollowUp === true`. Nếu chưa trả ví, nút bấm bị khóa kèm tooltip _"Chờ bệnh nhân thanh toán ví"_.
 
 ### 🟢 Quy Tắc 2: Tái Khám Miễn Phí (`Free Re-booking Gate`)
 
-- Khi Khách hàng tạo Booking mới với Expert X:
-  - BE kiểm tra xem Khách hàng đó **đang có Phác đồ điều trị `ACTIVE` với Expert X** hay không.
-  - **Nếu CÓ Phác đồ Active:** BE tự động đặt `booking.amount = 0` (Miễn phí tư vấn tái khám) và chuyển ca hẹn thành trạng thái sẵn sàng mà không trừ tiền Ví.
-  - **Nếu KHÔNG có Phác đồ Active:** BE lấy `expert.consultationFee` làm phí đặt lịch tiêu chuẩn.
+- Khi Khách hàng đặt lịch tái khám trong thời gian Phác đồ `ACTIVE` với Bác sĩ đó:
+  - Backend tự động trả về `isFollowUp = true` và `feeChargedVnd = 0`.
+  - Frontend hiển thị Badge **"🟢 TÁI KHÁM MIỄN PHÍ 0Đ"** dựa trực tiếp trên cờ `isFollowUp = true` từ Backend.
 
 ### 🟡 Quy Tắc 3: Hoàn Tiền Ví Khi Hủy Ca (`Wallet Refund Rule`)
 
-- Khi Ca hẹn ở trạng thái `PENDING` hoặc `CONFIRMED` bị Hủy (`PATCH /bookings/:id/cancel` từ Khách hàng hoặc Bác sĩ):
-  - **Nếu Ca hẹn đã được thanh toán:** BE tự động **hoàn lại tiền vào Ví** (`Wallet.balanceVnd += amount`) và ghi dòng `Transaction` với `type = REFUND`, `consultationId = booking.id`.
+- Khi Hủy ca hẹn ở trạng thái `PENDING` hoặc `CONFIRMED` đã thanh toán (`isPaid === true`):
+  - Backend tự động **hoàn tiền vào Ví** (`REFUND`).
+  - Frontend tự động invalidate cache `["wallet"]` để cập nhật ngay số dư mới.
+- Ca hẹn ở trạng thái `IN_PROGRESS` KHÔNG được phép hủy (Backend trả lỗi `HTTP 400`).
 
 ### 🟣 Quy Tắc 4: Rule-Engine Sinh Routine & Chỉnh Sửa Phác Đồ
 
 - Khi Bác sĩ gọi `POST /treatments`, BE dùng **Rule-Engine** lọc danh sách Sản phẩm dựa theo `targetIngredients` do Bác sĩ chỉ định, sau đó tự động phân bổ thành các bước Skincare Sáng/Tối (`amSteps`, `pmSteps`).
-- Bác sĩ có quyền tùy chỉnh tần suất (`frequencyPreset`) và liều lượng (`instructionPreset`) cho từng bước.
 
 ---
 
-## 3. 📋 DANH SÁCH API ENDPOINTS CHUẨN BACKEND CẦN MỞ
+## 3. 📋 DANH SÁCH API ENDPOINTS CHUẨN BACKEND
 
 ### 3.1 Nhóm API Ví Thanh Toán (`Wallet Controller`)
 
-| Method | Endpoint                   | Auth     | Yêu Cầu Xử Lý BE                                                 | Response Body                                                           |
-| ------ | -------------------------- | -------- | ---------------------------------------------------------------- | ----------------------------------------------------------------------- |
-| `GET`  | `/wallets/me`              | Customer | Lấy số dư ví khách hàng hiện tại                                 | `{ id: string, userId: string, balanceVnd: number, isActive: boolean }` |
-| `POST` | `/bookings/:id/pay`        | Customer | Trừ tiền ví cho ca hẹn (Giao dịch Nguyên tử / Transaction Block) | `{ id: string, balanceVnd: number, status: 'PAID' }`                    |
-| `POST` | `/wallets/top-up`          | Customer | Nạp tiền vào ví                                                  | `{ id: string, balanceVnd: number }`                                    |
-| `GET`  | `/wallets/me/transactions` | Customer | Lấy danh sách lịch sử giao dịch ví                               | Array of `Transaction`                                                  |
+| Method | Endpoint                  | Auth     | Yêu Cầu Xử Lý BE                                                     | Response Body                                                           |
+| ------ | ------------------------- | -------- | -------------------------------------------------------------------- | ----------------------------------------------------------------------- |
+| `GET`  | `/wallet/me`              | Customer | Lấy số dư ví khách hàng hiện tại                                     | `{ id: string, userId: string, balanceVnd: number, isActive: boolean }` |
+| `POST` | `/bookings/:id/pay`       | Customer | Trừ tiền ví cho ca hẹn (Chuyển `isPaid: true`, giữ status `PENDING`) | `{ id: string, balanceVnd: number, isPaid: true }`                      |
+| `POST` | `/wallet/top-up`          | Customer | Nạp tiền vào ví                                                      | `{ id: string, balanceVnd: number }`                                    |
+| `GET`  | `/wallet/me/transactions` | Customer | Lấy danh sách lịch sử giao dịch ví                                   | Array of `Transaction`                                                  |
 
 ### 3.2 Nhóm API Phác Đồ Điều Trị (`Treatments Controller`)
 
@@ -97,105 +97,28 @@ flowchart TD
 
 ---
 
-## 4. 🗄️ CẤU TRÚC JSON `TreatmentPlan` MẪU CHUẨN BE & FE
+## 4. 🗄️ CẤU TRÚC JSON `ConsultationBooking` MẪU CHUẨN FE
 
 ```json
 {
-  "id": "tp_123456",
+  "id": "bk_123456",
   "customerId": "user_customer_demo",
   "customerName": "normal111",
   "expertId": "seed-expert-d1-derma",
   "expertName": "Dr. Nguyen Van An",
-  "title": "Phác đồ điều trị mụn & phục hồi da",
-  "totalFeeVnd": 1200000,
-  "status": "ACTIVE",
-  "currentPhaseNumber": 1,
-  "createdAt": "2026-07-26T15:00:00.000Z",
-  "updatedAt": "2026-07-26T15:00:00.000Z",
-  "phases": [
-    {
-      "id": "phase_1",
-      "phaseNumber": 1,
-      "title": "Giai đoạn 1: Giảm viêm & Cấp ẩm phục hồi",
-      "durationWeeks": 2,
-      "status": "ACTIVE",
-      "notes": "Tuần 1-2 tập trung phục hồi màng ẩm da.",
-      "targetIngredients": [
-        {
-          "id": "ing_1",
-          "name": "Salicylic Acid (BHA)",
-          "category": "Exfoliant"
-        },
-        {
-          "id": "ing_2",
-          "name": "Niacinamide (Vitamin B3)",
-          "category": "Barrier"
-        }
-      ],
-      "amSteps": [
-        {
-          "id": "step_am_1",
-          "order": 1,
-          "timeOfDay": "AM",
-          "stepName": "Sữa rửa mặt dịu nhẹ",
-          "productName": "GlowScan Gentle Cleanser",
-          "frequencyPreset": "Hàng ngày",
-          "instructionPreset": "Thoa mỏng toàn mặt"
-        }
-      ],
-      "pmSteps": [
-        {
-          "id": "step_pm_1",
-          "order": 1,
-          "timeOfDay": "PM",
-          "stepName": "Serum BHA 2%",
-          "productName": "GlowScan Salicylic Clearing Solution",
-          "frequencyPreset": "Cách ngày",
-          "instructionPreset": "Dùng 2-3 giọt"
-        }
-      ]
-    }
-  ]
+  "symptoms": "Mụn sưng viêm vùng má",
+  "status": "PENDING",
+  "isPaid": true,
+  "isFollowUp": false,
+  "feeChargedVnd": 200000,
+  "scheduledAt": "2026-07-28T09:00:00.000Z",
+  "createdAt": "2026-07-27T15:00:00.000Z"
 }
 ```
 
 ---
 
-## 5. 🛡️ QUẢN LÝ STATE & KHẢ NĂNG KHÁNG LỖI MẠNG (OFFLINE RESILIENCE)
+## 🛡️ 5. KHÁC PHỤC LỖI ĐIỀU HƯỚNG `/login`
 
-### 5.1 Cấu Trúc Quản Lý Trạng Thái
-
-| Phạm Vi State        | Công Nghệ Sử Dụng                     | Mục Đích Quản Lý                                    | Chiến Lược Lưu Trữ (Persistence)                                            |
-| -------------------- | ------------------------------------- | --------------------------------------------------- | --------------------------------------------------------------------------- |
-| **Server State**     | React Query (`@tanstack/react-query`) | Sync ca hẹn, số dư ví, phác đồ điều trị             | Invalidate cache tự động + Optimistic Updates                               |
-| **Form Draft State** | Zustand / Local State                 | Form lập phác đồ 4 bước của Bác sĩ                  | Auto-save ngầm vào `LocalStorage` (`glowscan_draft_treatment_[customerId]`) |
-| **Adapter Shield**   | `treatment.mapper.ts`                 | Lớp đệm an toàn chống vỡ UI khi BE thừa/thiếu field | Fallback mặc định an toàn cho tất cả field                                  |
-
-### 5.2 Sơ Đồ Khôi Phục Bản Nháp Khi Mất Kết Nối Mạng (Draft Protection Flow)
-
-```
-[Bác sĩ nhập Wizard Bước 1 -> 4] ──(Auto Save)──▶ [LocalStorage: glowscan_draft_treatment]
-                                                               │
-     ┌─────────────────────────────────────────────────────────┘
-     ▼
-(Nguồn mạng rớt / Trình duyệt bị F5 đột ngột)
-     │
-     ▼
-[Bác sĩ mở lại trang] ──(Auto Read)──▶ [Toast: Khôi phục bản nháp 100% dữ liệu đã nhập]
-```
-
----
-
-## 🔑 6. THÔNG TIN TEST & HƯỚNG DẪN NỐI BE THẬT
-
-### 6.1 Tài Khoản Kiểm Thử Ngầm Định
-
-- **Bác Sĩ Da Liễu:** ID `seed-expert-d1-derma` (Dr. Nguyen Van An) / Mật khẩu: `Password123!`
-- **Khách Hàng:** ID `user_customer_demo` (Customer normal111) / Mật khẩu: `Password123!`
-
-### 6.2 Tắt Mock & Nối Database Thật Trên Frontend
-
-Trong tệp `.env.local` của `capstone-fe`:
-
-- `NEXT_PUBLIC_USE_MOCK_API=true`: Chạy Mock API local.
-- `NEXT_PUBLIC_USE_MOCK_API=false`: Tắt Mock, gọi trực tiếp API Backend NestJS (`http://localhost:3000`).
+- Các trang protected (như `/profile`, `/checkout`) không gọi `router.replace("/login")` trực tiếp trong render phase.
+- Hiển thị màn hình thông báo chưa đăng nhập trực quan kèm nút chuyển hướng chủ động để không làm hỏng lịch sử trình duyệt khi bấm nút **Back**.
