@@ -7,6 +7,13 @@ import {
 import type { ApiError } from "@/core/api/errors";
 import { queryKeys } from "@/lib/query/keys";
 import { routineTrackingApi } from "../api/routine-tracking.api";
+import { aggregateSessionState } from "../lib/care-hub-state";
+import {
+  mapCheckIn,
+  mapHistoryDayDetail,
+  mapTodayRoutine,
+  mapTodaySession,
+} from "../mapper/routine-tracking.mapper";
 import type {
   CreateCheckInPayload,
   DateRangeQuery,
@@ -16,7 +23,7 @@ import type {
   RoutinePeriod,
   SkipStepPayload,
   TodayRoutine,
-  TodayRoutinesResponse,
+  TodaySession,
 } from "../types/routine-tracking.types";
 
 /**
@@ -33,19 +40,21 @@ function applyRoutineUpdate(
   period: RoutinePeriod | undefined,
   updated: TodayRoutine,
 ): void {
-  queryClient.setQueryData<TodayRoutinesResponse>(
-    todayQueryKey(period),
-    (previous) =>
-      previous
-        ? {
-            ...previous,
-            routines: previous.routines.map((routine) =>
-              routine.id === updated.id ? updated : routine,
-            ),
-          }
-        : previous,
-  );
-  // Server recomputes the aggregate sessionState and history; refresh in background.
+  queryClient.setQueryData<TodaySession>(todayQueryKey(period), (previous) => {
+    if (!previous) {
+      return previous;
+    }
+    const routines = previous.routines.map((routine) =>
+      routine.id === updated.id ? updated : routine,
+    );
+    // Re-derive the aggregate with the same rule the backend uses, otherwise it stays
+    // stale until the refetch lands and the check-in prompt fires a beat late.
+    return {
+      ...previous,
+      routines,
+      sessionState: aggregateSessionState(routines),
+    };
+  });
   void queryClient.invalidateQueries({ queryKey: queryKeys.routines });
 }
 
@@ -53,10 +62,16 @@ function applyRoutineUpdate(
  * Today's session. Omit `period` on first load so the backend applies its documented
  * default (VN hour < 14 → MORNING, else EVENING) instead of the client guessing.
  */
-export function useTodayRoutines(period?: RoutinePeriod) {
-  return useQuery<TodayRoutinesResponse, ApiError>({
+export function useTodayRoutines(
+  period?: RoutinePeriod,
+  options?: { enabled?: boolean },
+) {
+  return useQuery<TodaySession, ApiError>({
     queryKey: todayQueryKey(period),
-    queryFn: async () => (await routineTrackingApi.getToday(period)).data,
+    queryFn: async () =>
+      mapTodaySession((await routineTrackingApi.getToday(period)).data),
+    // Guests would otherwise fire an authenticated call and get a 401 on /care.
+    enabled: options?.enabled ?? true,
   });
 }
 
@@ -68,7 +83,9 @@ export function useCompleteStep(period?: RoutinePeriod) {
     { routineId: string; stepId: string }
   >({
     mutationFn: async ({ routineId, stepId }) =>
-      (await routineTrackingApi.completeStep(routineId, stepId)).data,
+      mapTodayRoutine(
+        (await routineTrackingApi.completeStep(routineId, stepId)).data,
+      ),
     onSuccess: (updated) => applyRoutineUpdate(queryClient, period, updated),
   });
 }
@@ -81,7 +98,9 @@ export function useSkipStep(period?: RoutinePeriod) {
     { routineId: string; stepId: string; payload: SkipStepPayload }
   >({
     mutationFn: async ({ routineId, stepId, payload }) =>
-      (await routineTrackingApi.skipStep(routineId, stepId, payload)).data,
+      mapTodayRoutine(
+        (await routineTrackingApi.skipStep(routineId, stepId, payload)).data,
+      ),
     onSuccess: (updated) => applyRoutineUpdate(queryClient, period, updated),
   });
 }
@@ -90,7 +109,9 @@ export function useCreateCheckIn(routineId: string) {
   const queryClient = useQueryClient();
   return useMutation<RoutineCheckIn, ApiError, CreateCheckInPayload>({
     mutationFn: async (payload) =>
-      (await routineTrackingApi.createCheckIn(routineId, payload)).data,
+      mapCheckIn(
+        (await routineTrackingApi.createCheckIn(routineId, payload)).data,
+      ),
     onSuccess: () => {
       void queryClient.invalidateQueries({ queryKey: queryKeys.routines });
     },
@@ -107,13 +128,13 @@ export function useTodayCheckIns(
       date ?? "",
       date ?? "",
     ),
-    queryFn: async () =>
-      (
-        await routineTrackingApi.listCheckIns(routineId as string, {
-          from: date as string,
-          to: date as string,
-        })
-      ).data,
+    queryFn: async () => {
+      const response = await routineTrackingApi.listCheckIns(
+        routineId as string,
+        { from: date as string, to: date as string },
+      );
+      return response.data.map(mapCheckIn);
+    },
     enabled: Boolean(routineId) && Boolean(date),
   });
 }
@@ -128,6 +149,7 @@ export function useRoutineHistory(
       range?.from ?? "",
       range?.to ?? "",
     ),
+    // Calendar payload needs no mapping — see RoutineHistoryResponse.
     queryFn: async () =>
       (
         await routineTrackingApi.getHistory(
@@ -147,13 +169,15 @@ export function useHistoryDay(
   return useQuery<HistoryDayDetail, ApiError>({
     queryKey: queryKeys.routineHistoryDay(routineId ?? "", date ?? "", period),
     queryFn: async () =>
-      (
-        await routineTrackingApi.getHistoryDay(
-          routineId as string,
-          date as string,
-          period,
-        )
-      ).data,
+      mapHistoryDayDetail(
+        (
+          await routineTrackingApi.getHistoryDay(
+            routineId as string,
+            date as string,
+            period,
+          )
+        ).data,
+      ),
     enabled: Boolean(routineId) && Boolean(date),
   });
 }

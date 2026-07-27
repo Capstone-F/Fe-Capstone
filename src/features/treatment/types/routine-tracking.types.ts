@@ -1,5 +1,6 @@
-// Transport + domain types for the routine tracking loop.
-// Mirrors Be-Capstone/src/routines/dto/routine-tracking-response.dto.ts.
+// Domain model for the routine tracking loop — what screens and hooks consume.
+// The wire format lives in routine-tracking.dto.ts; mapper/routine-tracking.mapper.ts
+// converts one into the other and owns every derived field below.
 
 import type {
   RoutinePeriod,
@@ -55,14 +56,20 @@ export interface TodayStep {
   stepOrder: number;
   instructions: string | null;
   waitMinutes: number | null;
-  dosageText: string | null;
   amountMl: number | null;
   protocolId: string | null;
   productVariant: RoutineStepProductVariant | null;
   status: StepSessionStatus;
-  completedAt: string | null;
+  completedAt: Date | null;
   skipReason: SkipReason | null;
   skipNote: string | null;
+  // --- derived by the mapper ---
+  isCompleted: boolean;
+  isSkipped: boolean;
+  /** Completed or skipped: the backend refuses to change it again today (409). */
+  isActed: boolean;
+  /** Ready-to-render dosage: backend text, else the millilitre amount. */
+  dosageLabel: string | null;
 }
 
 export interface TodayRoutine {
@@ -76,7 +83,7 @@ export interface TodayRoutine {
   steps: TodayStep[];
 }
 
-export interface TodayRoutinesResponse {
+export interface TodaySession {
   /** Server VN calendar date (YYYY-MM-DD). Use this, never the device clock. */
   date: string;
   period: RoutinePeriod;
@@ -105,7 +112,7 @@ export interface RoutineCheckIn {
   completionRate: number | null;
   note: string | null;
   sideEffects: CheckInSideEffect[];
-  createdAt: string;
+  createdAt: Date;
 }
 
 export interface HistoryDay {
@@ -119,6 +126,10 @@ export interface HistorySummary {
   averageCompletionRate: number;
 }
 
+/**
+ * Adherence calendar. Wire shape and domain shape are identical (plain numbers and
+ * `YYYY-MM-DD` strings, nothing derived), so this one is passed through unmapped.
+ */
 export interface RoutineHistoryResponse {
   routineId: string;
   days: HistoryDay[];

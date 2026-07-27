@@ -21,12 +21,7 @@ export function RoutineStepItem({
   onComplete,
   onSkip,
 }: RoutineStepItemProps) {
-  const isDone = step.status === "COMPLETED";
-  const isSkipped = step.status === "SKIPPED";
-  const isActed = isDone || isSkipped;
-
-  const dosage =
-    step.dosageText ?? (step.amountMl !== null ? `${step.amountMl} ml` : null);
+  const { isCompleted: isDone, isSkipped, isActed, dosageLabel } = step;
 
   return (
     <Card
@@ -60,9 +55,9 @@ export function RoutineStepItem({
               </p>
             )}
             <div className="flex flex-wrap gap-2 pt-1.5">
-              {dosage && (
+              {dosageLabel && (
                 <span className="rounded-md bg-slate-100 px-2 py-0.5 text-[10px] font-semibold text-slate-500">
-                  Lượng dùng: {dosage}
+                  Lượng dùng: {dosageLabel}
                 </span>
               )}
               {step.waitMinutes !== null && step.waitMinutes > 0 && (
