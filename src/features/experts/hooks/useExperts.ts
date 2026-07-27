@@ -7,7 +7,7 @@ import {
   mapBackendExpertToFrontend,
   mapSpecialtyToBackend,
 } from "../mapper/expert-mapper";
-import type { Expert } from "../types/expert.types";
+import type { Expert, BackendExpert } from "../types/expert.types";
 
 export function useExperts(
   filters?: {
@@ -101,5 +101,16 @@ export function useSpecialties(enabled: boolean = true) {
       ];
     },
     enabled,
+  });
+}
+
+export function useExpertMe() {
+  return useQuery({
+    queryKey: ["expert-me"],
+    queryFn: async (): Promise<BackendExpert> => {
+      const response = await expertsApi.getMe();
+      return response.data;
+    },
+    staleTime: 5 * 60 * 1000, // 5 phút cache
   });
 }
