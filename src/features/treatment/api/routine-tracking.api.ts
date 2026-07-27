@@ -2,30 +2,34 @@ import type { AxiosResponse } from "axios";
 import { apiClient } from "@/core/api/client";
 import { API_ENDPOINTS } from "@/core/api/endpoints";
 import type {
+  CheckInResponseDto,
+  HistoryDayDetailResponseDto,
+  TodayRoutineDto,
+  TodayRoutinesResponseDto,
+} from "../types/routine-tracking.dto";
+import type {
   CreateCheckInPayload,
   DateRangeQuery,
-  HistoryDayDetail,
-  RoutineCheckIn,
   RoutineHistoryResponse,
   RoutinePeriod,
   SkipStepPayload,
-  TodayRoutine,
-  TodayRoutinesResponse,
 } from "../types/routine-tracking.types";
 
+// Dumb transport layer: returns backend DTOs untouched. Mapping to the domain model
+// happens in hooks/useRoutineTracking.ts via mapper/routine-tracking.mapper.ts.
 export const routineTrackingApi = {
   getToday: (
     period?: RoutinePeriod,
-  ): Promise<AxiosResponse<TodayRoutinesResponse>> =>
-    apiClient.get<TodayRoutinesResponse>(API_ENDPOINTS.ROUTINES.TODAY, {
+  ): Promise<AxiosResponse<TodayRoutinesResponseDto>> =>
+    apiClient.get<TodayRoutinesResponseDto>(API_ENDPOINTS.ROUTINES.TODAY, {
       params: period ? { period } : undefined,
     }),
 
   completeStep: (
     routineId: string,
     stepId: string,
-  ): Promise<AxiosResponse<TodayRoutine>> =>
-    apiClient.post<TodayRoutine>(
+  ): Promise<AxiosResponse<TodayRoutineDto>> =>
+    apiClient.post<TodayRoutineDto>(
       API_ENDPOINTS.ROUTINES.STEP_COMPLETE(routineId, stepId),
     ),
 
@@ -33,8 +37,8 @@ export const routineTrackingApi = {
     routineId: string,
     stepId: string,
     payload: SkipStepPayload,
-  ): Promise<AxiosResponse<TodayRoutine>> =>
-    apiClient.post<TodayRoutine>(
+  ): Promise<AxiosResponse<TodayRoutineDto>> =>
+    apiClient.post<TodayRoutineDto>(
       API_ENDPOINTS.ROUTINES.STEP_SKIP(routineId, stepId),
       payload,
     ),
@@ -42,8 +46,8 @@ export const routineTrackingApi = {
   createCheckIn: (
     routineId: string,
     payload: CreateCheckInPayload,
-  ): Promise<AxiosResponse<RoutineCheckIn>> =>
-    apiClient.post<RoutineCheckIn>(
+  ): Promise<AxiosResponse<CheckInResponseDto>> =>
+    apiClient.post<CheckInResponseDto>(
       API_ENDPOINTS.ROUTINES.CHECK_INS(routineId),
       payload,
     ),
@@ -51,8 +55,8 @@ export const routineTrackingApi = {
   listCheckIns: (
     routineId: string,
     query: DateRangeQuery,
-  ): Promise<AxiosResponse<RoutineCheckIn[]>> =>
-    apiClient.get<RoutineCheckIn[]>(
+  ): Promise<AxiosResponse<CheckInResponseDto[]>> =>
+    apiClient.get<CheckInResponseDto[]>(
       API_ENDPOINTS.ROUTINES.CHECK_INS(routineId),
       {
         params: query,
@@ -72,8 +76,8 @@ export const routineTrackingApi = {
     routineId: string,
     date: string,
     period?: RoutinePeriod,
-  ): Promise<AxiosResponse<HistoryDayDetail>> =>
-    apiClient.get<HistoryDayDetail>(
+  ): Promise<AxiosResponse<HistoryDayDetailResponseDto>> =>
+    apiClient.get<HistoryDayDetailResponseDto>(
       API_ENDPOINTS.ROUTINES.HISTORY_DAY(routineId, date),
       { params: period ? { period } : undefined },
     ),

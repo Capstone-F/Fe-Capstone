@@ -37,6 +37,7 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "@/shared/components/ui/dialog";
+import { Spinner } from "@/shared/components/ui/spinner";
 import { Textarea } from "@/shared/components/ui/textarea";
 import {
   Tabs,
@@ -59,6 +60,11 @@ import {
   useTodayCheckIns,
   useTodayRoutines,
 } from "../hooks/useRoutineTracking";
+import {
+  aggregateProgress,
+  resolveCareHubState,
+  shouldPromptCheckIn,
+} from "../lib/care-hub-state";
 import { formatVnLongDate } from "../lib/routine-history";
 import type { RoutinePeriod, TodayStep } from "../types/routine-tracking.types";
 
@@ -104,11 +110,13 @@ export function CareHubPage() {
   const [sideEffectNote, setSideEffectNote] = useState("");
   const [isSideEffectOpen, setIsSideEffectOpen] = useState(false);
 
+  const isLoggedIn = !!session.data;
+
   const {
     data: todayData,
     isLoading: isTodayLoading,
     isError: isTodayError,
-  } = useTodayRoutines(periodOverride ?? undefined);
+  } = useTodayRoutines(periodOverride ?? undefined, { enabled: isLoggedIn });
 
   // The period the screen is actually showing: user's tab, else whatever the server chose.
   const activePeriod: RoutinePeriod =
@@ -148,43 +156,38 @@ export function CareHubPage() {
     ? (habitsByKey[habitsStorageKey] ?? persistedHabitIds)
     : [];
 
-  // Flow §5: after the last step is acted on, prompt the daily check-in. Only on the
-  // transition, so re-opening an already-completed day does not pop the dialog again.
+  // Flow §5: after the last step is acted on, prompt the daily check-in. The rule lives
+  // in lib/care-hub-state.ts (unit-tested); the ref only carries the previous render.
   const previousSessionStateRef = useRef(todayData?.sessionState);
   useEffect(() => {
     const previous = previousSessionStateRef.current;
     previousSessionStateRef.current = todayData?.sessionState;
     if (
-      previous !== undefined &&
-      previous !== "COMPLETED" &&
-      todayData?.sessionState === "COMPLETED" &&
-      !currentCheckIn
+      shouldPromptCheckIn({
+        previous,
+        current: todayData?.sessionState,
+        hasCheckIn: Boolean(currentCheckIn),
+      })
     ) {
       setIsCheckInOpen(true);
     }
   }, [todayData?.sessionState, currentCheckIn]);
 
-  const isLoggedIn = !!session.data;
-  const hasRoutine =
-    todayData !== undefined && todayData.sessionState !== "EMPTY";
+  const careHubState = resolveCareHubState({
+    isSessionLoading: session.isLoading,
+    isLoggedIn,
+    isTodayLoading,
+    isTodayError,
+    sessionState: todayData?.sessionState,
+  });
 
   const stepEntries = (todayData?.routines ?? []).flatMap((routine) =>
     routine.steps.map((step) => ({ routineId: routine.id, step })),
   );
 
-  const progress = todayData?.routines.reduce(
-    (accumulator, routine) => ({
-      completedCount:
-        accumulator.completedCount + routine.progress.completedCount,
-      totalCount: accumulator.totalCount + routine.progress.totalCount,
-    }),
-    { completedCount: 0, totalCount: 0 },
-  ) ?? { completedCount: 0, totalCount: 0 };
-
-  const progressPct =
-    progress.totalCount > 0
-      ? Math.round((progress.completedCount / progress.totalCount) * 100)
-      : 0;
+  const progressPct = aggregateProgress(
+    todayData?.routines ?? [],
+  ).completionRate;
 
   const handleStepError = (error: unknown) => {
     if (error instanceof ApiError && error.status === 409) {
@@ -236,8 +239,16 @@ export function CareHubPage() {
     toast.success("Đã ghi nhận thói quen tốt!");
   };
 
-  // State 1: Guest User
-  if (!session.isLoading && !isLoggedIn) {
+  // Render branches follow resolveCareHubState's priority order.
+  if (careHubState.status === "AUTH_PENDING") {
+    return (
+      <div className="flex w-full justify-center py-16">
+        <Spinner />
+      </div>
+    );
+  }
+
+  if (careHubState.status === "GUEST") {
     return (
       <div className="mx-auto flex w-full max-w-4xl flex-col items-center gap-6 py-12 text-center">
         <div className="flex h-16 w-16 items-center justify-center rounded-2xl bg-[#E2EBE6] text-[#2C3E35] shadow-xs">
@@ -285,8 +296,7 @@ export function CareHubPage() {
     );
   }
 
-  // State 2a: Logged in but today's routine failed to load
-  if (isLoggedIn && !isTodayLoading && isTodayError) {
+  if (careHubState.status === "ERROR") {
     return (
       <div className="mx-auto flex w-full max-w-4xl flex-col items-center gap-6 py-12 text-center">
         <div className="flex h-16 w-16 items-center justify-center rounded-2xl bg-red-50 text-red-600 shadow-xs">
@@ -304,8 +314,7 @@ export function CareHubPage() {
     );
   }
 
-  // State 2b: Logged in but no routine
-  if (isLoggedIn && !isTodayLoading && !isTodayError && !hasRoutine) {
+  if (careHubState.status === "NO_ROUTINE") {
     return (
       <div className="mx-auto flex w-full max-w-4xl flex-col items-center gap-6 py-12 text-center">
         <div className="flex h-16 w-16 items-center justify-center rounded-2xl bg-[#EBF2EE] text-[#2C3E35] shadow-xs">
