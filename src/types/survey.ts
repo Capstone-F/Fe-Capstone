@@ -83,6 +83,11 @@ export interface RuleEngineProtocolDto {
   code: string;
   name: string;
   description?: string;
+  ingredientName?: string;
+  concentrationPct?: number;
+  timeOfUse?: string;
+  durationWeeks?: number;
+  instructions?: string;
 }
 
 export interface RecommendationResponseDto {

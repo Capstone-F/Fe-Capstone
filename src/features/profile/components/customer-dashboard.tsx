@@ -155,7 +155,13 @@ function ProfileForm({ profile, updateProfileMutation }: ProfileFormProps) {
   );
 }
 
-type TabType = "profile" | "baumann" | "orders" | "bookings";
+type TabType =
+  | "profile"
+  | "baumann"
+  | "orders"
+  | "bookings"
+  | "wallet"
+  | "treatment";
 
 export function CustomerDashboard() {
   const router = useRouter();

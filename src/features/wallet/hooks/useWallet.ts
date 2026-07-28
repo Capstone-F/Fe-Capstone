@@ -40,15 +40,11 @@ export function usePayConsultation() {
   return useMutation({
     mutationFn: async ({
       consultationId,
-      amountVnd,
     }: {
       consultationId: string;
-      amountVnd: number;
+      amountVnd?: number;
     }) => {
-      const response = await walletApi.payConsultation(
-        consultationId,
-        amountVnd,
-      );
+      const response = await walletApi.payConsultation(consultationId);
       return response.data;
     },
     onSuccess: () => {

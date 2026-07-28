@@ -9,6 +9,7 @@ export interface ConsultationBooking {
   id: string;
   expertId: string;
   expertName: string;
+  customerName?: string | null;
   userId: string;
   slotId: string;
   dateTime: string;

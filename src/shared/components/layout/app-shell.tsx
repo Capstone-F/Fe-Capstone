@@ -21,8 +21,8 @@ export function AppShell({ children, showFooter = true }: AppShellProps) {
   const pathname = usePathname();
 
   useEffect(() => {
-    if (session?.user?.roles || session?.roles) {
-      const roles: string[] = session.user?.roles || session.roles || [];
+    if (session?.roles) {
+      const roles: string[] = session.roles || [];
       const isManagement = roles.some((r) =>
         ["app_admin", "staff", "clinic_manager"].includes(r),
       );

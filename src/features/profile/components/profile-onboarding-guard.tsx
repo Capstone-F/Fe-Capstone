@@ -59,7 +59,7 @@ export function ProfileOnboardingGuard() {
   if (!session || !profile) return null;
 
   // Skip onboarding entirely for Admin, Staff, Expert, and Clinic Manager roles
-  const userRoles = session.user?.roles || session.roles || [];
+  const userRoles = session.roles || [];
   const isManagementRole = userRoles.some((role: string) =>
     ["app_admin", "staff", "expert", "clinic_manager"].includes(role),
   );

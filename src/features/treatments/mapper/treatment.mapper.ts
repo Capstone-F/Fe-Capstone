@@ -2,6 +2,7 @@ import type {
   TreatmentPlan,
   TreatmentPhase,
   RoutineStep,
+  Ingredient,
 } from "../types/treatment.types";
 
 export function mapBackendTreatmentToFrontend(

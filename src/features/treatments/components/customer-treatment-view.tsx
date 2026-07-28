@@ -24,7 +24,7 @@ import { toast } from "sonner";
 
 export function CustomerTreatmentView() {
   const router = useRouter();
-  const { data: plans, isLoading } = useTreatmentPlans("user_customer_demo");
+  const { data: plans, isLoading } = useTreatmentPlans();
   const payPlanMutation = usePayTreatmentPlan();
   const activePlan = plans?.[0];
 

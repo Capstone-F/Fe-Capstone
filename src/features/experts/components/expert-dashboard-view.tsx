@@ -39,7 +39,7 @@ import {
   useStartBooking,
   useCompleteBooking,
 } from "@/features/booking/hooks/useBooking";
-import type { Booking } from "@/features/booking/types/booking.types";
+import type { ConsultationBooking } from "@/features/booking/types/booking.types";
 
 type FilterTab =
   | "ALL"
@@ -53,13 +53,11 @@ export function ExpertDashboardView() {
   const router = useRouter();
   const [activeTab, setActiveTab] = useState<FilterTab>("ALL");
   const [searchTerm, setSearchTerm] = useState("");
-  const [cancelModalBooking, setCancelModalBooking] = useState<Booking | null>(
-    null,
-  );
+  const [cancelModalBooking, setCancelModalBooking] =
+    useState<ConsultationBooking | null>(null);
   const [cancelReason, setCancelReason] = useState("");
-  const [videoCallBooking, setVideoCallBooking] = useState<Booking | null>(
-    null,
-  );
+  const [videoCallBooking, setVideoCallBooking] =
+    useState<ConsultationBooking | null>(null);
 
   // Queries & Mutations
   const {
@@ -87,7 +85,7 @@ export function ExpertDashboardView() {
     });
   };
 
-  const handleOpenCancelModal = (booking: Booking) => {
+  const handleOpenCancelModal = (booking: ConsultationBooking) => {
     setCancelModalBooking(booking);
     setCancelReason("");
   };
@@ -469,11 +467,8 @@ export function ExpertDashboardView() {
                         size="sm"
                         variant="outline"
                         onClick={() => {
-                          const cid =
-                            booking.customerId || "user_customer_demo";
-                          const cname = encodeURIComponent(
-                            booking.customerName || "Bệnh nhân",
-                          );
+                          const cid = booking.userId || "user_customer_demo";
+                          const cname = encodeURIComponent("Bệnh nhân");
                           router.push(
                             `/expert/treatments/builder?customerId=${cid}&customerName=${cname}`,
                           );
@@ -634,7 +629,7 @@ export function ExpertDashboardView() {
 /**
  * Status Badge Renderer
  */
-function renderStatusBadge(booking: Booking) {
+function renderStatusBadge(booking: ConsultationBooking) {
   const statusNorm = (booking.status || "").toUpperCase();
 
   if (booking.isFollowUp) {

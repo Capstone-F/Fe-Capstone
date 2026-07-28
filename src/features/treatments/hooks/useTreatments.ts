@@ -32,6 +32,8 @@ export function useCreateTreatmentPlan() {
       customerId: string;
       title: string;
       description?: string;
+      startDate?: string;
+      endDate?: string;
       sourceConsultationId?: string;
     }) => {
       const response = await treatmentApi.createPlan(payload);
@@ -52,7 +54,13 @@ export function useAddPhase() {
     }: {
       treatmentId: string;
       payload: {
-        phaseType: "INITIAL" | "TREATMENT" | "MAINTENANCE";
+        phaseType:
+          | "INITIAL_ASSESSMENT"
+          | "ACTIVE_TREATMENT"
+          | "MAINTENANCE"
+          | "RECOVERY"
+          | "INITIAL"
+          | "TREATMENT";
         title: string;
         notes?: string;
         priceVnd: number;

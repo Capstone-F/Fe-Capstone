@@ -69,9 +69,8 @@ export function AppSidebar({ config, ...props }: AppSidebarProps) {
   const session = useSession();
   const { data: profile } = useProfile();
 
-  const currentUser = session.data?.user || profile || null;
-  const roles: string[] =
-    session.data?.user?.roles || session.data?.roles || profile?.roles || [];
+  const currentUser = session.data || profile || null;
+  const roles: string[] = session.data?.roles || [];
 
   // Determine portal scope
   const isExpertPortal =

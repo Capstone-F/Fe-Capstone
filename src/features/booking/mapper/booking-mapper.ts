@@ -40,6 +40,7 @@ export function mapBackendBookingToFrontend(
     id: be.id,
     expertId: be.expertId,
     expertName: be.expertName || "Chuyên gia da liễu",
+    customerName: be.customerName || "Bệnh nhân",
     userId: be.customerId,
     slotId: `${be.expertId}_${be.scheduledAt}`,
     dateTime: be.scheduledAt,

@@ -49,8 +49,7 @@ export function LoginPanel({ redirectTo }: LoginPanelProps) {
 
   useEffect(() => {
     if (session.data) {
-      const roles: string[] =
-        session.data.user?.roles || session.data.roles || [];
+      const roles: string[] = session.data.roles || [];
       const target = getRoleBasedRedirectPath(roles, redirectTo);
       router.replace(target);
     }
@@ -108,8 +107,7 @@ export function LoginPanel({ redirectTo }: LoginPanelProps) {
       }
 
       // Determine redirect path by user roles
-      const roles: string[] =
-        tokenData?.user?.roles || session.data?.user?.roles || [];
+      const roles: string[] = session.data?.roles || [];
       const targetPath = getRoleBasedRedirectPath(roles, redirectTo);
 
       // Redirect to target path

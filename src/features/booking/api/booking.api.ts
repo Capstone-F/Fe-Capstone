@@ -43,6 +43,14 @@ export const bookingApi = {
     });
   },
 
+  getBookingById: (id: string): Promise<AxiosResponse<BackendBooking>> => {
+    return apiClient.get<BackendBooking>(API_ENDPOINTS.BOOKINGS.DETAIL(id));
+  },
+
+  payBooking: (id: string): Promise<AxiosResponse<BackendBooking>> => {
+    return apiClient.post<BackendBooking>(API_ENDPOINTS.BOOKINGS.PAY(id));
+  },
+
   getExpertBookings: (params?: {
     tab?: "upcoming" | "past" | "cancelled";
     status?: string;

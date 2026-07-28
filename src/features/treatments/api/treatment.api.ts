@@ -1,4 +1,5 @@
 import { apiClient } from "@/core/api/client";
+import { API_ENDPOINTS } from "@/core/api/endpoints";
 import type { AxiosResponse } from "axios";
 import type {
   TreatmentPlan,
@@ -6,21 +7,15 @@ import type {
   ProductCandidate,
   Ingredient,
 } from "../types/treatment.types";
-import { treatmentMock } from "./treatment.mock";
 import { mapBackendTreatmentToFrontend } from "../mapper/treatment.mapper";
-import { appConfig } from "@/lib/env";
 
 export const treatmentApi = {
   getPlans: async (
     customerId?: string,
     as?: "customer" | "expert",
   ): Promise<AxiosResponse<TreatmentPlan[]>> => {
-    if (appConfig.useMockApi) {
-      const data = await treatmentMock.getPlans(customerId);
-      return { data } as AxiosResponse<TreatmentPlan[]>;
-    }
     const res = await apiClient.get<Record<string, unknown>[]>(
-      "/treatments/me",
+      API_ENDPOINTS.TREATMENTS.LIST_MINE,
       {
         params: { customerId, as },
       },
@@ -32,13 +27,8 @@ export const treatmentApi = {
   },
 
   getPlanById: async (id: string): Promise<AxiosResponse<TreatmentPlan>> => {
-    if (appConfig.useMockApi) {
-      const data = await treatmentMock.getPlanById(id);
-      if (!data) throw new Error("Plan not found");
-      return { data } as AxiosResponse<TreatmentPlan>;
-    }
     const res = await apiClient.get<Record<string, unknown>>(
-      `/treatments/${id}`,
+      API_ENDPOINTS.TREATMENTS.DETAIL(id),
     );
     return {
       ...res,
@@ -50,14 +40,12 @@ export const treatmentApi = {
     customerId: string;
     title: string;
     description?: string;
+    startDate?: string;
+    endDate?: string;
     sourceConsultationId?: string;
   }): Promise<AxiosResponse<TreatmentPlan>> => {
-    if (appConfig.useMockApi) {
-      const data = await treatmentMock.createPlan(payload);
-      return { data } as AxiosResponse<TreatmentPlan>;
-    }
     const res = await apiClient.post<Record<string, unknown>>(
-      "/treatments",
+      API_ENDPOINTS.TREATMENTS.CREATE,
       payload,
     );
     return {
@@ -69,7 +57,13 @@ export const treatmentApi = {
   addPhase: async (
     treatmentId: string,
     payload: {
-      phaseType: "INITIAL" | "TREATMENT" | "MAINTENANCE";
+      phaseType:
+        | "INITIAL_ASSESSMENT"
+        | "ACTIVE_TREATMENT"
+        | "MAINTENANCE"
+        | "RECOVERY"
+        | "INITIAL"
+        | "TREATMENT";
       title: string;
       notes?: string;
       priceVnd: number;
@@ -77,26 +71,10 @@ export const treatmentApi = {
       endDate?: string;
     },
   ): Promise<AxiosResponse<TreatmentPhase>> => {
-    if (appConfig.useMockApi) {
-      const data: TreatmentPhase = {
-        id: `phase_${Date.now()}`,
-        phaseNumber: 1,
-        title: payload.title,
-        durationWeeks: 4,
-        priceVnd: payload.priceVnd,
-        status: "DRAFT",
-        targetIngredients: [],
-        amSteps: [],
-        pmSteps: [],
-        notes: payload.notes,
-      };
-      return { data } as AxiosResponse<TreatmentPhase>;
-    }
-    const res = await apiClient.post<TreatmentPhase>(
-      `/treatments/${treatmentId}/phases`,
+    return apiClient.post<TreatmentPhase>(
+      API_ENDPOINTS.TREATMENTS.PHASES(treatmentId),
       payload,
     );
-    return res;
   },
 
   updatePhase: async (
@@ -110,30 +88,21 @@ export const treatmentApi = {
       endDate?: string;
     },
   ): Promise<AxiosResponse<TreatmentPhase>> => {
-    if (appConfig.useMockApi) {
-      return { data: { id: phaseId } } as AxiosResponse<TreatmentPhase>;
-    }
     return apiClient.patch<TreatmentPhase>(
-      `/treatments/phases/${phaseId}`,
+      API_ENDPOINTS.TREATMENTS.PHASE_DETAIL(phaseId),
       payload,
     );
   },
 
   deletePhase: async (phaseId: string): Promise<AxiosResponse<void>> => {
-    if (appConfig.useMockApi) {
-      return { data: undefined } as AxiosResponse<void>;
-    }
-    return apiClient.delete<void>(`/treatments/phases/${phaseId}`);
+    return apiClient.delete<void>(
+      API_ENDPOINTS.TREATMENTS.PHASE_DETAIL(phaseId),
+    );
   },
 
   submitPlan: async (id: string): Promise<AxiosResponse<TreatmentPlan>> => {
-    if (appConfig.useMockApi) {
-      const data = await treatmentMock.getPlanById(id);
-      if (data) data.status = "PENDING_PAYMENT";
-      return { data } as AxiosResponse<TreatmentPlan>;
-    }
     const res = await apiClient.post<Record<string, unknown>>(
-      `/treatments/${id}/submit`,
+      API_ENDPOINTS.TREATMENTS.SUBMIT(id),
     );
     return {
       ...res,
@@ -144,13 +113,8 @@ export const treatmentApi = {
   payTreatmentPlan: async (
     id: string,
   ): Promise<AxiosResponse<TreatmentPlan>> => {
-    if (appConfig.useMockApi) {
-      const data = await treatmentMock.getPlanById(id);
-      if (data) data.status = "ACTIVE";
-      return { data } as AxiosResponse<TreatmentPlan>;
-    }
     const res = await apiClient.post<Record<string, unknown>>(
-      `/treatments/${id}/pay`,
+      API_ENDPOINTS.TREATMENTS.PAY(id),
     );
     return {
       ...res,
@@ -159,28 +123,15 @@ export const treatmentApi = {
   },
 
   getIngredients: async (): Promise<AxiosResponse<Ingredient[]>> => {
-    if (appConfig.useMockApi) {
-      return {
-        data: [
-          { id: "ing_1", name: "Azelaic Acid", category: "Anti-acne" },
-          { id: "ing_2", name: "Niacinamide", category: "Soothing" },
-          { id: "ing_3", name: "Hyaluronic Acid", category: "Moisturizer" },
-          { id: "ing_4", name: "Glycolic Acid", category: "Exfoliant" },
-        ],
-      } as AxiosResponse<Ingredient[]>;
-    }
-    return apiClient.get<Ingredient[]>("/ingredients");
+    return apiClient.get<Ingredient[]>(API_ENDPOINTS.INGREDIENTS.LIST);
   },
 
   setPhaseIngredients: async (
     phaseId: string,
     ingredientIds: string[],
   ): Promise<AxiosResponse<TreatmentPhase>> => {
-    if (appConfig.useMockApi) {
-      return { data: {} } as AxiosResponse<TreatmentPhase>;
-    }
     return apiClient.post<TreatmentPhase>(
-      `/treatments/phases/${phaseId}/ingredients`,
+      API_ENDPOINTS.TREATMENTS.SET_INGREDIENTS(phaseId),
       { ingredientIds },
     );
   },
@@ -188,32 +139,8 @@ export const treatmentApi = {
   getProductCandidates: async (
     phaseId: string,
   ): Promise<AxiosResponse<ProductCandidate[]>> => {
-    if (appConfig.useMockApi) {
-      return {
-        data: [
-          {
-            productVariantId: "var_1",
-            sku: "SKU-001",
-            productName: "Serum Azelaic Acid 10%",
-            brand: "GlowScan Derm",
-            priceVnd: 350000,
-            overlapScore: 100,
-            matchedIngredients: ["Azelaic Acid"],
-          },
-          {
-            productVariantId: "var_2",
-            sku: "SKU-002",
-            productName: "Niacinamide 10% + Zinc 1%",
-            brand: "GlowScan Derm",
-            priceVnd: 280000,
-            overlapScore: 80,
-            matchedIngredients: ["Niacinamide"],
-          },
-        ],
-      } as AxiosResponse<ProductCandidate[]>;
-    }
     return apiClient.get<ProductCandidate[]>(
-      `/treatments/phases/${phaseId}/product-candidates`,
+      API_ENDPOINTS.TREATMENTS.PRODUCT_CANDIDATES(phaseId),
     );
   },
 
@@ -221,11 +148,8 @@ export const treatmentApi = {
     phaseId: string,
     productVariantIds: string[],
   ): Promise<AxiosResponse<TreatmentPhase>> => {
-    if (appConfig.useMockApi) {
-      return { data: {} } as AxiosResponse<TreatmentPhase>;
-    }
     return apiClient.post<TreatmentPhase>(
-      `/treatments/phases/${phaseId}/products`,
+      API_ENDPOINTS.TREATMENTS.SET_PRODUCTS(phaseId),
       { productVariantIds },
     );
   },
@@ -233,24 +157,16 @@ export const treatmentApi = {
   generateRoutine: async (
     phaseId: string,
   ): Promise<AxiosResponse<Record<string, unknown>>> => {
-    if (appConfig.useMockApi) {
-      return { data: { id: "rot_1" } } as AxiosResponse<
-        Record<string, unknown>
-      >;
-    }
     return apiClient.post<Record<string, unknown>>(
-      `/treatments/phases/${phaseId}/routines/generate`,
+      API_ENDPOINTS.TREATMENTS.ROUTINE_GENERATE(phaseId),
     );
   },
 
   saveRoutine: async (
     routineId: string,
   ): Promise<AxiosResponse<Record<string, unknown>>> => {
-    if (appConfig.useMockApi) {
-      return { data: {} } as AxiosResponse<Record<string, unknown>>;
-    }
     return apiClient.post<Record<string, unknown>>(
-      `/treatments/routines/${routineId}/save`,
+      API_ENDPOINTS.TREATMENTS.ROUTINE_SAVE(routineId),
     );
   },
 
@@ -258,11 +174,8 @@ export const treatmentApi = {
     routineId: string,
     payload: Record<string, unknown>,
   ): Promise<AxiosResponse<Record<string, unknown>>> => {
-    if (appConfig.useMockApi) {
-      return { data: {} } as AxiosResponse<Record<string, unknown>>;
-    }
     return apiClient.patch<Record<string, unknown>>(
-      `/treatments/routines/${routineId}`,
+      API_ENDPOINTS.TREATMENTS.ROUTINE_UPDATE(routineId),
       payload,
     );
   },
@@ -270,11 +183,8 @@ export const treatmentApi = {
   activatePhase: async (
     phaseId: string,
   ): Promise<AxiosResponse<TreatmentPhase>> => {
-    if (appConfig.useMockApi) {
-      return { data: {} } as AxiosResponse<TreatmentPhase>;
-    }
     return apiClient.post<TreatmentPhase>(
-      `/treatments/phases/${phaseId}/activate`,
+      API_ENDPOINTS.TREATMENTS.ACTIVATE_PHASE(phaseId),
     );
   },
 };

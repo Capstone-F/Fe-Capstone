@@ -1,8 +1,6 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { queryKeys } from "@/lib/query/keys";
-import { appConfig } from "@/lib/env";
 import { bookingApi } from "../api/booking.api";
-import { bookingMock } from "../api/booking.mock";
 import { mapBackendBookingToFrontend } from "../mapper/booking-mapper";
 import type { TimeSlot } from "../types/booking.types";
 
@@ -20,11 +18,6 @@ export function useSlots(expertId: string, anchorDate?: string) {
   return useQuery({
     queryKey: ["slots", expertId, targetDate],
     queryFn: async () => {
-      if (appConfig.useMockApi) {
-        const allMockSlots = await bookingMock.getSlots(expertId);
-        return allMockSlots.filter((s) => isSlotBookable(s.dateTime));
-      }
-
       const response = await bookingApi.getSlots(expertId, targetDate, "week");
       const slots: TimeSlot[] = [];
 
@@ -51,10 +44,6 @@ export function useBookings() {
   return useQuery({
     queryKey: queryKeys.bookings,
     queryFn: async () => {
-      if (appConfig.useMockApi) {
-        return bookingMock.getBookings();
-      }
-
       const response = await bookingApi.getBookings();
       return response.data.items.map(mapBackendBookingToFrontend);
     },
@@ -65,18 +54,18 @@ export function useBookingDetail(id: string) {
   return useQuery({
     queryKey: queryKeys.booking(id),
     queryFn: async () => {
-      if (appConfig.useMockApi) {
-        return bookingMock.getBookingById(id);
+      try {
+        const response = await bookingApi.getBookingById(id);
+        return mapBackendBookingToFrontend(response.data);
+      } catch {
+        const response = await bookingApi.getBookings();
+        const bookings = response.data.items.map(mapBackendBookingToFrontend);
+        const bk = bookings.find((b) => b.id === id);
+        if (!bk) {
+          throw new Error(`Đơn đặt lịch ${id} không tồn tại.`);
+        }
+        return bk;
       }
-
-      // Real API Logic: Filter from active bookings
-      const response = await bookingApi.getBookings();
-      const bookings = response.data.items.map(mapBackendBookingToFrontend);
-      const bk = bookings.find((b) => b.id === id);
-      if (!bk) {
-        throw new Error(`Đơn đặt lịch ${id} không tồn tại.`);
-      }
-      return bk;
     },
     enabled: !!id,
   });
@@ -93,10 +82,6 @@ export function useCreateBooking() {
       symptoms: string;
       amount: number;
     }) => {
-      if (appConfig.useMockApi) {
-        return bookingMock.createBooking(input);
-      }
-
       const response = await bookingApi.createBooking({
         expertId: input.expertId,
         scheduledAt: input.dateTime,
@@ -112,8 +97,17 @@ export function useCreateBooking() {
 }
 
 export function usePayConsultation() {
+  const queryClient = useQueryClient();
   return useMutation({
-    mutationFn: (bookingId: string) => bookingMock.payConsultation(bookingId),
+    mutationFn: async (bookingId: string) => {
+      const response = await bookingApi.payBooking(bookingId);
+      return mapBackendBookingToFrontend(response.data);
+    },
+    onSuccess: (data) => {
+      queryClient.invalidateQueries({ queryKey: queryKeys.bookings });
+      queryClient.invalidateQueries({ queryKey: queryKeys.booking(data.id) });
+      queryClient.invalidateQueries({ queryKey: ["wallet"] });
+    },
   });
 }
 
@@ -122,26 +116,12 @@ export function useUpdatePaymentStatus() {
   return useMutation({
     mutationFn: async ({
       bookingId,
-      isPaid = true,
     }: {
       bookingId: string;
       isPaid?: boolean;
     }) => {
-      if (appConfig.useMockApi) {
-        return bookingMock.updatePaymentStatus(
-          bookingId,
-          isPaid ? "paid" : "pending",
-        );
-      }
-
-      // Real API Logic: Fetch bookings and find
-      const response = await bookingApi.getBookings();
-      const bookings = response.data.items.map(mapBackendBookingToFrontend);
-      const bk = bookings.find((b) => b.id === bookingId);
-      if (!bk) {
-        throw new Error(`Đơn đặt lịch ${bookingId} không tồn tại.`);
-      }
-      return bk;
+      const response = await bookingApi.payBooking(bookingId);
+      return mapBackendBookingToFrontend(response.data);
     },
     onSuccess: (data) => {
       queryClient.invalidateQueries({ queryKey: queryKeys.bookings });
@@ -162,10 +142,6 @@ export function useExpertBookings(params?: {
   return useQuery({
     queryKey: ["expert-bookings", params],
     queryFn: async () => {
-      if (appConfig.useMockApi) {
-        return bookingMock.getBookings();
-      }
-
       const response = await bookingApi.getExpertBookings(params);
       return response.data.items.map(mapBackendBookingToFrontend);
     },
