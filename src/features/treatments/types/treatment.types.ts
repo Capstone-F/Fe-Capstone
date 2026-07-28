@@ -52,6 +52,9 @@ export interface TreatmentPlan {
   expertId: string;
   expertName?: string;
   title: string;
+  description?: string;
+  startDate?: string;
+  endDate?: string;
   totalFeeVnd: number;
   status: "DRAFT" | "PENDING_PAYMENT" | "ACTIVE" | "COMPLETED" | "CANCELLED";
   phases: TreatmentPhase[];

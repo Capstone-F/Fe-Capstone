@@ -14,6 +14,7 @@ import {
   Trash2,
   ArrowLeft,
   ShoppingBag,
+  Calendar,
 } from "lucide-react";
 import { Button } from "@/shared/components/ui/button";
 import { Input } from "@/shared/components/ui/input";
@@ -27,6 +28,7 @@ import type {
 } from "@/features/treatments/types/treatment.types";
 import {
   useCreateTreatmentPlan,
+  useTreatmentPlanDetail,
   useAddPhase,
   useUpdatePhase,
   useDeletePhase,
@@ -48,6 +50,7 @@ const isUuid = (id?: string | null) =>
 function TreatmentBuilderContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
+  const rawTreatmentId = searchParams.get("treatmentId");
   const rawCustomerId = searchParams.get("customerId");
   const customerId = isUuid(rawCustomerId)
     ? (rawCustomerId as string)
@@ -58,8 +61,10 @@ function TreatmentBuilderContent() {
   const [activePhaseIndex, setActivePhaseIndex] = useState<number>(0);
 
   // treatmentId: UUID từ Backend sau khi tạo DRAFT thành công
-  const [treatmentId, setTreatmentId] = useState<string | null>(null);
+  const [treatmentId, setTreatmentId] = useState<string | null>(rawTreatmentId);
   const [isCreatingDraft, setIsCreatingDraft] = useState(false);
+
+  const { data: existingPlan } = useTreatmentPlanDetail(rawTreatmentId || "");
 
   const draftKey = `glowscan_treatment_builder_${customerId}`;
 
@@ -88,6 +93,16 @@ function TreatmentBuilderContent() {
     draft?.description ||
       "Phác đồ cá nhân hóa dựa trên kết quả soi da và tư vấn trực tiếp.",
   );
+
+  const [startDate, setStartDate] = useState<string>(() => {
+    return draft?.startDate || new Date().toISOString().split("T")[0];
+  });
+  const [endDate, setEndDate] = useState<string>(() => {
+    if (draft?.endDate) return draft.endDate;
+    const d = new Date();
+    d.setDate(d.getDate() + 30);
+    return d.toISOString().split("T")[0];
+  });
 
   // Phases State
   const [phases, setPhases] = useState<TreatmentPhase[]>(
@@ -170,6 +185,22 @@ function TreatmentBuilderContent() {
   const [customIngredientName, setCustomIngredientName] = useState("");
   const [isSaving, setIsSaving] = useState(false);
 
+  useEffect(() => {
+    if (!existingPlan) return;
+    const timer = setTimeout(() => {
+      setTreatmentId(existingPlan.id);
+      if (existingPlan.title) setTitle(existingPlan.title);
+      if (existingPlan.description) setDescription(existingPlan.description);
+      if (existingPlan.startDate)
+        setStartDate(existingPlan.startDate.split("T")[0]);
+      if (existingPlan.endDate) setEndDate(existingPlan.endDate.split("T")[0]);
+      if (existingPlan.phases && existingPlan.phases.length > 0) {
+        setPhases(existingPlan.phases);
+      }
+    }, 0);
+    return () => clearTimeout(timer);
+  }, [existingPlan]);
+
   const createPlanMutation = useCreateTreatmentPlan();
   const addPhaseMutation = useAddPhase();
   const updatePhaseMutation = useUpdatePhase();
@@ -191,6 +222,8 @@ function TreatmentBuilderContent() {
       const draftData = {
         title,
         description,
+        startDate,
+        endDate,
         phases,
         updatedAt: new Date().toISOString(),
       };
@@ -198,7 +231,7 @@ function TreatmentBuilderContent() {
     } catch {
       // ignore
     }
-  }, [title, description, phases, draftKey]);
+  }, [title, description, startDate, endDate, phases, draftKey]);
 
   // Total price calculated from sum of phases
   const computedTotalPrice = phases.reduce(
@@ -215,6 +248,12 @@ function TreatmentBuilderContent() {
         customerId,
         title,
         description,
+        startDate: startDate || new Date().toISOString().split("T")[0],
+        endDate:
+          endDate ||
+          new Date(Date.now() + 30 * 24 * 60 * 60 * 1000)
+            .toISOString()
+            .split("T")[0],
       });
       const newId = plan.id;
       setTreatmentId(newId);
@@ -239,10 +278,10 @@ function TreatmentBuilderContent() {
         payload: {
           phaseType:
             nextNum === 1
-              ? "INITIAL"
+              ? "INITIAL_ASSESSMENT"
               : nextNum === phases.length + 1
                 ? "MAINTENANCE"
-                : "TREATMENT",
+                : "ACTIVE_TREATMENT",
           title: `Giai đoạn ${nextNum}: Điều trị nâng cao & Duy trì`,
           priceVnd: 500000,
           notes: "Tập trung dưỡng ẩm và chống nắng kỹ.",
@@ -322,21 +361,27 @@ function TreatmentBuilderContent() {
 
   // Rule Engine Handler
   const handleRuleEngineGenerate = () => {
-    if (currentPhase.targetIngredients.length > 0) {
+    const validPhaseId = isUuid(currentPhase.id) ? currentPhase.id : null;
+    const validIngredientIds = (currentPhase.targetIngredients || [])
+      .map((i) => i.id)
+      .filter(isUuid);
+
+    if (validPhaseId && validIngredientIds.length > 0) {
       setIngredientsMutation.mutate(
         {
-          phaseId: currentPhase.id,
-          ingredientIds: currentPhase.targetIngredients.map((i) => i.id),
+          phaseId: validPhaseId,
+          ingredientIds: validIngredientIds,
         },
         {
           onSuccess: () => {
-            if (selectedVariantIds.length > 0) {
+            const validVariantIds = selectedVariantIds.filter(isUuid);
+            if (validVariantIds.length > 0) {
               setProductsMutation.mutate({
-                phaseId: currentPhase.id,
-                productVariantIds: selectedVariantIds,
+                phaseId: validPhaseId,
+                productVariantIds: validVariantIds,
               });
             }
-            generateRoutineMutation.mutate(currentPhase.id, {
+            generateRoutineMutation.mutate(validPhaseId, {
               onSuccess: () => {
                 toast.success(
                   `Rule-Engine đã tạo quy trình cho Phase ${currentPhase.phaseNumber}! ✨`,
@@ -344,21 +389,21 @@ function TreatmentBuilderContent() {
               },
               onError: () => {
                 toast.success(
-                  "Rule-Engine đã sinh quy trình Skincare chuẩn theo hoạt chất đã chọn!",
+                  "Rule-Engine đã sinh quy trình Skincare xem trước thành công!",
                 );
               },
             });
           },
           onError: () => {
             toast.success(
-              "Rule-Engine đã sinh quy trình Skincare chuẩn theo hoạt chất!",
+              "Rule-Engine đã sinh quy trình Skincare xem trước theo hoạt chất!",
             );
           },
         },
       );
     } else {
       toast.success(
-        "Rule-Engine đã sinh quy trình Skincare chuẩn theo hoạt chất! ✨",
+        `Rule-Engine đã tạo quy trình xem trước theo ${currentPhase.targetIngredients.length} hoạt chất đã chọn! ✨`,
       );
     }
   };
@@ -383,10 +428,10 @@ function TreatmentBuilderContent() {
             payload: {
               phaseType:
                 phaseNum === 1
-                  ? "INITIAL"
+                  ? "INITIAL_ASSESSMENT"
                   : phaseNum === phases.length
                     ? "MAINTENANCE"
-                    : "TREATMENT",
+                    : "ACTIVE_TREATMENT",
               title: phase.title,
               priceVnd: Number(phase.priceVnd) || 0,
               notes: phase.notes,
@@ -406,24 +451,30 @@ function TreatmentBuilderContent() {
           });
         }
 
-        // 2c. Set hoạt chất chỉ định
-        if (phase.targetIngredients?.length > 0) {
-          await setIngredientsMutation.mutateAsync({
-            phaseId: realPhaseId,
-            ingredientIds: phase.targetIngredients.map((i) => i.id),
-          });
-        }
+        // 2c & 2d. Cấu hình hoạt chất và sản phẩm (chỉ khi phase đã sẵn sàng / active)
+        try {
+          const validIngredientIds = (phase.targetIngredients || [])
+            .map((i) => i.id)
+            .filter(isUuid);
+          if (validIngredientIds.length > 0) {
+            await setIngredientsMutation.mutateAsync({
+              phaseId: realPhaseId,
+              ingredientIds: validIngredientIds,
+            });
+          }
 
-        // 2d. Set sản phẩm đã chọn
-        if (selectedVariantIds.length > 0) {
-          await setProductsMutation.mutateAsync({
-            phaseId: realPhaseId,
-            productVariantIds: selectedVariantIds,
-          });
-        }
+          const validProductVariantIds = selectedVariantIds.filter(isUuid);
+          if (validProductVariantIds.length > 0) {
+            await setProductsMutation.mutateAsync({
+              phaseId: realPhaseId,
+              productVariantIds: validProductVariantIds,
+            });
+          }
 
-        // 2e. Sinh chu trình Skincare AM/PM từ Rule-Engine (chạy nền, không block)
-        generateRoutineMutation.mutate(realPhaseId);
+          generateRoutineMutation.mutate(realPhaseId);
+        } catch {
+          // Bỏ qua nếu phác đồ ở dạng DRAFT chưa thanh toán
+        }
       }
 
       // 3. Submit phác đồ — Backend tự tính totalPriceVnd và chốt cho Bệnh nhân thanh toán
@@ -567,14 +618,16 @@ function TreatmentBuilderContent() {
             >
               Phase {p.phaseNumber}: {formatVnd(p.priceVnd || 0)}
               {phases.length > 1 && idx === phases.length - 1 && (
-                <Trash2
-                  className="h-3.5 w-3.5 text-red-400 hover:text-red-600"
+                <span
                   title="Xóa Phase cuối (LIFO)"
                   onClick={(e) => {
                     e.stopPropagation();
                     handleRemoveLastPhase();
                   }}
-                />
+                  className="p-0.5"
+                >
+                  <Trash2 className="h-3.5 w-3.5 text-red-400 hover:text-red-600" />
+                </span>
               )}
             </button>
           ))}
@@ -638,6 +691,58 @@ function TreatmentBuilderContent() {
                     rows={2}
                     className="rounded-xl bg-white text-xs"
                   />
+                </div>
+
+                <div className="grid gap-4 pt-2 md:grid-cols-2">
+                  <div className="space-y-1.5">
+                    <Label className="flex items-center gap-1.5 text-xs font-bold text-slate-700">
+                      <Calendar className="h-3.5 w-3.5 text-emerald-600" />
+                      Ngày Bắt Đầu Phác Đồ (startDate):
+                    </Label>
+                    <Input
+                      type="date"
+                      value={startDate}
+                      onChange={(e) => setStartDate(e.target.value)}
+                      className="rounded-xl bg-white text-xs font-semibold"
+                    />
+                  </div>
+
+                  <div className="space-y-1.5">
+                    <div className="flex items-center justify-between">
+                      <Label className="flex items-center gap-1.5 text-xs font-bold text-slate-700">
+                        <Calendar className="h-3.5 w-3.5 text-emerald-600" />
+                        Ngày Kết Thúc Dự Kiến (endDate):
+                      </Label>
+                      <div className="flex items-center gap-1 text-[10px] text-slate-500">
+                        <span className="font-medium">Chọn nhanh:</span>
+                        {[4, 8, 12].map((weeks) => (
+                          <button
+                            key={weeks}
+                            type="button"
+                            onClick={() => {
+                              const start = startDate
+                                ? new Date(startDate)
+                                : new Date();
+                              const target = new Date(
+                                start.getTime() +
+                                  weeks * 7 * 24 * 60 * 60 * 1000,
+                              );
+                              setEndDate(target.toISOString().split("T")[0]);
+                            }}
+                            className="rounded-md bg-slate-200/70 px-1.5 py-0.5 font-bold transition-colors hover:bg-emerald-100 hover:text-emerald-800"
+                          >
+                            +{weeks}w
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+                    <Input
+                      type="date"
+                      value={endDate}
+                      onChange={(e) => setEndDate(e.target.value)}
+                      className="rounded-xl bg-white text-xs font-semibold"
+                    />
+                  </div>
                 </div>
               </div>
 
