@@ -7,7 +7,7 @@ import { useQuery } from "@tanstack/react-query";
 import { CheckCircle2, Clock, Loader2, XCircle } from "lucide-react";
 import { queryKeys } from "@/lib/query/keys";
 import { paymentsApi } from "@/features/commerce/api/payments.api";
-import { ordersApi } from "@/features/commerce/api/orders.api";
+import { useOrder } from "@/features/commerce/hooks/useOrders";
 import { useGenerateRoutine } from "@/features/profile/hooks/useRoutines";
 import { formatVnd } from "@/shared/utils/format";
 import { CheckoutStepper } from "@/features/commerce/components/checkout-stepper";
@@ -127,19 +127,9 @@ function VnpayReturnContent() {
     },
   });
 
-  const { data: order } = useQuery({
-    queryKey: queryKeys.order(payment?.orderId ?? ""),
-    queryFn: async () => {
-      const response = await ordersApi.getOrder(payment!.orderId);
-      return {
-        id: response.data.id,
-        status: response.data.status,
-        source: response.data.source,
-        totalVnd: response.data.totalVnd,
-      };
-    },
-    enabled: !!payment?.orderId,
-  });
+  // Must go through useOrder: an ad-hoc query would cache a narrower object under
+  // the same key, and /orders/[id] reads that entry expecting a full Order.
+  const { order } = useOrder(payment?.orderId ?? "");
 
   const [timedOut, setTimedOut] = useState(false);
   const timeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);

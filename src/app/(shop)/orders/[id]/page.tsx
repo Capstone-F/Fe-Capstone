@@ -11,6 +11,7 @@ import { OrderItemRow } from "@/features/commerce/components/order-item-row";
 import { OrderStatusBadge } from "@/features/commerce/components/order-status-badge";
 import { OrderCardSkeleton } from "@/features/commerce/components/order-card-skeleton";
 import { DeliveryTrackingCard } from "@/features/commerce/components/delivery-tracking-card";
+import { PayOrderButton } from "@/features/commerce/components/pay-order-button";
 import { formatOrderCode } from "@/features/commerce/lib/order-hydration";
 import { formatVnd } from "@/shared/utils/format";
 
@@ -101,7 +102,12 @@ export default function OrderDetailPage({
                   {new Date(order.createdAt).toLocaleDateString("vi-VN")}
                 </p>
               </div>
-              <OrderStatusBadge status={order.status} />
+              <div className="flex items-center gap-2">
+                <OrderStatusBadge status={order.status} />
+                {order.status === "PENDING" && (
+                  <PayOrderButton orderId={order.id} />
+                )}
+              </div>
             </div>
 
             <Card className="border-slate-200 shadow-xs">

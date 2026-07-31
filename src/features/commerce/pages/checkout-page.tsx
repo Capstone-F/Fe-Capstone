@@ -6,7 +6,6 @@ import { useRouter } from "next/navigation";
 import { CreditCard, Truck } from "lucide-react";
 import { toast } from "sonner";
 import { PaymentMethod } from "@/types/domain";
-import { ApiError } from "@/core/api/errors";
 import { useCart } from "@/features/commerce/hooks/useCart";
 import { useCreateOrder } from "@/features/commerce/hooks/useCheckout";
 import {
@@ -20,6 +19,7 @@ import {
   emptyShippingAddressDraft,
   toShippingAddressInput,
 } from "@/features/commerce/lib/shipping-address";
+import { toPaymentErrorMessage } from "@/features/commerce/lib/payment-errors";
 import { formatVnd } from "@/shared/utils/format";
 import { OrderSummary } from "@/features/commerce/components/order-summary";
 import { CheckoutStepper } from "@/features/commerce/components/checkout-stepper";
@@ -70,10 +70,6 @@ const ck = {
   notSelected: "Chưa chọn",
   errors: {
     address: "Vui lòng nhập đầy đủ và đúng thông tin nhận hàng.",
-    emptyCart:
-      "Giỏ hàng đang trống. Vui lòng thêm sản phẩm trước khi đặt hàng.",
-    carrier:
-      "Không kết nối được đơn vị vận chuyển. Vui lòng thử lại sau ít phút.",
     placeOrder: "Không thể đặt hàng. Vui lòng thử lại.",
   },
   emptyCartTitle: "Giỏ hàng đang trống",
@@ -172,7 +168,7 @@ export function CheckoutPage() {
       window.location.assign(checkoutResponse.data.paymentUrl);
     } catch (error) {
       setIsPlacing(false);
-      toast.error(toPlaceOrderMessage(error));
+      toast.error(toPaymentErrorMessage(error, ck.errors.placeOrder));
     }
   };
 
@@ -340,19 +336,6 @@ export function CheckoutPage() {
       </div>
     </div>
   );
-}
-
-function toPlaceOrderMessage(error: unknown): string {
-  if (!(error instanceof ApiError)) {
-    return ck.errors.placeOrder;
-  }
-  if (error.status === 400 && /cart is empty/i.test(error.message)) {
-    return ck.errors.emptyCart;
-  }
-  if (error.status === 502) {
-    return ck.errors.carrier;
-  }
-  return ck.errors.placeOrder;
 }
 
 function ConfirmRow({ label, value }: { label: string; value: string }) {
