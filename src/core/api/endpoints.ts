@@ -34,9 +34,11 @@ export const API_ENDPOINTS = {
     DETAIL: (id: string | number) => `/orders/${id}`,
   },
   DELIVERY: {
-    OPTIONS: "/delivery/options",
-    ATTACH: (orderId: string | number) => `/orders/${orderId}/delivery`,
-    DETAIL: (orderId: string | number) => `/orders/${orderId}/delivery`,
+    PROVINCES: "/delivery/provinces",
+    DISTRICTS: "/delivery/districts",
+    WARDS: "/delivery/wards",
+    FEE_QUOTE: "/delivery/fee-quote",
+    BY_ORDER: (orderId: string | number) => `/delivery/order/${orderId}`,
   },
   PAYMENTS: {
     CHECKOUT: "/payments/checkout",
