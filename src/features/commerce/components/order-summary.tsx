@@ -13,6 +13,11 @@ interface OrderSummaryProps {
   primaryLabel?: string;
   onPrimary?: () => void;
   primaryDisabled?: boolean;
+  /**
+   * Shown in place of the fee while it is still unknown. Without it a zero fee reads
+   * as free shipping, which GHN never is — checkout passes it until the quote lands.
+   */
+  shippingPlaceholder?: string;
 }
 
 export function OrderSummary({
@@ -20,6 +25,7 @@ export function OrderSummary({
   primaryLabel,
   onPrimary,
   primaryDisabled,
+  shippingPlaceholder,
 }: OrderSummaryProps) {
   const cc = {
     title: "Giỏ hàng của tôi",
@@ -49,9 +55,11 @@ export function OrderSummary({
         <Row
           label={cc.shipping}
           value={
-            summary.shippingFee === 0
-              ? cc.freeShip
-              : formatVnd(summary.shippingFee)
+            shippingPlaceholder !== undefined
+              ? shippingPlaceholder
+              : summary.shippingFee === 0
+                ? cc.freeShip
+                : formatVnd(summary.shippingFee)
           }
         />
         <div className="flex items-center justify-between border-t border-slate-100 pt-3 text-base font-bold text-slate-900">
