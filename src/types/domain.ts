@@ -143,23 +143,8 @@ export interface CartSummary {
 
 export type PaymentMethod = "vnpay" | "cod";
 
-export interface ShippingAddress {
-  fullName: string;
-  phone: string;
-  line: string; // street + ward
-  city: string;
-}
-
-export type DeliveryType = "STANDARD" | "EXPRESS" | "SAME_DAY";
-
-/** A priced shipping option from GET /delivery/options. */
-export interface DeliveryOption {
-  providerId: string;
-  providerCode: string;
-  providerName: string;
-  type: DeliveryType;
-  feeVnd: number;
-}
+// Shipping types live in features/commerce/types/delivery.ts — GHN address, master data
+// and delivery tracking are commerce-specific, not global domain concepts.
 
 export type OrderStatus =
   | "PENDING"

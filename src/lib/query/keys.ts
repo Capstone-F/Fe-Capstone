@@ -23,7 +23,14 @@ export const queryKeys = {
   productCategories: ["productCategories"] as const,
   productPool: ["productPool"] as const,
   cart: ["cart"] as const,
-  deliveryOptions: ["deliveryOptions"] as const,
+  provinces: ["delivery", "provinces"] as const,
+  districts: (provinceId: number | null) =>
+    ["delivery", "districts", provinceId] as const,
+  wards: (districtId: number | null) =>
+    ["delivery", "wards", districtId] as const,
+  shippingFeeQuote: (address: unknown) =>
+    ["delivery", "fee-quote", address] as const,
+  orderDelivery: (orderId: string) => ["delivery", "order", orderId] as const,
   orders: (query: unknown) => ["orders", query] as const,
   ordersAll: ["orders"] as const,
   order: (id: string) => ["order", id] as const,

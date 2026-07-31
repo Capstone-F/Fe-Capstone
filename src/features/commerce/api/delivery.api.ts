@@ -1,54 +1,85 @@
 import { apiClient } from "@/core/api/client";
 import { API_ENDPOINTS } from "@/core/api/endpoints";
 import type { AxiosResponse } from "axios";
+import type { ShippingAddressInput } from "../types/delivery";
 
-export interface DeliveryOptionResponse {
-  providerId: string;
-  providerCode: string;
-  providerName: string;
-  type: string;
-  feeVnd: number;
+/**
+ * GHN master data is forwarded by the backend in the provider's own PascalCase wire
+ * format — it is not normalised server-side. Mapping to the domain shape happens in
+ * `mapper/delivery.ts`.
+ */
+export interface GhnProvinceDto {
+  ProvinceID: number;
+  ProvinceName: string;
 }
 
-export interface OrderResponse {
-  id: string;
-  status: string;
-  source: string;
-  subtotalVnd: number;
-  discountVnd: number;
-  discountType: string | null;
+export interface GhnDistrictDto {
+  DistrictID: number;
+  DistrictName: string;
+  ProvinceID: number;
+}
+
+export interface GhnWardDto {
+  WardCode: string;
+  WardName: string;
+  DistrictID: number;
+}
+
+export interface FeeQuoteResponse {
   shippingFeeVnd: number;
-  totalVnd: number;
-  items: {
-    id: string;
-    productVariantId: string;
-    quantity: number;
-    unitPriceVnd: number;
-    lineTotalVnd: number;
-  }[];
-  createdAt: string;
 }
 
-export interface AttachDeliveryInput {
-  providerId: string;
+export interface DeliveryStatusEventDto {
+  providerStatus: string;
+  occurredAt: string;
+}
+
+export interface DeliveryResponse {
+  id: string;
+  orderId: string;
+  status: string;
   type: string;
-  shippingAddress: string;
+  providerOrderCode: string | null;
+  shippingFeeVnd: number;
+  expectedDeliveryTime: string | null;
+  shippedAt: string | null;
+  deliveredAt: string | null;
+  recipientName: string | null;
+  streetAddress: string | null;
+  statusEvents: DeliveryStatusEventDto[];
 }
 
 export const deliveryApi = {
-  getDeliveryOptions: (): Promise<AxiosResponse<DeliveryOptionResponse[]>> => {
-    return apiClient.get<DeliveryOptionResponse[]>(
-      API_ENDPOINTS.DELIVERY.OPTIONS,
-    );
+  getProvinces: (): Promise<AxiosResponse<GhnProvinceDto[]>> => {
+    return apiClient.get<GhnProvinceDto[]>(API_ENDPOINTS.DELIVERY.PROVINCES);
   },
 
-  attachDelivery: (
-    orderId: string,
-    input: AttachDeliveryInput,
-  ): Promise<AxiosResponse<OrderResponse>> => {
-    return apiClient.post<OrderResponse>(
-      API_ENDPOINTS.DELIVERY.ATTACH(orderId),
-      input,
+  getDistricts: (
+    provinceId: number,
+  ): Promise<AxiosResponse<GhnDistrictDto[]>> => {
+    return apiClient.get<GhnDistrictDto[]>(API_ENDPOINTS.DELIVERY.DISTRICTS, {
+      params: { provinceId },
+    });
+  },
+
+  getWards: (districtId: number): Promise<AxiosResponse<GhnWardDto[]>> => {
+    return apiClient.get<GhnWardDto[]>(API_ENDPOINTS.DELIVERY.WARDS, {
+      params: { districtId },
+    });
+  },
+
+  /** Display estimate only — POST /orders re-quotes the fee server-side. */
+  quoteFee: (
+    shippingAddress: ShippingAddressInput,
+  ): Promise<AxiosResponse<FeeQuoteResponse>> => {
+    return apiClient.post<FeeQuoteResponse>(API_ENDPOINTS.DELIVERY.FEE_QUOTE, {
+      shippingAddress,
+    });
+  },
+
+  getByOrder: (orderId: string): Promise<AxiosResponse<DeliveryResponse>> => {
+    return apiClient.get<DeliveryResponse>(
+      API_ENDPOINTS.DELIVERY.BY_ORDER(orderId),
     );
   },
 };

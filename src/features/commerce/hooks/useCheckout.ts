@@ -1,6 +1,7 @@
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { queryKeys } from "@/lib/query/keys";
 import { ordersApi, type OrderResponse } from "../api/orders.api";
+import type { ShippingAddressInput } from "../types/delivery";
 import type { Order } from "@/types/domain";
 
 function toOrder(response: OrderResponse): Order {
@@ -27,8 +28,10 @@ function toOrder(response: OrderResponse): Order {
 export function useCreateOrder() {
   const queryClient = useQueryClient();
   return useMutation({
-    mutationFn: async () => {
-      const response = await ordersApi.createOrder();
+    // The address is required: it is what locks shippingFeeVnd onto the order and
+    // creates the Delivery row the payment step needs.
+    mutationFn: async (shippingAddress: ShippingAddressInput) => {
+      const response = await ordersApi.createOrder(shippingAddress);
       return toOrder(response.data);
     },
     onSuccess: () => {
