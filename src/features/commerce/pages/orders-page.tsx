@@ -56,6 +56,13 @@ const ALL_STATUSES = "ALL";
 const PAGE_SIZE_OPTIONS = [5, 10, 20];
 const SKELETON_COUNT = 3;
 
+// Base UI's SelectValue renders the raw value unless the root is given the
+// value -> label pairs, so the same list drives both the trigger and the options.
+const STATUS_FILTER_OPTIONS = [
+  { value: ALL_STATUSES, label: t.filterAll },
+  ...STATUS_VALUES.map((value) => ({ value, label: t.status[value] })),
+];
+
 export function OrdersPage() {
   const router = useRouter();
   const [status, setStatus] = useState<OrderStatus | typeof ALL_STATUSES>(
@@ -101,6 +108,7 @@ export function OrdersPage() {
             {t.filterLabel}
           </span>
           <Select
+            items={STATUS_FILTER_OPTIONS}
             value={status}
             onValueChange={(value) => {
               setStatus(value as OrderStatus | typeof ALL_STATUSES);
@@ -111,10 +119,9 @@ export function OrdersPage() {
               <SelectValue />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value={ALL_STATUSES}>{t.filterAll}</SelectItem>
-              {STATUS_VALUES.map((value) => (
-                <SelectItem key={value} value={value}>
-                  {t.status[value]}
+              {STATUS_FILTER_OPTIONS.map((option) => (
+                <SelectItem key={option.value} value={option.value}>
+                  {option.label}
                 </SelectItem>
               ))}
             </SelectContent>
