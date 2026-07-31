@@ -214,6 +214,9 @@ function LocationSelect({
 
   return (
     <Select
+      // Base UI's SelectValue renders the raw value (the GHN id) unless the root
+      // is given the value -> label pairs to look the selected name up from.
+      items={options}
       value={value}
       // The primitive can emit null on clear; there is nothing to select then.
       onValueChange={(next) => next !== null && onValueChange(next)}
