@@ -29,23 +29,6 @@ const ck = {
     confirm: "Xác nhận",
     done: "Hoàn tất",
   },
-  address: {
-    heading: "Địa chỉ nhận hàng",
-    fullName: "Họ và tên",
-    phone: "Số điện thoại",
-    line: "Địa chỉ (số nhà, đường, phường/xã)",
-    city: "Tỉnh / Thành phố",
-  },
-  delivery: {
-    heading: "Phương thức giao hàng",
-    loading: "Đang tải phương thức giao hàng...",
-    empty: "Hiện chưa có phương thức giao hàng khả dụng.",
-    types: {
-      STANDARD: "Giao tiêu chuẩn",
-      EXPRESS: "Giao nhanh",
-      SAME_DAY: "Giao trong ngày",
-    },
-  },
   payment: {
     vnpay: "VnPay",
     vnpayHint: "Thanh toán qua thẻ/ngân hàng (sandbox).",
@@ -73,6 +56,7 @@ const ck = {
   failedTitle: "Thanh toán không thành công",
   failedHint: "Đơn hàng chưa được thanh toán. Bạn có thể thử lại từ giỏ hàng.",
   orderCode: "Mã đơn hàng",
+  viewOrderDetail: "Xem chi tiết đơn hàng",
 };
 
 function isPendingPaymentStatus(
@@ -266,6 +250,17 @@ function VnpayReturnContent() {
               <Link href="/care">
                 <Button size="sm" className="rounded-lg text-xs font-semibold">
                   {"Xem lộ trình chăm sóc"}
+                </Button>
+              </Link>
+            )}
+            {succeeded && order && (
+              <Link href={`/orders/${order.id}`}>
+                <Button
+                  size="sm"
+                  variant="outline"
+                  className="rounded-lg text-xs font-semibold"
+                >
+                  {ck.viewOrderDetail}
                 </Button>
               </Link>
             )}
