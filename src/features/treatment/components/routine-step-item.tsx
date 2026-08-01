@@ -5,6 +5,7 @@ import { Button } from "@/shared/components/ui/button";
 import { Card, CardContent } from "@/shared/components/ui/card";
 import { SKIP_REASON_LABELS } from "../constants/routine-tracking";
 import type { TodayStep } from "../types/routine-tracking.types";
+import { StepStockBadge } from "./step-stock-badge";
 
 interface RoutineStepItemProps {
   step: TodayStep;
@@ -55,6 +56,10 @@ export function RoutineStepItem({
               </p>
             )}
             <div className="flex flex-wrap gap-2 pt-1.5">
+              <StepStockBadge
+                warning={step.warning}
+                remainingMl={step.remainingMl}
+              />
               {dosageLabel && (
                 <span className="rounded-md bg-slate-100 px-2 py-0.5 text-[10px] font-semibold text-slate-500">
                   Lượng dùng: {dosageLabel}
