@@ -25,6 +25,13 @@ import { Button } from "@/shared/components/ui/button";
 import { Checkbox } from "@/shared/components/ui/checkbox";
 import { Input } from "@/shared/components/ui/input";
 import { Label } from "@/shared/components/ui/label";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/shared/components/ui/select";
 import { Textarea } from "@/shared/components/ui/textarea";
 import { formatVnd } from "@/shared/utils/format";
 import {
@@ -57,6 +64,13 @@ const isUuid = (value: string | null) =>
       value,
     ),
   );
+
+function toLocalDateInput(date: Date): string {
+  const year = date.getFullYear();
+  const month = String(date.getMonth() + 1).padStart(2, "0");
+  const day = String(date.getDate()).padStart(2, "0");
+  return `${year}-${month}-${day}`;
+}
 
 const phaseTypeLabel: Record<TreatmentPhaseType, string> = {
   INITIAL_ASSESSMENT: "Đánh giá ban đầu",
@@ -419,13 +433,13 @@ function CreatePlanForm({
   const router = useRouter();
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
-  const [startDate, setStartDate] = useState(
-    new Date().toISOString().slice(0, 10),
+  const [startDate, setStartDate] = useState(() =>
+    toLocalDateInput(new Date()),
   );
   const [endDate, setEndDate] = useState(() => {
     const date = new Date();
     date.setMonth(date.getMonth() + 3);
-    return date.toISOString().slice(0, 10);
+    return toLocalDateInput(date);
   });
   const validSource = isUuid(customerId) && isUuid(sourceConsultationId);
 
@@ -634,7 +648,11 @@ function DraftPhaseEditor({
 
       {showNew && (
         <PhaseForm
-          phaseOrder={phases.length}
+          phaseOrder={
+            phases.length
+              ? Math.max(...phases.map((phase) => phase.phaseOrder)) + 1
+              : 0
+          }
           submitLabel="Tạo phase"
           isPending={addMutation.isPending}
           onCancel={() => setShowNew(false)}
@@ -700,9 +718,12 @@ function PhaseForm({
   const [priceVnd, setPriceVnd] = useState(phase?.priceVnd ?? 0);
   const [startDate, setStartDate] = useState(phase?.startDate ?? "");
   const [endDate, setEndDate] = useState(phase?.endDate ?? "");
+  const validPrice = Number.isInteger(priceVnd) && priceVnd >= 0;
+  const validDates = !startDate || !endDate || endDate >= startDate;
 
   async function handleSubmit(event: FormEvent) {
     event.preventDefault();
+    if (!validPrice || !validDates) return;
     try {
       await onSubmit({
         phaseType,
@@ -732,20 +753,27 @@ function PhaseForm({
       </div>
       <div className="mt-4 grid gap-4 md:grid-cols-2">
         <div className="space-y-2">
-          <Label>Loại phase</Label>
-          <select
+          <Label htmlFor={`phase-type-${phase?.id ?? phaseOrder}`}>
+            Loại phase
+          </Label>
+          <Select
             value={phaseType}
-            onChange={(event) =>
-              setPhaseType(event.target.value as TreatmentPhaseType)
-            }
-            className="h-9 w-full border bg-white px-3 text-sm"
+            onValueChange={(value) => setPhaseType(value as TreatmentPhaseType)}
           >
-            {Object.entries(phaseTypeLabel).map(([value, label]) => (
-              <option key={value} value={value}>
-                {label}
-              </option>
-            ))}
-          </select>
+            <SelectTrigger
+              id={`phase-type-${phase?.id ?? phaseOrder}`}
+              className="w-full"
+            >
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              {Object.entries(phaseTypeLabel).map(([value, label]) => (
+                <SelectItem key={value} value={value}>
+                  {label}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
         </div>
         <div className="space-y-2">
           <Label>Tên phase</Label>
@@ -808,7 +836,13 @@ function PhaseForm({
               min={startDate}
               value={endDate}
               onChange={(event) => setEndDate(event.target.value)}
+              aria-invalid={!validDates}
             />
+            {!validDates && (
+              <p className="text-xs text-red-600">
+                Ngày kết thúc phải từ ngày bắt đầu trở đi.
+              </p>
+            )}
           </div>
         </div>
       </div>
@@ -831,7 +865,13 @@ function PhaseForm({
         )}
         <Button
           type="submit"
-          disabled={isPending || !title.trim() || !noteByExpert.trim()}
+          disabled={
+            isPending ||
+            !title.trim() ||
+            !noteByExpert.trim() ||
+            !validPrice ||
+            !validDates
+          }
         >
           {isPending ? (
             <Loader2 className="mr-2 h-4 w-4 animate-spin" />
