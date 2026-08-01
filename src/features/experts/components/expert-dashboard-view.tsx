@@ -56,8 +56,6 @@ export function ExpertDashboardView() {
   const [cancelModalBooking, setCancelModalBooking] =
     useState<ConsultationBooking | null>(null);
   const [cancelReason, setCancelReason] = useState("");
-  const [videoCallBooking, setVideoCallBooking] =
-    useState<ConsultationBooking | null>(null);
 
   // Queries & Mutations
   const {
@@ -447,16 +445,16 @@ export function ExpertDashboardView() {
                       </>
                     )}
 
-                    {/* Action: Video Call for Confirmed / In Progress */}
-                    {(statusNorm === "CONFIRMED" ||
-                      statusNorm === "IN_PROGRESS") && (
+                    {statusNorm !== "CANCELLED" && (
                       <Button
                         size="sm"
-                        onClick={() => setVideoCallBooking(booking)}
+                        onClick={() =>
+                          router.push(`/expert/consultations/${booking.id}`)
+                        }
                         className="rounded-xl bg-indigo-600 text-xs font-bold text-white shadow-xs hover:bg-indigo-700"
                       >
                         <Video className="mr-1.5 h-3.5 w-3.5" />
-                        Gọi Video
+                        Phòng Tư Vấn
                       </Button>
                     )}
 
@@ -467,10 +465,11 @@ export function ExpertDashboardView() {
                         size="sm"
                         variant="outline"
                         onClick={() => {
-                          const cid = booking.userId || "user_customer_demo";
-                          const cname = encodeURIComponent("Bệnh nhân");
+                          const cname = encodeURIComponent(
+                            booking.customerName || "Khách hàng",
+                          );
                           router.push(
-                            `/expert/treatments/builder?customerId=${cid}&customerName=${cname}`,
+                            `/expert/treatments/builder?customerId=${booking.customerId}&customerName=${cname}&sourceConsultationId=${booking.id}`,
                           );
                         }}
                         className="rounded-xl border-amber-300 bg-amber-50 text-xs font-bold text-amber-900 hover:bg-amber-100"
@@ -556,68 +555,6 @@ export function ExpertDashboardView() {
               ) : (
                 "Xác Nhận Hủy"
               )}
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
-
-      {/* ── Modal Dialog: Video Call ── */}
-      <Dialog
-        open={Boolean(videoCallBooking)}
-        onOpenChange={(open) => !open && setVideoCallBooking(null)}
-      >
-        <DialogContent className="rounded-2xl p-6 sm:max-w-2xl">
-          <DialogHeader>
-            <DialogTitle className="flex items-center gap-2 text-base font-bold text-slate-900">
-              <Video className="h-5 w-5 text-indigo-600" />
-              Phòng Khám Trực Tuyến Video Call
-            </DialogTitle>
-            <DialogDescription className="text-xs text-slate-500">
-              Ca tư vấn với bệnh nhân:{" "}
-              <strong className="text-slate-800">
-                {videoCallBooking?.customerName || "Bệnh nhân"}
-              </strong>
-            </DialogDescription>
-          </DialogHeader>
-
-          <div className="relative flex aspect-video w-full flex-col items-center justify-center overflow-hidden rounded-xl bg-slate-900 text-white shadow-inner">
-            <div className="flex flex-col items-center gap-2 text-center">
-              <div className="flex h-16 w-16 items-center justify-center rounded-full bg-indigo-600/30 text-indigo-400 backdrop-blur-md">
-                <Video className="h-8 w-8 animate-pulse text-indigo-400" />
-              </div>
-              <p className="text-sm font-bold">
-                Đang kết nối camera & micro HD...
-              </p>
-              <p className="text-xs text-slate-400">
-                Mã phòng: ROOM-{videoCallBooking?.id?.slice(0, 8) || "GS-CALL"}
-              </p>
-            </div>
-
-            <div className="absolute bottom-4 flex items-center gap-3 rounded-full bg-slate-800/80 px-4 py-2 text-xs font-semibold backdrop-blur-md">
-              <span className="flex items-center gap-1.5 text-emerald-400">
-                <span className="h-2 w-2 animate-ping rounded-full bg-emerald-500" />
-                Tín hiệu ổn định
-              </span>
-            </div>
-          </div>
-
-          <DialogFooter className="gap-2">
-            <Button
-              size="sm"
-              variant="outline"
-              onClick={() => setVideoCallBooking(null)}
-              className="rounded-xl text-xs font-semibold text-slate-600"
-            >
-              Kết Thúc Cuộc Gọi
-            </Button>
-            <Button
-              size="sm"
-              onClick={() => {
-                toast.success("Đã bật chế độ toàn màn hình Video Call!");
-              }}
-              className="rounded-xl bg-indigo-600 text-xs font-bold text-white hover:bg-indigo-700"
-            >
-              Toàn Màn Hình
             </Button>
           </DialogFooter>
         </DialogContent>

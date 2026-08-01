@@ -1,78 +1,116 @@
 import type {
-  TreatmentPlan,
   TreatmentPhase,
-  RoutineStep,
-  Ingredient,
+  TreatmentPhaseStatus,
+  TreatmentPhaseType,
+  TreatmentPlan,
+  TreatmentStatus,
 } from "../types/treatment.types";
 
-export function mapBackendTreatmentToFrontend(
-  be: Record<string, unknown>,
-): TreatmentPlan {
-  if (!be) {
-    throw new Error("Invalid treatment plan data from server");
-  }
+interface BackendTreatmentPhase {
+  id: string;
+  treatmentId: string;
+  phaseType: TreatmentPhaseType;
+  phaseOrder: number;
+  title: string | null;
+  goals: string | null;
+  notes: string | null;
+  noteByExpert: string | null;
+  priceVnd: string | number;
+  status: TreatmentPhaseStatus;
+  startDate: string | null;
+  endDate: string | null;
+  ingredients?: TreatmentPhase["ingredients"];
+  products?: TreatmentPhase["products"];
+  routines?: TreatmentPhase["routines"];
+}
 
-  const rawPhases = Array.isArray(be.phases) ? be.phases : [];
+export interface BackendTreatmentResponse {
+  id: string;
+  customerId: string;
+  expertId: string;
+  clinicId: string | null;
+  title: string;
+  description: string | null;
+  status: TreatmentStatus;
+  startDate: string | null;
+  endDate: string | null;
+  totalPriceVnd: string | number | null;
+  paidAt: string | null;
+  paidTransactionId: string | null;
+  sourceConsultationId: string | null;
+  cancelledAt: string | null;
+  cancelReason: string | null;
+  cancelledBy: "CUSTOMER" | "EXPERT" | null;
+  refundTransactionId: string | null;
+  refundedAmountVnd: string | number | null;
+  phases: BackendTreatmentPhase[];
+  createdAt: string;
+  updatedAt: string;
+}
 
-  const phases: TreatmentPhase[] = rawPhases.map(
-    (p: Record<string, unknown>, idx: number) => ({
-      id: (p.id as string) || `phase_${idx + 1}`,
-      phaseNumber: (p.phaseNumber as number) || idx + 1,
-      title: (p.title as string) || `Giai đoạn ${idx + 1}`,
-      durationWeeks: (p.durationWeeks as number) || 2,
-      status: (
-        (p.status as string) || "UPCOMING"
-      ).toUpperCase() as TreatmentPhase["status"],
-      targetIngredients: Array.isArray(p.targetIngredients)
-        ? (p.targetIngredients as Ingredient[])
-        : [],
-      amSteps: Array.isArray(p.amSteps)
-        ? p.amSteps.map((s: Record<string, unknown>, i: number) =>
-            mapRoutineStep(s, i),
-          )
-        : [],
-      pmSteps: Array.isArray(p.pmSteps)
-        ? p.pmSteps.map((s: Record<string, unknown>, i: number) =>
-            mapRoutineStep(s, i),
-          )
-        : [],
-      notes: (p.notes as string) || "",
-    }),
-  );
+function toMoney(value: string | number | null): number | null {
+  if (value === null) return null;
+  const amount = Number(value);
+  return Number.isFinite(amount) ? amount : null;
+}
 
+export function mapBackendPhase(phase: BackendTreatmentPhase): TreatmentPhase {
   return {
-    id: (be.id as string) || `tp_${Date.now()}`,
-    customerId: (be.customerId as string) || "",
-    customerName: (be.customerName as string) || "Bệnh nhân",
-    expertId: (be.expertId as string) || "",
-    expertName: (be.expertName as string) || "Chuyên gia da liễu",
-    title: (be.title as string) || "Phác đồ điều trị chuyên sâu",
-    totalFeeVnd: Number(be.totalFeeVnd) || 1200000,
-    status: (
-      (be.status as string) || "DRAFT"
-    ).toUpperCase() as TreatmentPlan["status"],
-    currentPhaseNumber: (be.currentPhaseNumber as number) || 1,
-    phases,
-    createdAt: (be.createdAt as string) || new Date().toISOString(),
-    updatedAt: (be.updatedAt as string) || new Date().toISOString(),
+    id: phase.id,
+    treatmentId: phase.treatmentId,
+    phaseType: phase.phaseType,
+    phaseOrder: phase.phaseOrder,
+    title: phase.title,
+    goals: phase.goals,
+    notes: phase.notes,
+    noteByExpert: phase.noteByExpert,
+    priceVnd: toMoney(phase.priceVnd) ?? 0,
+    status: phase.status,
+    startDate: phase.startDate,
+    endDate: phase.endDate,
+    ingredients: phase.ingredients ?? [],
+    products: phase.products ?? [],
+    routines: phase.routines ?? [],
   };
 }
 
-function mapRoutineStep(s: Record<string, unknown>, idx: number): RoutineStep {
+export function mapBackendTreatmentToFrontend(
+  treatment: BackendTreatmentResponse,
+): TreatmentPlan {
+  const phases = [...(treatment.phases ?? [])]
+    .sort((a, b) => a.phaseOrder - b.phaseOrder)
+    .map(mapBackendPhase);
+  const totalPriceVnd = toMoney(treatment.totalPriceVnd);
+
   return {
-    id: (s.id as string) || `step_${idx}`,
-    order: (s.order as number) || idx + 1,
-    timeOfDay: (s.timeOfDay as "AM" | "PM" | "BOTH") || "AM",
-    stepName: (s.stepName as string) || "Bước chăm sóc da",
-    productId: s.productId as string | undefined,
-    productName: (s.productName as string) || "Sản phẩm chỉ định",
-    productImage: s.productImage as string | undefined,
-    frequencyPreset:
-      (s.frequencyPreset as RoutineStep["frequencyPreset"]) || "Hàng ngày",
-    frequencyCustom: s.frequencyCustom as string | undefined,
-    instructionPreset:
-      (s.instructionPreset as RoutineStep["instructionPreset"]) ||
-      "Thoa mỏng toàn mặt",
-    instructionCustom: s.instructionCustom as string | undefined,
+    id: treatment.id,
+    customerId: treatment.customerId,
+    expertId: treatment.expertId,
+    clinicId: treatment.clinicId,
+    title: treatment.title,
+    description: treatment.description,
+    status: treatment.status,
+    startDate: treatment.startDate,
+    endDate: treatment.endDate,
+    totalPriceVnd,
+    paidAt: treatment.paidAt,
+    paidTransactionId: treatment.paidTransactionId,
+    sourceConsultationId: treatment.sourceConsultationId,
+    cancelledAt: treatment.cancelledAt,
+    cancelReason: treatment.cancelReason,
+    cancelledBy: treatment.cancelledBy,
+    refundTransactionId: treatment.refundTransactionId,
+    refundedAmountVnd: toMoney(treatment.refundedAmountVnd),
+    phases,
+    createdAt: treatment.createdAt,
+    updatedAt: treatment.updatedAt,
+    readyForPayment:
+      treatment.status === "DRAFT" &&
+      Boolean(treatment.startDate && treatment.endDate) &&
+      phases.length > 0 &&
+      phases.every(
+        (phase) => phase.noteByExpert?.trim() && phase.priceVnd >= 0,
+      ) &&
+      (totalPriceVnd ?? 0) > 0,
   };
 }

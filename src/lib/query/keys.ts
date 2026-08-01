@@ -6,6 +6,18 @@ export const queryKeys = {
   slots: (expertId: string) => ["slots", expertId] as const,
   bookings: ["bookings"] as const,
   booking: (id: string) => ["booking", id] as const,
+  consultationVideoToken: (bookingId: string) =>
+    ["consultation", bookingId, "video-token"] as const,
+  consultationChatToken: (bookingId: string) =>
+    ["consultation", bookingId, "chat-token"] as const,
+  consultationContext: (customerId: string) =>
+    ["customers", customerId, "consultation-context"] as const,
+  treatmentPlans: (as?: "customer" | "expert") =>
+    ["treatments", "mine", as ?? "customer"] as const,
+  treatment: (id: string) => ["treatments", id] as const,
+  treatmentChart: (id: string) => ["treatments", id, "chart"] as const,
+  treatmentEvents: (id: string, type?: string) =>
+    ["treatments", id, "events", type ?? "all"] as const,
   profile: ["profile"] as const,
   surveyHistory: ["surveyHistory"] as const,
   allergyOptions: ["allergyOptions"] as const,

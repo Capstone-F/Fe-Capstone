@@ -1,187 +1,117 @@
 "use client";
 
 import { useRouter } from "next/navigation";
-import { FileText, Plus, User, Edit, Eye } from "lucide-react";
-import { Button } from "@/shared/components/ui/button";
-import {
-  Card,
-  CardHeader,
-  CardTitle,
-  CardDescription,
-  CardContent,
-} from "@/shared/components/ui/card";
-import { Badge } from "@/shared/components/ui/badge";
+import { CalendarDays, FileText, Loader2, UserRound } from "lucide-react";
+
 import { useTreatmentPlans } from "@/features/treatments/hooks/useTreatments";
+import { Badge } from "@/shared/components/ui/badge";
+import { Button } from "@/shared/components/ui/button";
 import { formatVnd } from "@/shared/utils/format";
 
 export default function ExpertTreatmentsPage() {
   const router = useRouter();
-  const { data: plans = [], isLoading } = useTreatmentPlans(
-    undefined,
-    "expert",
-  );
-
-  const getStatusBadge = (status: string) => {
-    switch (status) {
-      case "DRAFT":
-        return (
-          <Badge
-            variant="outline"
-            className="border-amber-200 bg-amber-50 text-xs font-bold text-amber-800"
-          >
-            Bản Nháp (Draft)
-          </Badge>
-        );
-      case "SUBMITTED":
-        return (
-          <Badge
-            variant="outline"
-            className="border-blue-200 bg-blue-50 text-xs font-bold text-blue-800"
-          >
-            Đã Chốt (Chờ thanh toán)
-          </Badge>
-        );
-      case "ACTIVE":
-        return (
-          <Badge
-            variant="outline"
-            className="border-emerald-200 bg-emerald-50 text-xs font-bold text-emerald-800"
-          >
-            Đang Điều Trị (Active)
-          </Badge>
-        );
-      case "COMPLETED":
-        return (
-          <Badge
-            variant="outline"
-            className="border-slate-200 bg-slate-100 text-xs font-bold text-slate-700"
-          >
-            Đã Hoàn Thành
-          </Badge>
-        );
-      default:
-        return (
-          <Badge variant="outline" className="text-xs font-bold">
-            {status}
-          </Badge>
-        );
-    }
-  };
+  const {
+    data: plans = [],
+    isLoading,
+    isError,
+    refetch,
+  } = useTreatmentPlans("expert");
 
   return (
-    <div className="space-y-6 p-6">
-      <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
-        <div>
-          <h2 className="flex items-center gap-2 text-xl font-bold text-slate-900">
-            <FileText className="h-5 w-5 text-emerald-600" />
-            Quản Lý Phác Đồ Điều Trị Bệnh Nhân
-          </h2>
-          <p className="text-xs text-slate-500">
-            Danh sách phác đồ Skincare cá nhân hóa do bạn thiết lập, chỉnh sửa
-            và kích hoạt.
+    <div className="min-h-full bg-slate-50">
+      <header className="border-b bg-white px-4 py-5 sm:px-6">
+        <div className="mx-auto max-w-6xl">
+          <h1 className="flex items-center gap-2 text-lg font-semibold text-slate-950">
+            <FileText className="h-5 w-5 text-emerald-700" /> Phác đồ điều trị
+          </h1>
+          <p className="mt-1 text-sm text-slate-500">
+            Bản nháp được khởi tạo trực tiếp từ ca tư vấn của khách hàng.
           </p>
         </div>
+      </header>
 
-        <Button
-          onClick={() => router.push("/expert/treatments/builder")}
-          className="rounded-xl bg-emerald-600 text-xs font-bold text-white shadow-xs hover:bg-emerald-700"
-        >
-          <Plus className="mr-1.5 h-4 w-4" />
-          Lập Phác Đồ Mới (Đa Giai Đoạn)
-        </Button>
-      </div>
-
-      <div className="grid gap-4">
+      <main className="mx-auto max-w-6xl p-4 sm:p-6">
         {isLoading ? (
-          <div className="p-12 text-center text-xs text-slate-400">
-            Đang nạp danh sách phác đồ...
+          <div className="flex min-h-64 items-center justify-center text-sm text-slate-500">
+            <Loader2 className="mr-2 h-4 w-4 animate-spin" /> Đang tải phác
+            đồ...
+          </div>
+        ) : isError ? (
+          <div className="border bg-white p-8 text-center">
+            <p className="text-sm text-red-600">
+              Không thể tải danh sách phác đồ.
+            </p>
+            <Button
+              className="mt-3"
+              variant="outline"
+              onClick={() => void refetch()}
+            >
+              Thử lại
+            </Button>
           </div>
         ) : plans.length === 0 ? (
-          <div className="rounded-2xl border border-dashed border-slate-200 p-12 text-center text-xs text-slate-500">
-            Chưa có phác đồ điều trị nào được lập.
+          <div className="border border-dashed bg-white p-10 text-center text-sm text-slate-500">
+            Chưa có phác đồ. Hãy mở một ca tư vấn để lập bản nháp cho khách
+            hàng.
           </div>
         ) : (
-          plans.map((plan) => {
-            const isDraft = plan.status === "DRAFT";
-            const navUrl = `/expert/treatments/builder?treatmentId=${plan.id}&customerId=${plan.customerId}&customerName=${encodeURIComponent(plan.customerName || "Bệnh nhân")}`;
-
-            return (
-              <Card
+          <div className="divide-y border bg-white">
+            {plans.map((plan) => (
+              <article
                 key={plan.id}
-                className="border-slate-200 shadow-2xs transition-shadow hover:shadow-md"
+                className="grid gap-4 p-5 md:grid-cols-[1fr_auto] md:items-center"
               >
-                <CardHeader className="border-b border-slate-100 bg-slate-50/50 p-5">
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center gap-2">
-                      <User className="h-4 w-4 text-emerald-600" />
-                      <span className="text-sm font-bold text-slate-900">
-                        {plan.customerName}
-                      </span>
-                    </div>
-
-                    {getStatusBadge(plan.status)}
+                <div>
+                  <div className="flex flex-wrap items-center gap-2">
+                    <h2 className="font-semibold text-slate-950">
+                      {plan.title}
+                    </h2>
+                    <Badge variant="outline">
+                      {plan.status === "DRAFT" && plan.readyForPayment
+                        ? "Chờ thanh toán"
+                        : plan.status}
+                    </Badge>
                   </div>
-                  <CardTitle className="mt-2 text-base font-bold text-slate-900">
-                    {plan.title}
-                  </CardTitle>
-                  <CardDescription className="text-xs">
-                    Chi phí: {formatVnd(plan.totalFeeVnd)} · Số phase:{" "}
-                    {plan.phases.length}
-                  </CardDescription>
-                </CardHeader>
-
-                <CardContent className="space-y-4 p-5 text-xs">
-                  <div className="space-y-2">
-                    <span className="block font-bold text-slate-700">
-                      Các giai đoạn điều trị:
+                  <div className="mt-2 flex flex-wrap gap-x-5 gap-y-1 text-xs text-slate-500">
+                    <span className="flex items-center gap-1.5">
+                      <UserRound className="h-3.5 w-3.5" /> Khách{" "}
+                      {plan.customerId.slice(0, 8)}
                     </span>
-                    <div className="grid gap-2 sm:grid-cols-2">
-                      {plan.phases.map((phase) => (
-                        <div
-                          key={phase.id}
-                          className="space-y-1 rounded-xl border border-slate-200 bg-white p-3"
-                        >
-                          <span className="block font-bold text-slate-900">
-                            Phase {phase.phaseNumber}: {phase.title}
-                          </span>
-                          <span className="block text-[11px] text-slate-500">
-                            Thời lượng: {phase.durationWeeks} tuần ·{" "}
-                            {phase.status}
-                          </span>
-                        </div>
-                      ))}
-                    </div>
+                    <span className="flex items-center gap-1.5">
+                      <CalendarDays className="h-3.5 w-3.5" />{" "}
+                      {plan.startDate || "Chưa đặt ngày"} -{" "}
+                      {plan.endDate || "Chưa đặt ngày"}
+                    </span>
+                    <span>
+                      {plan.phases.length} phase ·{" "}
+                      {formatVnd(plan.totalPriceVnd ?? 0)}
+                    </span>
                   </div>
-
-                  <div className="flex justify-end pt-2">
-                    <Button
-                      onClick={() => router.push(navUrl)}
-                      variant={isDraft ? "default" : "outline"}
-                      className={`rounded-xl text-xs font-bold ${
-                        isDraft
-                          ? "bg-emerald-600 text-white hover:bg-emerald-700"
-                          : "border-slate-200 text-slate-800 hover:bg-slate-50"
-                      }`}
-                    >
-                      {isDraft ? (
-                        <>
-                          <Edit className="mr-1.5 h-3.5 w-3.5" />
-                          Chỉnh Sửa / Hoàn Thiện Phác Đồ (Draft)
-                        </>
-                      ) : (
-                        <>
-                          <Eye className="mr-1.5 h-3.5 w-3.5" />
-                          Xem Chi Tiết Phác Đồ
-                        </>
-                      )}
-                    </Button>
-                  </div>
-                </CardContent>
-              </Card>
-            );
-          })
+                </div>
+                <Button
+                  variant="outline"
+                  onClick={() => {
+                    const query = new URLSearchParams({
+                      treatmentId: plan.id,
+                      customerId: plan.customerId,
+                    });
+                    if (plan.sourceConsultationId)
+                      query.set(
+                        "sourceConsultationId",
+                        plan.sourceConsultationId,
+                      );
+                    router.push(
+                      `/expert/treatments/builder?${query.toString()}`,
+                    );
+                  }}
+                >
+                  Mở phác đồ
+                </Button>
+              </article>
+            ))}
+          </div>
         )}
-      </div>
+      </main>
     </div>
   );
 }

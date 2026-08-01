@@ -13,7 +13,12 @@ export const API_ENDPOINTS = {
   CLINICS: {
     LIST: "/clinics",
   },
-  CUSTOMERS: { ME: "/customers/me", ALLERGIES: "/customers/allergies" },
+  CUSTOMERS: {
+    ME: "/customers/me",
+    ALLERGIES: "/customers/allergies",
+    CONSULTATION_CONTEXT: (id: string) =>
+      `/customers/${id}/consultation-context`,
+  },
   PRODUCTS: {
     LIST: "/products",
     CATEGORIES: "/products/categories",
@@ -36,6 +41,11 @@ export const API_ENDPOINTS = {
     START: (id: string | number) => `/bookings/${id}/start`,
     COMPLETE: (id: string | number) => `/bookings/${id}/complete`,
     FEEDBACK: (id: string | number) => `/bookings/${id}/feedback`,
+  },
+  CONSULTATIONS: {
+    VIDEO_TOKEN: (bookingId: string) =>
+      `/consultations/${bookingId}/video-token`,
+    CHAT_TOKEN: (bookingId: string) => `/consultations/${bookingId}/chat-token`,
   },
   WALLET: {
     ME: "/wallet/me",
@@ -65,6 +75,17 @@ export const API_ENDPOINTS = {
     ROUTINE_UPDATE: (routineId: string) => `/treatments/routines/${routineId}`,
     ACTIVATE_PHASE: (phaseId: string) =>
       `/treatments/phases/${phaseId}/activate`,
+    CHART: (id: string) => `/treatments/${id}/chart`,
+    EVENTS: (id: string) => `/treatments/${id}/events`,
+    EVENT: (id: string, eventId: string) =>
+      `/treatments/${id}/events/${eventId}`,
+    CANCEL: (id: string) => `/treatments/${id}/cancel`,
+  },
+  UPLOADS: {
+    IMAGE: "/uploads/images",
+  },
+  FILES: {
+    UPLOAD: "/files",
   },
   PROVINCES: { LIST: "https://provinces.open-api.vn/api/v2/" },
   CART: {
@@ -102,8 +123,5 @@ export const API_ENDPOINTS = {
     HISTORY: (routineId: string) => `/routines/${routineId}/history`,
     HISTORY_DAY: (routineId: string, date: string) =>
       `/routines/${routineId}/history/${date}`,
-  },
-  FILES: {
-    UPLOAD: "/files",
   },
 } as const;

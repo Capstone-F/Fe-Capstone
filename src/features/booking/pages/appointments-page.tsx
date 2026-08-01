@@ -8,6 +8,7 @@ import {
   CreditCard,
   MessageSquare,
   CalendarX,
+  Video,
 } from "lucide-react";
 import { useBookings } from "@/features/booking/hooks/useBooking";
 import { Button } from "@/shared/components/ui/button";
@@ -195,42 +196,35 @@ export function AppointmentsPage() {
                   </div>
                 </div>
 
-                <div className="flex items-center justify-end md:col-span-2">
-                  {bk.status === "pending" && !bk.isPaid && !bk.isFollowUp ? (
+                <div className="flex flex-wrap items-center justify-end gap-2 md:col-span-2">
+                  {bk.status === "pending" && !bk.isPaid && !bk.isFollowUp && (
                     <Link
                       href={`/booking/${bk.expertId}/checkout?bookingId=${bk.id}`}
                     >
                       <Button
                         size="sm"
-                        className="rounded-lg bg-amber-600 text-xs font-semibold text-white hover:bg-amber-700"
+                        className="bg-amber-600 text-xs text-white hover:bg-amber-700"
                       >
                         {t.payNow}
                       </Button>
                     </Link>
-                  ) : bk.status === "pending" ? (
-                    <Button
-                      size="sm"
-                      variant="outline"
-                      className="cursor-default rounded-lg border-blue-200 text-xs font-semibold text-blue-700 hover:bg-blue-50/50"
-                    >
-                      Chờ BS Duyệt
-                    </Button>
-                  ) : bk.status === "confirmed" ? (
-                    <Button
-                      size="sm"
-                      variant="outline"
-                      className="cursor-default rounded-lg border-emerald-200 text-xs font-semibold text-emerald-700 hover:bg-emerald-50/50"
-                    >
-                      Đã Duyệt
-                    </Button>
-                  ) : (
+                  )}
+                  {bk.status !== "cancelled" && (
+                    <Link href={`/appointments/${bk.id}`}>
+                      <Button size="sm" variant="outline" className="text-xs">
+                        <Video className="mr-1.5 h-3.5 w-3.5" />
+                        Tư vấn
+                      </Button>
+                    </Link>
+                  )}
+                  {bk.status === "cancelled" && (
                     <Button
                       size="sm"
                       variant="ghost"
                       disabled
-                      className="rounded-lg text-xs font-semibold"
+                      className="text-xs"
                     >
-                      {bk.status === "completed" ? t.completed : "Đã Hủy"}
+                      Đã hủy
                     </Button>
                   )}
                 </div>

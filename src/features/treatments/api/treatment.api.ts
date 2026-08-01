@@ -1,190 +1,211 @@
+import type { AxiosResponse } from "axios";
+
 import { apiClient } from "@/core/api/client";
 import { API_ENDPOINTS } from "@/core/api/endpoints";
-import type { AxiosResponse } from "axios";
+import {
+  mapBackendPhase,
+  mapBackendTreatmentToFrontend,
+  type BackendTreatmentResponse,
+} from "../mapper/treatment.mapper";
 import type {
-  TreatmentPlan,
-  TreatmentPhase,
-  ProductCandidate,
+  CreateTreatmentPayload,
   Ingredient,
+  ProductCandidate,
+  TreatmentChart,
+  TreatmentEvent,
+  TreatmentEventType,
+  TreatmentPhase,
+  TreatmentPhasePayload,
+  TreatmentPlan,
+  UploadImageResponse,
 } from "../types/treatment.types";
-import { mapBackendTreatmentToFrontend } from "../mapper/treatment.mapper";
+
+type BackendTreatmentPhase = Parameters<typeof mapBackendPhase>[0];
+
+async function mapTreatmentResponse(
+  request: Promise<AxiosResponse<BackendTreatmentResponse>>,
+): Promise<AxiosResponse<TreatmentPlan>> {
+  const response = await request;
+  return { ...response, data: mapBackendTreatmentToFrontend(response.data) };
+}
+
+async function mapPhaseResponse(
+  request: Promise<AxiosResponse<BackendTreatmentPhase>>,
+): Promise<AxiosResponse<TreatmentPhase>> {
+  const response = await request;
+  return { ...response, data: mapBackendPhase(response.data) };
+}
 
 export const treatmentApi = {
-  getPlans: async (
-    customerId?: string,
-    as?: "customer" | "expert",
-  ): Promise<AxiosResponse<TreatmentPlan[]>> => {
-    const res = await apiClient.get<Record<string, unknown>[]>(
+  async getPlans(
+    as: "customer" | "expert" = "customer",
+  ): Promise<AxiosResponse<TreatmentPlan[]>> {
+    const response = await apiClient.get<BackendTreatmentResponse[]>(
       API_ENDPOINTS.TREATMENTS.LIST_MINE,
-      {
-        params: { customerId, as },
-      },
+      { params: { as } },
     );
     return {
-      ...res,
-      data: (res.data || []).map(mapBackendTreatmentToFrontend),
+      ...response,
+      data: response.data.map(mapBackendTreatmentToFrontend),
     };
   },
 
-  getPlanById: async (id: string): Promise<AxiosResponse<TreatmentPlan>> => {
-    const res = await apiClient.get<Record<string, unknown>>(
-      API_ENDPOINTS.TREATMENTS.DETAIL(id),
+  getPlanById(id: string): Promise<AxiosResponse<TreatmentPlan>> {
+    return mapTreatmentResponse(
+      apiClient.get(API_ENDPOINTS.TREATMENTS.DETAIL(id)),
     );
-    return {
-      ...res,
-      data: mapBackendTreatmentToFrontend(res.data),
-    };
   },
 
-  createPlan: async (payload: {
-    customerId: string;
-    title: string;
-    description?: string;
-    startDate?: string;
-    endDate?: string;
-    sourceConsultationId?: string;
-  }): Promise<AxiosResponse<TreatmentPlan>> => {
-    const res = await apiClient.post<Record<string, unknown>>(
-      API_ENDPOINTS.TREATMENTS.CREATE,
-      payload,
+  createPlan(
+    payload: CreateTreatmentPayload,
+  ): Promise<AxiosResponse<TreatmentPlan>> {
+    return mapTreatmentResponse(
+      apiClient.post(API_ENDPOINTS.TREATMENTS.CREATE, payload),
     );
-    return {
-      ...res,
-      data: mapBackendTreatmentToFrontend(res.data),
-    };
   },
 
-  addPhase: async (
+  addPhase(
+    treatmentId: string,
+    payload: TreatmentPhasePayload,
+  ): Promise<AxiosResponse<TreatmentPhase>> {
+    return mapPhaseResponse(
+      apiClient.post(API_ENDPOINTS.TREATMENTS.PHASES(treatmentId), payload),
+    );
+  },
+
+  updatePhase(
+    phaseId: string,
+    payload: Partial<TreatmentPhasePayload>,
+  ): Promise<AxiosResponse<TreatmentPhase>> {
+    return mapPhaseResponse(
+      apiClient.patch(API_ENDPOINTS.TREATMENTS.PHASE_DETAIL(phaseId), payload),
+    );
+  },
+
+  deletePhase(phaseId: string): Promise<AxiosResponse<void>> {
+    return apiClient.delete(API_ENDPOINTS.TREATMENTS.PHASE_DETAIL(phaseId));
+  },
+
+  submitPlan(id: string): Promise<AxiosResponse<TreatmentPlan>> {
+    return mapTreatmentResponse(
+      apiClient.post(API_ENDPOINTS.TREATMENTS.SUBMIT(id)),
+    );
+  },
+
+  payTreatmentPlan(id: string): Promise<AxiosResponse<TreatmentPlan>> {
+    return mapTreatmentResponse(
+      apiClient.post(API_ENDPOINTS.TREATMENTS.PAY(id)),
+    );
+  },
+
+  cancelTreatment(
+    id: string,
+    reason?: string,
+  ): Promise<AxiosResponse<TreatmentPlan>> {
+    return mapTreatmentResponse(
+      apiClient.post(API_ENDPOINTS.TREATMENTS.CANCEL(id), { reason }),
+    );
+  },
+
+  getChart(id: string): Promise<AxiosResponse<TreatmentChart>> {
+    return apiClient.get(API_ENDPOINTS.TREATMENTS.CHART(id));
+  },
+
+  getEvents(
+    id: string,
+    type?: TreatmentEventType,
+  ): Promise<AxiosResponse<TreatmentEvent[]>> {
+    return apiClient.get(API_ENDPOINTS.TREATMENTS.EVENTS(id), {
+      params: type ? { type } : undefined,
+    });
+  },
+
+  createEvent(
     treatmentId: string,
     payload: {
-      phaseType:
-        | "INITIAL_ASSESSMENT"
-        | "ACTIVE_TREATMENT"
-        | "MAINTENANCE"
-        | "RECOVERY"
-        | "INITIAL"
-        | "TREATMENT";
+      type: TreatmentEventType;
       title: string;
-      notes?: string;
-      priceVnd: number;
-      startDate?: string;
-      endDate?: string;
+      note?: string;
+      photoUrl?: string;
+      occurredAt?: string;
     },
-  ): Promise<AxiosResponse<TreatmentPhase>> => {
-    return apiClient.post<TreatmentPhase>(
-      API_ENDPOINTS.TREATMENTS.PHASES(treatmentId),
+  ): Promise<AxiosResponse<TreatmentEvent>> {
+    return apiClient.post(
+      API_ENDPOINTS.TREATMENTS.EVENTS(treatmentId),
       payload,
     );
   },
 
-  updatePhase: async (
-    phaseId: string,
-    payload: {
-      title?: string;
-      notes?: string;
-      priceVnd?: number;
-      durationWeeks?: number;
-      startDate?: string;
-      endDate?: string;
-    },
-  ): Promise<AxiosResponse<TreatmentPhase>> => {
-    return apiClient.patch<TreatmentPhase>(
-      API_ENDPOINTS.TREATMENTS.PHASE_DETAIL(phaseId),
-      payload,
+  updateEventPhoto(
+    treatmentId: string,
+    eventId: string,
+    photoUrl: string,
+  ): Promise<AxiosResponse<TreatmentEvent>> {
+    return apiClient.patch(
+      API_ENDPOINTS.TREATMENTS.EVENT(treatmentId, eventId),
+      { photoUrl },
     );
   },
 
-  deletePhase: async (phaseId: string): Promise<AxiosResponse<void>> => {
-    return apiClient.delete<void>(
-      API_ENDPOINTS.TREATMENTS.PHASE_DETAIL(phaseId),
-    );
+  uploadImage(file: File): Promise<AxiosResponse<UploadImageResponse>> {
+    const data = new FormData();
+    data.append("file", file);
+    return apiClient.post(API_ENDPOINTS.UPLOADS.IMAGE, data);
   },
 
-  submitPlan: async (id: string): Promise<AxiosResponse<TreatmentPlan>> => {
-    const res = await apiClient.post<Record<string, unknown>>(
-      API_ENDPOINTS.TREATMENTS.SUBMIT(id),
-    );
-    return {
-      ...res,
-      data: mapBackendTreatmentToFrontend(res.data),
-    };
+  getIngredients(): Promise<AxiosResponse<Ingredient[]>> {
+    return apiClient.get(API_ENDPOINTS.INGREDIENTS.LIST);
   },
 
-  payTreatmentPlan: async (
-    id: string,
-  ): Promise<AxiosResponse<TreatmentPlan>> => {
-    const res = await apiClient.post<Record<string, unknown>>(
-      API_ENDPOINTS.TREATMENTS.PAY(id),
-    );
-    return {
-      ...res,
-      data: mapBackendTreatmentToFrontend(res.data),
-    };
-  },
-
-  getIngredients: async (): Promise<AxiosResponse<Ingredient[]>> => {
-    return apiClient.get<Ingredient[]>(API_ENDPOINTS.INGREDIENTS.LIST);
-  },
-
-  setPhaseIngredients: async (
+  setPhaseIngredients(
     phaseId: string,
     ingredientIds: string[],
-  ): Promise<AxiosResponse<TreatmentPhase>> => {
-    return apiClient.post<TreatmentPhase>(
-      API_ENDPOINTS.TREATMENTS.SET_INGREDIENTS(phaseId),
-      { ingredientIds },
+  ): Promise<AxiosResponse<TreatmentPhase>> {
+    return mapPhaseResponse(
+      apiClient.post(API_ENDPOINTS.TREATMENTS.SET_INGREDIENTS(phaseId), {
+        ingredientIds,
+      }),
     );
   },
 
-  getProductCandidates: async (
+  getProductCandidates(
     phaseId: string,
-  ): Promise<AxiosResponse<ProductCandidate[]>> => {
-    return apiClient.get<ProductCandidate[]>(
-      API_ENDPOINTS.TREATMENTS.PRODUCT_CANDIDATES(phaseId),
-    );
+  ): Promise<AxiosResponse<ProductCandidate[]>> {
+    return apiClient.get(API_ENDPOINTS.TREATMENTS.PRODUCT_CANDIDATES(phaseId));
   },
 
-  setPhaseProducts: async (
+  setPhaseProducts(
     phaseId: string,
     productVariantIds: string[],
-  ): Promise<AxiosResponse<TreatmentPhase>> => {
-    return apiClient.post<TreatmentPhase>(
-      API_ENDPOINTS.TREATMENTS.SET_PRODUCTS(phaseId),
-      { productVariantIds },
+  ): Promise<AxiosResponse<TreatmentPhase>> {
+    return mapPhaseResponse(
+      apiClient.post(API_ENDPOINTS.TREATMENTS.SET_PRODUCTS(phaseId), {
+        productVariantIds,
+      }),
     );
   },
 
-  generateRoutine: async (
-    phaseId: string,
-  ): Promise<AxiosResponse<Record<string, unknown>>> => {
-    return apiClient.post<Record<string, unknown>>(
-      API_ENDPOINTS.TREATMENTS.ROUTINE_GENERATE(phaseId),
-    );
+  generateRoutine(phaseId: string): Promise<AxiosResponse<{ id: string }>> {
+    return apiClient.post(API_ENDPOINTS.TREATMENTS.ROUTINE_GENERATE(phaseId));
   },
 
-  saveRoutine: async (
-    routineId: string,
-  ): Promise<AxiosResponse<Record<string, unknown>>> => {
-    return apiClient.post<Record<string, unknown>>(
-      API_ENDPOINTS.TREATMENTS.ROUTINE_SAVE(routineId),
-    );
+  saveRoutine(routineId: string): Promise<AxiosResponse<{ id: string }>> {
+    return apiClient.post(API_ENDPOINTS.TREATMENTS.ROUTINE_SAVE(routineId));
   },
 
-  updateRoutine: async (
+  updateRoutine(
     routineId: string,
     payload: Record<string, unknown>,
-  ): Promise<AxiosResponse<Record<string, unknown>>> => {
-    return apiClient.patch<Record<string, unknown>>(
+  ): Promise<AxiosResponse<{ id: string }>> {
+    return apiClient.patch(
       API_ENDPOINTS.TREATMENTS.ROUTINE_UPDATE(routineId),
       payload,
     );
   },
 
-  activatePhase: async (
-    phaseId: string,
-  ): Promise<AxiosResponse<TreatmentPhase>> => {
-    return apiClient.post<TreatmentPhase>(
-      API_ENDPOINTS.TREATMENTS.ACTIVATE_PHASE(phaseId),
+  activatePhase(phaseId: string): Promise<AxiosResponse<TreatmentPhase>> {
+    return mapPhaseResponse(
+      apiClient.post(API_ENDPOINTS.TREATMENTS.ACTIVATE_PHASE(phaseId)),
     );
   },
 };

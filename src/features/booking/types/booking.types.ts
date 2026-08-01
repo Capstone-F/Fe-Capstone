@@ -8,9 +8,9 @@ export interface TimeSlot {
 export interface ConsultationBooking {
   id: string;
   expertId: string;
+  customerId: string;
   expertName: string;
   customerName?: string | null;
-  userId: string;
   slotId: string;
   dateTime: string;
   symptoms: string;
@@ -20,6 +20,9 @@ export interface ConsultationBooking {
   feeChargedVnd: number;
   amount: number;
   createdAt: string;
+  startedAt: string | null;
+  completedAt: string | null;
+  treatmentId: string | null;
   cancelledAt?: string | null;
   cancelReason?: string | null;
   cancelledBy?: string | null;

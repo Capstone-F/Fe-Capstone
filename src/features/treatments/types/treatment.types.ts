@@ -1,64 +1,190 @@
+export type TreatmentStatus =
+  | "DRAFT"
+  | "ACTIVE"
+  | "PAUSED"
+  | "COMPLETED"
+  | "CANCELLED";
+
+export type TreatmentPhaseType =
+  | "INITIAL_ASSESSMENT"
+  | "ACTIVE_TREATMENT"
+  | "MAINTENANCE"
+  | "RECOVERY";
+
+export type TreatmentPhaseStatus = "PENDING" | "ACTIVE" | "COMPLETED";
+
+export type TreatmentEventType =
+  | "CONSULTATION"
+  | "PROGRESS_PHOTO"
+  | "MEDICATION_CHANGE"
+  | "INGREDIENT_OVERRIDE"
+  | "MILESTONE"
+  | "FOLLOW_UP";
+
 export interface Ingredient {
   id: string;
   name: string;
-  category?: string; // e.g. "Exfoliant", "Moisturizer", "Anti-acne"
-  description?: string;
+  code?: string;
+  category?: string;
+  description?: string | null;
 }
 
 export interface ProductCandidate {
   productVariantId: string;
-  sku: string;
+  productId: string;
   productName: string;
-  variantName?: string;
-  brand?: string;
+  sku: string;
   priceVnd: number;
-  imageUrl?: string;
-  overlapScore: number;
-  matchedIngredients: string[];
+  matchScore: number;
+  matchedIngredientIds: string[];
+  stockQuantity: number;
 }
 
-export interface RoutineStep {
+export interface TreatmentPhaseIngredient {
   id: string;
-  order: number;
-  timeOfDay: "AM" | "PM" | "BOTH";
-  stepName: string;
-  productId?: string;
-  productName?: string;
-  productImage?: string;
-  frequencyPreset: string;
-  frequencyCustom?: string;
-  instructionPreset: string;
-  instructionCustom?: string;
+  ingredientId: string;
+  ingredientName: string | null;
+}
+
+export interface TreatmentPhaseProduct {
+  id: string;
+  productVariantId: string;
+  matchScore: number | null;
+  productName: string | null;
+  sku: string | null;
+  priceVnd: number | null;
+}
+
+export interface TreatmentRoutineSummary {
+  id: string;
+  title: string;
+  status: string;
+  type: string;
 }
 
 export interface TreatmentPhase {
   id: string;
-  phaseNumber: number;
-  title: string;
-  durationWeeks: number;
-  priceVnd?: number;
-  status: "UPCOMING" | "ACTIVE" | "COMPLETED" | "DRAFT";
-  targetIngredients: Ingredient[];
-  amSteps: RoutineStep[];
-  pmSteps: RoutineStep[];
-  notes?: string;
+  treatmentId: string;
+  phaseType: TreatmentPhaseType;
+  phaseOrder: number;
+  title: string | null;
+  goals: string | null;
+  notes: string | null;
+  noteByExpert: string | null;
+  priceVnd: number;
+  status: TreatmentPhaseStatus;
+  startDate: string | null;
+  endDate: string | null;
+  ingredients: TreatmentPhaseIngredient[];
+  products: TreatmentPhaseProduct[];
+  routines: TreatmentRoutineSummary[];
 }
 
 export interface TreatmentPlan {
   id: string;
-  consultationId?: string;
   customerId: string;
-  customerName?: string;
   expertId: string;
-  expertName?: string;
+  clinicId: string | null;
+  title: string;
+  description: string | null;
+  status: TreatmentStatus;
+  startDate: string | null;
+  endDate: string | null;
+  totalPriceVnd: number | null;
+  paidAt: string | null;
+  paidTransactionId: string | null;
+  sourceConsultationId: string | null;
+  cancelledAt: string | null;
+  cancelReason: string | null;
+  cancelledBy: "CUSTOMER" | "EXPERT" | null;
+  refundTransactionId: string | null;
+  refundedAmountVnd: number | null;
+  phases: TreatmentPhase[];
+  createdAt: string;
+  updatedAt: string;
+  readyForPayment: boolean;
+}
+
+export interface CreateTreatmentPayload {
+  customerId: string;
   title: string;
   description?: string;
   startDate?: string;
   endDate?: string;
-  totalFeeVnd: number;
-  status: "DRAFT" | "PENDING_PAYMENT" | "ACTIVE" | "COMPLETED" | "CANCELLED";
-  phases: TreatmentPhase[];
-  currentPhaseNumber: number;
+  sourceConsultationId?: string;
+}
+
+export interface TreatmentPhasePayload {
+  phaseType: TreatmentPhaseType;
+  phaseOrder?: number;
+  title?: string | null;
+  goals?: string | null;
+  notes?: string | null;
+  noteByExpert?: string | null;
+  priceVnd: number;
+  startDate?: string | null;
+  endDate?: string | null;
+}
+
+export interface TreatmentEvent {
+  id: string;
+  treatmentId: string;
+  type: TreatmentEventType;
+  title: string;
+  note: string | null;
+  photoUrl: string | null;
+  occurredAt: string;
+  createdByExpertId: string | null;
   createdAt: string;
-  updatedAt: string;
+}
+
+export interface TreatmentChartSession {
+  id: string;
+  status: string;
+  isFollowUp: boolean;
+  scheduledAt: string | null;
+  startedAt: string | null;
+  completedAt: string | null;
+  reason: string | null;
+  feedbackRating: number | null;
+  feedbackComment: string | null;
+}
+
+export interface TreatmentChart {
+  treatmentId: string;
+  title: string;
+  status: TreatmentStatus;
+  startDate: string | null;
+  endDate: string | null;
+  paidAt: string | null;
+  phases: Array<{
+    id: string;
+    phaseType: TreatmentPhaseType;
+    phaseOrder: number;
+    title: string | null;
+    status: TreatmentPhaseStatus;
+    noteByExpert: string | null;
+    startDate: string | null;
+    endDate: string | null;
+  }>;
+  progressPhotos: TreatmentEvent[];
+  productsUsed: Array<{
+    productVariantId: string;
+    productName: string | null;
+    sku: string | null;
+    completedCount: number;
+    lastUsedAt: string | null;
+    phaseIds: string[];
+  }>;
+  inPersonSessions: TreatmentChartSession[];
+  consultationResults: {
+    sourceConsultation: TreatmentChartSession | null;
+    followUpSessions: TreatmentChartSession[];
+  };
+  phaseDetails?: TreatmentPhase[];
+}
+
+export interface UploadImageResponse {
+  url: string;
+  key: string;
 }
