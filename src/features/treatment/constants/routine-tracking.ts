@@ -68,20 +68,29 @@ export const STOCK_WARNING_BADGE_CLASS: Record<StepStockWarning, string> = {
   EMPTY: "border-red-200 bg-red-50 text-red-700",
 };
 
+/** Neutral state for a product that is already on its way — never alarming. */
+export const RESTOCKING_LABEL = "Đang bổ sung";
+export const RESTOCKING_BADGE_CLASS = "border-sky-200 bg-sky-50 text-sky-700";
+
 export const STOCK_WARNING_BANNER_CLASS: Record<StepStockWarning, string> = {
   LOW: "border-amber-200 bg-amber-50 text-amber-800",
   EMPTY: "border-red-200 bg-red-50 text-red-800",
 };
 
 /**
- * Supporting copy for a badge, e.g. "còn ~4.5ml". Returns null when the backend could
- * not estimate a volume, so callers render the label on its own.
+ * Supporting copy for a badge, e.g. "còn 2 ngày".
+ *
+ * Days rather than millilitres on purpose: the backend threshold is itself in days
+ * (LOW at ≤ 5), and "còn ~4.5ml" reads as a measurement when it is really an estimate
+ * derived from logged check-ins. Returns null when there is nothing useful to add —
+ * either the estimate is unavailable, or the product is already empty and the label
+ * alone says it.
  */
-export function formatRemainingMl(remainingMl: number | null): string | null {
-  if (remainingMl === null) {
+export function formatDaysLeft(daysLeft: number | null): string | null {
+  if (daysLeft === null || daysLeft <= 0) {
     return null;
   }
-  return `còn ~${Math.round(remainingMl * 10) / 10}ml`;
+  return daysLeft === 1 ? "còn 1 ngày" : `còn ${daysLeft} ngày`;
 }
 
 /** Tailwind classes for one calendar dot, keyed by day status. */

@@ -57,6 +57,7 @@ export function mapRoutineStep(dto: TodayStepDto): TodayStep {
     // Straight pass-through: the backend owns the thresholds (routine-tracking-flow.md
     // §4.6). Deriving them here would let the two drift apart.
     warning: dto.warning ?? null,
+    daysLeft: dto.daysLeft ?? null,
     remainingMl: dto.remainingMl ?? null,
     isCompleted,
     isSkipped,

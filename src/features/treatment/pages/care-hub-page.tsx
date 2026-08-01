@@ -57,6 +57,7 @@ import {
   SIDE_EFFECT_LABELS,
 } from "../constants/routine-tracking";
 import { useLowStockSteps } from "../hooks/useLowStockSteps";
+import { useRestockStatus } from "../hooks/useRestockStatus";
 import {
   useCompleteStep,
   useSkipStep,
@@ -71,6 +72,7 @@ import {
 import {
   restockDismissalKey,
   shouldPromptRestock,
+  summarizeLowStock,
 } from "../lib/restock-prompt";
 import { formatVnLongDate } from "../lib/routine-history";
 import type { RoutinePeriod, TodayStep } from "../types/routine-tracking.types";
@@ -190,8 +192,11 @@ export function CareHubPage() {
   });
 
   // Reorder prompt. The backend owns the stock estimate (routine-tracking-flow.md
-  // §4.6); this only reads `warning` off the steps already in cache.
-  const lowStock = useLowStockSteps(todayData);
+  // §4.6); this only reads `warning` off the steps already in cache. Products already
+  // ordered are split out so they neither nag nor count towards the banner.
+  const warnedProducts = useLowStockSteps(todayData);
+  const restock = useRestockStatus(warnedProducts, serverDate);
+  const lowStock = summarizeLowStock(restock.active);
 
   // Dismissal is keyed by the server's VN calendar date, never the device clock —
   // the same convention the support-habit ticks use below.
@@ -750,6 +755,10 @@ export function CareHubPage() {
                       key={entry.step.id}
                       step={entry.step}
                       index={index}
+                      isRestocking={
+                        entry.step.productVariant !== null &&
+                        restock.restockingIds.has(entry.step.productVariant.id)
+                      }
                       isPending={completeStep.isPending || skipStep.isPending}
                       onComplete={() =>
                         handleCompleteStep(entry.routineId, entry.step.id)
@@ -1035,7 +1044,7 @@ export function CareHubPage() {
         <RestockDialog
           // Resets the dialog's checked/quantity state when the product set changes,
           // e.g. after a purchase clears one of them.
-          key={lowStock.items.map((item) => item.variantId).join("-")}
+          key={restock.active.map((item) => item.variantId).join("-")}
           open={isRestockOpen}
           onOpenChange={(open) => {
             if (open) {
@@ -1045,7 +1054,8 @@ export function CareHubPage() {
             // Closing by any route counts as "later" for today.
             dismissRestock();
           }}
-          items={lowStock.items}
+          items={restock.active}
+          onMarkRestocked={restock.markRestocked}
         />
       )}
 

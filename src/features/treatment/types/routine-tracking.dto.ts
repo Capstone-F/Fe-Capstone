@@ -52,6 +52,7 @@ export interface TodayStepDto {
    * feat/treatment-tracking. The mapper normalises undefined to null.
    */
   warning?: StepStockWarning | null;
+  daysLeft?: number | null;
   remainingMl?: number | null;
 }
 

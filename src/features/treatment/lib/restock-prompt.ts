@@ -15,7 +15,8 @@ export interface LowStockItem {
   name: string;
   imageUrl: string | null;
   warning: StepStockWarning;
-  remainingMl: number | null;
+  /** Whole days of use left; drives the badge copy. */
+  daysLeft: number | null;
 }
 
 interface RoutineWithSteps {
@@ -35,8 +36,9 @@ function isMoreSevere(
  *
  * Deduping by variant id is essential: one bottle commonly backs several steps (a
  * cleanser used morning and evening is two steps), and without this the dialog would
- * list it twice and add double the quantity to the cart. When a variant appears more
- * than once we keep the most severe warning and the lowest remaining volume.
+ * list it twice and add double the quantity to the cart. The backend estimates per
+ * bottle, so duplicates normally agree — we still keep the most severe warning and
+ * the fewest days left so a mismatch can never under-report urgency.
  */
 export function collectLowStockItems(
   routines: readonly RoutineWithSteps[],
@@ -58,7 +60,7 @@ export function collectLowStockItems(
           name: variant.name,
           imageUrl: variant.imageUrl,
           warning: step.warning,
-          remainingMl: step.remainingMl,
+          daysLeft: step.daysLeft,
         });
         continue;
       }
@@ -67,11 +69,10 @@ export function collectLowStockItems(
         existing.warning = step.warning;
       }
       if (
-        step.remainingMl !== null &&
-        (existing.remainingMl === null ||
-          step.remainingMl < existing.remainingMl)
+        step.daysLeft !== null &&
+        (existing.daysLeft === null || step.daysLeft < existing.daysLeft)
       ) {
-        existing.remainingMl = step.remainingMl;
+        existing.daysLeft = step.daysLeft;
       }
     }
   }
@@ -83,6 +84,35 @@ export function collectLowStockItems(
     }
     return a.warning === "EMPTY" ? -1 : 1;
   });
+}
+
+export interface LowStockSummary {
+  lowCount: number;
+  emptyCount: number;
+  hasItems: boolean;
+  /** Drives the banner tone: EMPTY wins whenever anything is empty. */
+  topWarning: StepStockWarning | null;
+}
+
+/**
+ * Counts for a list of warned products. Kept separate from the collection step so the
+ * banner can summarise the *remaining* products after the ones already being restocked
+ * are filtered out.
+ */
+export function summarizeLowStock(
+  items: readonly LowStockItem[],
+): LowStockSummary {
+  const emptyCount = items.filter((item) => item.warning === "EMPTY").length;
+  const lowCount = items.length - emptyCount;
+
+  let topWarning: StepStockWarning | null = null;
+  if (emptyCount > 0) {
+    topWarning = "EMPTY";
+  } else if (lowCount > 0) {
+    topWarning = "LOW";
+  }
+
+  return { lowCount, emptyCount, hasItems: items.length > 0, topWarning };
 }
 
 /**

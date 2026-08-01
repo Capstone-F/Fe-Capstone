@@ -73,7 +73,13 @@ export interface TodayStep {
   skipNote: string | null;
   /** Backend stock estimate. Null = fine, or not estimable → render no reorder UI. */
   warning: StepStockWarning | null;
-  /** Supporting copy only ("còn ~4.5ml"). Null when the backend cannot estimate. */
+  /**
+   * Whole days of scheduled use left, floor(remainingMl / dailyUsageMl). This is what
+   * the UI shows: the backend triggers LOW at ≤ 5 days, so days are the unit the
+   * threshold actually speaks in. Null when the backend cannot estimate.
+   */
+  daysLeft: number | null;
+  /** Raw remaining volume behind `daysLeft`. Kept for debugging; not rendered. */
   remainingMl: number | null;
   // --- derived by the mapper ---
   isCompleted: boolean;

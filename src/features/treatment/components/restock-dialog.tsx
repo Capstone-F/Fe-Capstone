@@ -16,7 +16,7 @@ import {
 } from "@/shared/components/ui/dialog";
 import { formatVnd } from "@/shared/utils/format";
 import {
-  formatRemainingMl,
+  formatDaysLeft,
   STOCK_WARNING_BADGE_CLASS,
   STOCK_WARNING_LABELS,
 } from "../constants/routine-tracking";
@@ -92,6 +92,7 @@ interface RestockRowProps {
   quantity: number;
   onToggle: () => void;
   onQuantityChange: (quantity: number) => void;
+  onMarkRestocked: () => void;
 }
 
 function RestockRow({
@@ -100,8 +101,9 @@ function RestockRow({
   quantity,
   onToggle,
   onQuantityChange,
+  onMarkRestocked,
 }: RestockRowProps) {
-  const remaining = formatRemainingMl(item.remainingMl);
+  const remaining = formatDaysLeft(item.daysLeft);
 
   return (
     <div className="flex gap-3 rounded-xl border border-slate-200 p-3">
@@ -127,58 +129,72 @@ function RestockRow({
         </div>
       )}
 
-      <div className="min-w-0 flex-1 space-y-1">
-        <div className="flex flex-wrap items-center gap-2">
-          <span className="truncate text-xs font-bold text-slate-800">
-            {item.name}
-          </span>
-          <span
-            className={`shrink-0 rounded-md border px-1.5 py-0.5 text-[10px] font-semibold ${STOCK_WARNING_BADGE_CLASS[item.warning]}`}
-          >
-            {STOCK_WARNING_LABELS[item.warning]}
-            {remaining !== null && ` · ${remaining}`}
-          </span>
-        </div>
+      {/* Single flexible column: long product names wrap instead of forcing the
+          dialog to scroll sideways. */}
+      <div className="min-w-0 flex-1 space-y-1.5">
+        <p className="text-xs leading-snug font-bold break-words text-slate-800">
+          {item.name}
+        </p>
 
-        {item.productId !== null && (
-          <Link
-            href={`/products/${item.productId}`}
-            className="text-[11px] font-semibold text-[#6b5cf6] hover:underline"
-          >
-            Xem chi tiết →
-          </Link>
-        )}
+        <span
+          className={`inline-flex rounded-md border px-1.5 py-0.5 text-[10px] font-semibold ${STOCK_WARNING_BADGE_CLASS[item.warning]}`}
+        >
+          {STOCK_WARNING_LABELS[item.warning]}
+          {remaining !== null && ` · ${remaining}`}
+        </span>
+
+        <div className="flex flex-wrap items-center justify-between gap-2">
+          <div className="flex flex-wrap items-center gap-2.5">
+            {item.productId !== null && (
+              <Link
+                href={`/products/${item.productId}`}
+                className="text-[11px] font-semibold text-[#6b5cf6] hover:underline"
+              >
+                Xem chi tiết →
+              </Link>
+            )}
+            {/* Escape hatch for a purchase the backend cannot see — bought outside
+                the app, or an order still waiting to be paid. */}
+            <button
+              type="button"
+              onClick={onMarkRestocked}
+              className="text-[11px] font-semibold text-slate-500 underline-offset-2 hover:text-slate-700 hover:underline"
+            >
+              Đã mua bổ sung
+            </button>
+          </div>
+
+          <div className="flex shrink-0 items-center gap-1">
+            <Button
+              type="button"
+              size="sm"
+              variant="outline"
+              disabled={quantity <= 1}
+              onClick={() => onQuantityChange(quantity - 1)}
+              className="h-7 w-7 rounded-lg p-0"
+              aria-label="Giảm số lượng"
+            >
+              <Minus className="h-3 w-3" />
+            </Button>
+            <span className="w-6 text-center text-xs font-bold text-slate-700">
+              {quantity}
+            </span>
+            <Button
+              type="button"
+              size="sm"
+              variant="outline"
+              onClick={() => onQuantityChange(quantity + 1)}
+              className="h-7 w-7 rounded-lg p-0"
+              aria-label="Tăng số lượng"
+            >
+              <Plus className="h-3 w-3" />
+            </Button>
+          </div>
+        </div>
 
         {item.productId !== null && (
           <SimilarProducts productId={item.productId} />
         )}
-      </div>
-
-      <div className="flex shrink-0 items-start gap-1">
-        <Button
-          type="button"
-          size="sm"
-          variant="outline"
-          disabled={quantity <= 1}
-          onClick={() => onQuantityChange(quantity - 1)}
-          className="h-7 w-7 rounded-lg p-0"
-          aria-label="Giảm số lượng"
-        >
-          <Minus className="h-3 w-3" />
-        </Button>
-        <span className="w-6 pt-1 text-center text-xs font-bold text-slate-700">
-          {quantity}
-        </span>
-        <Button
-          type="button"
-          size="sm"
-          variant="outline"
-          onClick={() => onQuantityChange(quantity + 1)}
-          className="h-7 w-7 rounded-lg p-0"
-          aria-label="Tăng số lượng"
-        >
-          <Plus className="h-3 w-3" />
-        </Button>
       </div>
     </div>
   );
@@ -188,12 +204,14 @@ interface RestockDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   items: LowStockItem[];
+  onMarkRestocked: (variantId: string) => void;
 }
 
 export function RestockDialog({
   open,
   onOpenChange,
   items,
+  onMarkRestocked,
 }: RestockDialogProps) {
   const [checkedIds, setCheckedIds] = useState<string[]>(() =>
     items.map((item) => item.variantId),
@@ -258,7 +276,9 @@ export function RestockDialog({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-h-[85vh] max-w-lg overflow-y-auto">
+      {/* The dialog primitive pins itself to sm:max-w-sm, so the override has to carry
+          the same breakpoint prefix or it loses to the media query. */}
+      <DialogContent className="max-h-[85vh] overflow-x-hidden overflow-y-auto sm:max-w-lg">
         <DialogHeader>
           <DialogTitle className="text-base font-bold text-slate-900">
             Sản phẩm trong lộ trình sắp hết
@@ -280,12 +300,18 @@ export function RestockDialog({
               onQuantityChange={(quantity) =>
                 setQuantity(item.variantId, quantity)
               }
+              onMarkRestocked={() => {
+                onMarkRestocked(item.variantId);
+                toast.success(
+                  `Đã ghi nhận ${item.name} đang được bổ sung. Sẽ tạm ngưng nhắc.`,
+                );
+              }}
             />
           ))}
         </div>
 
         {added ? (
-          <div className="flex justify-end gap-2 pt-2">
+          <div className="flex flex-wrap justify-end gap-2 pt-2">
             <Button
               variant="outline"
               size="sm"
@@ -303,7 +329,7 @@ export function RestockDialog({
             </Link>
           </div>
         ) : (
-          <div className="flex justify-end gap-2 pt-2">
+          <div className="flex flex-wrap justify-end gap-2 pt-2">
             <Button
               variant="outline"
               size="sm"
