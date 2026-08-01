@@ -17,6 +17,7 @@ import {
   Star,
   Sparkles,
   Video,
+  Info,
 } from "lucide-react";
 import { toast } from "sonner";
 
@@ -38,8 +39,13 @@ import {
   useCancelBooking,
   useStartBooking,
   useCompleteBooking,
+  useBookingDetail,
 } from "@/features/booking/hooks/useBooking";
 import type { ConsultationBooking } from "@/features/booking/types/booking.types";
+import {
+  ToggleGroup,
+  ToggleGroupItem,
+} from "@/shared/components/ui/toggle-group";
 
 type FilterTab =
   | "ALL"
@@ -56,6 +62,7 @@ export function ExpertDashboardView() {
   const [cancelModalBooking, setCancelModalBooking] =
     useState<ConsultationBooking | null>(null);
   const [cancelReason, setCancelReason] = useState("");
+  const [detailBookingId, setDetailBookingId] = useState("");
 
   // Queries & Mutations
   const {
@@ -69,6 +76,7 @@ export function ExpertDashboardView() {
   const cancelMutation = useCancelBooking();
   const startMutation = useStartBooking();
   const completeMutation = useCompleteBooking();
+  const detailBooking = useBookingDetail(detailBookingId);
 
   // Handlers
   const handleConfirm = (bookingId: string) => {
@@ -145,8 +153,8 @@ export function ExpertDashboardView() {
       const q = searchTerm.toLowerCase();
       const matchName = b.expertName?.toLowerCase().includes(q);
       const matchReason = b.symptoms?.toLowerCase().includes(q);
-      const matchId = b.id?.toLowerCase().includes(q);
-      return matchName || matchReason || matchId;
+      const matchCustomer = b.customerName?.toLowerCase().includes(q);
+      return matchName || matchCustomer || matchReason;
     }
     return true;
   });
@@ -245,7 +253,16 @@ export function ExpertDashboardView() {
         {/* Search & Tabs Filter Bar */}
         <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
           {/* Tabs */}
-          <div className="flex flex-wrap gap-1.5 rounded-xl bg-slate-100 p-1 text-xs font-bold">
+          <ToggleGroup
+            multiple={false}
+            value={[activeTab]}
+            onValueChange={(value) =>
+              value[0] && setActiveTab(value[0] as FilterTab)
+            }
+            variant="outline"
+            size="sm"
+            className="flex-wrap"
+          >
             {(
               [
                 { id: "ALL", label: "Tất cả" },
@@ -259,27 +276,18 @@ export function ExpertDashboardView() {
                 { id: "CANCELLED", label: "Đã hủy" },
               ] as const
             ).map((tab) => (
-              <button
-                key={tab.id}
-                type="button"
-                onClick={() => setActiveTab(tab.id as FilterTab)}
-                className={`rounded-lg px-3 py-1.5 transition-all ${
-                  activeTab === tab.id
-                    ? "bg-white text-emerald-700 shadow-xs"
-                    : "text-slate-600 hover:text-slate-900"
-                }`}
-              >
+              <ToggleGroupItem key={tab.id} value={tab.id} className="text-xs">
                 {tab.label}
-              </button>
+              </ToggleGroupItem>
             ))}
-          </div>
+          </ToggleGroup>
 
           {/* Search Input */}
           <div className="relative w-full md:w-64">
             <Search className="absolute top-1/2 left-3 h-4 w-4 -translate-y-1/2 text-slate-400" />
             <Input
               type="text"
-              placeholder="Tìm theo triệu chứng, mã..."
+              placeholder="Tìm theo khách hàng, triệu chứng..."
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
               className="rounded-xl border-slate-200 pl-9 text-xs"
@@ -325,8 +333,8 @@ export function ExpertDashboardView() {
                   {/* Left: Info */}
                   <div className="space-y-2">
                     <div className="flex items-center gap-2">
-                      <span className="font-mono text-xs font-bold text-slate-800">
-                        #{booking.id.substring(0, 8)}
+                      <span className="text-sm font-semibold text-slate-900">
+                        {booking.customerName || "Khách hàng chưa cập nhật tên"}
                       </span>
                       {renderStatusBadge(booking)}
                     </div>
@@ -376,6 +384,13 @@ export function ExpertDashboardView() {
 
                   {/* Right: Actions */}
                   <div className="flex flex-wrap items-center gap-2">
+                    <Button
+                      size="sm"
+                      variant="ghost"
+                      onClick={() => setDetailBookingId(booking.id)}
+                    >
+                      <Info className="mr-1.5 h-3.5 w-3.5" /> Chi tiết
+                    </Button>
                     {/* Action: Pending -> Confirm */}
                     {statusNorm === "PENDING" && (
                       <>
@@ -504,6 +519,76 @@ export function ExpertDashboardView() {
         )}
       </div>
 
+      <Dialog
+        open={Boolean(detailBookingId)}
+        onOpenChange={(open) => !open && setDetailBookingId("")}
+      >
+        <DialogContent className="sm:max-w-lg">
+          <DialogHeader>
+            <DialogTitle>Chi tiết ca tư vấn</DialogTitle>
+            <DialogDescription>
+              Thông tin được tải khi chuyên gia mở cửa sổ chi tiết.
+            </DialogDescription>
+          </DialogHeader>
+          {detailBooking.isLoading ? (
+            <div className="flex min-h-48 items-center justify-center text-sm text-slate-500">
+              <Loader2 className="mr-2 h-4 w-4 animate-spin" /> Đang tải chi
+              tiết...
+            </div>
+          ) : detailBooking.isError || !detailBooking.data ? (
+            <p className="py-12 text-center text-sm text-red-600">
+              Không thể tải chi tiết ca tư vấn.
+            </p>
+          ) : (
+            <dl className="grid gap-4 border p-4 sm:grid-cols-2">
+              <DetailItem
+                label="Khách hàng"
+                value={detailBooking.data.customerName || "Chưa cập nhật"}
+              />
+              <DetailItem
+                label="Trạng thái"
+                value={statusLabel(detailBooking.data.status)}
+              />
+              <DetailItem
+                label="Thời gian"
+                value={new Date(detailBooking.data.dateTime).toLocaleString(
+                  "vi-VN",
+                )}
+              />
+              <DetailItem
+                label="Thanh toán"
+                value={
+                  detailBooking.data.isFollowUp
+                    ? "Tái khám miễn phí"
+                    : detailBooking.data.isPaid
+                      ? "Đã thanh toán"
+                      : "Chưa thanh toán"
+                }
+              />
+              <div className="sm:col-span-2">
+                <DetailItem
+                  label="Lý do tư vấn"
+                  value={detailBooking.data.symptoms || "Không ghi nhận"}
+                />
+              </div>
+              {detailBooking.data.cancelReason && (
+                <div className="sm:col-span-2">
+                  <DetailItem
+                    label="Lý do hủy"
+                    value={detailBooking.data.cancelReason}
+                  />
+                </div>
+              )}
+            </dl>
+          )}
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setDetailBookingId("")}>
+              Đóng
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
       {/* ── Modal Dialog: Cancel / Reject Booking ── */}
       <Dialog
         open={Boolean(cancelModalBooking)}
@@ -563,6 +648,25 @@ export function ExpertDashboardView() {
   );
 }
 
+function DetailItem({ label, value }: { label: string; value: string }) {
+  return (
+    <div>
+      <dt className="text-xs text-slate-500">{label}</dt>
+      <dd className="mt-1 text-sm font-medium text-slate-900">{value}</dd>
+    </div>
+  );
+}
+
+function statusLabel(status: ConsultationBooking["status"]): string {
+  return {
+    pending: "Chờ xác nhận",
+    confirmed: "Đã xác nhận",
+    in_progress: "Đang tư vấn",
+    completed: "Đã hoàn thành",
+    cancelled: "Đã hủy",
+  }[status];
+}
+
 /**
  * Status Badge Renderer
  */
@@ -575,7 +679,7 @@ function renderStatusBadge(booking: ConsultationBooking) {
         variant="outline"
         className="border-emerald-300 bg-emerald-100 text-[10px] font-extrabold text-emerald-900"
       >
-        🟢 TÁI KHÁM MIỄN PHÍ 0Đ
+        Tái khám miễn phí
       </Badge>
     );
   }
@@ -587,14 +691,14 @@ function renderStatusBadge(booking: ConsultationBooking) {
           variant="outline"
           className="border-blue-200 bg-blue-50 text-[10px] font-bold text-blue-800"
         >
-          🔵 Đã Trả Ví - Chờ Duyệt
+          Đã trả ví - Chờ duyệt
         </Badge>
       ) : (
         <Badge
           variant="outline"
           className="border-amber-200 bg-amber-50 text-[10px] font-bold text-amber-800"
         >
-          🟡 Chờ BN Trả Ví
+          Chờ khách hàng trả ví
         </Badge>
       );
     case "CONFIRMED":
@@ -603,7 +707,7 @@ function renderStatusBadge(booking: ConsultationBooking) {
           variant="outline"
           className="border-emerald-200 bg-emerald-50 text-[10px] font-bold text-emerald-800"
         >
-          🟢 Đã xác nhận
+          Đã xác nhận
         </Badge>
       );
     case "IN_PROGRESS":
@@ -612,7 +716,7 @@ function renderStatusBadge(booking: ConsultationBooking) {
           variant="outline"
           className="border-teal-200 bg-teal-50 text-[10px] font-bold text-teal-800"
         >
-          🟣 Đang tư vấn
+          Đang tư vấn
         </Badge>
       );
     case "COMPLETED":
@@ -621,7 +725,7 @@ function renderStatusBadge(booking: ConsultationBooking) {
           variant="outline"
           className="border-violet-200 bg-violet-50 text-[10px] font-bold text-violet-800"
         >
-          ✅ Đã hoàn thành
+          Đã hoàn thành
         </Badge>
       );
     case "CANCELLED":

@@ -47,9 +47,7 @@ export function OrderItemRow({ item }: { item: HydratedOrderItem }) {
     shipping: "Phí vận chuyển",
     total: "Tổng cộng",
   };
-  const name =
-    item.product?.name ??
-    `${t.unknownProduct} #${item.productVariantId.slice(0, 8).toUpperCase()}`;
+  const name = item.product?.name ?? "Sản phẩm không còn trong danh mục";
 
   return (
     <div className="flex items-center gap-3 py-3">

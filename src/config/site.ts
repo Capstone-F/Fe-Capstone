@@ -10,6 +10,11 @@ export const siteConfig = {
   dashboard: {
     navMain: [
       {
+        title: "Quản lý người dùng",
+        url: "/dashboard",
+        icon: "Users",
+      },
+      {
         title: "Quản lý Bác sĩ",
         url: "/dashboard/experts",
         icon: "Users",
@@ -18,11 +23,6 @@ export const siteConfig = {
         title: "Workspace Bác sĩ",
         url: "/expert",
         icon: "Stethoscope",
-      },
-      {
-        title: "Trang chủ Admin",
-        url: "/dashboard",
-        icon: "LayoutDashboard",
       },
     ],
     navSecondary: [],

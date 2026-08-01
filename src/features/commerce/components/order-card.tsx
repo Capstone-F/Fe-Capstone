@@ -2,7 +2,6 @@ import Link from "next/link";
 import { ChevronRight } from "lucide-react";
 import { Card, CardContent } from "@/shared/components/ui/card";
 import { HydratedOrder } from "../hooks/useOrders";
-import { formatOrderCode } from "../lib/order-hydration";
 import { formatVnd } from "@/shared/utils/format";
 import { OrderStatusBadge } from "./order-status-badge";
 import { OrderItemRow } from "./order-item-row";
@@ -57,17 +56,12 @@ export function OrderCard({ entry }: { entry: HydratedOrder }) {
   return (
     <Card className="overflow-hidden border-slate-200 shadow-xs transition-colors hover:border-slate-300">
       <div className="flex flex-col items-start justify-between gap-2 border-b border-slate-100 bg-slate-50 p-4 sm:flex-row sm:items-center">
-        <div className="flex items-center gap-2">
-          <span className="text-muted-foreground text-[10px]">
-            {t.codeLabel}
-          </span>
-          <span className="font-mono text-xs font-bold text-slate-700">
-            {formatOrderCode(order.id)}
-          </span>
-        </div>
+        <span className="text-xs font-semibold text-slate-700">
+          Đơn hàng ngày {new Date(order.createdAt).toLocaleDateString("vi-VN")}
+        </span>
         <div className="flex items-center gap-3">
           <span className="text-muted-foreground text-[10px]">
-            {t.placedAt} {new Date(order.createdAt).toLocaleDateString("vi-VN")}
+            {t.placedAt} {new Date(order.createdAt).toLocaleTimeString("vi-VN")}
           </span>
           <OrderStatusBadge status={order.status} />
         </div>

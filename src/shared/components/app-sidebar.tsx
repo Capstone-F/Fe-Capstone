@@ -124,7 +124,7 @@ export function AppSidebar({ config, ...props }: AppSidebarProps) {
   });
 
   return (
-    <Sidebar collapsible="offcanvas" {...props}>
+    <Sidebar collapsible="icon" {...props}>
       <SidebarHeader>
         <SidebarMenu>
           <SidebarMenuItem>

@@ -157,8 +157,7 @@ function CheckoutPageContent() {
             </span>
           </div>
           <CardDescription className="mt-1 text-xs">
-            Mã đơn hẹn:{" "}
-            <span className="font-semibold text-slate-700">{booking.id}</span>
+            Kiểm tra thông tin trước khi xác nhận thanh toán.
           </CardDescription>
         </CardHeader>
 

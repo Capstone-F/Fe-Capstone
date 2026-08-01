@@ -507,7 +507,7 @@ export function CustomerDashboard() {
                         <div className="space-y-1">
                           <div className="flex items-center gap-2">
                             <span className="text-xs font-bold text-slate-900">
-                              Mã đơn: {order.id}
+                              Đơn hàng của bạn
                             </span>
                             <span
                               className={`rounded-full px-2 py-0.5 text-[10px] font-bold uppercase ${

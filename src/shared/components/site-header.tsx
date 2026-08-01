@@ -17,6 +17,10 @@ export function SiteHeader() {
     pageTitle = "Thiết Kế Phác Đồ Điều Trị Đa Giai Đoạn (Builder)";
   } else if (pathname === "/expert/schedule") {
     pageTitle = "Lịch Khám & Slots Ca Tư Vấn";
+  } else if (pathname === "/dashboard") {
+    pageTitle = "Quản Lý Người Dùng";
+  } else if (pathname === "/dashboard/experts") {
+    pageTitle = "Quản Lý Bác Sĩ";
   }
 
   return (

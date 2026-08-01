@@ -1,7 +1,7 @@
 "use client";
 
 import { useRouter } from "next/navigation";
-import { CalendarDays, FileText, Loader2, UserRound } from "lucide-react";
+import { CalendarDays, FileText, Info, Loader2, UserRound } from "lucide-react";
 
 import { useTreatmentPlans } from "@/features/treatments/hooks/useTreatments";
 import { Badge } from "@/shared/components/ui/badge";
@@ -74,8 +74,7 @@ export default function ExpertTreatmentsPage() {
                   </div>
                   <div className="mt-2 flex flex-wrap gap-x-5 gap-y-1 text-xs text-slate-500">
                     <span className="flex items-center gap-1.5">
-                      <UserRound className="h-3.5 w-3.5" /> Khách{" "}
-                      {plan.customerId.slice(0, 8)}
+                      <UserRound className="h-3.5 w-3.5" /> Khách hàng điều trị
                     </span>
                     <span className="flex items-center gap-1.5">
                       <CalendarDays className="h-3.5 w-3.5" />{" "}
@@ -105,7 +104,7 @@ export default function ExpertTreatmentsPage() {
                     );
                   }}
                 >
-                  Mở phác đồ
+                  <Info className="mr-2 h-4 w-4" /> Xem chi tiết
                 </Button>
               </article>
             ))}

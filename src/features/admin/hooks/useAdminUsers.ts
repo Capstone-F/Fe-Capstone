@@ -25,6 +25,84 @@ export function useAdminUsers(params?: { role?: string; clinicId?: string }) {
   });
 }
 
+export function useAdminUserDirectory(params: {
+  q?: string;
+  role?: string;
+  page?: number;
+  limit?: number;
+}) {
+  return useQuery({
+    queryKey: ["admin-user-directory", params],
+    queryFn: async () => (await adminUsersApi.getUsers(params)).data,
+  });
+}
+
+export function useAdminUserDetail(id: string) {
+  return useQuery({
+    queryKey: ["admin-user", id],
+    queryFn: async () => (await adminUsersApi.getUser(id)).data,
+    enabled: Boolean(id),
+  });
+}
+
+export function useAdminWallet(userId: string) {
+  return useQuery({
+    queryKey: ["admin-wallet", userId],
+    queryFn: async () => (await adminUsersApi.getWallet(userId)).data,
+    enabled: Boolean(userId),
+  });
+}
+
+export function useUpdateAdminUserRoles() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async ({ id, roles }: { id: string; roles: string[] }) =>
+      (await adminUsersApi.updateRoles(id, roles)).data,
+    onSuccess: (user) => {
+      queryClient.setQueryData(["admin-user", user.id], user);
+      void queryClient.invalidateQueries({
+        queryKey: ["admin-user-directory"],
+      });
+      void queryClient.invalidateQueries({ queryKey: ["admin-users"] });
+    },
+  });
+}
+
+export function useUpdateAdminUserStatus() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async ({ id, isActive }: { id: string; isActive: boolean }) =>
+      (await adminUsersApi.updateStatus(id, isActive)).data,
+    onSuccess: (user) => {
+      queryClient.setQueryData(["admin-user", user.id], user);
+      void queryClient.invalidateQueries({
+        queryKey: ["admin-user-directory"],
+      });
+      void queryClient.invalidateQueries({ queryKey: ["admin-users"] });
+    },
+  });
+}
+
+export function useAdminWalletTopUp() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async ({
+      userId,
+      amountVnd,
+      note,
+    }: {
+      userId: string;
+      amountVnd: number;
+      note?: string;
+    }) => (await adminUsersApi.topUpWallet(userId, amountVnd, note)).data,
+    onSuccess: (result) => {
+      void queryClient.invalidateQueries({
+        queryKey: ["admin-wallet", result.userId],
+      });
+    },
+  });
+}
+
 export function useCreateUser() {
   const queryClient = useQueryClient();
 

@@ -8,7 +8,7 @@ import {
   CreditCard,
   MessageSquare,
   CalendarX,
-  Video,
+  Info,
 } from "lucide-react";
 import { useBookings } from "@/features/booking/hooks/useBooking";
 import { Button } from "@/shared/components/ui/button";
@@ -22,7 +22,6 @@ export function AppointmentsPage() {
     title: "Lịch hẹn tư vấn của tôi",
     subtitle:
       "Xem và quản lý các lượt tư vấn trực tiếp cùng chuyên gia da liễu.",
-    codeLabel: "Mã cuộc hẹn:",
     bookedAtLabel: "Đặt lúc:",
     expertInCharge: "Chuyên gia phụ trách",
     appointmentTime: "Thời gian hẹn",
@@ -135,14 +134,9 @@ export function AppointmentsPage() {
               className="hover:border-slate-350 overflow-hidden border-slate-200 shadow-xs transition-colors"
             >
               <div className="flex flex-col items-start justify-between gap-2 border-b border-slate-100 bg-slate-50 p-4 sm:flex-row sm:items-center">
-                <div className="flex items-center gap-2">
-                  <span className="text-muted-foreground text-[10px]">
-                    {t.codeLabel}
-                  </span>
-                  <span className="font-mono text-xs font-bold text-slate-700">
-                    {bk.id}
-                  </span>
-                </div>
+                <span className="text-xs font-semibold text-slate-700">
+                  Lịch tư vấn với {bk.expertName}
+                </span>
                 <div className="flex items-center gap-3">
                   <span className="text-muted-foreground text-[10px]">
                     {t.bookedAtLabel}{" "}
@@ -212,8 +206,8 @@ export function AppointmentsPage() {
                   {bk.status !== "cancelled" && (
                     <Link href={`/appointments/${bk.id}`}>
                       <Button size="sm" variant="outline" className="text-xs">
-                        <Video className="mr-1.5 h-3.5 w-3.5" />
-                        Tư vấn
+                        <Info className="mr-1.5 h-3.5 w-3.5" />
+                        Chi tiết
                       </Button>
                     </Link>
                   )}

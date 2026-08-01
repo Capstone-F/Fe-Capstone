@@ -9,6 +9,13 @@ export const API_ENDPOINTS = {
     ME: "/users/me",
     CREATE: "/users",
     LIST: "/users",
+    DETAIL: (id: string) => `/users/${id}`,
+    ROLES: (id: string) => `/users/${id}/roles`,
+    STATUS: (id: string) => `/users/${id}/status`,
+  },
+  ADMIN_WALLETS: {
+    DETAIL: (userId: string) => `/admin/wallets/${userId}`,
+    TOP_UP: (userId: string) => `/admin/wallets/${userId}/top-up`,
   },
   CLINICS: {
     LIST: "/clinics",

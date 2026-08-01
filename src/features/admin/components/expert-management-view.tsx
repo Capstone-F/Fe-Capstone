@@ -23,6 +23,14 @@ import { toast } from "sonner";
 import { Button } from "@/shared/components/ui/button";
 import { Input } from "@/shared/components/ui/input";
 import { Badge } from "@/shared/components/ui/badge";
+import { Label } from "@/shared/components/ui/label";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/shared/components/ui/select";
 import {
   Dialog,
   DialogContent,
@@ -217,7 +225,8 @@ export function ExpertManagementView() {
     if (!searchTerm.trim()) return true;
     const q = searchTerm.toLowerCase();
     return (
-      u.name.toLowerCase().includes(q) || u.email.toLowerCase().includes(q)
+      (u.name ?? "").toLowerCase().includes(q) ||
+      (u.email ?? "").toLowerCase().includes(q)
     );
   });
 
@@ -367,10 +376,10 @@ export function ExpertManagementView() {
                       className="transition-colors hover:bg-slate-50/60"
                     >
                       <td className="px-4 py-3 font-semibold text-slate-900">
-                        {u.name}
+                        {u.name || "Chưa cập nhật tên"}
                       </td>
                       <td className="px-4 py-3 font-mono text-slate-700">
-                        {u.email}
+                        {u.email || "Chưa cập nhật email"}
                       </td>
                       <td className="px-4 py-3">
                         <Badge
@@ -393,7 +402,10 @@ export function ExpertManagementView() {
                         <Button
                           size="sm"
                           variant="ghost"
-                          onClick={() => handleCopyCredentials(u.email, u.id)}
+                          onClick={() =>
+                            u.email && handleCopyCredentials(u.email, u.id)
+                          }
+                          disabled={!u.email}
                           className="rounded-lg text-xs text-slate-600 hover:bg-emerald-50 hover:text-emerald-700"
                         >
                           {copiedId === u.id ? (
@@ -434,9 +446,9 @@ export function ExpertManagementView() {
           <form onSubmit={handleCreateExpert} className="space-y-4 py-2">
             {/* Email Field with Auto Domain */}
             <div className="space-y-1.5">
-              <label className="text-xs font-bold text-slate-700">
+              <Label className="text-xs font-bold text-slate-700">
                 Email Đăng Nhập <span className="text-red-500">*</span>
-              </label>
+              </Label>
               <div className="flex items-center gap-1">
                 <div className="relative flex-1">
                   <Mail className="absolute top-1/2 left-3 h-4 w-4 -translate-y-1/2 text-slate-400" />
@@ -449,15 +461,19 @@ export function ExpertManagementView() {
                     required
                   />
                 </div>
-                <select
+                <Select
                   value={emailDomain}
-                  onChange={(e) => setEmailDomain(e.target.value)}
-                  className="rounded-xl border border-slate-200 bg-slate-50 px-2 py-2 text-xs font-semibold text-slate-700 focus:outline-none"
+                  onValueChange={(value) => value && setEmailDomain(value)}
                 >
-                  <option value="@glowscan.com">@glowscan.com</option>
-                  <option value="@glowscan.vn">@glowscan.vn</option>
-                  <option value="@gmail.com">@gmail.com</option>
-                </select>
+                  <SelectTrigger className="w-40">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="@glowscan.com">@glowscan.com</SelectItem>
+                    <SelectItem value="@glowscan.vn">@glowscan.vn</SelectItem>
+                    <SelectItem value="@gmail.com">@gmail.com</SelectItem>
+                  </SelectContent>
+                </Select>
               </div>
               <p className="text-[11px] text-slate-400">
                 Tài khoản đầy đủ:{" "}
@@ -509,17 +525,21 @@ export function ExpertManagementView() {
               <label className="text-xs font-bold text-slate-700">
                 Chuyên Khoa Da Liễu
               </label>
-              <select
+              <Select
                 value={selectedSpecialty}
-                onChange={(e) => setSelectedSpecialty(e.target.value)}
-                className="w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-xs text-slate-800 focus:outline-none"
+                onValueChange={(value) => value && setSelectedSpecialty(value)}
               >
-                {EXPERT_SPECIALTIES.map((spec) => (
-                  <option key={spec.value} value={spec.value}>
-                    {spec.label}
-                  </option>
-                ))}
-              </select>
+                <SelectTrigger className="w-full">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  {EXPERT_SPECIALTIES.map((spec) => (
+                    <SelectItem key={spec.value} value={spec.value}>
+                      {spec.label}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
             </div>
 
             {/* Clinic Dropdown */}
@@ -530,20 +550,21 @@ export function ExpertManagementView() {
               {isLoadingClinics ? (
                 <p className="text-xs text-slate-400">Đang nạp phòng khám...</p>
               ) : (
-                <select
+                <Select
                   value={selectedClinicId}
-                  onChange={(e) => setSelectedClinicId(e.target.value)}
-                  className="w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-xs text-slate-800 focus:outline-none"
+                  onValueChange={(value) => setSelectedClinicId(value ?? "")}
                 >
-                  <option value="">
-                    -- Không phân công (Hoặc chọn phòng khám) --
-                  </option>
-                  {clinics.map((clinic) => (
-                    <option key={clinic.id} value={clinic.id}>
-                      {clinic.name} ({clinic.address})
-                    </option>
-                  ))}
-                </select>
+                  <SelectTrigger className="w-full">
+                    <SelectValue placeholder="Chọn phòng khám" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {clinics.map((clinic) => (
+                      <SelectItem key={clinic.id} value={clinic.id}>
+                        {clinic.name} ({clinic.address})
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
               )}
             </div>
 
@@ -595,18 +616,21 @@ export function ExpertManagementView() {
               <label className="text-xs font-bold text-slate-700">
                 Chọn Bác Sĩ Phụ Trách <span className="text-red-500">*</span>
               </label>
-              <select
+              <Select
                 value={quickExpertId}
-                onChange={(e) => setQuickExpertId(e.target.value)}
-                className="w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-xs font-medium text-slate-800 focus:outline-none"
-                required
+                onValueChange={(value) => setQuickExpertId(value ?? "")}
               >
-                {doctorOptions.map((doc) => (
-                  <option key={doc.id} value={doc.id}>
-                    {doc.name} - {doc.subtitle}
-                  </option>
-                ))}
-              </select>
+                <SelectTrigger className="w-full">
+                  <SelectValue placeholder="Chọn bác sĩ" />
+                </SelectTrigger>
+                <SelectContent>
+                  {doctorOptions.map((doc) => (
+                    <SelectItem key={doc.id} value={doc.id}>
+                      {doc.name} - {doc.subtitle}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
             </div>
 
             {/* Scheduled Date/Time */}

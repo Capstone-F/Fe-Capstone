@@ -1,6 +1,5 @@
-import React from "react";
-import { ExpertManagementView } from "@/features/admin/components/expert-management-view";
+import { UserManagementView } from "@/features/admin/components/user-management-view";
 
 export default function AdminDashboardPage() {
-  return <ExpertManagementView />;
+  return <UserManagementView />;
 }
