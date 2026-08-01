@@ -12,8 +12,6 @@ import type {
 export type { RoutinePeriod, RoutineStatus, RoutineType };
 
 export type StepSessionStatus = "PENDING" | "COMPLETED" | "SKIPPED";
-/** Backend-computed stock estimate for a step's product. Never derived on the client. */
-export type StepStockWarning = "LOW" | "EMPTY";
 export type SkipReason = "OUT_OF_STOCK" | "FORGOT" | "OTHER";
 export type CheckInMood = "GOOD" | "OK" | "BAD";
 export type SideEffectType =
@@ -37,15 +35,9 @@ export type DayHistoryStatus =
 
 export interface RoutineStepProductVariant {
   id: string;
-  /**
-   * Catalog product id for GET /products/:id. Null when the backend build predates
-   * the stock-warning contract (feat/treatment-tracking, unmerged) — callers must
-   * hide the product-detail link rather than route to undefined.
-   */
-  productId: string | null;
   name: string;
   sku: string | null;
-  /** Populated since the stock-warning backend build; still null on older builds. */
+  /** Always null today — backend gap G9 (catalog media not wired). */
   imageUrl: string | null;
 }
 
@@ -71,10 +63,6 @@ export interface TodayStep {
   completedAt: Date | null;
   skipReason: SkipReason | null;
   skipNote: string | null;
-  /** Backend stock estimate. Null = fine, or not estimable → render no reorder UI. */
-  warning: StepStockWarning | null;
-  /** Supporting copy only ("còn ~4.5ml"). Null when the backend cannot estimate. */
-  remainingMl: number | null;
   // --- derived by the mapper ---
   isCompleted: boolean;
   isSkipped: boolean;

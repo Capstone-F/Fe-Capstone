@@ -17,19 +17,7 @@ import type {
   SideEffectType,
   SkipReason,
   StepSessionStatus,
-  StepStockWarning,
 } from "./routine-tracking.types";
-
-/**
- * Wire variant shape. `productId` is optional here because backend builds predating
- * feat/treatment-tracking omit it entirely; the mapper normalises it to null.
- */
-export interface RoutineStepProductVariantDto extends Omit<
-  RoutineStepProductVariant,
-  "productId"
-> {
-  productId?: string | null;
-}
 
 export interface TodayStepDto {
   id: string;
@@ -41,18 +29,12 @@ export interface TodayStepDto {
   dosageText: string | null;
   amountMl: number | null;
   protocolId: string | null;
-  productVariant: RoutineStepProductVariantDto | null;
+  productVariant: RoutineStepProductVariant | null;
   status: StepSessionStatus;
   /** ISO-8601 string; the mapper turns it into a Date. */
   completedAt: string | null;
   skipReason: SkipReason | null;
   skipNote: string | null;
-  /**
-   * Optional at the wire level: absent entirely on backend builds predating
-   * feat/treatment-tracking. The mapper normalises undefined to null.
-   */
-  warning?: StepStockWarning | null;
-  remainingMl?: number | null;
 }
 
 export interface TodayRoutineDto {
