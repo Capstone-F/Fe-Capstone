@@ -1,3 +1,8 @@
+import type {
+  TreatmentPhaseStatus,
+  TreatmentStatus,
+} from "@/features/treatments/types/treatment.types";
+
 export interface VideoTokenResponse {
   appID: number;
   token: string;
@@ -47,5 +52,24 @@ export interface CustomerConsultationContext {
       value: string | null;
       labels: Array<{ code: string; name: string }>;
     }>;
+  }>;
+  treatmentHistory: Array<{
+    treatmentId: string;
+    title: string;
+    status: TreatmentStatus;
+    startDate: string | null;
+    endDate: string | null;
+    expert: { id: string; name: string | null };
+    clinic: { id: string; name: string } | null;
+    currentPhase: {
+      id: string;
+      phaseOrder: number;
+      title: string | null;
+      status: TreatmentPhaseStatus;
+      noteByExpert: string | null;
+    } | null;
+    phaseCount: number;
+    createdAt: string;
+    updatedAt: string;
   }>;
 }

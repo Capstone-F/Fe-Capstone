@@ -19,9 +19,11 @@ export const consultationApi = {
 
   getCustomerContext(
     customerId: string,
+    consultationId: string,
   ): Promise<AxiosResponse<CustomerConsultationContext>> {
     return apiClient.get(
       API_ENDPOINTS.CUSTOMERS.CONSULTATION_CONTEXT(customerId),
+      { params: { consultationId } },
     );
   },
 };

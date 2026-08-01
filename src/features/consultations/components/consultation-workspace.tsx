@@ -1,11 +1,13 @@
 "use client";
 
+import { useState } from "react";
 import { useRouter } from "next/navigation";
 import {
   ArrowLeft,
   CheckCircle2,
   ClipboardPlus,
   FileClock,
+  History,
   Loader2,
   MessageSquare,
   Play,
@@ -20,6 +22,8 @@ import {
   useCompleteBooking,
   useStartBooking,
 } from "@/features/booking/hooks/useBooking";
+import { useTreatmentChart } from "@/features/treatments/hooks/useTreatments";
+import type { TreatmentStatus } from "@/features/treatments/types/treatment.types";
 import { Button } from "@/shared/components/ui/button";
 import { Badge } from "@/shared/components/ui/badge";
 import {
@@ -60,6 +64,7 @@ export function ConsultationWorkspace({
   const completeMutation = useCompleteBooking();
   const context = useCustomerConsultationContext(
     booking?.customerId ?? "",
+    bookingId,
     perspective === "expert",
   );
 
@@ -227,6 +232,8 @@ export function ConsultationWorkspace({
               <TabsContent value="record" className="border bg-white">
                 <CustomerRecordPanel
                   isLoading={context.isLoading}
+                  isError={context.isError}
+                  onRetry={() => void context.refetch()}
                   data={context.data}
                 />
               </TabsContent>
@@ -240,15 +247,35 @@ export function ConsultationWorkspace({
 
 function CustomerRecordPanel({
   isLoading,
+  isError,
+  onRetry,
   data,
 }: {
   isLoading: boolean;
+  isError: boolean;
+  onRetry: () => void;
   data: ReturnType<typeof useCustomerConsultationContext>["data"];
 }) {
+  const [selectedTreatmentId, setSelectedTreatmentId] = useState("");
+  const chart = useTreatmentChart(selectedTreatmentId);
+
   if (isLoading) {
     return (
       <div className="flex min-h-64 items-center justify-center text-sm text-slate-500">
         <Loader2 className="mr-2 h-4 w-4 animate-spin" /> Đang tải hồ sơ...
+      </div>
+    );
+  }
+
+  if (isError || !data) {
+    return (
+      <div className="flex min-h-64 flex-col items-center justify-center gap-3 p-6 text-center">
+        <p className="text-sm text-red-600">
+          Không thể tải hồ sơ khách hàng cho ca tư vấn này.
+        </p>
+        <Button variant="outline" onClick={onRetry}>
+          Thử lại
+        </Button>
       </div>
     );
   }
@@ -276,40 +303,171 @@ function CustomerRecordPanel({
           </div>
         </dl>
       </aside>
-      <section className="p-5">
-        <h2 className="text-sm font-semibold text-slate-900">
-          Lịch sử khảo sát
-        </h2>
-        <div className="mt-4 space-y-5">
-          {data?.surveyHistory.length ? (
-            data.surveyHistory.map((survey) => (
-              <section key={survey.id} className="border-b pb-5 last:border-0">
-                <p className="text-xs font-medium text-slate-500">
-                  {new Date(
-                    survey.completedAt ?? survey.createdAt,
-                  ).toLocaleDateString("vi-VN")}
-                </p>
-                <dl className="mt-3 grid gap-3 md:grid-cols-2">
-                  {survey.answers.map((answer) => (
-                    <div key={answer.questionCode}>
-                      <dt className="text-xs text-slate-500">
-                        {answer.questionText}
-                      </dt>
-                      <dd className="mt-0.5 text-sm text-slate-900">
-                        {answer.value ||
-                          answer.labels.map((label) => label.name).join(", ") ||
-                          "Không có câu trả lời"}
-                      </dd>
+      <section className="space-y-7 p-5">
+        <div>
+          <h2 className="flex items-center gap-2 text-sm font-semibold text-slate-900">
+            <History className="h-4 w-4 text-emerald-700" /> Lịch sử điều trị
+          </h2>
+          <div className="mt-4 space-y-3">
+            {data.treatmentHistory?.length ? (
+              data.treatmentHistory.map((treatment) => (
+                <div key={treatment.treatmentId} className="border p-4">
+                  <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+                    <div>
+                      <div className="flex flex-wrap items-center gap-2">
+                        <h3 className="text-sm font-semibold text-slate-950">
+                          {treatment.title}
+                        </h3>
+                        <Badge variant="outline">
+                          {treatmentStatusLabel[treatment.status]}
+                        </Badge>
+                      </div>
+                      <p className="mt-1 text-xs text-slate-500">
+                        Chuyên gia: {treatment.expert.name || "Chưa cập nhật"} ·{" "}
+                        {treatment.phaseCount} phase
+                      </p>
+                      {treatment.currentPhase && (
+                        <p className="mt-2 text-sm text-slate-700">
+                          Phase hiện tại:{" "}
+                          {treatment.currentPhase.title ||
+                            `Phase ${treatment.currentPhase.phaseOrder}`}
+                        </p>
+                      )}
                     </div>
-                  ))}
-                </dl>
-              </section>
-            ))
-          ) : (
-            <p className="text-sm text-slate-500">Chưa có khảo sát hoàn tất.</p>
-          )}
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      onClick={() =>
+                        setSelectedTreatmentId((current) =>
+                          current === treatment.treatmentId
+                            ? ""
+                            : treatment.treatmentId,
+                        )
+                      }
+                    >
+                      {selectedTreatmentId === treatment.treatmentId
+                        ? "Đóng hồ sơ"
+                        : "Xem hồ sơ"}
+                    </Button>
+                  </div>
+                  {selectedTreatmentId === treatment.treatmentId && (
+                    <TreatmentChartSummary
+                      isLoading={chart.isLoading}
+                      isError={chart.isError}
+                      data={chart.data}
+                      onRetry={() => void chart.refetch()}
+                    />
+                  )}
+                </div>
+              ))
+            ) : (
+              <p className="text-sm text-slate-500">
+                Chưa có phác đồ điều trị đã được triển khai.
+              </p>
+            )}
+          </div>
+        </div>
+
+        <div className="border-t pt-6">
+          <h2 className="text-sm font-semibold text-slate-900">
+            Lịch sử khảo sát
+          </h2>
+          <div className="mt-4 space-y-5">
+            {data?.surveyHistory.length ? (
+              data.surveyHistory.map((survey) => (
+                <section
+                  key={survey.id}
+                  className="border-b pb-5 last:border-0"
+                >
+                  <p className="text-xs font-medium text-slate-500">
+                    {new Date(
+                      survey.completedAt ?? survey.createdAt,
+                    ).toLocaleDateString("vi-VN")}
+                  </p>
+                  <dl className="mt-3 grid gap-3 md:grid-cols-2">
+                    {survey.answers.map((answer) => (
+                      <div key={answer.questionCode}>
+                        <dt className="text-xs text-slate-500">
+                          {answer.questionText}
+                        </dt>
+                        <dd className="mt-0.5 text-sm text-slate-900">
+                          {answer.value ||
+                            answer.labels
+                              .map((label) => label.name)
+                              .join(", ") ||
+                            "Không có câu trả lời"}
+                        </dd>
+                      </div>
+                    ))}
+                  </dl>
+                </section>
+              ))
+            ) : (
+              <p className="text-sm text-slate-500">
+                Chưa có khảo sát hoàn tất.
+              </p>
+            )}
+          </div>
         </div>
       </section>
+    </div>
+  );
+}
+
+const treatmentStatusLabel: Record<TreatmentStatus, string> = {
+  DRAFT: "Bản nháp",
+  ACTIVE: "Đang điều trị",
+  PAUSED: "Tạm dừng",
+  COMPLETED: "Đã hoàn thành",
+  CANCELLED: "Đã hủy",
+};
+
+function TreatmentChartSummary({
+  isLoading,
+  isError,
+  data,
+  onRetry,
+}: {
+  isLoading: boolean;
+  isError: boolean;
+  data: ReturnType<typeof useTreatmentChart>["data"];
+  onRetry: () => void;
+}) {
+  if (isLoading) {
+    return (
+      <div className="mt-4 flex min-h-24 items-center justify-center border-t text-sm text-slate-500">
+        <Loader2 className="mr-2 h-4 w-4 animate-spin" /> Đang tải hồ sơ điều
+        trị...
+      </div>
+    );
+  }
+
+  if (isError || !data) {
+    return (
+      <div className="mt-4 border-t pt-4">
+        <p className="text-sm text-red-600">Không thể tải hồ sơ điều trị.</p>
+        <Button className="mt-2" size="sm" variant="outline" onClick={onRetry}>
+          Thử lại
+        </Button>
+      </div>
+    );
+  }
+
+  return (
+    <div className="mt-4 grid gap-3 border-t pt-4 md:grid-cols-2">
+      {data.phases.map((phase) => (
+        <div key={phase.id} className="bg-slate-50 p-3">
+          <p className="text-xs font-medium text-slate-500">
+            Phase {phase.phaseOrder}
+          </p>
+          <p className="mt-1 text-sm font-medium text-slate-900">
+            {phase.title || "Chưa đặt tên"}
+          </p>
+          <p className="mt-1 text-sm text-slate-600">
+            {phase.noteByExpert || "Chưa có ghi chú chuyên môn."}
+          </p>
+        </div>
+      ))}
     </div>
   );
 }
