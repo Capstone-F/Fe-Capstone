@@ -5,10 +5,13 @@ import { Button } from "@/shared/components/ui/button";
 import { Card, CardContent } from "@/shared/components/ui/card";
 import { SKIP_REASON_LABELS } from "../constants/routine-tracking";
 import type { TodayStep } from "../types/routine-tracking.types";
+import { StepStockBadge } from "./step-stock-badge";
 
 interface RoutineStepItemProps {
   step: TodayStep;
   index: number;
+  /** This step's product is already on its way — show status, not a warning. */
+  isRestocking?: boolean;
   isPending: boolean;
   onComplete: () => void;
   onSkip: () => void;
@@ -17,6 +20,7 @@ interface RoutineStepItemProps {
 export function RoutineStepItem({
   step,
   index,
+  isRestocking = false,
   isPending,
   onComplete,
   onSkip,
@@ -55,6 +59,11 @@ export function RoutineStepItem({
               </p>
             )}
             <div className="flex flex-wrap gap-2 pt-1.5">
+              <StepStockBadge
+                warning={step.warning}
+                daysLeft={step.daysLeft}
+                isRestocking={isRestocking}
+              />
               {dosageLabel && (
                 <span className="rounded-md bg-slate-100 px-2 py-0.5 text-[10px] font-semibold text-slate-500">
                   Lượng dùng: {dosageLabel}

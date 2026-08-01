@@ -3,7 +3,7 @@
 import { Suspense, useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { CheckCircle2, Clock, Loader2, XCircle } from "lucide-react";
 import { queryKeys } from "@/lib/query/keys";
 import { paymentsApi } from "@/features/commerce/api/payments.api";
@@ -167,6 +167,18 @@ function VnpayReturnContent() {
   } else {
     viewState = "failed";
   }
+
+  // A paid order changes how much product the user owns, and the backend recomputes the
+  // Today stock warning from PAID+ orders. Drop the cached Today session so the low-stock
+  // badge clears or softens on the next visit to /care.
+  const queryClient = useQueryClient();
+  const invalidatedRef = useRef(false);
+  useEffect(() => {
+    if (succeeded && !invalidatedRef.current) {
+      invalidatedRef.current = true;
+      void queryClient.invalidateQueries({ queryKey: queryKeys.routines });
+    }
+  }, [succeeded, queryClient]);
 
   // A paid SURVEY order is the only trigger for POST /routines/generate. Fire it once,
   // then surface the outcome — a silent failure would leave /care permanently empty.
