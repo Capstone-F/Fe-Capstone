@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useEffect, useMemo, useRef, useState } from "react";
 import Link from "next/link";
 import {
   Sun,
@@ -14,17 +14,15 @@ import {
   Droplets,
   Bed,
   Smile,
-  Meh,
-  Frown,
   Activity,
   Calendar,
   Layers,
   HeartPulse,
 } from "lucide-react";
 import { toast } from "sonner";
+import { ApiError } from "@/core/api/errors";
 import { useSession } from "@/features/auth/hooks/useSession";
 import { useProfile } from "@/features/profile/hooks/useProfile";
-import { useRoutines } from "@/features/profile/hooks/useRoutines";
 import { Button } from "@/shared/components/ui/button";
 import {
   Card,
@@ -39,6 +37,7 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "@/shared/components/ui/dialog";
+import { Spinner } from "@/shared/components/ui/spinner";
 import { Textarea } from "@/shared/components/ui/textarea";
 import {
   Tabs,
@@ -46,12 +45,50 @@ import {
   TabsList,
   TabsTrigger,
 } from "@/shared/components/ui/tabs";
+import { DailyCheckInDialog } from "../components/daily-check-in-dialog";
+import { RoutineHistoryPanel } from "../components/routine-history-panel";
+import { RoutineStepItem } from "../components/routine-step-item";
+import { SkipStepDialog } from "../components/skip-step-dialog";
+import {
+  MOOD_LABELS,
+  PERIOD_LABELS,
+  SIDE_EFFECT_LABELS,
+} from "../constants/routine-tracking";
+import {
+  useCompleteStep,
+  useSkipStep,
+  useTodayCheckIns,
+  useTodayRoutines,
+} from "../hooks/useRoutineTracking";
+import {
+  aggregateProgress,
+  resolveCareHubState,
+  shouldPromptCheckIn,
+} from "../lib/care-hub-state";
+import { formatVnLongDate } from "../lib/routine-history";
+import type { RoutinePeriod, TodayStep } from "../types/routine-tracking.types";
 
-interface DailyCheckInData {
-  feeling: "BETTER" | "SAME" | "WORSE";
-  symptoms: string[];
-  note: string;
-  checkedInAt: string;
+/** Read the locally stored habit ticks for one server calendar date. */
+function readHabitIds(storageKey: string): string[] {
+  const saved = localStorage.getItem(storageKey);
+  if (!saved) {
+    return [];
+  }
+  try {
+    return JSON.parse(saved) as string[];
+  } catch {
+    return [];
+  }
+}
+
+/** Banner for blocks that still render hardcoded content because the BE endpoint is missing. */
+function DemoDataNotice({ children }: { children: React.ReactNode }) {
+  return (
+    <div className="flex items-start gap-2 rounded-xl border border-amber-200 bg-amber-50 p-3 text-[11px] font-semibold text-amber-800">
+      <AlertTriangle className="mt-0.5 h-3.5 w-3.5 shrink-0" />
+      <span>{children}</span>
+    </div>
+  );
 }
 
 const SUPPORT_HABITS = [
@@ -64,71 +101,116 @@ const SUPPORT_HABITS = [
 export function CareHubPage() {
   const session = useSession();
   const { data: profile } = useProfile();
-  const { data: routines, isLoading: isRoutinesLoading } = useRoutines();
 
-  const [completedStepIds, setCompletedStepIds] = useState<string[]>([]);
-  const [selectedPeriod, setSelectedPeriod] = useState<"MORNING" | "EVENING">(
-    "MORNING",
+  // null = no explicit tab choice yet, so the backend picks the period from its own
+  // Asia/Ho_Chi_Minh clock (VN hour < 14 → MORNING, else EVENING).
+  const [periodOverride, setPeriodOverride] = useState<RoutinePeriod | null>(
+    null,
   );
   const [sideEffectNote, setSideEffectNote] = useState("");
   const [isSideEffectOpen, setIsSideEffectOpen] = useState(false);
 
-  // Daily Check-In state
-  const [dailyCheckIn, setDailyCheckIn] = useState<DailyCheckInData | null>(
-    () => {
-      if (typeof window !== "undefined") {
-        const today = new Date().toDateString();
-        const saved = localStorage.getItem(`glowscan_checkin_${today}`);
-        if (saved) {
-          try {
-            return JSON.parse(saved);
-          } catch {
-            // ignore
-          }
-        }
-      }
-      return null;
-    },
-  );
-  const [checkInFeeling, setCheckInFeeling] = useState<
-    "BETTER" | "SAME" | "WORSE"
-  >("SAME");
-  const [checkInSymptoms, setCheckInSymptoms] = useState<string[]>([]);
-  const [checkInNote, setCheckInNote] = useState("");
-  const [isCheckInOpen, setIsCheckInOpen] = useState(false);
+  const isLoggedIn = !!session.data;
 
-  // Habits state
-  const [completedHabitIds, setCompletedHabitIds] = useState<string[]>(() => {
-    if (typeof window !== "undefined") {
-      const today = new Date().toDateString();
-      const saved = localStorage.getItem(`glowscan_habits_${today}`);
-      if (saved) {
-        try {
-          return JSON.parse(saved);
-        } catch {
-          // ignore
-        }
-      }
+  const {
+    data: todayData,
+    isLoading: isTodayLoading,
+    isError: isTodayError,
+  } = useTodayRoutines(periodOverride ?? undefined, { enabled: isLoggedIn });
+
+  // The period the screen is actually showing: user's tab, else whatever the server chose.
+  const activePeriod: RoutinePeriod =
+    periodOverride ?? todayData?.period ?? "MORNING";
+
+  const completeStep = useCompleteStep(periodOverride ?? undefined);
+  const skipStep = useSkipStep(periodOverride ?? undefined);
+
+  // Multiple ACTIVE routines are possible; check-in and history target the newest
+  // one (backend orders by createdAt DESC). TODO(BE/UX): per-routine check-in.
+  const primaryRoutine = todayData?.routines[0];
+  const { data: todayCheckIns } = useTodayCheckIns(
+    primaryRoutine?.id,
+    todayData?.date,
+  );
+  const currentCheckIn = todayCheckIns?.find(
+    (checkIn) => checkIn.period === activePeriod,
+  );
+
+  const [isCheckInOpen, setIsCheckInOpen] = useState(false);
+  const [stepToSkip, setStepToSkip] = useState<{
+    routineId: string;
+    step: TodayStep;
+  } | null>(null);
+
+  // Habits state — keyed by the server's VN calendar date, never the device clock.
+  // The key only exists after Today loads (client-side), so there is nothing to read
+  // during SSR and no hydration mismatch.
+  const serverDate = todayData?.date;
+  const habitsStorageKey = serverDate ? `glowscan_habits_${serverDate}` : null;
+  const [habitsByKey, setHabitsByKey] = useState<Record<string, string[]>>({});
+  const persistedHabitIds = useMemo(
+    () => (habitsStorageKey ? readHabitIds(habitsStorageKey) : []),
+    [habitsStorageKey],
+  );
+  const completedHabitIds = habitsStorageKey
+    ? (habitsByKey[habitsStorageKey] ?? persistedHabitIds)
+    : [];
+
+  // Flow §5: after the last step is acted on, prompt the daily check-in. The rule lives
+  // in lib/care-hub-state.ts (unit-tested); the ref only carries the previous render.
+  const previousSessionStateRef = useRef(todayData?.sessionState);
+  useEffect(() => {
+    const previous = previousSessionStateRef.current;
+    previousSessionStateRef.current = todayData?.sessionState;
+    if (
+      shouldPromptCheckIn({
+        previous,
+        current: todayData?.sessionState,
+        hasCheckIn: Boolean(currentCheckIn),
+      })
+    ) {
+      setIsCheckInOpen(true);
     }
-    return [];
+  }, [todayData?.sessionState, currentCheckIn]);
+
+  const careHubState = resolveCareHubState({
+    isSessionLoading: session.isLoading,
+    isLoggedIn,
+    isTodayLoading,
+    isTodayError,
+    sessionState: todayData?.sessionState,
   });
 
-  const isLoggedIn = !!session.data;
-  const userRoutines = routines ?? [];
-  const hasRoutine = userRoutines.length > 0;
+  const stepEntries = (todayData?.routines ?? []).flatMap((routine) =>
+    routine.steps.map((step) => ({ routineId: routine.id, step })),
+  );
 
-  const steps = userRoutines
-    .flatMap((r) => r.steps)
-    .filter((s) => s.period === selectedPeriod)
-    .sort((a, b) => a.stepOrder - b.stepOrder);
+  const progressPct = aggregateProgress(
+    todayData?.routines ?? [],
+  ).completionRate;
 
-  const toggleStepComplete = (stepId: string) => {
-    setCompletedStepIds((prev) =>
-      prev.includes(stepId)
-        ? prev.filter((id) => id !== stepId)
-        : [...prev, stepId],
+  const handleStepError = (error: unknown) => {
+    if (error instanceof ApiError && error.status === 409) {
+      toast.error(
+        "Bước này đã được ghi nhận hôm nay, không thể đổi trạng thái.",
+      );
+      return;
+    }
+    toast.error(
+      error instanceof ApiError
+        ? error.message
+        : "Không cập nhật được bước chăm sóc. Vui lòng thử lại.",
     );
-    toast.success("Đã cập nhật trạng thái bước chăm sóc!");
+  };
+
+  const handleCompleteStep = (routineId: string, stepId: string) => {
+    completeStep.mutate(
+      { routineId, stepId },
+      {
+        onSuccess: () => toast.success("Đã hoàn thành bước chăm sóc!"),
+        onError: handleStepError,
+      },
+    );
   };
 
   const handleReportSideEffect = (e: React.FormEvent) => {
@@ -137,54 +219,36 @@ export function CareHubPage() {
       toast.error("Vui lòng mô tả triệu chứng gặp phải.");
       return;
     }
+    // TODO(BE): gap G2 — nothing is persisted or escalated; this only closes the form.
     toast.success(
-      "Đã ghi nhận báo cáo tác dụng phụ. Bác sĩ sẽ phản hồi sớm nhất!",
+      "Đã ghi nhận mô tả. Hãy thêm tác dụng phụ vào check-in hằng ngày để lưu lại.",
     );
     setSideEffectNote("");
     setIsSideEffectOpen(false);
   };
 
-  const handleDailyCheckInSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-    const checkInData: DailyCheckInData = {
-      feeling: checkInFeeling,
-      symptoms: checkInSymptoms,
-      note: checkInNote,
-      checkedInAt: new Date().toLocaleTimeString("vi-VN", {
-        hour: "2-digit",
-        minute: "2-digit",
-      }),
-    };
-    const today = new Date().toDateString();
-    localStorage.setItem(
-      `glowscan_checkin_${today}`,
-      JSON.stringify(checkInData),
-    );
-    setDailyCheckIn(checkInData);
-    setIsCheckInOpen(false);
-    toast.success("Đã check-in thành công nhật ký da hôm nay!");
-  };
-
   const toggleHabit = (habitId: string) => {
-    setCompletedHabitIds((prev) => {
-      const next = prev.includes(habitId)
-        ? prev.filter((id) => id !== habitId)
-        : [...prev, habitId];
-      const today = new Date().toDateString();
-      localStorage.setItem(`glowscan_habits_${today}`, JSON.stringify(next));
-      return next;
-    });
+    if (!habitsStorageKey) {
+      return;
+    }
+    const next = completedHabitIds.includes(habitId)
+      ? completedHabitIds.filter((id) => id !== habitId)
+      : [...completedHabitIds, habitId];
+    localStorage.setItem(habitsStorageKey, JSON.stringify(next));
+    setHabitsByKey((prev) => ({ ...prev, [habitsStorageKey]: next }));
     toast.success("Đã ghi nhận thói quen tốt!");
   };
 
-  const toggleSymptom = (sym: string) => {
-    setCheckInSymptoms((prev) =>
-      prev.includes(sym) ? prev.filter((s) => s !== sym) : [...prev, sym],
+  // Render branches follow resolveCareHubState's priority order.
+  if (careHubState.status === "AUTH_PENDING") {
+    return (
+      <div className="flex w-full justify-center py-16">
+        <Spinner />
+      </div>
     );
-  };
+  }
 
-  // State 1: Guest User
-  if (!session.isLoading && !isLoggedIn) {
+  if (careHubState.status === "GUEST") {
     return (
       <div className="mx-auto flex w-full max-w-4xl flex-col items-center gap-6 py-12 text-center">
         <div className="flex h-16 w-16 items-center justify-center rounded-2xl bg-[#E2EBE6] text-[#2C3E35] shadow-xs">
@@ -232,8 +296,25 @@ export function CareHubPage() {
     );
   }
 
-  // State 2: Logged in but no routine
-  if (isLoggedIn && !isRoutinesLoading && !hasRoutine) {
+  if (careHubState.status === "ERROR") {
+    return (
+      <div className="mx-auto flex w-full max-w-4xl flex-col items-center gap-6 py-12 text-center">
+        <div className="flex h-16 w-16 items-center justify-center rounded-2xl bg-red-50 text-red-600 shadow-xs">
+          <AlertTriangle className="h-8 w-8" />
+        </div>
+        <div className="space-y-2">
+          <h1 className="text-3xl font-bold tracking-tight text-[#2C3E35]">
+            Không Tải Được Routine
+          </h1>
+          <p className="max-w-md text-sm text-[#5C7468]">
+            Không tải được routine hôm nay. Vui lòng thử lại.
+          </p>
+        </div>
+      </div>
+    );
+  }
+
+  if (careHubState.status === "NO_ROUTINE") {
     return (
       <div className="mx-auto flex w-full max-w-4xl flex-col items-center gap-6 py-12 text-center">
         <div className="flex h-16 w-16 items-center justify-center rounded-2xl bg-[#EBF2EE] text-[#2C3E35] shadow-xs">
@@ -272,11 +353,6 @@ export function CareHubPage() {
     );
   }
 
-  const progressPct =
-    steps.length > 0
-      ? Math.round((completedStepIds.length / steps.length) * 100)
-      : 0;
-
   return (
     <div className="mx-auto flex w-full max-w-6xl flex-col gap-6 px-4">
       {/* Top Welcome Panel */}
@@ -293,11 +369,8 @@ export function CareHubPage() {
             <span>
               Hôm nay:{" "}
               <strong className="text-slate-700">
-                {new Date().toLocaleDateString("vi-VN", {
-                  weekday: "long",
-                  day: "numeric",
-                  month: "long",
-                })}
+                {/* Server VN calendar date from GET /routines/me/today — never the device clock. */}
+                {todayData ? formatVnLongDate(todayData.date) : "—"}
               </strong>
             </span>
           </div>
@@ -307,6 +380,9 @@ export function CareHubPage() {
         </div>
 
         <div className="flex items-center gap-3">
+          {/* TODO(BE): gap G2 — irritation escalation is not implemented. This report
+              only shows a toast; nothing reaches an expert. Side effects that DO persist
+              go through the daily check-in (POST /routines/:id/check-ins). */}
           {/* Side Effect Reporting Modal */}
           <Dialog open={isSideEffectOpen} onOpenChange={setIsSideEffectOpen}>
             <DialogTrigger
@@ -332,9 +408,13 @@ export function CareHubPage() {
                 onSubmit={handleReportSideEffect}
                 className="space-y-4 pt-2"
               >
+                <DemoDataNotice>
+                  Backend chưa có luồng cảnh báo kích ứng tới chuyên gia. Để lưu
+                  lại tác dụng phụ, hãy dùng &quot;Check-in Da&quot; hằng ngày.
+                </DemoDataNotice>
                 <p className="text-xs text-slate-600">
-                  Mô tả triệu chứng da bị đỏ, rát, bong tróc hoặc mụn bùng phát.
-                  Bác sĩ tư vấn sẽ cập nhật phác đồ ngay lập tức.
+                  Mô tả triệu chứng da bị đỏ, rát, bong tróc hoặc mụn bùng phát
+                  để tiện theo dõi.
                 </p>
                 <Textarea
                   placeholder="Mô tả hiện trạng làn da của bạn..."
@@ -427,9 +507,9 @@ export function CareHubPage() {
                   <div className="flex rounded-xl bg-slate-100 p-1">
                     <button
                       type="button"
-                      onClick={() => setSelectedPeriod("MORNING")}
+                      onClick={() => setPeriodOverride("MORNING")}
                       className={`flex flex-1 items-center justify-center gap-1.5 rounded-lg py-2 text-xs font-bold transition-all ${
-                        selectedPeriod === "MORNING"
+                        activePeriod === "MORNING"
                           ? "bg-white text-amber-600 shadow-xs"
                           : "text-slate-500 hover:text-slate-800"
                       }`}
@@ -439,9 +519,9 @@ export function CareHubPage() {
                     </button>
                     <button
                       type="button"
-                      onClick={() => setSelectedPeriod("EVENING")}
+                      onClick={() => setPeriodOverride("EVENING")}
                       className={`flex flex-1 items-center justify-center gap-1.5 rounded-lg py-2 text-xs font-bold transition-all ${
-                        selectedPeriod === "EVENING"
+                        activePeriod === "EVENING"
                           ? "bg-white text-indigo-600 shadow-xs"
                           : "text-slate-500 hover:text-slate-800"
                       }`}
@@ -453,9 +533,7 @@ export function CareHubPage() {
 
                   <div className="space-y-2 border-t border-slate-100 pt-4">
                     <div className="flex justify-between text-xs font-bold text-slate-700">
-                      <span>
-                        Tiến độ {selectedPeriod === "MORNING" ? "Sáng" : "Tối"}
-                      </span>
+                      <span>Tiến độ {PERIOD_LABELS[activePeriod]}</span>
                       <span>{progressPct}%</span>
                     </div>
                     <div className="h-2.5 w-full overflow-hidden rounded-full bg-slate-100">
@@ -468,6 +546,9 @@ export function CareHubPage() {
                 </CardContent>
               </Card>
 
+              {/* TODO(BE): gap G4 — support habits are localStorage-only. SupportHabit /
+                  RoutineSupportHabit entities exist in Be-Capstone but have no API, so
+                  ticks are not persisted server-side. */}
               {/* Habits Check-in */}
               <Card className="border-slate-200 shadow-2xs">
                 <CardHeader className="border-b border-slate-100 p-4">
@@ -525,52 +606,38 @@ export function CareHubPage() {
                     <Activity className="h-4 w-4 text-[#6b5cf6]" />
                     Nhật Ký Tình Trạng Da Hôm Nay
                   </CardTitle>
-                  {dailyCheckIn && (
+                  {currentCheckIn && (
                     <span className="rounded-full bg-slate-100 px-2 py-0.5 text-[10px] font-bold text-slate-500">
-                      Đã ghi nhận lúc {dailyCheckIn.checkedInAt}
+                      Đã ghi nhận · {currentCheckIn.completionRate ?? 0}% hoàn
+                      thành
                     </span>
                   )}
                 </CardHeader>
                 <CardContent className="p-4">
-                  {dailyCheckIn ? (
+                  {currentCheckIn ? (
                     <div className="space-y-3">
                       <div className="flex items-center gap-3">
                         <span className="text-xs font-bold text-slate-600">
                           Đánh giá chung:
                         </span>
                         <span className="inline-flex items-center gap-1.5 rounded-full bg-slate-100 px-2.5 py-1 text-xs font-semibold text-slate-700">
-                          {dailyCheckIn.feeling === "BETTER" && (
-                            <>
-                              <Smile className="h-4 w-4 text-emerald-500" />
-                              Cải thiện
-                            </>
-                          )}
-                          {dailyCheckIn.feeling === "SAME" && (
-                            <>
-                              <Meh className="h-4 w-4 text-amber-500" />
-                              Không đổi
-                            </>
-                          )}
-                          {dailyCheckIn.feeling === "WORSE" && (
-                            <>
-                              <Frown className="h-4 w-4 text-red-500" />
-                              Tệ hơn
-                            </>
-                          )}
+                          {currentCheckIn.overallMood
+                            ? MOOD_LABELS[currentCheckIn.overallMood]
+                            : "Chưa đánh giá"}
                         </span>
                       </div>
-                      {dailyCheckIn.symptoms.length > 0 ? (
+                      {currentCheckIn.sideEffects.length > 0 ? (
                         <div className="flex items-start gap-3">
                           <span className="mt-1 text-xs font-bold text-slate-600">
-                            Triệu chứng gặp phải:
+                            Tác dụng phụ:
                           </span>
                           <div className="flex flex-wrap gap-1.5">
-                            {dailyCheckIn.symptoms.map((s) => (
+                            {currentCheckIn.sideEffects.map((sideEffect) => (
                               <span
-                                key={s}
+                                key={sideEffect.id}
                                 className="rounded-full border border-red-100 bg-red-50 px-2 py-0.5 text-[10px] font-bold text-red-700"
                               >
-                                {s}
+                                {SIDE_EFFECT_LABELS[sideEffect.type]}
                               </span>
                             ))}
                           </div>
@@ -581,27 +648,21 @@ export function CareHubPage() {
                           Da khỏe mạnh, không có kích ứng.
                         </div>
                       )}
-                      {dailyCheckIn.note && (
+                      {currentCheckIn.note && (
                         <div className="rounded-lg border border-slate-100 bg-slate-50 p-2.5 text-xs text-slate-600 italic">
-                          &quot;{dailyCheckIn.note}&quot;
+                          &quot;{currentCheckIn.note}&quot;
                         </div>
                       )}
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        onClick={() => setIsCheckInOpen(true)}
-                        className="mt-2 w-full text-xs"
-                      >
-                        Cập nhật Check-in
-                      </Button>
                     </div>
                   ) : (
                     <div className="py-4 text-center">
                       <p className="mb-3 text-xs text-slate-500">
-                        Bạn chưa ghi nhận trạng thái da hôm nay.
+                        Bạn chưa ghi nhận trạng thái da cho{" "}
+                        {PERIOD_LABELS[activePeriod].toLowerCase()} hôm nay.
                       </p>
                       <Button
                         size="sm"
+                        disabled={!primaryRoutine}
                         onClick={() => setIsCheckInOpen(true)}
                         className="rounded-xl bg-[#6b5cf6] px-5 text-xs font-bold text-white hover:bg-[#5a4ae5]"
                       >
@@ -619,10 +680,16 @@ export function CareHubPage() {
                     Các Bước Skincare Khung Giờ
                   </h2>
                   <span className="text-xs font-medium text-slate-500">
-                    Khung giờ: {selectedPeriod === "MORNING" ? "Sáng" : "Tối"}
+                    Khung giờ: {PERIOD_LABELS[activePeriod]}
                   </span>
                 </div>
-                {steps.length === 0 ? (
+                {isTodayLoading ? (
+                  <Card className="border-slate-200 p-8 text-center shadow-xs">
+                    <p className="text-xs text-slate-500">
+                      Đang tải routine...
+                    </p>
+                  </Card>
+                ) : stepEntries.length === 0 ? (
                   <Card className="border-slate-200 p-8 text-center shadow-xs">
                     <Clock className="mx-auto h-8 w-8 text-slate-300" />
                     <p className="mt-2 text-xs text-slate-500">
@@ -630,61 +697,23 @@ export function CareHubPage() {
                     </p>
                   </Card>
                 ) : (
-                  steps.map((step, idx) => {
-                    const isDone = completedStepIds.includes(step.id);
-                    return (
-                      <Card
-                        key={step.id}
-                        className={`border-slate-200 shadow-xs transition-all ${
-                          isDone
-                            ? "border-slate-200 bg-slate-50/80"
-                            : "bg-white hover:border-[#6b5cf6]/40"
-                        }`}
-                      >
-                        <CardContent className="flex items-start justify-between gap-4 p-5">
-                          <div className="flex gap-3">
-                            <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-[#E2EBE6] text-xs font-bold text-[#2C3E35]">
-                              {idx + 1}
-                            </span>
-                            <div className="space-y-1">
-                              <h3
-                                className={`text-sm font-bold ${isDone ? "text-slate-500 line-through" : "text-slate-900"}`}
-                              >
-                                {step.name}
-                              </h3>
-                              {step.instructions && (
-                                <p className="text-xs leading-relaxed text-slate-600">
-                                  {step.instructions}
-                                </p>
-                              )}
-                              <div className="flex gap-2 pt-1.5">
-                                <span className="rounded-md bg-slate-100 px-2 py-0.5 text-[10px] font-semibold text-slate-500">
-                                  Lượng dùng: Hạt đậu
-                                </span>
-                                <span className="rounded-md bg-slate-100 px-2 py-0.5 text-[10px] font-semibold text-slate-500">
-                                  Thời gian chờ: 1-2 phút
-                                </span>
-                              </div>
-                            </div>
-                          </div>
-
-                          <Button
-                            size="sm"
-                            variant={isDone ? "outline" : "default"}
-                            onClick={() => toggleStepComplete(step.id)}
-                            className={`shrink-0 rounded-xl text-xs font-bold ${
-                              isDone
-                                ? "border-slate-300 text-slate-600"
-                                : "bg-[#2C3E35] text-white hover:bg-[#3A5246]"
-                            }`}
-                          >
-                            <CheckCircle2 className="mr-1.5 h-3.5 w-3.5" />
-                            {isDone ? "Hoàn thành" : "Check-in"}
-                          </Button>
-                        </CardContent>
-                      </Card>
-                    );
-                  })
+                  stepEntries.map((entry, index) => (
+                    <RoutineStepItem
+                      key={entry.step.id}
+                      step={entry.step}
+                      index={index}
+                      isPending={completeStep.isPending || skipStep.isPending}
+                      onComplete={() =>
+                        handleCompleteStep(entry.routineId, entry.step.id)
+                      }
+                      onSkip={() =>
+                        setStepToSkip({
+                          routineId: entry.routineId,
+                          step: entry.step,
+                        })
+                      }
+                    />
+                  ))
                 )}
               </div>
             </div>
@@ -692,7 +721,15 @@ export function CareHubPage() {
         </TabsContent>
 
         {/* Tab 2: Treatment Phase details */}
+        {/* TODO(BE): gaps G6/G10 — every value below (doctor, clinic, week 4/12, the three
+            phases) is hardcoded demo content. There is no endpoint exposing an expert
+            treatment plan or its phases yet, so nothing here reflects the logged-in user.
+            See docs/confluence/context/10-routine-tracking-module.md §9. */}
         <TabsContent value="treatment" className="space-y-6 outline-none">
+          <DemoDataNotice>
+            Dữ liệu minh hoạ — backend chưa có API phác đồ điều trị của chuyên
+            gia, nội dung dưới đây không phải hồ sơ thật của bạn.
+          </DemoDataNotice>
           <div className="grid grid-cols-1 gap-6 md:grid-cols-3">
             {/* Overview Box */}
             <Card className="border-slate-200 shadow-2xs md:col-span-1">
@@ -840,6 +877,16 @@ export function CareHubPage() {
 
         {/* Tab 3: Timeline & Skin History */}
         <TabsContent value="history" className="space-y-6 outline-none">
+          {primaryRoutine && todayData && (
+            <RoutineHistoryPanel
+              routineId={primaryRoutine.id}
+              today={todayData.date}
+            />
+          )}
+
+          {/* TODO(BE): gap G6/G10 — this timeline is static demo content. There is no
+              endpoint exposing consultation/treatment events or expert routine overrides
+              yet. See docs/confluence/context/10-routine-tracking-module.md §9. */}
           <Card className="border-slate-200 shadow-2xs">
             <CardHeader className="border-b border-slate-100 p-4">
               <CardTitle className="flex items-center gap-2 text-sm font-bold text-slate-800">
@@ -847,7 +894,10 @@ export function CareHubPage() {
                 Lịch Sử Chăm Sóc & Biến Động Da
               </CardTitle>
             </CardHeader>
-            <CardContent className="p-6">
+            <CardContent className="space-y-4 p-6">
+              <DemoDataNotice>
+                Dữ liệu minh hoạ — chưa có API sự kiện tư vấn/điều trị.
+              </DemoDataNotice>
               <div className="relative ml-4 space-y-6 border-l border-slate-100 pl-6">
                 {/* Event 1 */}
                 <div className="relative">
@@ -923,123 +973,43 @@ export function CareHubPage() {
         </TabsContent>
       </Tabs>
 
-      {/* Daily Check-in Form Dialog */}
-      <Dialog open={isCheckInOpen} onOpenChange={setIsCheckInOpen}>
-        <DialogContent className="max-w-md">
-          <DialogHeader>
-            <DialogTitle className="flex items-center gap-2 text-base font-bold text-slate-900">
-              <Activity className="h-5 w-5 text-[#6b5cf6]" />
-              Check-in Tình Trạng Da Hàng Ngày
-            </DialogTitle>
-          </DialogHeader>
-          <form onSubmit={handleDailyCheckInSubmit} className="space-y-4 pt-2">
-            <div className="space-y-2">
-              <label className="text-xs font-bold text-slate-700">
-                Cảm giác chung trên da hôm nay
-              </label>
-              <div className="grid grid-cols-3 gap-2">
-                <button
-                  type="button"
-                  onClick={() => setCheckInFeeling("BETTER")}
-                  className={`flex flex-col items-center gap-1.5 rounded-xl border p-3 transition-all ${
-                    checkInFeeling === "BETTER"
-                      ? "border-emerald-500 bg-emerald-50 text-emerald-700"
-                      : "border-slate-200"
-                  }`}
-                >
-                  <Smile className="h-6 w-6 text-emerald-500" />
-                  <span className="text-[10px] font-bold">Cải thiện</span>
-                </button>
-                <button
-                  type="button"
-                  onClick={() => setCheckInFeeling("SAME")}
-                  className={`flex flex-col items-center gap-1.5 rounded-xl border p-3 transition-all ${
-                    checkInFeeling === "SAME"
-                      ? "border-amber-500 bg-amber-50 text-amber-700"
-                      : "border-slate-200"
-                  }`}
-                >
-                  <Meh className="h-6 w-6 text-amber-500" />
-                  <span className="text-[10px] font-bold">Không đổi</span>
-                </button>
-                <button
-                  type="button"
-                  onClick={() => setCheckInFeeling("WORSE")}
-                  className={`flex flex-col items-center gap-1.5 rounded-xl border p-3 transition-all ${
-                    checkInFeeling === "WORSE"
-                      ? "border-red-500 bg-red-50 text-red-700"
-                      : "border-slate-200"
-                  }`}
-                >
-                  <Frown className="h-6 w-6 text-red-500" />
-                  <span className="text-[10px] font-bold">Tệ đi</span>
-                </button>
-              </div>
-            </div>
+      {primaryRoutine && (
+        <DailyCheckInDialog
+          key={`${primaryRoutine.id}-${activePeriod}`}
+          open={isCheckInOpen}
+          onOpenChange={setIsCheckInOpen}
+          routineId={primaryRoutine.id}
+          period={activePeriod}
+        />
+      )}
 
-            <div className="space-y-2">
-              <label className="text-xs font-bold text-slate-700">
-                Triệu chứng da hiện tại (nếu có)
-              </label>
-              <div className="flex flex-wrap gap-2">
-                {[
-                  "Khô da rát",
-                  "Dầu thừa nhiều",
-                  "Mẩn đỏ ngứa",
-                  "Mụn bùng phát",
-                  "Bong tróc",
-                ].map((sym) => {
-                  const active = checkInSymptoms.includes(sym);
-                  return (
-                    <button
-                      key={sym}
-                      type="button"
-                      onClick={() => toggleSymptom(sym)}
-                      className={`rounded-full border px-3 py-1.5 text-xs transition-all ${
-                        active
-                          ? "border-red-500 bg-red-50 text-red-700"
-                          : "border-slate-200 bg-white text-slate-600 hover:border-slate-300"
-                      }`}
-                    >
-                      {sym}
-                    </button>
-                  );
-                })}
-              </div>
-            </div>
-
-            <div className="space-y-2">
-              <label className="text-xs font-bold text-slate-700">
-                Ghi chú thêm về da
-              </label>
-              <Textarea
-                placeholder="Ví dụ: Vùng má còn hơi đỏ sau khi rửa mặt..."
-                value={checkInNote}
-                onChange={(e) => setCheckInNote(e.target.value)}
-                className="h-20 text-xs"
-              />
-            </div>
-
-            <div className="flex justify-end gap-2 pt-2">
-              <Button
-                type="button"
-                variant="outline"
-                size="sm"
-                onClick={() => setIsCheckInOpen(false)}
-              >
-                Hủy
-              </Button>
-              <Button
-                type="submit"
-                size="sm"
-                className="bg-[#6b5cf6] font-bold text-white hover:bg-[#5a4ae5]"
-              >
-                Lưu Check-in
-              </Button>
-            </div>
-          </form>
-        </DialogContent>
-      </Dialog>
+      {stepToSkip && (
+        <SkipStepDialog
+          key={stepToSkip.step.id}
+          open={stepToSkip !== null}
+          onOpenChange={(open) => {
+            if (!open) setStepToSkip(null);
+          }}
+          stepName={stepToSkip.step.name}
+          isPending={skipStep.isPending}
+          onSubmit={(payload) => {
+            skipStep.mutate(
+              {
+                routineId: stepToSkip.routineId,
+                stepId: stepToSkip.step.id,
+                payload,
+              },
+              {
+                onSuccess: () => {
+                  toast.success("Đã ghi nhận bỏ qua bước này.");
+                  setStepToSkip(null);
+                },
+                onError: handleStepError,
+              },
+            );
+          }}
+        />
+      )}
     </div>
   );
 }

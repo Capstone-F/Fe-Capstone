@@ -78,9 +78,11 @@ export const API_ENDPOINTS = {
     DETAIL: (id: string | number) => `/orders/${id}`,
   },
   DELIVERY: {
-    OPTIONS: "/delivery/options",
-    ATTACH: (orderId: string | number) => `/orders/${orderId}/delivery`,
-    DETAIL: (orderId: string | number) => `/orders/${orderId}/delivery`,
+    PROVINCES: "/delivery/provinces",
+    DISTRICTS: "/delivery/districts",
+    WARDS: "/delivery/wards",
+    FEE_QUOTE: "/delivery/fee-quote",
+    BY_ORDER: (orderId: string | number) => `/delivery/order/${orderId}`,
   },
   PAYMENTS: {
     CHECKOUT: "/payments/checkout",
@@ -88,7 +90,19 @@ export const API_ENDPOINTS = {
   },
   SURVEYS: { BASE: "/surveys", QUESTIONS: "/surveys/questions" },
   RECOMMENDATIONS: { LATEST: "/recommendations/latest" },
-  ROUTINES: { GENERATE: "/routines/generate", ME: "/routines/me" },
+  ROUTINES: {
+    GENERATE: "/routines/generate",
+    ME: "/routines/me",
+    TODAY: "/routines/me/today",
+    STEP_COMPLETE: (routineId: string, stepId: string) =>
+      `/routines/${routineId}/steps/${stepId}/complete`,
+    STEP_SKIP: (routineId: string, stepId: string) =>
+      `/routines/${routineId}/steps/${stepId}/skip`,
+    CHECK_INS: (routineId: string) => `/routines/${routineId}/check-ins`,
+    HISTORY: (routineId: string) => `/routines/${routineId}/history`,
+    HISTORY_DAY: (routineId: string, date: string) =>
+      `/routines/${routineId}/history/${date}`,
+  },
   FILES: {
     UPLOAD: "/files",
   },

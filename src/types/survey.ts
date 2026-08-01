@@ -78,16 +78,23 @@ export interface RecommendationConflictDto {
   reason: string | null;
 }
 
+/** When a protocol is applied — mirrors Be-Capstone `TimeOfUse` (ingredients/enums.ts). */
+export type TimeOfUse = "AM" | "PM" | "AM_PM";
+
+/** Mirrors Be-Capstone/src/rule-engine/dto/rule-engine-context.dto.ts `RuleEngineProtocolDto`. */
 export interface RuleEngineProtocolDto {
   id: string;
   code: string;
   name: string;
   description?: string;
-  ingredientName?: string;
-  concentrationPct?: number;
-  timeOfUse?: string;
-  durationWeeks?: number;
-  instructions?: string;
+  ingredientName: string;
+  concentrationPct: number | null;
+  timePerWeek: number | null;
+  timeOfUse: TimeOfUse | null;
+  durationWeeks: number | null;
+  instructions: string | null;
+  matchScore: number;
+  matchedLabelCodes: string[];
 }
 
 export interface RecommendationResponseDto {

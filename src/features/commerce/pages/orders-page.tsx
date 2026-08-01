@@ -1,47 +1,174 @@
 "use client";
 
-import Link from "next/link";
-import { ClipboardList, ArrowRight } from "lucide-react";
-import { Button } from "@/shared/components/ui/button";
+import { useState } from "react";
+import { useRouter } from "next/navigation";
+import { ClipboardList, PackageSearch } from "lucide-react";
+import { EmptyState } from "@/shared/components/ui/empty-state";
 import {
-  Card,
-  CardHeader,
-  CardTitle,
-  CardDescription,
-  CardContent,
-} from "@/shared/components/ui/card";
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/shared/components/ui/select";
+import { useOrders } from "@/features/commerce/hooks/useOrders";
+import { OrderCard } from "@/features/commerce/components/order-card";
+import { OrderCardSkeleton } from "@/features/commerce/components/order-card-skeleton";
+import { ProductPagination } from "@/features/commerce/components/product-pagination";
+import type { OrderStatus } from "@/types/domain";
+
+const t = {
+  title: "Đơn hàng của tôi",
+  subtitle: "Theo dõi các đơn hàng bạn đã đặt.",
+  filterLabel: "Trạng thái",
+  filterAll: "Tất cả",
+  perPage: "đơn/trang",
+  loginTitle: "Đăng nhập để xem đơn hàng",
+  loginHint: "Bạn cần đăng nhập để xem lịch sử đơn hàng của mình.",
+  loginCta: "Đăng nhập",
+  emptyTitle: "Chưa có đơn hàng nào",
+  emptyHint: "Khám phá cửa hàng và đặt đơn hàng đầu tiên của bạn.",
+  emptyCta: "Mua sắm ngay",
+  emptyFilteredTitle: "Không có đơn hàng nào ở trạng thái này",
+  emptyFilteredHint: "Thử chọn một trạng thái khác hoặc xem tất cả đơn hàng.",
+  status: {
+    PENDING: "Chờ thanh toán",
+    PAID: "Đã thanh toán",
+    PROCESSING: "Đang xử lý",
+    SHIPPED: "Đang giao",
+    DELIVERED: "Đã giao",
+    CANCELLED: "Đã huỷ",
+    REFUNDED: "Đã hoàn tiền",
+  } satisfies Record<OrderStatus, string>,
+};
+
+const STATUS_VALUES: OrderStatus[] = [
+  "PENDING",
+  "PAID",
+  "PROCESSING",
+  "SHIPPED",
+  "DELIVERED",
+  "CANCELLED",
+  "REFUNDED",
+];
+
+const ALL_STATUSES = "ALL";
+const PAGE_SIZE_OPTIONS = [5, 10, 20];
+const SKELETON_COUNT = 3;
+
+// Base UI's SelectValue renders the raw value unless the root is given the
+// value -> label pairs, so the same list drives both the trigger and the options.
+const STATUS_FILTER_OPTIONS = [
+  { value: ALL_STATUSES, label: t.filterAll },
+  ...STATUS_VALUES.map((value) => ({ value, label: t.status[value] })),
+];
 
 export function OrdersPage() {
+  const router = useRouter();
+  const [status, setStatus] = useState<OrderStatus | typeof ALL_STATUSES>(
+    ALL_STATUSES,
+  );
+  const [page, setPage] = useState(1);
+  const [pageSize, setPageSize] = useState(10);
+
+  const { orders, total, isLoading, isAuthenticated } = useOrders({
+    status: status === ALL_STATUSES ? undefined : status,
+    page,
+    limit: pageSize,
+  });
+
+  const totalPages = Math.max(1, Math.ceil(total / pageSize));
+
+  if (!isLoading && !isAuthenticated) {
+    return (
+      <EmptyState
+        icon={ClipboardList}
+        title={t.loginTitle}
+        description={t.loginHint}
+        action={{
+          label: t.loginCta,
+          onClick: () => router.push("/login?redirectTo=/orders"),
+        }}
+      />
+    );
+  }
+
   return (
-    <div className="mx-auto flex min-h-[400px] w-full max-w-md items-center justify-center">
-      <Card className="border-slate-200 p-6 text-center shadow-sm">
-        <CardHeader className="flex flex-col items-center justify-center">
-          <div className="bg-primary/10 text-primary mb-3 flex h-12 w-12 items-center justify-center rounded-2xl">
-            <ClipboardList className="h-6 w-6" />
+    <div className="mx-auto flex w-full max-w-4xl flex-col gap-6">
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
+        <div className="flex flex-col gap-1">
+          <h2 className="text-2xl font-bold tracking-tight text-slate-900">
+            {t.title}
+          </h2>
+          <p className="text-muted-foreground text-sm">{t.subtitle}</p>
+        </div>
+
+        <div className="flex flex-col gap-1.5">
+          <span className="text-muted-foreground text-xs font-medium">
+            {t.filterLabel}
+          </span>
+          <Select
+            items={STATUS_FILTER_OPTIONS}
+            value={status}
+            onValueChange={(value) => {
+              setStatus(value as OrderStatus | typeof ALL_STATUSES);
+              setPage(1);
+            }}
+          >
+            <SelectTrigger size="sm" className="w-44 text-xs">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              {STATUS_FILTER_OPTIONS.map((option) => (
+                <SelectItem key={option.value} value={option.value}>
+                  {option.label}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </div>
+      </div>
+
+      {isLoading ? (
+        <div className="flex flex-col gap-3">
+          {Array.from({ length: SKELETON_COUNT }, (_, index) => (
+            <OrderCardSkeleton key={index} />
+          ))}
+        </div>
+      ) : orders.length === 0 ? (
+        <EmptyState
+          icon={PackageSearch}
+          title={status === ALL_STATUSES ? t.emptyTitle : t.emptyFilteredTitle}
+          description={
+            status === ALL_STATUSES ? t.emptyHint : t.emptyFilteredHint
+          }
+          action={
+            status === ALL_STATUSES
+              ? { label: t.emptyCta, href: "/products" }
+              : undefined
+          }
+        />
+      ) : (
+        <>
+          <div className="flex flex-col gap-3">
+            {orders.map((entry) => (
+              <OrderCard key={entry.order.id} entry={entry} />
+            ))}
           </div>
-          <CardTitle className="text-lg font-bold text-slate-900">
-            Đơn hàng sản phẩm
-          </CardTitle>
-          <CardDescription className="text-xs">
-            Theo dõi tình trạng giao hàng & mã bưu vận
-          </CardDescription>
-        </CardHeader>
-        <CardContent className="text-muted-foreground flex flex-col gap-4 text-xs leading-relaxed">
-          <p>
-            Tính năng Quản lý đơn hàng sản phẩm skincare, liên kết hãng vận
-            chuyển (GHTK, GHN) và tra cứu lộ trình bưu phẩm dự kiến sẽ được phát
-            triển đầy đủ ở **Build Phase 2**.
-          </p>
-          <div className="flex justify-center gap-2">
-            <Link href="/scan">
-              <Button size="sm" className="rounded-lg text-xs font-semibold">
-                Khảo sát da & Xem quy trình chăm sóc da
-                <ArrowRight className="ml-1 h-3.5 w-3.5" />
-              </Button>
-            </Link>
-          </div>
-        </CardContent>
-      </Card>
+          <ProductPagination
+            page={page}
+            totalPages={totalPages}
+            pageSize={pageSize}
+            onPageChange={setPage}
+            onPageSizeChange={(next) => {
+              setPageSize(next);
+              setPage(1);
+            }}
+            pageSizeOptions={PAGE_SIZE_OPTIONS}
+            perPageLabel={t.perPage}
+          />
+        </>
+      )}
     </div>
   );
 }

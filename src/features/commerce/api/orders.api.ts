@@ -1,6 +1,7 @@
 import { apiClient } from "@/core/api/client";
 import { API_ENDPOINTS } from "@/core/api/endpoints";
 import type { AxiosResponse } from "axios";
+import type { ShippingAddressInput } from "../types/delivery";
 
 export interface OrderItemResponse {
   id: string;
@@ -40,8 +41,12 @@ export interface ListOrdersQuery {
 }
 
 export const ordersApi = {
-  createOrder: (): Promise<AxiosResponse<OrderResponse>> => {
-    return apiClient.post<OrderResponse>(API_ENDPOINTS.ORDERS.CREATE);
+  createOrder: (
+    shippingAddress: ShippingAddressInput,
+  ): Promise<AxiosResponse<OrderResponse>> => {
+    return apiClient.post<OrderResponse>(API_ENDPOINTS.ORDERS.CREATE, {
+      shippingAddress,
+    });
   },
 
   getOrder: (id: string): Promise<AxiosResponse<OrderResponse>> => {

@@ -46,7 +46,7 @@ export function PlanScreen() {
             name: "Sản phẩm khuyến nghị",
             ingredientName: "",
             concentrationPct: null,
-            timeOfUse: "",
+            timeOfUse: null,
             durationWeeks: null,
             instructions:
               "Danh sách sản phẩm backend đã chốt cho phiên khảo sát hiện tại.",

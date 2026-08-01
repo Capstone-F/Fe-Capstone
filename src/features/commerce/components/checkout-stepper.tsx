@@ -3,7 +3,7 @@ import { cn } from "@/lib/utils";
 
 const STEPS = [
   "Xem lại giỏ",
-  "Giao hàng",
+  "Địa chỉ giao hàng",
   "Thanh toán",
   "Xác nhận",
   "Hoàn tất",
