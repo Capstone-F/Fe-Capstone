@@ -106,8 +106,10 @@ export function LoginPanel({ redirectTo }: LoginPanelProps) {
         tokenStorage.setRefreshToken(tokenData.refreshToken);
       }
 
-      // Determine redirect path by user roles
-      const roles: string[] = session.data?.roles || [];
+      // The cached session was resolved before the new token existed. Use the
+      // authenticated response so role-based redirects work on the first login.
+      const roles: string[] =
+        tokenData.user?.roles ?? session.data?.roles ?? [];
       const targetPath = getRoleBasedRedirectPath(roles, redirectTo);
 
       // Redirect to target path

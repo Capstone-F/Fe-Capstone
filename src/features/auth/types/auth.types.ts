@@ -14,11 +14,16 @@ export type AuthStatus = {
   authenticated: boolean;
 };
 
+export type MobileTokenUser = Pick<SessionUser, "id"> &
+  Partial<Omit<SessionUser, "id">> & {
+    username?: string;
+  };
+
 export interface MobileTokenResponse {
   accessToken: string;
   refreshToken: string;
   expiresIn: number;
-  user: unknown;
+  user: MobileTokenUser;
 }
 
 // Convention names matching core refresh handlers
