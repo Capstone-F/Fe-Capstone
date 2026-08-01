@@ -27,6 +27,7 @@ interface BackendTreatmentPhase {
 export interface BackendTreatmentResponse {
   id: string;
   customerId: string;
+  customerName?: string | null;
   expertId: string;
   clinicId: string | null;
   title: string;
@@ -85,6 +86,7 @@ export function mapBackendTreatmentToFrontend(
   return {
     id: treatment.id,
     customerId: treatment.customerId,
+    customerName: treatment.customerName ?? null,
     expertId: treatment.expertId,
     clinicId: treatment.clinicId,
     title: treatment.title,

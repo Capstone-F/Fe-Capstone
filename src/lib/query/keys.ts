@@ -12,8 +12,8 @@ export const queryKeys = {
     ["consultation", bookingId, "chat-token"] as const,
   consultationContext: (customerId: string, consultationId: string) =>
     ["customers", customerId, "consultation-context", consultationId] as const,
-  treatmentPlans: (as?: "customer" | "expert") =>
-    ["treatments", "mine", as ?? "customer"] as const,
+  treatmentPlans: (as?: "customer" | "expert", filters?: unknown) =>
+    ["treatments", "mine", as ?? "customer", filters ?? {}] as const,
   treatment: (id: string) => ["treatments", id] as const,
   treatmentChart: (id: string) => ["treatments", id, "chart"] as const,
   treatmentEvents: (id: string, type?: string) =>

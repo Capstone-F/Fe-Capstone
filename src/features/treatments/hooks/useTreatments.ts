@@ -5,7 +5,9 @@ import { treatmentApi } from "../api/treatment.api";
 import type {
   CreateTreatmentPayload,
   TreatmentEventType,
+  TreatmentListFilters,
   TreatmentPhasePayload,
+  UpdateExpertRoutinePayload,
 } from "../types/treatment.types";
 
 function useInvalidateTreatments() {
@@ -23,10 +25,14 @@ function useInvalidateTreatments() {
   };
 }
 
-export function useTreatmentPlans(as: "customer" | "expert" = "customer") {
+export function useTreatmentPlans(
+  as: "customer" | "expert" = "customer",
+  filters: TreatmentListFilters = {},
+) {
   return useQuery({
-    queryKey: queryKeys.treatmentPlans(as),
-    queryFn: async () => (await treatmentApi.getPlans(as)).data,
+    queryKey: queryKeys.treatmentPlans(as, filters),
+    queryFn: async () => (await treatmentApi.getPlans(as, filters)).data,
+    placeholderData: (previous) => previous,
   });
 }
 
@@ -253,14 +259,21 @@ export function useSaveRoutine() {
 }
 
 export function useUpdateRoutine() {
+  const invalidate = useInvalidateTreatments();
   return useMutation({
     mutationFn: async ({
       routineId,
+      treatmentId,
       payload,
     }: {
       routineId: string;
-      payload: Record<string, unknown>;
-    }) => (await treatmentApi.updateRoutine(routineId, payload)).data,
+      treatmentId: string;
+      payload: UpdateExpertRoutinePayload;
+    }) => ({
+      routine: (await treatmentApi.updateRoutine(routineId, payload)).data,
+      treatmentId,
+    }),
+    onSuccess: ({ treatmentId }) => invalidate(treatmentId),
   });
 }
 

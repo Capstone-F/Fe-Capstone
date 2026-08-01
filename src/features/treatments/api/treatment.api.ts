@@ -9,14 +9,17 @@ import {
 } from "../mapper/treatment.mapper";
 import type {
   CreateTreatmentPayload,
+  ExpertRoutine,
   Ingredient,
   ProductCandidate,
   TreatmentChart,
   TreatmentEvent,
   TreatmentEventType,
+  TreatmentListFilters,
   TreatmentPhase,
   TreatmentPhasePayload,
   TreatmentPlan,
+  UpdateExpertRoutinePayload,
   UploadImageResponse,
 } from "../types/treatment.types";
 
@@ -39,10 +42,18 @@ async function mapPhaseResponse(
 export const treatmentApi = {
   async getPlans(
     as: "customer" | "expert" = "customer",
+    filters: TreatmentListFilters = {},
   ): Promise<AxiosResponse<TreatmentPlan[]>> {
     const response = await apiClient.get<BackendTreatmentResponse[]>(
       API_ENDPOINTS.TREATMENTS.LIST_MINE,
-      { params: { as } },
+      {
+        params: {
+          as,
+          search: filters.search?.trim() || undefined,
+          dateOrder: filters.dateOrder,
+          phaseCount: filters.phaseCount,
+        },
+      },
     );
     return {
       ...response,
@@ -185,18 +196,18 @@ export const treatmentApi = {
     );
   },
 
-  generateRoutine(phaseId: string): Promise<AxiosResponse<{ id: string }>> {
+  generateRoutine(phaseId: string): Promise<AxiosResponse<ExpertRoutine>> {
     return apiClient.post(API_ENDPOINTS.TREATMENTS.ROUTINE_GENERATE(phaseId));
   },
 
-  saveRoutine(routineId: string): Promise<AxiosResponse<{ id: string }>> {
+  saveRoutine(routineId: string): Promise<AxiosResponse<ExpertRoutine>> {
     return apiClient.post(API_ENDPOINTS.TREATMENTS.ROUTINE_SAVE(routineId));
   },
 
   updateRoutine(
     routineId: string,
-    payload: Record<string, unknown>,
-  ): Promise<AxiosResponse<{ id: string }>> {
+    payload: UpdateExpertRoutinePayload,
+  ): Promise<AxiosResponse<ExpertRoutine>> {
     return apiClient.patch(
       API_ENDPOINTS.TREATMENTS.ROUTINE_UPDATE(routineId),
       payload,

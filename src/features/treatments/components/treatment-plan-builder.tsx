@@ -16,6 +16,8 @@ import {
   RefreshCw,
   Save,
   Sparkles,
+  Sun,
+  Moon,
   Trash2,
 } from "lucide-react";
 import { toast } from "sonner";
@@ -33,6 +35,12 @@ import {
   SelectValue,
 } from "@/shared/components/ui/select";
 import { Textarea } from "@/shared/components/ui/textarea";
+import {
+  Tabs,
+  TabsContent,
+  TabsList,
+  TabsTrigger,
+} from "@/shared/components/ui/tabs";
 import { formatVnd } from "@/shared/utils/format";
 import {
   useActivatePhase,
@@ -49,8 +57,12 @@ import {
   useTreatmentChart,
   useTreatmentPlanDetail,
   useUpdatePhase,
+  useUpdateRoutine,
 } from "../hooks/useTreatments";
 import type {
+  ExpertRoutine,
+  ExpertRoutineStep,
+  RoutinePeriod,
   TreatmentChart,
   TreatmentPhase,
   TreatmentPhasePayload,
@@ -944,6 +956,7 @@ function PhaseConfiguration({
   const setProductsMutation = useSetPhaseProducts();
   const generateMutation = useGenerateRoutine();
   const saveRoutineMutation = useSaveRoutine();
+  const updateRoutineMutation = useUpdateRoutine();
   const activateMutation = useActivatePhase();
   const [ingredientIds, setIngredientIds] = useState<string[]>(
     phase.ingredients.map((item) => item.ingredientId),
@@ -951,14 +964,22 @@ function PhaseConfiguration({
   const [productIds, setProductIds] = useState<string[]>(
     phase.products.map((item) => item.productVariantId),
   );
+  const [routine, setRoutine] = useState<ExpertRoutine | null>(null);
 
   const busy =
     setIngredientsMutation.isPending ||
     setProductsMutation.isPending ||
     generateMutation.isPending ||
     saveRoutineMutation.isPending ||
+    updateRoutineMutation.isPending ||
     activateMutation.isPending;
   const selectedProducts = useMemo(() => new Set(productIds), [productIds]);
+  const hasSavedRoutine =
+    routine?.status === "ACTIVE" ||
+    phase.routines.some((item) => item.status === "ACTIVE");
+  const hasDraftRoutine =
+    routine?.status === "DRAFT" ||
+    phase.routines.some((item) => item.status === "DRAFT");
 
   async function saveIngredients() {
     try {
@@ -991,18 +1012,74 @@ function PhaseConfiguration({
     }
   }
 
-  async function generateAndSaveRoutine() {
+  async function generateRoutine() {
     try {
-      const routine = await generateMutation.mutateAsync(phase.id);
-      await saveRoutineMutation.mutateAsync({
-        routineId: routine.id,
-        treatmentId: phase.treatmentId,
-      });
-      toast.success("Đã tạo và lưu routine.");
+      const generatedRoutine = await generateMutation.mutateAsync(phase.id);
+      setRoutine(generatedRoutine);
+      toast.success("Đã tạo bản nháp routine.");
       onRefresh();
     } catch (reason) {
       toast.error(
         reason instanceof Error ? reason.message : "Không thể tạo routine.",
+      );
+    }
+  }
+
+  function updateRoutineStep(
+    stepId: string,
+    patch: Partial<ExpertRoutineStep>,
+  ) {
+    setRoutine((current) =>
+      current
+        ? {
+            ...current,
+            steps: (current.steps ?? []).map((step) =>
+              step.id === stepId ? { ...step, ...patch } : step,
+            ),
+          }
+        : current,
+    );
+  }
+
+  async function saveRoutine() {
+    if (!routine) return;
+    if (!routine.title.trim()) {
+      toast.error("Tên routine không được để trống.");
+      return;
+    }
+    if ((routine.steps ?? []).some((step) => !step.name.trim())) {
+      toast.error("Tên bước routine không được để trống.");
+      return;
+    }
+
+    try {
+      const { routine: updatedRoutine } =
+        await updateRoutineMutation.mutateAsync({
+          routineId: routine.id,
+          treatmentId: phase.treatmentId,
+          payload: {
+            title: routine.title.trim(),
+            description: routine.description?.trim() || null,
+            steps: (routine.steps ?? []).map((step) => ({
+              name: step.name.trim(),
+              period: step.period,
+              stepOrder: step.stepOrder,
+              instructions: step.instructions?.trim() || null,
+              waitMinutes: step.waitMinutes,
+              dosageText: step.dosageText?.trim() || null,
+            })),
+          },
+        });
+      await saveRoutineMutation.mutateAsync({
+        routineId: routine.id,
+        treatmentId: phase.treatmentId,
+      });
+      setRoutine(updatedRoutine);
+      toast.success("Đã lưu routine.");
+      onRefresh();
+    } catch (reason) {
+      toast.error(
+        reason instanceof Error ? reason.message : "Không thể lưu routine.",
       );
     }
   }
@@ -1111,20 +1188,244 @@ function PhaseConfiguration({
         </Button>
       </section>
 
+      {routine && (
+        <RoutineEditor
+          key={routine.id}
+          routine={routine}
+          disabled={busy || routine.status !== "DRAFT"}
+          onRoutineChange={setRoutine}
+          onStepChange={updateRoutineStep}
+          onSave={() => void saveRoutine()}
+        />
+      )}
+
       <div className="flex flex-wrap gap-2 border-t pt-4 lg:col-span-2">
+        {!hasSavedRoutine && (
+          <Button
+            variant="outline"
+            disabled={busy || productIds.length === 0}
+            onClick={() => void generateRoutine()}
+          >
+            <Sparkles className="mr-2 h-4 w-4" />
+            {hasDraftRoutine ? "Tạo lại bản nháp" : "Tạo routine"}
+          </Button>
+        )}
+        {hasSavedRoutine && !routine && (
+          <Badge variant="outline" className="h-9 px-3">
+            <Check className="mr-2 h-4 w-4 text-emerald-700" /> Routine đã lưu
+          </Badge>
+        )}
         <Button
-          variant="outline"
-          disabled={busy || productIds.length === 0}
-          onClick={() => void generateAndSaveRoutine()}
-        >
-          <Sparkles className="mr-2 h-4 w-4" /> Tạo và lưu routine
-        </Button>
-        <Button
-          disabled={busy || phase.status === "ACTIVE"}
+          disabled={busy || phase.status === "ACTIVE" || hasDraftRoutine}
           onClick={() => void activate()}
         >
           <Check className="mr-2 h-4 w-4" /> Kích hoạt phase
         </Button>
+      </div>
+    </div>
+  );
+}
+
+function RoutineEditor({
+  routine,
+  disabled,
+  onRoutineChange,
+  onStepChange,
+  onSave,
+}: {
+  routine: ExpertRoutine;
+  disabled: boolean;
+  onRoutineChange: (routine: ExpertRoutine) => void;
+  onStepChange: (stepId: string, patch: Partial<ExpertRoutineStep>) => void;
+  onSave: () => void;
+}) {
+  const steps = routine.steps ?? [];
+  const initialPeriod: RoutinePeriod = steps.some(
+    (step) => step.period === "MORNING",
+  )
+    ? "MORNING"
+    : "EVENING";
+
+  return (
+    <section className="space-y-5 border-t pt-5 lg:col-span-2">
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+        <div>
+          <div className="flex flex-wrap items-center gap-2">
+            <h3 className="text-sm font-semibold text-slate-950">
+              Routine điều trị
+            </h3>
+            <Badge variant="outline">
+              {routine.status === "DRAFT" ? "Bản nháp" : "Đã lưu"}
+            </Badge>
+          </div>
+          <p className="mt-1 text-xs text-slate-500">
+            {steps.length} bước · sáng và tối
+          </p>
+        </div>
+        <Button disabled={disabled} onClick={onSave}>
+          <Save className="mr-2 h-4 w-4" /> Lưu routine
+        </Button>
+      </div>
+
+      <div className="grid gap-4 md:grid-cols-2">
+        <div className="space-y-2">
+          <Label htmlFor={`routine-title-${routine.id}`}>Tên routine</Label>
+          <Input
+            id={`routine-title-${routine.id}`}
+            value={routine.title}
+            disabled={disabled}
+            onChange={(event) =>
+              onRoutineChange({ ...routine, title: event.target.value })
+            }
+          />
+        </div>
+        <div className="space-y-2">
+          <Label htmlFor={`routine-description-${routine.id}`}>Mô tả</Label>
+          <Textarea
+            id={`routine-description-${routine.id}`}
+            value={routine.description ?? ""}
+            disabled={disabled}
+            rows={2}
+            onChange={(event) =>
+              onRoutineChange({
+                ...routine,
+                description: event.target.value || null,
+              })
+            }
+          />
+        </div>
+      </div>
+
+      <Tabs defaultValue={initialPeriod}>
+        <TabsList>
+          <TabsTrigger value="MORNING">
+            <Sun className="mr-2 h-4 w-4" /> Buổi sáng
+          </TabsTrigger>
+          <TabsTrigger value="EVENING">
+            <Moon className="mr-2 h-4 w-4" /> Buổi tối
+          </TabsTrigger>
+        </TabsList>
+        {(["MORNING", "EVENING"] as const).map((period) => {
+          const periodSteps = steps
+            .filter((step) => step.period === period)
+            .sort((left, right) => left.stepOrder - right.stepOrder);
+
+          return (
+            <TabsContent key={period} value={period} className="space-y-3">
+              {periodSteps.length ? (
+                periodSteps.map((step, index) => (
+                  <RoutineStepEditor
+                    key={step.id}
+                    step={step}
+                    displayOrder={index + 1}
+                    disabled={disabled}
+                    onChange={(patch) => onStepChange(step.id, patch)}
+                  />
+                ))
+              ) : (
+                <div className="border border-dashed px-4 py-8 text-center text-sm text-slate-500">
+                  Chưa có bước cho buổi {period === "MORNING" ? "sáng" : "tối"}.
+                </div>
+              )}
+            </TabsContent>
+          );
+        })}
+      </Tabs>
+    </section>
+  );
+}
+
+function RoutineStepEditor({
+  step,
+  displayOrder,
+  disabled,
+  onChange,
+}: {
+  step: ExpertRoutineStep;
+  displayOrder: number;
+  disabled: boolean;
+  onChange: (patch: Partial<ExpertRoutineStep>) => void;
+}) {
+  const sku = step.details?.[0]?.productVariant?.sku;
+
+  return (
+    <div className="border p-4">
+      <div className="mb-4 flex flex-wrap items-center gap-2">
+        <Badge variant="secondary">Bước {displayOrder}</Badge>
+        {sku && <span className="text-xs text-slate-500">{sku}</span>}
+      </div>
+      <div className="grid gap-4 md:grid-cols-6">
+        <div className="space-y-2 md:col-span-4">
+          <Label htmlFor={`routine-step-name-${step.id}`}>Tên bước</Label>
+          <Input
+            id={`routine-step-name-${step.id}`}
+            value={step.name}
+            disabled={disabled}
+            onChange={(event) => onChange({ name: event.target.value })}
+          />
+        </div>
+        <div className="space-y-2 md:col-span-2">
+          <Label>Thời điểm</Label>
+          <Select
+            value={step.period}
+            disabled={disabled}
+            onValueChange={(value) => {
+              if (value) onChange({ period: value });
+            }}
+          >
+            <SelectTrigger>
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="MORNING">Buổi sáng</SelectItem>
+              <SelectItem value="EVENING">Buổi tối</SelectItem>
+            </SelectContent>
+          </Select>
+        </div>
+        <div className="space-y-2 md:col-span-3">
+          <Label htmlFor={`routine-step-dosage-${step.id}`}>Liều lượng</Label>
+          <Input
+            id={`routine-step-dosage-${step.id}`}
+            value={step.dosageText ?? ""}
+            disabled={disabled}
+            placeholder="Ví dụ: 2 lần nhấn"
+            onChange={(event) =>
+              onChange({ dosageText: event.target.value || null })
+            }
+          />
+        </div>
+        <div className="space-y-2 md:col-span-3">
+          <Label htmlFor={`routine-step-wait-${step.id}`}>
+            Chờ trước bước tiếp theo (phút)
+          </Label>
+          <Input
+            id={`routine-step-wait-${step.id}`}
+            type="number"
+            min={0}
+            value={step.waitMinutes ?? ""}
+            disabled={disabled}
+            onChange={(event) =>
+              onChange({
+                waitMinutes:
+                  event.target.value === "" ? null : Number(event.target.value),
+              })
+            }
+          />
+        </div>
+        <div className="space-y-2 md:col-span-6">
+          <Label htmlFor={`routine-step-instructions-${step.id}`}>
+            Hướng dẫn sử dụng
+          </Label>
+          <Textarea
+            id={`routine-step-instructions-${step.id}`}
+            value={step.instructions ?? ""}
+            disabled={disabled}
+            rows={2}
+            onChange={(event) =>
+              onChange({ instructions: event.target.value || null })
+            }
+          />
+        </div>
       </div>
     </div>
   );

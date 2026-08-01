@@ -13,6 +13,14 @@ export type TreatmentPhaseType =
 
 export type TreatmentPhaseStatus = "PENDING" | "ACTIVE" | "COMPLETED";
 
+export type TreatmentDateOrder = "asc" | "desc";
+
+export interface TreatmentListFilters {
+  search?: string;
+  dateOrder?: TreatmentDateOrder;
+  phaseCount?: number;
+}
+
 export type TreatmentEventType =
   | "CONSULTATION"
   | "PROGRESS_PHOTO"
@@ -62,6 +70,64 @@ export interface TreatmentRoutineSummary {
   type: string;
 }
 
+export type RoutinePeriod = "MORNING" | "EVENING";
+
+export type RoutineStatus = "DRAFT" | "ACTIVE" | "PAUSED" | "COMPLETED";
+
+export interface ExpertRoutineStep {
+  id: string;
+  routineId: string;
+  name: string;
+  period: RoutinePeriod;
+  stepOrder: number;
+  instructions: string | null;
+  waitMinutes: number | null;
+  dosageText: string | null;
+  details?: Array<{
+    id: string;
+    routineStepId: string;
+    productVariantId: string;
+    amountMl: number | string | null;
+    date: string | null;
+    period: RoutinePeriod | null;
+    progressNote: string | null;
+    productVariant?: {
+      id: string;
+      sku: string;
+      imageUrl?: string | null;
+    };
+  }>;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface ExpertRoutine {
+  id: string;
+  customerId: string;
+  treatmentPhaseId: string | null;
+  createdByExpertId: string | null;
+  type: "EXPERT_PRESCRIBED" | "AI_RECOMMENDED";
+  title: string;
+  description: string | null;
+  status: RoutineStatus;
+  steps?: ExpertRoutineStep[];
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface UpdateExpertRoutinePayload {
+  title?: string;
+  description?: string | null;
+  steps?: Array<{
+    name?: string;
+    period?: RoutinePeriod;
+    stepOrder?: number;
+    instructions?: string | null;
+    waitMinutes?: number | null;
+    dosageText?: string | null;
+  }>;
+}
+
 export interface TreatmentPhase {
   id: string;
   treatmentId: string;
@@ -83,6 +149,7 @@ export interface TreatmentPhase {
 export interface TreatmentPlan {
   id: string;
   customerId: string;
+  customerName: string | null;
   expertId: string;
   clinicId: string | null;
   title: string;
