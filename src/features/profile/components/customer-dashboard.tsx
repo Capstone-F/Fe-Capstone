@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState } from "react";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 
 import {
   User,
@@ -11,6 +11,7 @@ import {
   Loader2,
   AlertCircle,
   Calendar,
+  CreditCard,
   ChevronRight,
   Star,
   Wallet as WalletIcon,
@@ -159,13 +160,28 @@ type TabType =
   | "profile"
   | "baumann"
   | "orders"
-  | "bookings"
+  | "appointments"
   | "wallet"
   | "treatment";
 
 export function CustomerDashboard() {
   const router = useRouter();
-  const [activeTab, setActiveTab] = useState<TabType>("profile");
+  const searchParams = useSearchParams();
+  const requestedTab = searchParams.get("tab");
+  const activeTab: TabType =
+    requestedTab === "baumann" ||
+    requestedTab === "orders" ||
+    requestedTab === "appointments" ||
+    requestedTab === "wallet" ||
+    requestedTab === "treatment"
+      ? requestedTab
+      : "profile";
+
+  const selectTab = (tab: TabType) => {
+    router.replace(tab === "profile" ? "/profile" : `/profile?tab=${tab}`, {
+      scroll: false,
+    });
+  };
 
   // Profile data
   const { data: profile, isLoading: isLoadingProfile } = useProfile();
@@ -256,7 +272,7 @@ export function CustomerDashboard() {
         <div className="flex w-full shrink-0 flex-col gap-1.5 rounded-2xl border border-slate-200 bg-white p-3 shadow-2xs md:w-64">
           <button
             type="button"
-            onClick={() => setActiveTab("profile")}
+            onClick={() => selectTab("profile")}
             className={`flex w-full items-center gap-3 rounded-xl px-4 py-3 text-xs font-bold transition-all ${
               activeTab === "profile"
                 ? "bg-[#2C3E35] text-white"
@@ -268,7 +284,7 @@ export function CustomerDashboard() {
           </button>
           <button
             type="button"
-            onClick={() => setActiveTab("baumann")}
+            onClick={() => selectTab("baumann")}
             className={`flex w-full items-center gap-3 rounded-xl px-4 py-3 text-xs font-bold transition-all ${
               activeTab === "baumann"
                 ? "bg-[#2C3E35] text-white"
@@ -280,7 +296,7 @@ export function CustomerDashboard() {
           </button>
           <button
             type="button"
-            onClick={() => setActiveTab("wallet")}
+            onClick={() => selectTab("wallet")}
             className={`flex w-full items-center gap-3 rounded-xl px-4 py-3 text-xs font-bold transition-all ${
               activeTab === "wallet"
                 ? "bg-[#2C3E35] text-white"
@@ -292,7 +308,7 @@ export function CustomerDashboard() {
           </button>
           <button
             type="button"
-            onClick={() => setActiveTab("treatment")}
+            onClick={() => selectTab("treatment")}
             className={`flex w-full items-center gap-3 rounded-xl px-4 py-3 text-xs font-bold transition-all ${
               activeTab === "treatment"
                 ? "bg-[#2C3E35] text-white"
@@ -304,7 +320,7 @@ export function CustomerDashboard() {
           </button>
           <button
             type="button"
-            onClick={() => setActiveTab("orders")}
+            onClick={() => selectTab("orders")}
             className={`flex w-full items-center gap-3 rounded-xl px-4 py-3 text-xs font-bold transition-all ${
               activeTab === "orders"
                 ? "bg-[#2C3E35] text-white"
@@ -316,9 +332,9 @@ export function CustomerDashboard() {
           </button>
           <button
             type="button"
-            onClick={() => setActiveTab("bookings")}
+            onClick={() => selectTab("appointments")}
             className={`flex w-full items-center gap-3 rounded-xl px-4 py-3 text-xs font-bold transition-all ${
-              activeTab === "bookings"
+              activeTab === "appointments"
                 ? "bg-[#2C3E35] text-white"
                 : "text-slate-600 hover:bg-slate-50 hover:text-slate-900"
             }`}
@@ -542,7 +558,7 @@ export function CustomerDashboard() {
           {activeTab === "treatment" && <CustomerTreatmentView />}
 
           {/* Tab 4: Doctor Appointments */}
-          {activeTab === "bookings" && (
+          {activeTab === "appointments" && (
             <Card className="border-slate-200 shadow-2xs">
               <CardHeader className="border-b border-slate-100 p-6">
                 <CardTitle className="text-lg font-bold text-slate-900">
@@ -676,6 +692,22 @@ export function CustomerDashboard() {
                             </div>
 
                             {/* Action Buttons */}
+                            {statusNorm === "PENDING" &&
+                              !booking.isPaid &&
+                              !booking.isFollowUp && (
+                                <Button
+                                  size="sm"
+                                  onClick={() =>
+                                    router.push(
+                                      `/booking/${booking.expertId}/checkout?bookingId=${booking.id}`,
+                                    )
+                                  }
+                                  className="rounded-xl bg-amber-600 text-xs font-bold text-white shadow-xs hover:bg-amber-700"
+                                >
+                                  <CreditCard className="mr-1.5 h-3.5 w-3.5" />
+                                  Thanh toán ngay
+                                </Button>
+                              )}
                             {statusNorm === "COMPLETED" && (
                               <div className="flex flex-wrap items-center gap-1.5">
                                 {!booking.feedback && (

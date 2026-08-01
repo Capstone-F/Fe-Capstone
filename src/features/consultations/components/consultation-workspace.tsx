@@ -89,7 +89,8 @@ export function ConsultationWorkspace({
   const canCommunicate = booking.status !== "cancelled";
   const peerName =
     perspective === "expert" ? booking.customerName : booking.expertName;
-  const backPath = perspective === "expert" ? "/expert" : "/appointments";
+  const backPath =
+    perspective === "expert" ? "/expert" : "/profile?tab=appointments";
 
   async function startConsultation() {
     try {

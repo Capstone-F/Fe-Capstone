@@ -11,6 +11,7 @@ import {
   HeartPulse,
   Stethoscope,
   ArrowLeft,
+  CalendarDays,
 } from "lucide-react";
 import { useSession } from "@/features/auth/hooks/useSession";
 import { useCart } from "@/features/commerce/hooks/useCart";
@@ -275,6 +276,12 @@ export function Navbar() {
                 <DropdownMenuItem render={<Link href="/profile" />}>
                   <UserCircle2 className="mr-2 h-4 w-4" />
                   Hồ sơ cá nhân
+                </DropdownMenuItem>
+                <DropdownMenuItem
+                  render={<Link href="/profile?tab=appointments" />}
+                >
+                  <CalendarDays className="mr-2 h-4 w-4" />
+                  Lịch hẹn của tôi
                 </DropdownMenuItem>
                 <DropdownMenuItem render={<Link href="/orders" />}>
                   <ShoppingBag className="mr-2 h-4 w-4" />
