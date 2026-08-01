@@ -6,6 +6,7 @@
 import type {
   CheckInResponseDto,
   HistoryDayDetailResponseDto,
+  RoutineStepProductVariantDto,
   TodayRoutineDto,
   TodayRoutinesResponseDto,
   TodayStepDto,
@@ -13,6 +14,7 @@ import type {
 import type {
   HistoryDayDetail,
   RoutineCheckIn,
+  RoutineStepProductVariant,
   TodayRoutine,
   TodaySession,
   TodayStep,
@@ -23,6 +25,15 @@ function resolveDosageLabel(dto: TodayStepDto): string | null {
     return dto.dosageText;
   }
   return dto.amountMl !== null ? `${dto.amountMl} ml` : null;
+}
+
+function mapProductVariant(
+  dto: RoutineStepProductVariantDto | null,
+): RoutineStepProductVariant | null {
+  if (dto === null) {
+    return null;
+  }
+  return { ...dto, productId: dto.productId ?? null };
 }
 
 export function mapRoutineStep(dto: TodayStepDto): TodayStep {
@@ -38,11 +49,16 @@ export function mapRoutineStep(dto: TodayStepDto): TodayStep {
     waitMinutes: dto.waitMinutes,
     amountMl: dto.amountMl,
     protocolId: dto.protocolId,
-    productVariant: dto.productVariant,
+    productVariant: mapProductVariant(dto.productVariant),
     status: dto.status,
     completedAt: dto.completedAt ? new Date(dto.completedAt) : null,
     skipReason: dto.skipReason,
     skipNote: dto.skipNote,
+    // Straight pass-through: the backend owns the thresholds (routine-tracking-flow.md
+    // §4.6). Deriving them here would let the two drift apart.
+    warning: dto.warning ?? null,
+    daysLeft: dto.daysLeft ?? null,
+    remainingMl: dto.remainingMl ?? null,
     isCompleted,
     isSkipped,
     isActed: isCompleted || isSkipped,
