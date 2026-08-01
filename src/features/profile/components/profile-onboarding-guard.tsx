@@ -52,11 +52,20 @@ export function ProfileOnboardingGuard() {
   const router = useRouter();
   const pathname = usePathname();
   const { data: session, isLoading: isSessionLoading } = useSession();
-  const { data: profile, isLoading: isProfileLoading } = useProfile();
+  const { data: profile, isLoading: isProfileLoading } = useProfile(
+    !isSessionLoading && Boolean(session),
+  );
 
   // Don't render while loading or if not logged in
   if (isSessionLoading || isProfileLoading) return null;
   if (!session || !profile) return null;
+
+  // Skip onboarding entirely for Admin, Staff, Expert, and Clinic Manager roles
+  const userRoles = session.roles || [];
+  const isManagementRole = userRoles.some((role: string) =>
+    ["app_admin", "staff", "expert", "clinic_manager"].includes(role),
+  );
+  if (isManagementRole) return null;
 
   // Only trigger if profile needs onboarding
   if (!needsOnboarding(profile)) return null;

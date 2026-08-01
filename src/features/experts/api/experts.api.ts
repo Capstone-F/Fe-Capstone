@@ -16,4 +16,8 @@ export const expertsApi = {
   getExpertById: (id: string): Promise<AxiosResponse<BackendExpert>> => {
     return apiClient.get<BackendExpert>(API_ENDPOINTS.EXPERTS.DETAIL(id));
   },
+
+  getMe: (): Promise<AxiosResponse<BackendExpert>> => {
+    return apiClient.get<BackendExpert>(API_ENDPOINTS.EXPERTS.ME);
+  },
 };

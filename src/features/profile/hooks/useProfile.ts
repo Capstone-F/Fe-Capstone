@@ -7,7 +7,7 @@ import { extractBaumannFromAnswers } from "../mapper/profile-mapper";
 import type { UserProfile, AllergyLabelResponse } from "../types/profile.types";
 import type { SurveyAnswers, SurveyRecord } from "@/types/domain";
 
-export function useProfile() {
+export function useProfile(enabled = true) {
   return useQuery({
     queryKey: queryKeys.profile,
     queryFn: async (): Promise<UserProfile | null> => {
@@ -39,6 +39,7 @@ export function useProfile() {
         return null;
       }
     },
+    enabled,
   });
 }
 

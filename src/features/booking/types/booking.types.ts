@@ -8,14 +8,25 @@ export interface TimeSlot {
 export interface ConsultationBooking {
   id: string;
   expertId: string;
+  customerId: string;
   expertName: string;
-  userId: string;
+  customerName?: string | null;
   slotId: string;
   dateTime: string;
   symptoms: string;
-  status: "pending" | "confirmed" | "cancelled" | "paid";
+  status: "pending" | "confirmed" | "in_progress" | "completed" | "cancelled";
+  isPaid: boolean;
+  isFollowUp: boolean;
+  feeChargedVnd: number;
   amount: number;
   createdAt: string;
+  startedAt: string | null;
+  completedAt: string | null;
+  treatmentId: string | null;
+  cancelledAt?: string | null;
+  cancelReason?: string | null;
+  cancelledBy?: string | null;
+  feedback?: { rating: number; comment?: string | null } | null;
 }
 
 export interface BackendSlot {
@@ -49,8 +60,16 @@ export interface BackendBooking {
   scheduledAt: string;
   startedAt: string | null;
   completedAt: string | null;
+  cancelledAt?: string | null;
+  cancelReason?: string | null;
+  cancelledBy?: string | null;
+  feeChargedVnd?: number | null;
+  isPaid?: boolean;
+  isFollowUp?: boolean;
+  treatmentId?: string | null;
   createdAt: string;
   updatedAt: string;
+  feedback?: { rating: number; comment?: string | null } | null;
 }
 
 export interface BackendBookingsResponse {

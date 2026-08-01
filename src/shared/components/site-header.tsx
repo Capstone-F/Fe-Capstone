@@ -1,8 +1,28 @@
+"use client";
+
+import { usePathname } from "next/navigation";
 import { Separator } from "@/shared/components/ui/separator";
 import { SidebarTrigger } from "@/shared/components/ui/sidebar";
 import { ThemeSwitcher } from "@/shared/components/theme-switcher";
 
 export function SiteHeader() {
+  const pathname = usePathname();
+
+  let pageTitle = "GlowScan Portal";
+  if (pathname === "/expert") {
+    pageTitle = "Danh Sách Ca Tư Vấn Bệnh Nhân";
+  } else if (pathname === "/expert/treatments") {
+    pageTitle = "Quản Lý Phác Đồ Điều Trị";
+  } else if (pathname?.startsWith("/expert/treatments/builder")) {
+    pageTitle = "Thiết Kế Phác Đồ Điều Trị Đa Giai Đoạn (Builder)";
+  } else if (pathname === "/expert/schedule") {
+    pageTitle = "Lịch Khám & Slots Ca Tư Vấn";
+  } else if (pathname === "/dashboard") {
+    pageTitle = "Quản Lý Người Dùng";
+  } else if (pathname === "/dashboard/experts") {
+    pageTitle = "Quản Lý Bác Sĩ";
+  }
+
   return (
     <header className="flex h-(--header-height) shrink-0 items-center gap-2 border-b transition-[width,height] ease-linear group-has-data-[collapsible=icon]/sidebar-wrapper:h-(--header-height)">
       <div className="flex w-full items-center gap-1 px-4 lg:gap-2 lg:px-6">
@@ -11,7 +31,7 @@ export function SiteHeader() {
           orientation="vertical"
           className="mx-2 h-4 data-vertical:self-auto"
         />
-        <h1 className="text-base font-medium">{"Tài liệu"}</h1>
+        <h1 className="text-sm font-semibold text-slate-800">{pageTitle}</h1>
         <div className="ml-auto">
           <ThemeSwitcher />
         </div>

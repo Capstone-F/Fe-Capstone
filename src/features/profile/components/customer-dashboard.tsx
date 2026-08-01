@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState } from "react";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 
 import {
   User,
@@ -11,10 +11,17 @@ import {
   Loader2,
   AlertCircle,
   Calendar,
+  CreditCard,
   ChevronRight,
+  Star,
+  Wallet as WalletIcon,
+  Sparkles,
 } from "lucide-react";
 import { toast } from "sonner";
 
+import { FeedbackModal } from "@/features/booking/components/feedback-modal";
+import { WalletCard } from "@/features/wallet/components/wallet-card";
+import { CustomerTreatmentView } from "@/features/treatments/components/customer-treatment-view";
 import { Button } from "@/shared/components/ui/button";
 import { Input } from "@/shared/components/ui/input";
 import { Label } from "@/shared/components/ui/label";
@@ -149,11 +156,32 @@ function ProfileForm({ profile, updateProfileMutation }: ProfileFormProps) {
   );
 }
 
-type TabType = "profile" | "baumann" | "orders" | "bookings";
+type TabType =
+  | "profile"
+  | "baumann"
+  | "orders"
+  | "appointments"
+  | "wallet"
+  | "treatment";
 
 export function CustomerDashboard() {
   const router = useRouter();
-  const [activeTab, setActiveTab] = useState<TabType>("profile");
+  const searchParams = useSearchParams();
+  const requestedTab = searchParams.get("tab");
+  const activeTab: TabType =
+    requestedTab === "baumann" ||
+    requestedTab === "orders" ||
+    requestedTab === "appointments" ||
+    requestedTab === "wallet" ||
+    requestedTab === "treatment"
+      ? requestedTab
+      : "profile";
+
+  const selectTab = (tab: TabType) => {
+    router.replace(tab === "profile" ? "/profile" : `/profile?tab=${tab}`, {
+      scroll: false,
+    });
+  };
 
   // Profile data
   const { data: profile, isLoading: isLoadingProfile } = useProfile();
@@ -169,6 +197,17 @@ export function CustomerDashboard() {
 
   // Bookings data
   const { data: bookings, isLoading: isLoadingBookings } = useBookings();
+
+  // Feedback modal state
+  const [feedbackModalOpen, setFeedbackModalOpen] = useState(false);
+  const [selectedBookingId, setSelectedBookingId] = useState("");
+  const [selectedDoctorName, setSelectedDoctorName] = useState("");
+
+  const handleOpenFeedback = (bookingId: string, doctorName?: string) => {
+    setSelectedBookingId(bookingId);
+    setSelectedDoctorName(doctorName || "Bác sĩ");
+    setFeedbackModalOpen(true);
+  };
 
   // Update profile mutation
   const updateProfileMutation = useUpdateProfile();
@@ -187,10 +226,33 @@ export function CustomerDashboard() {
   }
 
   if (!profile) {
-    if (typeof window !== "undefined") {
-      router.replace("/login?redirectTo=/profile");
-    }
-    return null;
+    return (
+      <div className="mx-auto flex max-w-md flex-col items-center justify-center p-12 text-center">
+        <div className="mb-4 flex h-14 w-14 items-center justify-center rounded-2xl border border-amber-200 bg-amber-50 text-amber-600">
+          <User className="h-7 w-7" />
+        </div>
+        <h3 className="text-lg font-bold text-slate-900">Chưa Đăng Nhập</h3>
+        <p className="mt-1 text-xs text-slate-500">
+          Vui lòng đăng nhập để xem thông tin cá nhân, số dư ví và phác đồ điều
+          trị của bạn.
+        </p>
+        <div className="mt-6 flex flex-wrap items-center justify-center gap-3">
+          <Button
+            onClick={() => router.push("/login?redirectTo=/profile")}
+            className="rounded-xl bg-[#6b5cf6] text-xs font-bold text-white hover:bg-[#5a4ae5]"
+          >
+            Đăng Nhập Ngay
+          </Button>
+          <Button
+            variant="outline"
+            onClick={() => router.push("/")}
+            className="rounded-xl text-xs font-semibold"
+          >
+            Về Trang Chủ
+          </Button>
+        </div>
+      </div>
+    );
   }
 
   return (
@@ -210,7 +272,7 @@ export function CustomerDashboard() {
         <div className="flex w-full shrink-0 flex-col gap-1.5 rounded-2xl border border-slate-200 bg-white p-3 shadow-2xs md:w-64">
           <button
             type="button"
-            onClick={() => setActiveTab("profile")}
+            onClick={() => selectTab("profile")}
             className={`flex w-full items-center gap-3 rounded-xl px-4 py-3 text-xs font-bold transition-all ${
               activeTab === "profile"
                 ? "bg-[#2C3E35] text-white"
@@ -222,7 +284,7 @@ export function CustomerDashboard() {
           </button>
           <button
             type="button"
-            onClick={() => setActiveTab("baumann")}
+            onClick={() => selectTab("baumann")}
             className={`flex w-full items-center gap-3 rounded-xl px-4 py-3 text-xs font-bold transition-all ${
               activeTab === "baumann"
                 ? "bg-[#2C3E35] text-white"
@@ -234,7 +296,31 @@ export function CustomerDashboard() {
           </button>
           <button
             type="button"
-            onClick={() => setActiveTab("orders")}
+            onClick={() => selectTab("wallet")}
+            className={`flex w-full items-center gap-3 rounded-xl px-4 py-3 text-xs font-bold transition-all ${
+              activeTab === "wallet"
+                ? "bg-[#2C3E35] text-white"
+                : "text-slate-600 hover:bg-slate-50 hover:text-slate-900"
+            }`}
+          >
+            <WalletIcon className="h-4.5 w-4.5" />
+            Ví GlowScan & Nạp Tiền
+          </button>
+          <button
+            type="button"
+            onClick={() => selectTab("treatment")}
+            className={`flex w-full items-center gap-3 rounded-xl px-4 py-3 text-xs font-bold transition-all ${
+              activeTab === "treatment"
+                ? "bg-[#2C3E35] text-white"
+                : "text-slate-600 hover:bg-slate-50 hover:text-slate-900"
+            }`}
+          >
+            <Sparkles className="h-4.5 w-4.5 text-amber-400" />
+            Phác Đồ Da & Routine
+          </button>
+          <button
+            type="button"
+            onClick={() => selectTab("orders")}
             className={`flex w-full items-center gap-3 rounded-xl px-4 py-3 text-xs font-bold transition-all ${
               activeTab === "orders"
                 ? "bg-[#2C3E35] text-white"
@@ -246,9 +332,9 @@ export function CustomerDashboard() {
           </button>
           <button
             type="button"
-            onClick={() => setActiveTab("bookings")}
+            onClick={() => selectTab("appointments")}
             className={`flex w-full items-center gap-3 rounded-xl px-4 py-3 text-xs font-bold transition-all ${
-              activeTab === "bookings"
+              activeTab === "appointments"
                 ? "bg-[#2C3E35] text-white"
                 : "text-slate-600 hover:bg-slate-50 hover:text-slate-900"
             }`}
@@ -421,7 +507,7 @@ export function CustomerDashboard() {
                         <div className="space-y-1">
                           <div className="flex items-center gap-2">
                             <span className="text-xs font-bold text-slate-900">
-                              Mã đơn: {order.id}
+                              Đơn hàng của bạn
                             </span>
                             <span
                               className={`rounded-full px-2 py-0.5 text-[10px] font-bold uppercase ${
@@ -465,8 +551,14 @@ export function CustomerDashboard() {
             </Card>
           )}
 
+          {/* Tab: Wallet & Top-up */}
+          {activeTab === "wallet" && <WalletCard />}
+
+          {/* Tab: Treatment Plan & Routine */}
+          {activeTab === "treatment" && <CustomerTreatmentView />}
+
           {/* Tab 4: Doctor Appointments */}
-          {activeTab === "bookings" && (
+          {activeTab === "appointments" && (
             <Card className="border-slate-200 shadow-2xs">
               <CardHeader className="border-b border-slate-100 p-6">
                 <CardTitle className="text-lg font-bold text-slate-900">
@@ -497,60 +589,158 @@ export function CustomerDashboard() {
                   </div>
                 ) : (
                   <div className="space-y-4">
-                    {bookings.map((booking) => (
-                      <div
-                        key={booking.id}
-                        className="flex flex-col justify-between rounded-xl border border-slate-100 bg-white p-4 shadow-2xs sm:flex-row sm:items-center"
-                      >
-                        <div className="space-y-1">
-                          <div className="flex items-center gap-2">
-                            <h4 className="text-xs font-bold text-slate-900">
-                              Bác sĩ: {booking.expertName}
-                            </h4>
-                            <span
-                              className={`rounded-full px-2 py-0.5 text-[10px] font-bold uppercase ${
-                                booking.status === "confirmed" ||
-                                booking.status === "paid"
-                                  ? "border border-emerald-100 bg-emerald-50 text-emerald-700"
-                                  : booking.status === "pending"
-                                    ? "border border-amber-100 bg-amber-50 text-amber-700"
-                                    : "border border-red-100 bg-red-50 text-red-700"
-                              }`}
-                            >
-                              {booking.status === "confirmed"
-                                ? "Đã xác nhận"
-                                : booking.status === "paid"
-                                  ? "Đã thanh toán"
-                                  : booking.status === "pending"
-                                    ? "Chờ xác nhận"
-                                    : "Đã hủy"}
-                            </span>
-                          </div>
-                          <div className="flex items-center gap-1.5 text-[11px] text-slate-500">
-                            <Calendar className="h-3.5 w-3.5" />
-                            <span>
-                              Thời gian:{" "}
-                              {new Date(booking.dateTime).toLocaleString(
-                                "vi-VN",
+                    {bookings.map((booking) => {
+                      const statusNorm = (booking.status || "").toUpperCase();
+
+                      return (
+                        <div
+                          key={booking.id}
+                          className="flex flex-col justify-between rounded-xl border border-slate-200/80 bg-white p-4 shadow-2xs sm:flex-row sm:items-center"
+                        >
+                          <div className="space-y-1">
+                            <div className="flex flex-wrap items-center gap-2">
+                              <h4 className="text-xs font-bold text-slate-900">
+                                Bác sĩ: {booking.expertName}
+                              </h4>
+                              {booking.isFollowUp ? (
+                                <span className="rounded-full border border-emerald-300 bg-emerald-100 px-2.5 py-0.5 text-[10px] font-extrabold text-emerald-900 uppercase">
+                                  🟢 TÁI KHÁM MIỄN PHÍ 0Đ
+                                </span>
+                              ) : (
+                                <span
+                                  className={`rounded-full px-2.5 py-0.5 text-[10px] font-extrabold uppercase ${
+                                    statusNorm === "CONFIRMED"
+                                      ? "border border-emerald-200 bg-emerald-50 text-emerald-700"
+                                      : statusNorm === "IN_PROGRESS"
+                                        ? "animate-pulse border border-indigo-200 bg-indigo-50 text-indigo-700"
+                                        : statusNorm === "COMPLETED"
+                                          ? "border border-teal-200 bg-teal-50 text-teal-800"
+                                          : statusNorm === "PENDING"
+                                            ? booking.isPaid
+                                              ? "border border-blue-200 bg-blue-50 text-blue-700"
+                                              : "border border-amber-200 bg-amber-50 text-amber-800"
+                                            : "border border-red-100 bg-red-50 text-red-600"
+                                  }`}
+                                >
+                                  {statusNorm === "CONFIRMED"
+                                    ? "Đã xác nhận"
+                                    : statusNorm === "IN_PROGRESS"
+                                      ? "🟣 Đang tư vấn"
+                                      : statusNorm === "COMPLETED"
+                                        ? "✅ Đã hoàn thành"
+                                        : statusNorm === "PENDING"
+                                          ? booking.isPaid
+                                            ? "🔵 Đã trả ví - Chờ duyệt"
+                                            : "🟡 Chờ thanh toán ví"
+                                          : "Đã hủy"}
+                                </span>
                               )}
-                            </span>
+                            </div>
+                            <div className="flex items-center gap-1.5 text-[11px] text-slate-500">
+                              <Calendar className="h-3.5 w-3.5" />
+                              <span>
+                                Thời gian:{" "}
+                                {new Date(booking.dateTime).toLocaleString(
+                                  "vi-VN",
+                                )}
+                              </span>
+                            </div>
+                            {booking.symptoms && (
+                              <p className="mt-1 rounded-lg border border-slate-100 bg-slate-50 p-2 text-[11px] text-slate-500 italic">
+                                Triệu chứng: &quot;{booking.symptoms}&quot;
+                              </p>
+                            )}
+
+                            {/* Display Submitted Feedback if any */}
+                            {booking.feedback && (
+                              <div className="mt-2 flex items-center gap-2 rounded-lg border border-amber-100 bg-amber-50/60 p-2 text-xs">
+                                <div className="flex items-center gap-0.5">
+                                  {[1, 2, 3, 4, 5].map((s) => (
+                                    <Star
+                                      key={s}
+                                      className={`h-3.5 w-3.5 ${
+                                        s <= (booking.feedback?.rating || 0)
+                                          ? "fill-amber-400 text-amber-400"
+                                          : "fill-slate-200 text-slate-200"
+                                      }`}
+                                    />
+                                  ))}
+                                </div>
+                                {booking.feedback.comment && (
+                                  <span className="text-[11px] font-semibold text-slate-700">
+                                    &quot;{booking.feedback.comment}&quot;
+                                  </span>
+                                )}
+                              </div>
+                            )}
                           </div>
-                          {booking.symptoms && (
-                            <p className="mt-1 rounded-lg border border-slate-100 bg-slate-50 p-2 text-[11px] text-slate-500 italic">
-                              Triệu chứng: &quot;{booking.symptoms}&quot;
-                            </p>
-                          )}
+
+                          <div className="mt-3 flex flex-col items-end justify-between gap-2 sm:mt-0">
+                            <div className="text-right">
+                              <span className="block text-[10px] text-slate-400">
+                                Chi phí tư vấn
+                              </span>
+                              <strong className="text-xs font-extrabold text-[#2C3E35]">
+                                {booking.isFollowUp
+                                  ? "0đ (Tái khám)"
+                                  : formatVnd(
+                                      booking.feeChargedVnd ||
+                                        booking.amount ||
+                                        200000,
+                                    )}
+                              </strong>
+                            </div>
+
+                            {/* Action Buttons */}
+                            {statusNorm === "PENDING" &&
+                              !booking.isPaid &&
+                              !booking.isFollowUp && (
+                                <Button
+                                  size="sm"
+                                  onClick={() =>
+                                    router.push(
+                                      `/booking/${booking.expertId}/checkout?bookingId=${booking.id}`,
+                                    )
+                                  }
+                                  className="rounded-xl bg-amber-600 text-xs font-bold text-white shadow-xs hover:bg-amber-700"
+                                >
+                                  <CreditCard className="mr-1.5 h-3.5 w-3.5" />
+                                  Thanh toán ngay
+                                </Button>
+                              )}
+                            {statusNorm === "COMPLETED" && (
+                              <div className="flex flex-wrap items-center gap-1.5">
+                                {!booking.feedback && (
+                                  <Button
+                                    size="sm"
+                                    onClick={() =>
+                                      handleOpenFeedback(
+                                        booking.id,
+                                        booking.expertName,
+                                      )
+                                    }
+                                    className="rounded-xl bg-amber-500 text-xs font-bold text-white shadow-xs hover:bg-amber-600"
+                                  >
+                                    <Star className="mr-1.5 h-3.5 w-3.5 fill-white" />
+                                    Đánh Giá Bác Sĩ
+                                  </Button>
+                                )}
+                                <Button
+                                  size="sm"
+                                  variant="outline"
+                                  onClick={() =>
+                                    router.push(`/booking/${booking.expertId}`)
+                                  }
+                                  className="rounded-xl border-emerald-200 text-xs font-bold text-emerald-700 hover:bg-emerald-50"
+                                >
+                                  🔁 Đặt Lịch Tái Khám
+                                </Button>
+                              </div>
+                            )}
+                          </div>
                         </div>
-                        <div className="mt-2 flex flex-col items-end justify-end text-right sm:mt-0">
-                          <span className="text-[10px] text-slate-400">
-                            Chi phí tư vấn
-                          </span>
-                          <strong className="text-xs font-extrabold text-[#2C3E35]">
-                            {formatVnd(booking.amount || 200000)}
-                          </strong>
-                        </div>
-                      </div>
-                    ))}
+                      );
+                    })}
                   </div>
                 )}
               </CardContent>
@@ -558,6 +748,14 @@ export function CustomerDashboard() {
           )}
         </div>
       </div>
+
+      {/* Feedback Modal */}
+      <FeedbackModal
+        isOpen={feedbackModalOpen}
+        onClose={() => setFeedbackModalOpen(false)}
+        bookingId={selectedBookingId}
+        doctorName={selectedDoctorName}
+      />
     </div>
   );
 }

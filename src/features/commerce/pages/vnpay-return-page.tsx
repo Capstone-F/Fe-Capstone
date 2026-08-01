@@ -196,9 +196,7 @@ function VnpayReturnContent() {
           )}
           {order && (
             <div className="mt-2 flex flex-col gap-1 rounded-xl bg-slate-50 px-6 py-4 text-sm">
-              <span>
-                {ck.orderCode}: <span className="font-bold">{order.id}</span>
-              </span>
+              <span>Giao dịch đã được đối chiếu với đơn hàng của bạn.</span>
               <span className="text-primary font-bold">
                 {formatVnd(order.totalVnd)}
               </span>

@@ -10,65 +10,23 @@ export const siteConfig = {
   dashboard: {
     navMain: [
       {
-        title: "Bảng điều khiển",
+        title: "Quản lý người dùng",
         url: "/dashboard",
-        icon: "LayoutDashboard",
-      },
-      {
-        title: "Vòng đời khách hàng",
-        url: "#",
-        icon: "List",
-      },
-      {
-        title: "Phân tích & Thống kê",
-        url: "#",
-        icon: "ChartBar",
-      },
-      {
-        title: "Dự án",
-        url: "#",
-        icon: "Folder",
-      },
-      {
-        title: "Đội ngũ",
-        url: "#",
         icon: "Users",
       },
-    ],
-    navSecondary: [
       {
-        title: "Cài đặt hệ thống",
-        url: "#",
-        icon: "Settings2",
+        title: "Quản lý Bác sĩ",
+        url: "/dashboard/experts",
+        icon: "Users",
       },
       {
-        title: "Trợ giúp & Hỗ trợ",
-        url: "#",
-        icon: "CircleHelp",
-      },
-      {
-        title: "Tìm kiếm...",
-        url: "#",
-        icon: "Search",
+        title: "Workspace Bác sĩ",
+        url: "/expert",
+        icon: "Stethoscope",
       },
     ],
-    documents: [
-      {
-        name: "Thư viện dữ liệu",
-        url: "#",
-        icon: "Database",
-      },
-      {
-        name: "Báo cáo",
-        url: "#",
-        icon: "FileChartColumn",
-      },
-      {
-        name: "Trợ lý AI",
-        url: "#",
-        icon: "File",
-      },
-    ],
+    navSecondary: [],
+    documents: [],
   },
 
   // Config for user portal
@@ -86,13 +44,36 @@ export const siteConfig = {
       },
       {
         title: "Lịch hẹn của tôi",
-        url: "/appointments",
+        url: "/profile?tab=appointments",
         icon: "Calendar",
       },
       {
         title: "Hồ sơ cá nhân",
         url: "/profile",
         icon: "Settings2",
+      },
+    ],
+    navSecondary: [],
+    documents: [],
+  },
+
+  // Config for expert portal
+  expertPortal: {
+    navMain: [
+      {
+        title: "Ca Tư Vấn Bệnh Nhân",
+        url: "/expert",
+        icon: "Stethoscope",
+      },
+      {
+        title: "Phác Đồ Điều Trị",
+        url: "/expert/treatments",
+        icon: "FileText",
+      },
+      {
+        title: "Lịch Khám & Slots",
+        url: "/expert/schedule",
+        icon: "Calendar",
       },
     ],
     navSecondary: [],

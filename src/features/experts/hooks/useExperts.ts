@@ -1,13 +1,11 @@
 import { useQuery } from "@tanstack/react-query";
 import { queryKeys } from "@/lib/query/keys";
-import { appConfig } from "@/lib/env";
 import { expertsApi } from "../api/experts.api";
-import { expertsMock } from "../api/experts.mock";
 import {
   mapBackendExpertToFrontend,
   mapSpecialtyToBackend,
 } from "../mapper/expert-mapper";
-import type { Expert } from "../types/expert.types";
+import type { Expert, BackendExpert } from "../types/expert.types";
 
 export function useExperts(
   filters?: {
@@ -24,11 +22,8 @@ export function useExperts(
   return useQuery({
     queryKey: queryKeys.experts(filters),
     queryFn: async () => {
-      if (appConfig.useMockApi) {
-        return expertsMock.getExperts(filters);
-      }
-
       const params: Record<string, string> = {};
+      params.limit = "100";
 
       if (filters) {
         const { specialty, minRating, maxFee, maxDistance, lat, lng } = filters;
@@ -72,10 +67,6 @@ export function useExpertDetail(id: string, enabled: boolean = true) {
   return useQuery({
     queryKey: queryKeys.expert(id),
     queryFn: async (): Promise<Expert> => {
-      if (appConfig.useMockApi) {
-        return expertsMock.getExpertById(id);
-      }
-
       const response = await expertsApi.getExpertById(id);
       return mapBackendExpertToFrontend(response.data);
     },
@@ -87,10 +78,6 @@ export function useSpecialties(enabled: boolean = true) {
   return useQuery({
     queryKey: queryKeys.specialties,
     queryFn: async () => {
-      if (appConfig.useMockApi) {
-        return expertsMock.getSpecialties();
-      }
-
       return [
         "Trị mụn",
         "Phục hồi da",
@@ -101,5 +88,16 @@ export function useSpecialties(enabled: boolean = true) {
       ];
     },
     enabled,
+  });
+}
+
+export function useExpertMe() {
+  return useQuery({
+    queryKey: ["expert-me"],
+    queryFn: async (): Promise<BackendExpert> => {
+      const response = await expertsApi.getMe();
+      return response.data;
+    },
+    staleTime: 5 * 60 * 1000, // 5 phút cache
   });
 }

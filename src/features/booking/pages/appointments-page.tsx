@@ -8,6 +8,7 @@ import {
   CreditCard,
   MessageSquare,
   CalendarX,
+  Info,
 } from "lucide-react";
 import { useBookings } from "@/features/booking/hooks/useBooking";
 import { Button } from "@/shared/components/ui/button";
@@ -21,7 +22,6 @@ export function AppointmentsPage() {
     title: "Lịch hẹn tư vấn của tôi",
     subtitle:
       "Xem và quản lý các lượt tư vấn trực tiếp cùng chuyên gia da liễu.",
-    codeLabel: "Mã cuộc hẹn:",
     bookedAtLabel: "Đặt lúc:",
     expertInCharge: "Chuyên gia phụ trách",
     appointmentTime: "Thời gian hẹn",
@@ -60,18 +60,35 @@ export function AppointmentsPage() {
     });
   };
 
-  const getStatusBadge = (status: string) => {
-    switch (status) {
-      case "paid":
-        return (
-          <span className="rounded-md bg-green-100 px-2 py-0.5 text-[10px] font-bold text-green-700">
-            {t.status.paid}
-          </span>
-        );
+  const getStatusBadge = (bk: {
+    status: string;
+    isPaid?: boolean;
+    isFollowUp?: boolean;
+  }) => {
+    if (bk.isFollowUp) {
+      return (
+        <span className="rounded-md bg-emerald-100 px-2 py-0.5 text-[10px] font-bold text-emerald-800">
+          🟢 Tái khám 0đ
+        </span>
+      );
+    }
+    switch (bk.status) {
       case "confirmed":
         return (
           <span className="rounded-md bg-blue-100 px-2 py-0.5 text-[10px] font-bold text-blue-700">
             {t.status.confirmed}
+          </span>
+        );
+      case "in_progress":
+        return (
+          <span className="animate-pulse rounded-md bg-indigo-100 px-2 py-0.5 text-[10px] font-bold text-indigo-700">
+            🟣 Đang tư vấn
+          </span>
+        );
+      case "completed":
+        return (
+          <span className="rounded-md bg-teal-100 px-2 py-0.5 text-[10px] font-bold text-teal-800">
+            ✅ Đã hoàn thành
           </span>
         );
       case "cancelled":
@@ -82,7 +99,11 @@ export function AppointmentsPage() {
         );
       case "pending":
       default:
-        return (
+        return bk.isPaid ? (
+          <span className="rounded-md bg-blue-100 px-2 py-0.5 text-[10px] font-bold text-blue-700">
+            🔵 Đã trả ví - Chờ duyệt
+          </span>
+        ) : (
           <span className="animate-pulse rounded-md bg-yellow-100 px-2 py-0.5 text-[10px] font-bold text-yellow-700">
             {t.status.pending}
           </span>
@@ -113,20 +134,15 @@ export function AppointmentsPage() {
               className="hover:border-slate-350 overflow-hidden border-slate-200 shadow-xs transition-colors"
             >
               <div className="flex flex-col items-start justify-between gap-2 border-b border-slate-100 bg-slate-50 p-4 sm:flex-row sm:items-center">
-                <div className="flex items-center gap-2">
-                  <span className="text-muted-foreground text-[10px]">
-                    {t.codeLabel}
-                  </span>
-                  <span className="font-mono text-xs font-bold text-slate-700">
-                    {bk.id}
-                  </span>
-                </div>
+                <span className="text-xs font-semibold text-slate-700">
+                  Lịch tư vấn với {bk.expertName}
+                </span>
                 <div className="flex items-center gap-3">
                   <span className="text-muted-foreground text-[10px]">
                     {t.bookedAtLabel}{" "}
                     {new Date(bk.createdAt).toLocaleDateString("vi-VN")}
                   </span>
-                  {getStatusBadge(bk.status)}
+                  {getStatusBadge(bk)}
                 </div>
               </div>
 
@@ -167,39 +183,42 @@ export function AppointmentsPage() {
                       {t.serviceFee}
                     </span>
                     <span className="block text-xs font-bold text-slate-700">
-                      {bk.amount.toLocaleString("vi-VN")} đ
+                      {bk.isFollowUp
+                        ? "0 đ (Tái khám)"
+                        : `${bk.amount.toLocaleString("vi-VN")} đ`}
                     </span>
                   </div>
                 </div>
 
-                <div className="flex items-center justify-end md:col-span-2">
-                  {bk.status === "pending" ? (
+                <div className="flex flex-wrap items-center justify-end gap-2 md:col-span-2">
+                  {bk.status === "pending" && !bk.isPaid && !bk.isFollowUp && (
                     <Link
                       href={`/booking/${bk.expertId}/checkout?bookingId=${bk.id}`}
                     >
                       <Button
                         size="sm"
-                        className="rounded-lg bg-yellow-600 text-xs font-semibold hover:bg-yellow-700"
+                        className="bg-amber-600 text-xs text-white hover:bg-amber-700"
                       >
                         {t.payNow}
                       </Button>
                     </Link>
-                  ) : bk.status === "paid" ? (
-                    <Button
-                      size="sm"
-                      variant="outline"
-                      className="cursor-default rounded-lg border-green-200 text-xs font-semibold text-green-700 hover:bg-green-50/50"
-                    >
-                      {t.waiting}
-                    </Button>
-                  ) : (
+                  )}
+                  {bk.status !== "cancelled" && (
+                    <Link href={`/appointments/${bk.id}`}>
+                      <Button size="sm" variant="outline" className="text-xs">
+                        <Info className="mr-1.5 h-3.5 w-3.5" />
+                        Chi tiết
+                      </Button>
+                    </Link>
+                  )}
+                  {bk.status === "cancelled" && (
                     <Button
                       size="sm"
                       variant="ghost"
                       disabled
-                      className="rounded-lg text-xs font-semibold"
+                      className="text-xs"
                     >
-                      {t.completed}
+                      Đã hủy
                     </Button>
                   )}
                 </div>

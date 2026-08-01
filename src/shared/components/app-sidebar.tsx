@@ -31,8 +31,11 @@ import {
   LucideIcon,
   ShoppingBagIcon,
   CalendarIcon,
+  Stethoscope,
+  FileText,
 } from "lucide-react";
 import { useProfile } from "@/features/profile/hooks/useProfile";
+import { useSession } from "@/features/auth/hooks/useSession";
 import { BrandMark } from "@/shared/components/brand-mark";
 
 // Icon Map to convert string names from Server Config to Client React Components
@@ -50,13 +53,8 @@ const IconMap: Record<string, LucideIcon> = {
   File: FileIcon,
   ShoppingBag: ShoppingBagIcon,
   Calendar: CalendarIcon,
-};
-
-// Temporary static user for UI mock
-const MOCK_USER = {
-  name: "GlowScan Admin",
-  email: "admin@glowscan.com",
-  avatar: "",
+  Stethoscope: Stethoscope,
+  FileText: FileText,
 };
 
 interface AppSidebarProps extends React.ComponentProps<typeof Sidebar> {
@@ -68,21 +66,46 @@ interface AppSidebarProps extends React.ComponentProps<typeof Sidebar> {
 }
 
 export function AppSidebar({ config, ...props }: AppSidebarProps) {
+  const session = useSession();
   const { data: profile } = useProfile();
 
-  // Check if we are rendering the user portal sidebar
-  const isUserPortal = config.navMain.some(
-    (item) => item.url === "/scan" || item.url === "/experts",
-  );
+  const currentUser = session.data || profile || null;
+  const roles: string[] = session.data?.roles || [];
 
-  const user =
-    isUserPortal && profile
-      ? {
-          name: profile.name || "GlowScan User",
-          email: profile.email || "user@glowscan.local",
-          avatar: "",
-        }
-      : MOCK_USER;
+  // Determine portal scope
+  const isExpertPortal =
+    roles.includes("expert") ||
+    config.navMain.some(
+      (item) =>
+        item.url.includes("/expert") || item.url.includes("/treatments"),
+    );
+
+  const isAdminPortal =
+    roles.includes("app_admin") ||
+    roles.includes("staff") ||
+    roles.includes("clinic_manager") ||
+    config.navMain.some((item) => item.url.includes("/dashboard"));
+
+  // Dynamic Header Title
+  let sidebarTitle = "GlowScan Portal";
+  if (isExpertPortal) {
+    sidebarTitle = "GlowScan Expert";
+  } else if (isAdminPortal) {
+    sidebarTitle = "GlowScan Admin";
+  }
+
+  // Dynamic User Profile
+  const user = {
+    name:
+      currentUser?.name ||
+      (isExpertPortal
+        ? "Chuyên Gia Da Liễu"
+        : isAdminPortal
+          ? "GlowScan Admin"
+          : "Khách Hàng"),
+    email: currentUser?.email || "user@glowscan.local",
+    avatar: "",
+  };
 
   // Map string icons to React Nodes
   const mappedNavMain = config.navMain.map((item) => {
@@ -101,7 +124,7 @@ export function AppSidebar({ config, ...props }: AppSidebarProps) {
   });
 
   return (
-    <Sidebar collapsible="offcanvas" {...props}>
+    <Sidebar collapsible="icon" {...props}>
       <SidebarHeader>
         <SidebarMenu>
           <SidebarMenuItem>
@@ -110,9 +133,7 @@ export function AppSidebar({ config, ...props }: AppSidebarProps) {
               render={<Link href="/" />}
             >
               <BrandMark asLink={false} showLabel={false} className="gap-0" />
-              <span className="text-base font-semibold">
-                {"GlowScan Admin"}
-              </span>
+              <span className="text-base font-semibold">{sidebarTitle}</span>
             </SidebarMenuButton>
           </SidebarMenuItem>
         </SidebarMenu>

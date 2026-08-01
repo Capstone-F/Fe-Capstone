@@ -1,12 +1,12 @@
 export const MOCK_FLAGS = {
   commerce: false, // E-commerce wired to real BE
-  booking: true,
+  booking: false,
   survey: false,
   routine: false, // Routine + tracking wired to real BE (ADR-040)
-  clinic: true,
-  consultation: true,
-  treatment: true,
-  admin: true,
+  clinic: false,
+  consultation: false,
+  treatment: false,
+  admin: false,
 } as const;
 
 export const appConfig = {

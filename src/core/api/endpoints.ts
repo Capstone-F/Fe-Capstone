@@ -5,8 +5,27 @@ export const API_ENDPOINTS = {
     MOBILE_REFRESH: "/auth/mobile/refresh",
     LOGOUT: "/auth/logout",
   },
-  USERS: { ME: "/users/me" },
-  CUSTOMERS: { ME: "/customers/me", ALLERGIES: "/customers/allergies" },
+  USERS: {
+    ME: "/users/me",
+    CREATE: "/users",
+    LIST: "/users",
+    DETAIL: (id: string) => `/users/${id}`,
+    ROLES: (id: string) => `/users/${id}/roles`,
+    STATUS: (id: string) => `/users/${id}/status`,
+  },
+  ADMIN_WALLETS: {
+    DETAIL: (userId: string) => `/admin/wallets/${userId}`,
+    TOP_UP: (userId: string) => `/admin/wallets/${userId}/top-up`,
+  },
+  CLINICS: {
+    LIST: "/clinics",
+  },
+  CUSTOMERS: {
+    ME: "/customers/me",
+    ALLERGIES: "/customers/allergies",
+    CONSULTATION_CONTEXT: (id: string) =>
+      `/customers/${id}/consultation-context`,
+  },
   PRODUCTS: {
     LIST: "/products",
     CATEGORIES: "/products/categories",
@@ -15,12 +34,66 @@ export const API_ENDPOINTS = {
   },
   EXPERTS: {
     LIST: "/experts",
+    CREATE: "/experts",
+    ME: "/experts/me",
     DETAIL: (id: string | number) => `/experts/${id}`,
   },
   BOOKINGS: {
     CREATE: "/bookings",
     ME: "/bookings/me",
+    DETAIL: (id: string | number) => `/bookings/me/${id}`,
+    PAY: (id: string | number) => `/bookings/${id}/pay`,
     SLOTS: (expertId: string | number) => `/bookings/${expertId}`,
+    CONFIRM: (id: string | number) => `/bookings/${id}/confirm`,
+    CANCEL: (id: string | number) => `/bookings/${id}/cancel`,
+    START: (id: string | number) => `/bookings/${id}/start`,
+    COMPLETE: (id: string | number) => `/bookings/${id}/complete`,
+    FEEDBACK: (id: string | number) => `/bookings/${id}/feedback`,
+  },
+  CONSULTATIONS: {
+    VIDEO_TOKEN: (bookingId: string) =>
+      `/consultations/${bookingId}/video-token`,
+    CHAT_TOKEN: (bookingId: string) => `/consultations/${bookingId}/chat-token`,
+  },
+  WALLET: {
+    ME: "/wallet/me",
+    TOP_UP: "/wallet/top-up",
+    TRANSACTIONS: "/wallet/me/transactions",
+  },
+  INGREDIENTS: {
+    LIST: "/ingredients",
+  },
+  TREATMENTS: {
+    CREATE: "/treatments",
+    LIST_MINE: "/treatments/me",
+    DETAIL: (id: string) => `/treatments/${id}`,
+    PHASES: (id: string) => `/treatments/${id}/phases`,
+    PHASE_DETAIL: (phaseId: string) => `/treatments/phases/${phaseId}`,
+    SUBMIT: (id: string) => `/treatments/${id}/submit`,
+    PAY: (id: string) => `/treatments/${id}/pay`,
+    SET_INGREDIENTS: (phaseId: string) =>
+      `/treatments/phases/${phaseId}/ingredients`,
+    PRODUCT_CANDIDATES: (phaseId: string) =>
+      `/treatments/phases/${phaseId}/product-candidates`,
+    SET_PRODUCTS: (phaseId: string) => `/treatments/phases/${phaseId}/products`,
+    ROUTINE_GENERATE: (phaseId: string) =>
+      `/treatments/phases/${phaseId}/routines/generate`,
+    ROUTINE_SAVE: (routineId: string) =>
+      `/treatments/routines/${routineId}/save`,
+    ROUTINE_UPDATE: (routineId: string) => `/treatments/routines/${routineId}`,
+    ACTIVATE_PHASE: (phaseId: string) =>
+      `/treatments/phases/${phaseId}/activate`,
+    CHART: (id: string) => `/treatments/${id}/chart`,
+    EVENTS: (id: string) => `/treatments/${id}/events`,
+    EVENT: (id: string, eventId: string) =>
+      `/treatments/${id}/events/${eventId}`,
+    CANCEL: (id: string) => `/treatments/${id}/cancel`,
+  },
+  UPLOADS: {
+    IMAGE: "/uploads/images",
+  },
+  FILES: {
+    UPLOAD: "/files",
   },
   PROVINCES: { LIST: "https://provinces.open-api.vn/api/v2/" },
   CART: {
@@ -58,8 +131,5 @@ export const API_ENDPOINTS = {
     HISTORY: (routineId: string) => `/routines/${routineId}/history`,
     HISTORY_DAY: (routineId: string, date: string) =>
       `/routines/${routineId}/history/${date}`,
-  },
-  FILES: {
-    UPLOAD: "/files",
   },
 } as const;

@@ -27,9 +27,15 @@ export interface ConsultationBooking {
   slotId: string;
   dateTime: string;
   symptoms: string;
-  status: "pending" | "confirmed" | "cancelled" | "paid";
+  status: "pending" | "confirmed" | "in_progress" | "completed" | "cancelled";
+  isPaid: boolean;
+  isFollowUp: boolean;
+  feeChargedVnd: number;
   amount: number;
   createdAt: string;
+  cancelledAt?: string | null;
+  cancelReason?: string | null;
+  cancelledBy?: string | null;
 }
 
 export interface UserProfile {

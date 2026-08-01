@@ -2,7 +2,6 @@
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
 import {
   Search,
   MapPin,
@@ -13,7 +12,6 @@ import {
   Map,
   User,
   LocateFixed,
-  LockKeyhole,
 } from "lucide-react";
 import {
   useExperts,
@@ -44,7 +42,6 @@ import {
 import { Label } from "@/shared/components/ui/label";
 import { EmptyState } from "@/shared/components/ui/empty-state";
 import { ExpertCardSkeleton } from "@/features/experts/components/expert-card-skeleton";
-import { toast } from "sonner";
 import {
   buildExpertDiscoveryLabel,
   EXPERT_DISCOVERY_STORAGE_KEY,
@@ -97,7 +94,6 @@ function readDiscoverySelection(): ExpertDiscoverySelection {
 }
 
 export function ExpertsPage() {
-  const router = useRouter();
   const session = useSession();
   const [search, setSearch] = useState("");
   const [specialty, setSpecialty] = useState("Tất cả");
@@ -172,23 +168,18 @@ export function ExpertsPage() {
     specialty: specialty !== "Tất cả" ? specialty : undefined,
     maxDistance: geolocation.status === "granted" ? maxDistance : undefined,
     minRating: minRating > 0 ? minRating : undefined,
-    maxFee,
+    maxFee: maxFee < 2000000 ? maxFee : undefined,
     lat: geolocation.lat ?? undefined,
     lng: geolocation.lng ?? undefined,
   };
 
-  const { data: experts, isLoading } = useExperts(
-    filters,
-    isAuthenticated && !session.isLoading,
-  );
-  const { data: specialties } = useSpecialties(
-    isAuthenticated && !session.isLoading,
-  );
+  const { data: experts, isLoading } = useExperts(filters, !session.isLoading);
+  const { data: specialties } = useSpecialties(!session.isLoading);
   const t = {
     title: "Mạng lưới Chuyên gia da liễu",
     subtitle:
       "Tìm kiếm và đặt lịch tư vấn trực tuyến cùng đội ngũ chuyên gia da liễu hàng đầu.",
-    filtersTitle: "Bộ lọc chuyên sâu",
+    filtersTitle: "Bộ lọc tùy chọn",
     reset: "Đặt lại",
     searchLabel: "Tìm kiếm",
     searchPlaceholder: "Tên chuyên gia, trung tâm...",
@@ -213,7 +204,7 @@ export function ExpertsPage() {
     setSpecialty("Tất cả");
     setMaxDistance(15);
     setMinRating(0);
-    setMaxFee(500000);
+    setMaxFee(2000000);
     setSelectedExpertId(null);
   };
 
@@ -269,15 +260,6 @@ export function ExpertsPage() {
     });
   };
 
-  const handleGuestContinue = () => {
-    if (!hasExpertDiscoverySelection(discoverySelection)) {
-      toast.error("Vui long chon tinh/thanh va phuong/xa truoc khi dang nhap.");
-      return;
-    }
-
-    router.push(`/login?redirectTo=${encodeURIComponent("/experts")}`);
-  };
-
   const formatDistance = (distance?: number) => {
     if (geolocation.status === "granted" && distance !== undefined) {
       return `${distance} km`;
@@ -294,121 +276,7 @@ export function ExpertsPage() {
     return (
       <div className="text-muted-foreground mx-auto flex max-w-4xl flex-col items-center justify-center p-12 text-center">
         <div className="border-primary mb-3 h-8 w-8 animate-spin rounded-full border-b-2"></div>
-        Đang kiểm tra phiên đăng nhập để tải mạng lưới chuyên gia...
-      </div>
-    );
-  }
-
-  if (!isAuthenticated) {
-    return (
-      <div className="mx-auto flex w-full max-w-3xl flex-col gap-6 px-4 py-6 sm:px-6 lg:px-0">
-        <div className="flex flex-col gap-1 text-center sm:text-left">
-          <h2 className="text-2xl font-bold tracking-tight text-slate-900">
-            {t.title}
-          </h2>
-          <p className="text-muted-foreground text-sm">
-            Chọn địa chỉ ưu tiên của bạn trước, sau đó đăng nhập để mở danh sách
-            chuyên gia và đặt lịch tư vấn.
-          </p>
-        </div>
-
-        <Card className="border-slate-200 shadow-sm">
-          <CardHeader className="border-b border-slate-100 bg-slate-50/60">
-            <div className="flex items-start gap-3">
-              <div className="bg-primary/10 text-primary rounded-xl p-2">
-                <LockKeyhole className="h-5 w-5" />
-              </div>
-              <div className="space-y-1">
-                <CardTitle className="text-base font-bold text-slate-900">
-                  Chọn khu vực trước khi xem chuyên gia
-                </CardTitle>
-                <CardDescription className="text-sm leading-relaxed">
-                  GlowScan sẽ lưu địa chỉ ưu tiên của bạn. Sau khi đăng nhập, hệ
-                  thống sẽ xin GPS hiện tại để lọc danh sách chuyên gia phù hợp.
-                </CardDescription>
-              </div>
-            </div>
-          </CardHeader>
-          <CardContent className="grid gap-4 p-6 sm:grid-cols-2">
-            <div className="flex flex-col gap-1.5">
-              <Label className="text-xs font-semibold text-slate-700">
-                Tỉnh / Thành phố
-              </Label>
-              <Select
-                value={
-                  discoverySelection.provinceCode
-                    ? String(discoverySelection.provinceCode)
-                    : ""
-                }
-                onValueChange={handleProvinceChange}
-              >
-                <SelectTrigger className="text-sm">
-                  <span className="line-clamp-1 text-left">
-                    {discoverySelection.provinceName ?? "Chọn tỉnh / thành phố"}
-                  </span>
-                </SelectTrigger>
-                <SelectContent>
-                  {provinces?.map((province) => (
-                    <SelectItem
-                      key={province.code}
-                      value={String(province.code)}
-                    >
-                      {province.name}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-
-            <div className="flex flex-col gap-1.5">
-              <Label className="text-xs font-semibold text-slate-700">
-                Phường / Xã
-              </Label>
-              <Select
-                value={
-                  discoverySelection.wardCode
-                    ? String(discoverySelection.wardCode)
-                    : ""
-                }
-                onValueChange={handleWardChange}
-                disabled={!discoverySelection.provinceCode}
-              >
-                <SelectTrigger className="text-sm">
-                  <span className="line-clamp-1 text-left">
-                    {discoverySelection.wardName ?? "Chọn phường / xã"}
-                  </span>
-                </SelectTrigger>
-                <SelectContent>
-                  {(wards ?? []).map((ward) => (
-                    <SelectItem key={ward.code} value={String(ward.code)}>
-                      {ward.name}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-
-            <div className="sm:col-span-2">
-              <div className="rounded-2xl border border-slate-200 bg-slate-50/70 p-4 text-sm text-slate-600">
-                <span className="block text-xs font-bold tracking-wide text-slate-800 uppercase">
-                  Địa chỉ đã chọn
-                </span>
-                <span className="mt-1 block font-medium">
-                  {selectedLocationLabel}
-                </span>
-              </div>
-            </div>
-
-            <div className="sm:col-span-2">
-              <Button
-                onClick={handleGuestContinue}
-                className="w-full rounded-xl bg-[#2C3E35] text-sm font-semibold text-white hover:bg-[#3d574a]"
-              >
-                Đăng nhập để xem danh sách chuyên gia
-              </Button>
-            </div>
-          </CardContent>
-        </Card>
+        Đang tải mạng lưới chuyên gia...
       </div>
     );
   }
@@ -456,10 +324,72 @@ export function ExpertsPage() {
                   placeholder={t.searchPlaceholder}
                   value={search}
                   onChange={(e) => setSearch(e.target.value)}
-                  className="pl-8 text-sm"
                 />
               </div>
             </div>
+
+            {/* Province Filter */}
+            <div className="flex flex-col gap-1.5">
+              <Label className="text-xs font-semibold text-slate-700">
+                Tỉnh / Thành phố
+              </Label>
+              <Select
+                value={
+                  discoverySelection.provinceCode
+                    ? String(discoverySelection.provinceCode)
+                    : "all"
+                }
+                onValueChange={(val) =>
+                  handleProvinceChange(val === "all" ? null : val)
+                }
+              >
+                <SelectTrigger className="text-sm">
+                  <SelectValue placeholder="Tất cả tỉnh thành" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">Tất cả tỉnh thành</SelectItem>
+                  {provinces?.map((province) => (
+                    <SelectItem
+                      key={province.code}
+                      value={String(province.code)}
+                    >
+                      {province.name}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+
+            {/* Ward Filter */}
+            {discoverySelection.provinceCode && (
+              <div className="flex flex-col gap-1.5">
+                <Label className="text-xs font-semibold text-slate-700">
+                  Phường / Xã
+                </Label>
+                <Select
+                  value={
+                    discoverySelection.wardCode
+                      ? String(discoverySelection.wardCode)
+                      : "all"
+                  }
+                  onValueChange={(val) =>
+                    handleWardChange(val === "all" ? null : val)
+                  }
+                >
+                  <SelectTrigger className="text-sm">
+                    <SelectValue placeholder="Tất cả phường xã" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">Tất cả phường xã</SelectItem>
+                    {(wards ?? []).map((ward) => (
+                      <SelectItem key={ward.code} value={String(ward.code)}>
+                        {ward.name}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+            )}
 
             {/* Specialty Dropdown */}
             <div className="flex flex-col gap-1.5">

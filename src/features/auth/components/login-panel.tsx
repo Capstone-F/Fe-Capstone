@@ -6,6 +6,8 @@ import {
   ArrowRight,
   HeartPulse,
   CheckCircle2,
+  Eye,
+  EyeOff,
 } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
@@ -27,13 +29,28 @@ type LoginPanelProps = {
   redirectTo: string;
 };
 
+function getRoleBasedRedirectPath(roles: string[], fallback?: string): string {
+  if (
+    roles.includes("app_admin") ||
+    roles.includes("staff") ||
+    roles.includes("clinic_manager")
+  ) {
+    return "/dashboard/experts";
+  }
+  if (roles.includes("expert")) {
+    return "/expert";
+  }
+  return fallback && fallback !== "/" ? fallback : "/";
+}
+
 export function LoginPanel({ redirectTo }: LoginPanelProps) {
   const router = useRouter();
   const session = useSession();
 
   useEffect(() => {
     if (session.data) {
-      const target = redirectTo || "/";
+      const roles: string[] = session.data.roles || [];
+      const target = getRoleBasedRedirectPath(roles, redirectTo);
       router.replace(target);
     }
   }, [router, redirectTo, session.data]);
@@ -42,6 +59,7 @@ export function LoginPanel({ redirectTo }: LoginPanelProps) {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [name, setName] = useState("");
+  const [showPassword, setShowPassword] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -88,8 +106,14 @@ export function LoginPanel({ redirectTo }: LoginPanelProps) {
         tokenStorage.setRefreshToken(tokenData.refreshToken);
       }
 
+      // The cached session was resolved before the new token existed. Use the
+      // authenticated response so role-based redirects work on the first login.
+      const roles: string[] =
+        tokenData.user?.roles ?? session.data?.roles ?? [];
+      const targetPath = getRoleBasedRedirectPath(roles, redirectTo);
+
       // Redirect to target path
-      window.location.href = redirectTo || "/";
+      window.location.href = targetPath;
     } catch (error: unknown) {
       console.error(error);
       const e = error as Error;
@@ -257,15 +281,30 @@ export function LoginPanel({ redirectTo }: LoginPanelProps) {
                 >
                   Mật khẩu
                 </Label>
-                <Input
-                  id="login-password"
-                  type="password"
-                  placeholder="••••••••"
-                  value={password}
-                  onChange={(e) => setPassword(e.target.value)}
-                  className="h-11 rounded-xl border-[#E0E8E4] text-sm focus-visible:ring-[#2C3E35]"
-                  required
-                />
+                <div className="relative">
+                  <Input
+                    id="login-password"
+                    type={showPassword ? "text" : "password"}
+                    placeholder="••••••••"
+                    value={password}
+                    onChange={(e) => setPassword(e.target.value)}
+                    className="h-11 rounded-xl border-[#E0E8E4] pr-10 text-sm focus-visible:ring-[#2C3E35]"
+                    required
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setShowPassword(!showPassword)}
+                    className="absolute top-1/2 right-3 -translate-y-1/2 text-[#6A8275] transition-colors hover:text-[#2C3E35] focus:outline-hidden"
+                    tabIndex={-1}
+                    aria-label={showPassword ? "Ẩn mật khẩu" : "Hiện mật khẩu"}
+                  >
+                    {showPassword ? (
+                      <EyeOff className="h-4.5 w-4.5" />
+                    ) : (
+                      <Eye className="h-4.5 w-4.5" />
+                    )}
+                  </button>
+                </div>
               </div>
 
               <Button
