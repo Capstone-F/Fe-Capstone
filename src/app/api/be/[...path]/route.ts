@@ -46,20 +46,22 @@ async function proxyRequest(
     headers.delete(header);
   }
 
+  const upstreamUrl = buildUpstreamUrl(path ?? [], request.nextUrl.search);
+  if (upstreamUrl.hostname.endsWith(".ngrok-free.app")) {
+    headers.set("ngrok-skip-browser-warning", "true");
+  }
+
   const body = ["GET", "HEAD"].includes(request.method)
     ? undefined
     : await request.arrayBuffer();
 
-  const response = await fetch(
-    buildUpstreamUrl(path ?? [], request.nextUrl.search),
-    {
-      method: request.method,
-      headers,
-      body,
-      cache: "no-store",
-      redirect: "manual",
-    },
-  );
+  const response = await fetch(upstreamUrl, {
+    method: request.method,
+    headers,
+    body,
+    cache: "no-store",
+    redirect: "manual",
+  });
 
   const responseHeaders = new Headers(response.headers);
   responseHeaders.delete("content-encoding");
