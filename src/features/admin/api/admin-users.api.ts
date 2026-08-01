@@ -19,6 +19,12 @@ export interface ManagedUserResponse {
   createdAt: string;
 }
 
+export interface CreateExpertProfilePayload {
+  userId: string;
+  clinicId: string;
+  specialization: string;
+}
+
 export interface ClinicResponse {
   id: string;
   name: string;
@@ -44,6 +50,12 @@ export const adminUsersApi = {
       API_ENDPOINTS.USERS.CREATE,
       payload,
     );
+  },
+
+  createExpertProfile: (
+    payload: CreateExpertProfilePayload,
+  ): Promise<AxiosResponse<unknown>> => {
+    return apiClient.post(API_ENDPOINTS.EXPERTS.CREATE, payload);
   },
 
   getUsers: (params?: {

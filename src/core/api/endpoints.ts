@@ -27,6 +27,7 @@ export const API_ENDPOINTS = {
   },
   EXPERTS: {
     LIST: "/experts",
+    CREATE: "/experts",
     ME: "/experts/me",
     DETAIL: (id: string | number) => `/experts/${id}`,
   },

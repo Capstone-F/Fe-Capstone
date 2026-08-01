@@ -35,7 +35,7 @@ import {
 import {
   useClinics,
   useAdminUsers,
-  useCreateUser,
+  useCreateExpert,
   useAdminQuickBook,
 } from "@/features/admin/hooks/useAdminUsers";
 import { useExperts } from "@/features/experts/hooks/useExperts";
@@ -84,7 +84,7 @@ export function ExpertManagementView() {
   });
   const { data: expertsList = [] } = useExperts();
 
-  const createUserMutation = useCreateUser();
+  const createExpertMutation = useCreateExpert();
   const quickBookMutation = useAdminQuickBook();
 
   // Doctor options for Quick Booking dropdown
@@ -137,13 +137,14 @@ export function ExpertManagementView() {
       return;
     }
 
-    createUserMutation.mutate(
+    createExpertMutation.mutate(
       {
         email: fullEmail,
         name: fullName.trim(),
         role: "expert",
         clinicId: selectedClinicId || undefined,
         temporaryPassword,
+        specialization: selectedSpecialty,
       },
       {
         onSuccess: (newUser) => {
@@ -559,10 +560,10 @@ export function ExpertManagementView() {
               <Button
                 type="submit"
                 size="sm"
-                disabled={createUserMutation.isPending}
+                disabled={createExpertMutation.isPending}
                 className="rounded-xl bg-emerald-600 text-xs font-bold text-white shadow-xs hover:bg-emerald-700"
               >
-                {createUserMutation.isPending ? (
+                {createExpertMutation.isPending ? (
                   <Loader2 className="h-4 w-4 animate-spin" />
                 ) : (
                   "Tạo Tài Khoản Bác Sĩ"

@@ -23,6 +23,7 @@ export function useExperts(
     queryKey: queryKeys.experts(filters),
     queryFn: async () => {
       const params: Record<string, string> = {};
+      params.limit = "100";
 
       if (filters) {
         const { specialty, minRating, maxFee, maxDistance, lat, lng } = filters;

@@ -40,6 +40,35 @@ export function useCreateUser() {
   });
 }
 
+export function useCreateExpert() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async (
+      payload: CreateManagedUserPayload & { specialization: string },
+    ) => {
+      if (!payload.clinicId) {
+        throw new Error("Phải chọn phòng khám cho bác sĩ.");
+      }
+
+      const { specialization, ...userPayload } = payload;
+      const userResponse = await adminUsersApi.createUser(userPayload);
+
+      await adminUsersApi.createExpertProfile({
+        userId: userResponse.data.id,
+        clinicId: payload.clinicId,
+        specialization,
+      });
+
+      return userResponse.data;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["admin-users"] });
+      queryClient.invalidateQueries({ queryKey: ["experts"] });
+    },
+  });
+}
+
 export function useCustomers() {
   return useQuery({
     queryKey: ["admin-customers"],
