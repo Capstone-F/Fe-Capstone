@@ -63,7 +63,8 @@ export function ShopNavbar() {
       } catch {
         // Ignore errors if session already cleared
       } finally {
-        queryClient.invalidateQueries({ queryKey: queryKeys.session });
+        queryClient.setQueryData(queryKeys.session, null);
+        queryClient.removeQueries({ queryKey: queryKeys.profile });
         queryClient.invalidateQueries({ queryKey: queryKeys.cart });
         router.push("/login");
         router.refresh();

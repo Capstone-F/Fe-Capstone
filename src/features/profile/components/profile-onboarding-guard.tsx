@@ -52,7 +52,9 @@ export function ProfileOnboardingGuard() {
   const router = useRouter();
   const pathname = usePathname();
   const { data: session, isLoading: isSessionLoading } = useSession();
-  const { data: profile, isLoading: isProfileLoading } = useProfile();
+  const { data: profile, isLoading: isProfileLoading } = useProfile(
+    !isSessionLoading && Boolean(session),
+  );
 
   // Don't render while loading or if not logged in
   if (isSessionLoading || isProfileLoading) return null;

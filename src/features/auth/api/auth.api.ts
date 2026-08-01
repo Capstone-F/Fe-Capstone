@@ -87,11 +87,14 @@ export const authApi = {
   },
 
   logout: async (): Promise<void> => {
-    tokenStorage.clear();
     try {
-      await apiClient.post(API_ENDPOINTS.AUTH.LOGOUT);
+      await apiClient.post(API_ENDPOINTS.AUTH.LOGOUT, undefined, {
+        skipAuthRefresh: true,
+      });
     } catch {
       // Ignore errors if session already destroyed
+    } finally {
+      tokenStorage.clear();
     }
   },
 };

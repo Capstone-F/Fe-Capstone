@@ -29,8 +29,10 @@ import {
 } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useTransition } from "react";
+import { useQueryClient } from "@tanstack/react-query";
 
 import { authApi } from "@/features/auth/api/auth.api";
+import { queryKeys } from "@/lib/query/keys";
 
 function getInitials(name: string): string {
   if (!name) return "GS";
@@ -50,6 +52,7 @@ export function NavUser({
 }) {
   const { isMobile } = useSidebar();
   const router = useRouter();
+  const queryClient = useQueryClient();
   const [isPending, startTransition] = useTransition();
 
   function handleLogout() {
@@ -59,8 +62,9 @@ export function NavUser({
       } catch (error) {
         console.error("Logout error:", error);
       } finally {
-        router.refresh();
-        router.push("/");
+        queryClient.setQueryData(queryKeys.session, null);
+        queryClient.removeQueries({ queryKey: queryKeys.profile });
+        router.replace("/");
       }
     });
   }

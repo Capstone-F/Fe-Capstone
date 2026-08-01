@@ -54,7 +54,8 @@ export function Navbar() {
     } catch {
       // Ignore
     } finally {
-      queryClient.invalidateQueries({ queryKey: queryKeys.session });
+      queryClient.setQueryData(queryKeys.session, null);
+      queryClient.removeQueries({ queryKey: queryKeys.profile });
       queryClient.invalidateQueries({ queryKey: queryKeys.cart });
       window.location.href = "/";
     }
