@@ -211,12 +211,14 @@ export function ConsultationWorkspace({
 
             <TabsContent
               value="video"
+              keepMounted
               className="overflow-hidden border bg-white"
             >
               <ZegoVideoRoom bookingId={bookingId} />
             </TabsContent>
             <TabsContent
               value="chat"
+              keepMounted
               className="overflow-hidden border bg-white"
             >
               <ZegoChatPanel bookingId={bookingId} />

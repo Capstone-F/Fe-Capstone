@@ -13,6 +13,7 @@ interface ChatMessage {
   text: string;
   senderUserID: string;
   timestamp: number;
+  sentStatus?: number;
 }
 
 interface ZegoChatPanelProps {
@@ -31,7 +32,21 @@ function toChatMessage(message: ZIMMessage): ChatMessage | null {
     text: message.message,
     senderUserID: message.senderUserID ?? "",
     timestamp: message.timestamp ?? Date.now(),
+    sentStatus: message.sentStatus,
   };
+}
+
+function getZimErrorMessage(reason: unknown, fallback: string): string {
+  if (reason instanceof Error && reason.message) return reason.message;
+  if (reason && typeof reason === "object") {
+    const zimError = reason as { code?: unknown; message?: unknown };
+    if (typeof zimError.message === "string" && zimError.message) {
+      return typeof zimError.code === "number"
+        ? `${zimError.message} (ZIM ${zimError.code})`
+        : zimError.message;
+    }
+  }
+  return fallback;
 }
 
 export function ZegoChatPanel({ bookingId }: ZegoChatPanelProps) {
@@ -87,6 +102,15 @@ export function ZegoChatPanel({ bookingId }: ZegoChatPanelProps) {
           }
         });
 
+        instance.on("messageSentStatusChanged", (_zim, result) => {
+          const changed = result.infos
+            .map((info) => toChatMessage(info.message))
+            .filter((message): message is ChatMessage => message !== null);
+          if (changed.length) {
+            setMessages((current) => mergeMessages(current, changed));
+          }
+        });
+
         instance.on("tokenWillExpire", (zim) => {
           void consultationApi
             .getChatToken(bookingId)
@@ -121,11 +145,7 @@ export function ZegoChatPanel({ bookingId }: ZegoChatPanelProps) {
       } catch (reason) {
         if (disposed) return;
         instance?.destroy();
-        setError(
-          reason instanceof Error
-            ? reason.message
-            : "Không thể mở cuộc trò chuyện.",
-        );
+        setError(getZimErrorMessage(reason, "Không thể mở cuộc trò chuyện."));
         setStatus("error");
       }
     }
@@ -137,6 +157,7 @@ export function ZegoChatPanel({ bookingId }: ZegoChatPanelProps) {
       zimRef.current = null;
       if (instance) {
         instance.off("messageReceived");
+        instance.off("messageSentStatusChanged");
         instance.off("tokenWillExpire");
         instance.logout();
         instance.destroy();
@@ -171,7 +192,7 @@ export function ZegoChatPanel({ bookingId }: ZegoChatPanelProps) {
       if (sent) setMessages((current) => mergeMessages(current, [sent]));
       setMessageText("");
     } catch (reason) {
-      setError(reason instanceof Error ? reason.message : "Gửi tin nhắn lỗi.");
+      setError(getZimErrorMessage(reason, "Gửi tin nhắn lỗi."));
     } finally {
       setSending(false);
     }
@@ -235,6 +256,7 @@ export function ZegoChatPanel({ bookingId }: ZegoChatPanelProps) {
                 <p
                   className={`mt-1 text-[10px] ${outgoing ? "text-emerald-100" : "text-slate-400"}`}
                 >
+                  {message.sentStatus === 2 ? "Gửi thất bại · " : ""}
                   {new Date(message.timestamp).toLocaleTimeString("vi-VN", {
                     hour: "2-digit",
                     minute: "2-digit",
