@@ -46,6 +46,8 @@ import {
   TabsTrigger,
 } from "@/shared/components/ui/tabs";
 import { DailyCheckInDialog } from "../components/daily-check-in-dialog";
+import { LowStockBanner } from "../components/low-stock-banner";
+import { RestockDialog } from "../components/restock-dialog";
 import { RoutineHistoryPanel } from "../components/routine-history-panel";
 import { RoutineStepItem } from "../components/routine-step-item";
 import { SkipStepDialog } from "../components/skip-step-dialog";
@@ -54,6 +56,8 @@ import {
   PERIOD_LABELS,
   SIDE_EFFECT_LABELS,
 } from "../constants/routine-tracking";
+import { useLowStockSteps } from "../hooks/useLowStockSteps";
+import { useRestockStatus } from "../hooks/useRestockStatus";
 import {
   useCompleteStep,
   useSkipStep,
@@ -65,6 +69,11 @@ import {
   resolveCareHubState,
   shouldPromptCheckIn,
 } from "../lib/care-hub-state";
+import {
+  restockDismissalKey,
+  shouldPromptRestock,
+  summarizeLowStock,
+} from "../lib/restock-prompt";
 import { formatVnLongDate } from "../lib/routine-history";
 import type { RoutinePeriod, TodayStep } from "../types/routine-tracking.types";
 
@@ -137,6 +146,7 @@ export function CareHubPage() {
   );
 
   const [isCheckInOpen, setIsCheckInOpen] = useState(false);
+  const [isRestockOpen, setIsRestockOpen] = useState(false);
   const [stepToSkip, setStepToSkip] = useState<{
     routineId: string;
     step: TodayStep;
@@ -180,6 +190,43 @@ export function CareHubPage() {
     isTodayError,
     sessionState: todayData?.sessionState,
   });
+
+  // Reorder prompt. The backend owns the stock estimate (routine-tracking-flow.md
+  // §4.6); this only reads `warning` off the steps already in cache. Products already
+  // ordered are split out so they neither nag nor count towards the banner.
+  const warnedProducts = useLowStockSteps(todayData);
+  const restock = useRestockStatus(warnedProducts, serverDate);
+  const lowStock = summarizeLowStock(restock.active);
+
+  // Dismissal is keyed by the server's VN calendar date, never the device clock —
+  // the same convention the support-habit ticks use below.
+  const dismissRestock = () => {
+    if (serverDate) {
+      localStorage.setItem(restockDismissalKey(serverDate), serverDate);
+    }
+    setIsRestockOpen(false);
+  };
+
+  // Chained after the check-in dialog rather than racing it: the reorder prompt only
+  // fires once the check-in closes, and at most once per server day.
+  const wasCheckInOpenRef = useRef(false);
+  useEffect(() => {
+    const justClosed = wasCheckInOpenRef.current && !isCheckInOpen;
+    wasCheckInOpenRef.current = isCheckInOpen;
+    if (!serverDate) {
+      return;
+    }
+    if (
+      shouldPromptRestock({
+        hasItems: lowStock.hasItems,
+        checkInJustClosed: justClosed,
+        dismissedDate: localStorage.getItem(restockDismissalKey(serverDate)),
+        serverDate,
+      })
+    ) {
+      setIsRestockOpen(true);
+    }
+  }, [isCheckInOpen, lowStock.hasItems, serverDate]);
 
   const stepEntries = (todayData?.routines ?? []).flatMap((routine) =>
     routine.steps.map((step) => ({ routineId: routine.id, step })),
@@ -479,6 +526,12 @@ export function CareHubPage() {
 
         {/* Tab 1: Routine & Daily Check-in */}
         <TabsContent value="routine" className="space-y-6 outline-none">
+          <LowStockBanner
+            lowCount={lowStock.lowCount}
+            emptyCount={lowStock.emptyCount}
+            topWarning={lowStock.topWarning}
+            onOpen={() => setIsRestockOpen(true)}
+          />
           <div className="grid grid-cols-1 gap-6 md:grid-cols-3">
             {/* Left Side: Period Selector, Habits check-in */}
             <div className="flex flex-col gap-6 md:col-span-1">
@@ -702,6 +755,10 @@ export function CareHubPage() {
                       key={entry.step.id}
                       step={entry.step}
                       index={index}
+                      isRestocking={
+                        entry.step.productVariant !== null &&
+                        restock.restockingIds.has(entry.step.productVariant.id)
+                      }
                       isPending={completeStep.isPending || skipStep.isPending}
                       onComplete={() =>
                         handleCompleteStep(entry.routineId, entry.step.id)
@@ -980,6 +1037,25 @@ export function CareHubPage() {
           onOpenChange={setIsCheckInOpen}
           routineId={primaryRoutine.id}
           period={activePeriod}
+        />
+      )}
+
+      {lowStock.hasItems && (
+        <RestockDialog
+          // Resets the dialog's checked/quantity state when the product set changes,
+          // e.g. after a purchase clears one of them.
+          key={restock.active.map((item) => item.variantId).join("-")}
+          open={isRestockOpen}
+          onOpenChange={(open) => {
+            if (open) {
+              setIsRestockOpen(true);
+              return;
+            }
+            // Closing by any route counts as "later" for today.
+            dismissRestock();
+          }}
+          items={restock.active}
+          onMarkRestocked={restock.markRestocked}
         />
       )}
 
