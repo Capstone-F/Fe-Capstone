@@ -15,9 +15,9 @@ export function ZegoVideoRoom({ bookingId }: ZegoVideoRoomProps) {
   const containerRef = useRef<HTMLDivElement>(null);
   const [attempt, setAttempt] = useState(0);
   const [started, setStarted] = useState(false);
-  const [state, setState] = useState<"idle" | "loading" | "joined" | "error">(
-    "idle",
-  );
+  const [state, setState] = useState<
+    "idle" | "loading" | "ready" | "joined" | "error"
+  >("idle");
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
@@ -45,6 +45,7 @@ export function ZegoVideoRoom({ bookingId }: ZegoVideoRoomProps) {
           data.userName,
         );
         room = ZegoUIKitPrebuilt.create(kitToken);
+        setState("ready");
         room.joinRoom({
           container: containerRef.current,
           scenario: { mode: ZegoUIKitPrebuilt.OneONoneCall },
