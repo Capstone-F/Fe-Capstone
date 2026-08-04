@@ -15,6 +15,7 @@ import {
 } from "lucide-react";
 import { useSession } from "@/features/auth/hooks/useSession";
 import { useCart } from "@/features/commerce/hooks/useCart";
+import { CartConflictIndicator } from "@/features/commerce/components/cart-conflict-indicator";
 import { authApi } from "@/features/auth/api/auth.api";
 import { useQueryClient } from "@tanstack/react-query";
 import { queryKeys } from "@/lib/query/keys";
@@ -35,7 +36,7 @@ export function Navbar() {
   const pathname = usePathname();
   const router = useRouter();
   const session = useSession();
-  const { data: cart } = useCart();
+  const { data: cart, conflicts } = useCart();
   const queryClient = useQueryClient();
 
   const cartCount =
@@ -189,6 +190,11 @@ export function Navbar() {
                     </span>
                   )}
                 </Button>
+                <CartConflictIndicator
+                  conflicts={conflicts}
+                  lines={cart?.lines ?? []}
+                  className="absolute -right-1 -bottom-1"
+                />
               </Link>
             </div>
 
@@ -247,6 +253,11 @@ export function Navbar() {
                 </span>
               )}
             </Button>
+            <CartConflictIndicator
+              conflicts={conflicts}
+              lines={cart?.lines ?? []}
+              className="absolute -right-1 -bottom-1"
+            />
           </Link>
 
           {/* Account Menu / Login Button */}

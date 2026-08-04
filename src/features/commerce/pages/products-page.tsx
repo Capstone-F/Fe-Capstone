@@ -58,6 +58,16 @@ const c = {
 };
 const ALL = "Tất cả";
 
+type SortBy = "newest" | "priceAsc" | "priceDesc";
+
+// Base UI's SelectValue renders the raw value unless the root is given the
+// value -> label pairs, so the same list drives both the trigger and the options.
+const SORT_OPTIONS: Array<{ value: SortBy; label: string }> = [
+  { value: "newest", label: "Mới nhất" },
+  { value: "priceAsc", label: "Giá: Thấp đến Cao" },
+  { value: "priceDesc", label: "Giá: Cao đến Thấp" },
+];
+
 export function ProductsPage() {
   const searchParams = useSearchParams();
   const paramCategoryId = searchParams.get("categoryId");
@@ -80,9 +90,7 @@ export function ProductsPage() {
   const [ingredient, setIngredient] = useState("");
   const [page, setPage] = useState(1);
   const [pageSize, setPageSize] = useState(8);
-  const [sortBy, setSortBy] = useState<"newest" | "priceAsc" | "priceDesc">(
-    "newest",
-  );
+  const [sortBy, setSortBy] = useState<SortBy>("newest");
 
   const { data: categories } = useCategories();
   const session = useSession();
@@ -262,18 +270,19 @@ export function ProductsPage() {
                 Sắp xếp:
               </span>
               <Select
+                items={SORT_OPTIONS}
                 value={sortBy}
-                onValueChange={(v) =>
-                  setSortBy(v as "newest" | "priceAsc" | "priceDesc")
-                }
+                onValueChange={(v) => setSortBy(v as SortBy)}
               >
                 <SelectTrigger className="h-8 w-40 rounded-lg border-slate-200 text-xs font-semibold">
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="newest">Mới nhất</SelectItem>
-                  <SelectItem value="priceAsc">Giá: Thấp đến Cao</SelectItem>
-                  <SelectItem value="priceDesc">Giá: Cao đến Thấp</SelectItem>
+                  {SORT_OPTIONS.map((option) => (
+                    <SelectItem key={option.value} value={option.value}>
+                      {option.label}
+                    </SelectItem>
+                  ))}
                 </SelectContent>
               </Select>
             </div>
