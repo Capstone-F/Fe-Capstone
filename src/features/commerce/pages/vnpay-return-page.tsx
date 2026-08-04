@@ -8,7 +8,10 @@ import { CheckCircle2, Clock, Loader2, XCircle } from "lucide-react";
 import { queryKeys } from "@/lib/query/keys";
 import { paymentsApi } from "@/features/commerce/api/payments.api";
 import { useOrder } from "@/features/commerce/hooks/useOrders";
-import { useGenerateRoutine } from "@/features/profile/hooks/useRoutines";
+import {
+  useGenerateRoutine,
+  useRoutines,
+} from "@/features/profile/hooks/useRoutines";
 import { formatVnd } from "@/shared/utils/format";
 import { CheckoutStepper } from "@/features/commerce/components/checkout-stepper";
 import { Button } from "@/shared/components/ui/button";
@@ -180,19 +183,36 @@ function VnpayReturnContent() {
     }
   }, [succeeded, queryClient]);
 
-  // A paid SURVEY order is the only trigger for POST /routines/generate. Fire it once,
-  // then surface the outcome — a silent failure would leave /care permanently empty.
+  // A paid SURVEY order is the only trigger for POST /routines/generate. Check
+  // sourceOrderId first because the backend intentionally allows regeneration.
+  const isSurveyOrder = succeeded && order?.source === "SURVEY";
   const generateRoutine = useGenerateRoutine();
+  const routinesQuery = useRoutines(isSurveyOrder);
   const generateMutate = generateRoutine.mutate;
   const generatedRef = useRef(false);
-  const isSurveyOrder = succeeded && order?.source === "SURVEY";
+  const existingRoutine = routinesQuery.data?.find(
+    (routine) => routine.sourceOrderId === order?.id,
+  );
+  const routineReady = Boolean(existingRoutine || generateRoutine.data);
 
   useEffect(() => {
-    if (isSurveyOrder && order?.id && !generatedRef.current) {
+    if (
+      isSurveyOrder &&
+      order?.id &&
+      routinesQuery.isSuccess &&
+      !existingRoutine &&
+      !generatedRef.current
+    ) {
       generatedRef.current = true;
       generateMutate(order.id);
     }
-  }, [isSurveyOrder, order?.id, generateMutate]);
+  }, [
+    isSurveyOrder,
+    order?.id,
+    routinesQuery.isSuccess,
+    existingRoutine,
+    generateMutate,
+  ]);
 
   const content = STATE_CONTENT[viewState];
 
@@ -216,13 +236,30 @@ function VnpayReturnContent() {
           )}
           {isSurveyOrder && (
             <div className="mt-2 w-full max-w-md">
-              {generateRoutine.isPending && (
-                <p className="text-muted-foreground flex items-center justify-center gap-2 text-xs">
-                  <Loader2 className="h-3.5 w-3.5 animate-spin" />
-                  Đang tạo lộ trình chăm sóc từ đơn hàng...
-                </p>
+              {(routinesQuery.isLoading || generateRoutine.isPending) &&
+                !routineReady && (
+                  <p className="text-muted-foreground flex items-center justify-center gap-2 text-xs">
+                    <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                    Đang tạo lộ trình chăm sóc từ đơn hàng...
+                  </p>
+                )}
+              {routinesQuery.isError && !routineReady && (
+                <div className="flex flex-col items-center gap-2 rounded-xl border border-amber-200 bg-amber-50 p-3 text-xs text-amber-800">
+                  <span>
+                    Chưa kiểm tra được lộ trình của đơn hàng. Hãy tải lại trước
+                    khi tạo để tránh bị trùng.
+                  </span>
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    className="rounded-lg text-xs font-semibold"
+                    onClick={() => void routinesQuery.refetch()}
+                  >
+                    Kiểm tra lại lộ trình
+                  </Button>
+                </div>
               )}
-              {generateRoutine.isError && (
+              {generateRoutine.isError && !routineReady && (
                 <div className="flex flex-col items-center gap-2 rounded-xl border border-amber-200 bg-amber-50 p-3 text-xs text-amber-800">
                   <span>
                     Chưa tạo được lộ trình chăm sóc cho đơn này. Đơn hàng của
@@ -232,13 +269,17 @@ function VnpayReturnContent() {
                     size="sm"
                     variant="outline"
                     className="rounded-lg text-xs font-semibold"
-                    onClick={() => order && generateMutate(order.id)}
+                    onClick={() => {
+                      if (!order) return;
+                      generatedRef.current = true;
+                      generateMutate(order.id);
+                    }}
                   >
                     Thử tạo lại lộ trình
                   </Button>
                 </div>
               )}
-              {generateRoutine.isSuccess && (
+              {routineReady && (
                 <p className="text-xs font-semibold text-emerald-700">
                   Đã tạo lộ trình chăm sóc hằng ngày cho bạn.
                 </p>
@@ -246,7 +287,7 @@ function VnpayReturnContent() {
             </div>
           )}
           <div className="mt-2 flex gap-2">
-            {isSurveyOrder && generateRoutine.isSuccess && (
+            {isSurveyOrder && routineReady && (
               <Link href="/care">
                 <Button size="sm" className="rounded-lg text-xs font-semibold">
                   {"Xem lộ trình chăm sóc"}
@@ -267,11 +308,7 @@ function VnpayReturnContent() {
             <Link href="/products">
               <Button
                 size="sm"
-                variant={
-                  isSurveyOrder && generateRoutine.isSuccess
-                    ? "outline"
-                    : "default"
-                }
+                variant={isSurveyOrder && routineReady ? "outline" : "default"}
                 className="rounded-lg text-xs font-semibold"
               >
                 {"Tiếp tục mua sắm"}
