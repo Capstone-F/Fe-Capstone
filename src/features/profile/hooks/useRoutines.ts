@@ -5,7 +5,7 @@ import { routinesApi } from "../api/routines.api";
 import { routinesMock } from "../api/routines.mock";
 import type { Routine } from "../types/routine.types";
 
-export function useRoutines() {
+export function useRoutines(enabled = true) {
   return useQuery({
     queryKey: queryKeys.routines,
     queryFn: async (): Promise<Routine[]> => {
@@ -15,6 +15,7 @@ export function useRoutines() {
       const response = await routinesApi.getMyRoutines();
       return response.data;
     },
+    enabled,
   });
 }
 

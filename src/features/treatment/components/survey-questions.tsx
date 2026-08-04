@@ -14,7 +14,6 @@ import { shouldRedirectToLogin } from "@/features/auth/lib/session-access";
 export function SurveyQuestions() {
   const {
     state,
-    updateAnswers,
     setSurveyStep,
     setFlowState,
     startDynamicSurvey,
@@ -66,20 +65,6 @@ export function SurveyQuestions() {
   const currentQ =
     step <= questionsCount ? state.dynamicQuestions[step - 1] : null;
 
-  // Sync answers with legacy Baumann/health fields for fallback routine generator
-  const syncToLegacyAnswers = (qCode: string, labelCode: string) => {
-    const code = labelCode.toUpperCase();
-    if (code === "O" || code === "D")
-      updateAnswers({ baumannOilyDry: code as "O" | "D" });
-    if (code === "S" || code === "R")
-      updateAnswers({ baumannSensitiveResistant: code as "S" | "R" });
-    if (code === "P" || code === "N")
-      updateAnswers({ baumannPigmentNon: code as "P" | "N" });
-    if (code === "W" || code === "T")
-      updateAnswers({ baumannWrinkleTight: code as "W" | "T" });
-    if (code.includes("PREG")) updateAnswers({ pregnancy: "yes" });
-  };
-
   const handleOptionClick = (labelCode: string) => {
     if (!currentQ) return;
     setErrorMsg(null);
@@ -96,7 +81,6 @@ export function SurveyQuestions() {
     }
 
     setDynamicAnswer(currentQ.id, nextSelected);
-    syncToLegacyAnswers(currentQ.code || "", labelCode);
   };
 
   const handleNext = async () => {
