@@ -59,6 +59,8 @@ const IconMap: Record<string, LucideIcon> = {
 
 interface AppSidebarProps extends React.ComponentProps<typeof Sidebar> {
   config: {
+    portal: "admin" | "expert" | "customer";
+    title: string;
     navMain: { title: string; url: string; icon: string }[];
     navSecondary: { title: string; url: string; icon: string }[];
     documents: { name: string; url: string; icon: string }[];
@@ -70,29 +72,8 @@ export function AppSidebar({ config, ...props }: AppSidebarProps) {
   const { data: profile } = useProfile();
 
   const currentUser = session.data || profile || null;
-  const roles: string[] = session.data?.roles || [];
-
-  // Determine portal scope
-  const isExpertPortal =
-    roles.includes("expert") ||
-    config.navMain.some(
-      (item) =>
-        item.url.includes("/expert") || item.url.includes("/treatments"),
-    );
-
-  const isAdminPortal =
-    roles.includes("app_admin") ||
-    roles.includes("staff") ||
-    roles.includes("clinic_manager") ||
-    config.navMain.some((item) => item.url.includes("/dashboard"));
-
-  // Dynamic Header Title
-  let sidebarTitle = "GlowScan Portal";
-  if (isExpertPortal) {
-    sidebarTitle = "GlowScan Expert";
-  } else if (isAdminPortal) {
-    sidebarTitle = "GlowScan Admin";
-  }
+  const isExpertPortal = config.portal === "expert";
+  const isAdminPortal = config.portal === "admin";
 
   // Dynamic User Profile
   const user = {
@@ -133,7 +114,7 @@ export function AppSidebar({ config, ...props }: AppSidebarProps) {
               render={<Link href="/" />}
             >
               <BrandMark asLink={false} showLabel={false} className="gap-0" />
-              <span className="text-base font-semibold">{sidebarTitle}</span>
+              <span className="text-base font-semibold">{config.title}</span>
             </SidebarMenuButton>
           </SidebarMenuItem>
         </SidebarMenu>

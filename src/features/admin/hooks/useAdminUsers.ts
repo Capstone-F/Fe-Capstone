@@ -123,19 +123,23 @@ export function useCreateExpert() {
 
   return useMutation({
     mutationFn: async (
-      payload: CreateManagedUserPayload & { specialization: string },
+      payload: CreateManagedUserPayload & {
+        specialization: string;
+        consultationFee: number;
+      },
     ) => {
       if (!payload.clinicId) {
         throw new Error("Phải chọn phòng khám cho bác sĩ.");
       }
 
-      const { specialization, ...userPayload } = payload;
+      const { consultationFee, specialization, ...userPayload } = payload;
       const userResponse = await adminUsersApi.createUser(userPayload);
 
       await adminUsersApi.createExpertProfile({
         userId: userResponse.data.id,
         clinicId: payload.clinicId,
         specialization,
+        consultationFee,
       });
 
       return userResponse.data;

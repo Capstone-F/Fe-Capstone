@@ -8,6 +8,8 @@
 export const siteConfig = {
   // Config for the general dashboard
   dashboard: {
+    portal: "admin" as const,
+    title: "GlowScan Admin",
     navMain: [
       {
         title: "Quản lý người dùng",
@@ -15,12 +17,12 @@ export const siteConfig = {
         icon: "Users",
       },
       {
-        title: "Quản lý Bác sĩ",
+        title: "Quản lý chuyên gia",
         url: "/dashboard/experts",
         icon: "Users",
       },
       {
-        title: "Workspace Bác sĩ",
+        title: "Cổng chuyên gia",
         url: "/expert",
         icon: "Stethoscope",
       },
@@ -31,6 +33,8 @@ export const siteConfig = {
 
   // Config for user portal
   userPortal: {
+    portal: "customer" as const,
+    title: "GlowScan Portal",
     navMain: [
       {
         title: "Bảng điều khiển & Soi da",
@@ -59,6 +63,8 @@ export const siteConfig = {
 
   // Config for expert portal
   expertPortal: {
+    portal: "expert" as const,
+    title: "GlowScan Expert",
     navMain: [
       {
         title: "Ca Tư Vấn Bệnh Nhân",

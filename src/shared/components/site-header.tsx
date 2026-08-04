@@ -20,7 +20,7 @@ export function SiteHeader() {
   } else if (pathname === "/dashboard") {
     pageTitle = "Quản Lý Người Dùng";
   } else if (pathname === "/dashboard/experts") {
-    pageTitle = "Quản Lý Bác Sĩ";
+    pageTitle = "Quản Lý Chuyên Gia";
   }
 
   return (

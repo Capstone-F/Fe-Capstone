@@ -16,6 +16,8 @@ import {
   Star,
   Wallet as WalletIcon,
   Sparkles,
+  Info,
+  Video,
 } from "lucide-react";
 import { toast } from "sonner";
 
@@ -692,22 +694,52 @@ export function CustomerDashboard() {
                             </div>
 
                             {/* Action Buttons */}
-                            {statusNorm === "PENDING" &&
-                              !booking.isPaid &&
-                              !booking.isFollowUp && (
+                            <div className="flex flex-wrap justify-end gap-2">
+                              {statusNorm === "PENDING" &&
+                                !booking.isPaid &&
+                                !booking.isFollowUp && (
+                                  <Button
+                                    size="sm"
+                                    onClick={() =>
+                                      router.push(
+                                        `/booking/${booking.expertId}/checkout?bookingId=${booking.id}`,
+                                      )
+                                    }
+                                    className="rounded-xl bg-amber-600 text-xs font-bold text-white shadow-xs hover:bg-amber-700"
+                                  >
+                                    <CreditCard className="mr-1.5 h-3.5 w-3.5" />
+                                    Thanh toán ngay
+                                  </Button>
+                                )}
+                              {statusNorm !== "CANCELLED" && (
                                 <Button
                                   size="sm"
-                                  onClick={() =>
-                                    router.push(
-                                      `/booking/${booking.expertId}/checkout?bookingId=${booking.id}`,
-                                    )
+                                  variant={
+                                    statusNorm === "CONFIRMED" ||
+                                    statusNorm === "IN_PROGRESS"
+                                      ? "default"
+                                      : "outline"
                                   }
-                                  className="rounded-xl bg-amber-600 text-xs font-bold text-white shadow-xs hover:bg-amber-700"
+                                  onClick={() =>
+                                    router.push(`/appointments/${booking.id}`)
+                                  }
+                                  className="rounded-xl text-xs font-bold"
                                 >
-                                  <CreditCard className="mr-1.5 h-3.5 w-3.5" />
-                                  Thanh toán ngay
+                                  {statusNorm === "CONFIRMED" ||
+                                  statusNorm === "IN_PROGRESS" ? (
+                                    <Video className="mr-1.5 h-3.5 w-3.5" />
+                                  ) : (
+                                    <Info className="mr-1.5 h-3.5 w-3.5" />
+                                  )}
+                                  {statusNorm === "CONFIRMED" ||
+                                  statusNorm === "IN_PROGRESS"
+                                    ? "Vào phòng tư vấn"
+                                    : statusNorm === "COMPLETED"
+                                      ? "Xem lại ca tư vấn"
+                                      : "Chi tiết"}
                                 </Button>
                               )}
+                            </div>
                             {statusNorm === "COMPLETED" && (
                               <div className="flex flex-wrap items-center gap-1.5">
                                 {!booking.feedback && (

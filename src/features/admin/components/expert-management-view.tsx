@@ -71,6 +71,7 @@ export function ExpertManagementView() {
   const [temporaryPassword, setTemporaryPassword] = useState("password123");
   const [selectedClinicId, setSelectedClinicId] = useState("");
   const [selectedSpecialty, setSelectedSpecialty] = useState("DERMATOLOGY");
+  const [consultationFee, setConsultationFee] = useState("300000");
 
   // Form State: Quick Book Cheat
   const defaultDateStr = () => {
@@ -118,6 +119,7 @@ export function ExpertManagementView() {
     setEmailPrefix("");
     setFullName("");
     setTemporaryPassword("password123");
+    setConsultationFee("300000");
     if (clinics.length > 0) {
       setSelectedClinicId(clinics[0].id);
     }
@@ -136,12 +138,18 @@ export function ExpertManagementView() {
     }
 
     if (!fullName.trim()) {
-      toast.error("Vui lòng nhập Họ & Tên Bác sĩ.");
+      toast.error("Vui lòng nhập họ và tên chuyên gia.");
       return;
     }
 
     if (!temporaryPassword.trim()) {
       toast.error("Vui lòng nhập Mật khẩu tạm thời.");
+      return;
+    }
+
+    const fee = Number(consultationFee);
+    if (!Number.isInteger(fee) || fee <= 0) {
+      toast.error("Phí tư vấn phải là số nguyên lớn hơn 0 đồng.");
       return;
     }
 
@@ -153,15 +161,16 @@ export function ExpertManagementView() {
         clinicId: selectedClinicId || undefined,
         temporaryPassword,
         specialization: selectedSpecialty,
+        consultationFee: fee,
       },
       {
         onSuccess: (newUser) => {
-          toast.success(`Tạo tài khoản Bác sĩ ${newUser.name} thành công! 🎉`);
+          toast.success(`Tạo tài khoản chuyên gia ${newUser.name} thành công!`);
           setIsCreateExpertOpen(false);
         },
         onError: (err: unknown) => {
           const msg =
-            (err as Error)?.message || "Không thể tạo tài khoản Bác sĩ.";
+            (err as Error)?.message || "Không thể tạo tài khoản chuyên gia.";
           toast.error(msg);
         },
       },
@@ -179,7 +188,7 @@ export function ExpertManagementView() {
   const handleExecuteQuickBook = (e: React.FormEvent) => {
     e.preventDefault();
     if (!quickExpertId) {
-      toast.error("Vui lòng chọn Bác sĩ phụ trách.");
+      toast.error("Vui lòng chọn chuyên gia phụ trách.");
       return;
     }
 
@@ -194,10 +203,10 @@ export function ExpertManagementView() {
       {
         onSuccess: () => {
           toast.success(
-            "⚡ Tạo Ca Hẹn Cheat Thành Công! Ca hẹn ở trạng thái PENDING.",
+            "Tạo ca hẹn nhanh thành công. Ca hẹn đang chờ xác nhận.",
             {
               action: {
-                label: "Mở Workspace Bác Sĩ (/expert)",
+                label: "Mở cổng chuyên gia",
                 onClick: () => window.open("/expert", "_blank"),
               },
             },
@@ -213,7 +222,7 @@ export function ExpertManagementView() {
   };
 
   const handleCopyCredentials = (email: string, id: string) => {
-    const text = `Tài khoản Bác sĩ:\nEmail: ${email}\nMật khẩu: ${temporaryPassword}`;
+    const text = `Tài khoản chuyên gia:\nEmail: ${email}\nMật khẩu: ${temporaryPassword}`;
     navigator.clipboard.writeText(text);
     setCopiedId(id);
     toast.success("Đã sao chép thông tin đăng nhập!");
@@ -236,21 +245,19 @@ export function ExpertManagementView() {
       <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <div>
           <h2 className="text-2xl font-bold text-slate-900">
-            Quản Lý & Tạo Tài Khoản Bác Sĩ (Expert Portal)
+            Quản lý tài khoản chuyên gia
           </h2>
           <p className="text-sm text-slate-500">
-            Tạo tài khoản Bác sĩ mới, tạo ca hẹn Cheat 1-Click để test luồng
-            Chấp Nhận Lịch Hẹn nhanh chóng.
+            Tạo tài khoản chuyên gia và quản lý các công cụ hỗ trợ đặt lịch.
           </p>
         </div>
         <div className="flex flex-wrap items-center gap-2">
-          {/* Quick Book Cheat Button */}
+          {/* Quick booking helper */}
           <Button
             onClick={handleOpenQuickBookModal}
             className="rounded-xl bg-amber-500 text-xs font-bold text-white shadow-xs hover:bg-amber-600"
           >
-            <Zap className="mr-1.5 h-4 w-4 fill-white" />⚡ Tạo Ca Hẹn Cheat
-            (1-Click)
+            <Zap className="mr-1.5 h-4 w-4 fill-white" /> Tạo ca hẹn nhanh
           </Button>
 
           <Link href="/expert" target="_blank">
@@ -259,7 +266,7 @@ export function ExpertManagementView() {
               className="rounded-xl border-slate-200 text-xs font-semibold text-slate-700 hover:bg-slate-50"
             >
               <ExternalLink className="mr-1.5 h-3.5 w-3.5 text-emerald-600" />
-              Mở /expert
+              Mở cổng chuyên gia
             </Button>
           </Link>
 
@@ -267,7 +274,7 @@ export function ExpertManagementView() {
             onClick={handleOpenCreateExpertModal}
             className="rounded-xl bg-emerald-600 text-xs font-bold text-white shadow-xs hover:bg-emerald-700"
           >
-            <UserPlus className="mr-1.5 h-4 w-4" />➕ Tạo Bác Sĩ Mới
+            <UserPlus className="mr-1.5 h-4 w-4" /> Tạo chuyên gia mới
           </Button>
         </div>
       </div>
@@ -280,7 +287,7 @@ export function ExpertManagementView() {
           </div>
           <div>
             <p className="text-xs font-semibold text-slate-500">
-              Tổng số Bác sĩ
+              Tổng số chuyên gia
             </p>
             <p className="text-2xl font-bold text-slate-900">{users.length}</p>
           </div>
@@ -305,10 +312,10 @@ export function ExpertManagementView() {
             <Zap className="h-6 w-6" />
           </div>
           <div>
-            <p className="text-xs font-semibold text-slate-500">Công cụ Test</p>
-            <p className="text-sm font-bold text-amber-600">
-              Quick Book Cheat Sẵn Sàng
+            <p className="text-xs font-semibold text-slate-500">
+              Công cụ đặt lịch
             </p>
+            <p className="text-sm font-bold text-amber-600">Tạo ca hẹn nhanh</p>
           </div>
         </div>
       </div>
@@ -317,7 +324,7 @@ export function ExpertManagementView() {
       <div className="space-y-4 rounded-2xl border border-slate-200/80 bg-white p-6 shadow-sm">
         <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
           <h3 className="font-heading text-base font-bold text-slate-900">
-            Danh Sách Tài Khoản Bác Sĩ
+            Danh sách tài khoản chuyên gia
           </h3>
           <div className="relative w-full sm:w-64">
             <Search className="absolute top-1/2 left-3 h-4 w-4 -translate-y-1/2 text-slate-400" />
@@ -335,21 +342,21 @@ export function ExpertManagementView() {
           <div className="flex h-48 flex-col items-center justify-center gap-2 text-center text-slate-500">
             <Loader2 className="h-8 w-8 animate-spin text-emerald-600" />
             <p className="text-xs font-semibold">
-              Đang nạp danh sách tài khoản Bác sĩ...
+              Đang tải danh sách tài khoản chuyên gia...
             </p>
           </div>
         ) : filteredUsers.length === 0 ? (
           <div className="flex h-48 flex-col items-center justify-center gap-2 rounded-xl border border-dashed border-slate-200 p-8 text-center text-slate-400">
             <User className="h-8 w-8 text-slate-300" />
             <p className="text-xs font-semibold">
-              Chưa có tài khoản Bác sĩ nào được tạo.
+              Chưa có tài khoản chuyên gia nào.
             </p>
             <Button
               size="sm"
               onClick={handleOpenCreateExpertModal}
               className="mt-2 rounded-xl bg-emerald-600 text-xs font-bold text-white"
             >
-              ➕ Tạo Bác Sĩ Đầu Tiên
+              Tạo chuyên gia đầu tiên
             </Button>
           </div>
         ) : (
@@ -357,7 +364,7 @@ export function ExpertManagementView() {
             <table className="w-full text-left text-xs">
               <thead className="bg-slate-50 font-bold text-slate-700">
                 <tr>
-                  <th className="px-4 py-3">Họ và Tên Bác Sĩ</th>
+                  <th className="px-4 py-3">Họ và tên chuyên gia</th>
                   <th className="px-4 py-3">Email Đăng Nhập</th>
                   <th className="px-4 py-3">Vai Trò</th>
                   <th className="px-4 py-3">Phòng Khám Phân Công</th>
@@ -386,7 +393,7 @@ export function ExpertManagementView() {
                           variant="outline"
                           className="border-emerald-200 bg-emerald-50 text-[10px] font-bold text-emerald-800"
                         >
-                          Expert / Bác Sĩ
+                          Chuyên gia
                         </Badge>
                       </td>
                       <td className="px-4 py-3">
@@ -435,10 +442,10 @@ export function ExpertManagementView() {
         <DialogContent className="sm:max-w-lg">
           <DialogHeader>
             <DialogTitle className="text-lg font-bold text-slate-900">
-              ➕ Tạo Tài Khoản Bác Sĩ Mới (Create Expert Account)
+              Tạo tài khoản chuyên gia mới
             </DialogTitle>
             <DialogDescription className="text-xs text-slate-500">
-              Nhập thông tin tài khoản cho Bác sĩ. Mật khẩu tạm thời sẽ được
+              Nhập thông tin tài khoản chuyên gia. Mật khẩu tạm thời sẽ được
               dùng để đăng nhập tại `/login`.
             </DialogDescription>
           </DialogHeader>
@@ -488,7 +495,7 @@ export function ExpertManagementView() {
             {/* Full Name */}
             <div className="space-y-1.5">
               <label className="text-xs font-bold text-slate-700">
-                Họ và Tên Bác Sĩ <span className="text-red-500">*</span>
+                Họ và tên chuyên gia <span className="text-red-500">*</span>
               </label>
               <div className="relative">
                 <User className="absolute top-1/2 left-3 h-4 w-4 -translate-y-1/2 text-slate-400" />
@@ -568,6 +575,30 @@ export function ExpertManagementView() {
               )}
             </div>
 
+            <div className="space-y-1.5">
+              <Label
+                htmlFor="expert-consultation-fee"
+                className="text-xs font-bold text-slate-700"
+              >
+                Phí tư vấn (VND) <span className="text-red-500">*</span>
+              </Label>
+              <Input
+                id="expert-consultation-fee"
+                type="number"
+                min={1}
+                step={10000}
+                value={consultationFee}
+                onChange={(event) => setConsultationFee(event.target.value)}
+                className="rounded-xl border-slate-200 text-xs"
+                required
+              />
+              <p className="text-[11px] text-slate-500">
+                Khách hàng sẽ thanh toán{" "}
+                {Number(consultationFee || 0).toLocaleString("vi-VN")}đ cho mỗi
+                ca tư vấn thường.
+              </p>
+            </div>
+
             <DialogFooter className="gap-2 pt-2">
               <Button
                 type="button"
@@ -587,7 +618,7 @@ export function ExpertManagementView() {
                 {createExpertMutation.isPending ? (
                   <Loader2 className="h-4 w-4 animate-spin" />
                 ) : (
-                  "Tạo Tài Khoản Bác Sĩ"
+                  "Tạo tài khoản chuyên gia"
                 )}
               </Button>
             </DialogFooter>
@@ -600,13 +631,12 @@ export function ExpertManagementView() {
         <DialogContent className="sm:max-w-md">
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2 text-base font-bold text-amber-900">
-              <Zap className="h-5 w-5 fill-amber-500 text-amber-500" />⚡ Tạo Ca
-              Hẹn Cheat 1-Click (Admin Quick Book)
+              <Zap className="h-5 w-5 fill-amber-500 text-amber-500" /> Tạo ca
+              hẹn nhanh
             </DialogTitle>
             <DialogDescription className="text-xs text-slate-500">
-              Tạo nhanh ca hẹn ở trạng thái{" "}
-              <strong className="text-amber-700">PENDING</strong> gán cho Bác sĩ
-              để test ngay nút Chấp Nhận Lịch Hẹn tại `/expert`.
+              Tạo nhanh ca hẹn ở trạng thái Tạo một ca hẹn ở trạng thái chờ xác
+              nhận và gán cho chuyên gia đã chọn.
             </DialogDescription>
           </DialogHeader>
 
@@ -614,14 +644,15 @@ export function ExpertManagementView() {
             {/* Select Expert */}
             <div className="space-y-1.5">
               <label className="text-xs font-bold text-slate-700">
-                Chọn Bác Sĩ Phụ Trách <span className="text-red-500">*</span>
+                Chọn chuyên gia phụ trách{" "}
+                <span className="text-red-500">*</span>
               </label>
               <Select
                 value={quickExpertId}
                 onValueChange={(value) => setQuickExpertId(value ?? "")}
               >
                 <SelectTrigger className="w-full">
-                  <SelectValue placeholder="Chọn bác sĩ" />
+                  <SelectValue placeholder="Chọn chuyên gia" />
                 </SelectTrigger>
                 <SelectContent>
                   {doctorOptions.map((doc) => (
@@ -687,8 +718,8 @@ export function ExpertManagementView() {
                   <Loader2 className="h-4 w-4 animate-spin" />
                 ) : (
                   <>
-                    <Zap className="mr-1.5 h-3.5 w-3.5 fill-white" />⚡ Tạo Ca
-                    Hẹn Ngay
+                    <Zap className="mr-1.5 h-3.5 w-3.5 fill-white" /> Tạo ca hẹn
+                    ngay
                   </>
                 )}
               </Button>

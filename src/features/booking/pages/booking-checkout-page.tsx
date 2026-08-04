@@ -13,6 +13,7 @@ import {
   CheckCircle2,
 } from "lucide-react";
 import { useBookingDetail } from "@/features/booking/hooks/useBooking";
+import { useExpertDetail } from "@/features/experts/hooks/useExperts";
 import {
   useWallet,
   usePayConsultation,
@@ -37,10 +38,19 @@ function CheckoutPageContent() {
 
   const { data: booking, isLoading, error } = useBookingDetail(bookingId);
   const { data: wallet, isLoading: isLoadingWallet } = useWallet();
+  const expertDetail = useExpertDetail(
+    booking?.expertId ?? "",
+    Boolean(booking?.expertId && !booking?.isFollowUp && !booking?.isPaid),
+  );
   const payConsultationMutation = usePayConsultation();
 
   const [topUpModalOpen, setTopUpModalOpen] = useState(false);
   const [countdown, setCountdown] = useState(600);
+  const payableFee = booking?.isFollowUp
+    ? 0
+    : booking?.isPaid
+      ? booking.feeChargedVnd
+      : (expertDetail.data?.fee ?? 0);
 
   useEffect(() => {
     if (countdown <= 0) return;
@@ -75,8 +85,15 @@ function CheckoutPageContent() {
   const handleWalletPayment = async () => {
     if (!bookingId || !booking) return;
 
-    const amount = booking.amount || 200000;
+    const amount = payableFee;
     const balance = wallet?.balanceVnd || 0;
+
+    if (!booking.isFollowUp && amount <= 0) {
+      toast.error(
+        "Chuyên gia chưa thiết lập phí tư vấn. Vui lòng chọn chuyên gia khác hoặc liên hệ hỗ trợ.",
+      );
+      return;
+    }
 
     if (balance < amount) {
       toast.error(
@@ -101,7 +118,7 @@ function CheckoutPageContent() {
     }
   };
 
-  if (isLoading || isLoadingWallet) {
+  if (isLoading || isLoadingWallet || expertDetail.isLoading) {
     return (
       <div className="mx-auto flex max-w-lg flex-col items-center justify-center p-12 text-slate-500">
         <Loader2 className="mb-3 h-8 w-8 animate-spin text-emerald-600" />
@@ -126,12 +143,13 @@ function CheckoutPageContent() {
     );
   }
 
-  const consultationFee = booking.isFollowUp
-    ? 0
-    : booking.feeChargedVnd || booking.amount || 200000;
+  const consultationFee = booking.isFollowUp ? 0 : payableFee;
   const walletBalance = wallet?.balanceVnd || 0;
+  const hasPayableFee =
+    booking.isFollowUp || booking.isPaid || consultationFee > 0;
   const isBalanceEnough =
-    booking.isFollowUp || booking.isPaid || walletBalance >= consultationFee;
+    hasPayableFee &&
+    (booking.isFollowUp || booking.isPaid || walletBalance >= consultationFee);
 
   return (
     <div className="mx-auto flex w-full max-w-md flex-col gap-4">
@@ -221,7 +239,12 @@ function CheckoutPageContent() {
               </strong>
             </div>
 
-            {isBalanceEnough ? (
+            {!hasPayableFee || expertDetail.isError ? (
+              <div className="text-[11px] font-semibold text-red-700">
+                Không thể thanh toán vì phí tư vấn của chuyên gia chưa được
+                thiết lập hợp lệ.
+              </div>
+            ) : isBalanceEnough ? (
               <div className="flex items-center gap-1.5 text-[11px] font-semibold text-emerald-700">
                 <CheckCircle2 className="h-4 w-4 text-emerald-600" />
                 Số dư khả dụng đủ để thanh toán ca hẹn.

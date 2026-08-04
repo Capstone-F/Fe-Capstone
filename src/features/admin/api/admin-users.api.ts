@@ -27,6 +27,7 @@ export interface CreateExpertProfilePayload {
   userId: string;
   clinicId: string;
   specialization: string;
+  consultationFee: number;
 }
 
 export interface ClinicResponse {
