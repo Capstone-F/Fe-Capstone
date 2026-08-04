@@ -1,3 +1,4 @@
+import type { CartLine } from "@/types/domain";
 import type { CartConflict } from "../types/cart.types";
 
 /**
@@ -46,4 +47,40 @@ export function conflictMessage(conflict: CartConflict): string {
     conflict.reason ||
     `${conflict.protocolCode} + ${conflict.conflictingProtocolCode}`
   );
+}
+
+export interface ConflictPairSummary {
+  key: string;
+  message: string;
+  /** Product names behind protocolCode; empty when a variant is unresolved. */
+  productNames: string[];
+  /** Product names behind conflictingProtocolCode. */
+  conflictingProductNames: string[];
+}
+
+/**
+ * Name the products on each side of a conflict, for compact surfaces (navbar
+ * tooltip) where protocol codes mean nothing to the customer.
+ */
+export function describeConflicts(
+  conflicts: CartConflict[],
+  lines: CartLine[],
+): ConflictPairSummary[] {
+  const nameByVariantId = new Map(
+    lines.map((line) => [line.variant.id, line.product.name]),
+  );
+  const namesOf = (variantIds: string[]): string[] => [
+    ...new Set(
+      variantIds
+        .map((id) => nameByVariantId.get(id))
+        .filter((name): name is string => Boolean(name)),
+    ),
+  ];
+
+  return dedupeConflicts(conflicts).map((conflict) => ({
+    key: `${conflict.protocolCode}-${conflict.conflictingProtocolCode}`,
+    message: conflictMessage(conflict),
+    productNames: namesOf(conflict.productVariantIds),
+    conflictingProductNames: namesOf(conflict.conflictingProductVariantIds),
+  }));
 }

@@ -13,6 +13,7 @@ import {
 } from "lucide-react";
 
 import { useCart } from "@/features/commerce/hooks/useCart";
+import { CartConflictIndicator } from "@/features/commerce/components/cart-conflict-indicator";
 import { useMergeGuestCartOnLogin } from "@/features/commerce/hooks/useMergeGuestCartOnLogin";
 import { useSession } from "@/features/auth/hooks/useSession";
 import { authApi } from "@/features/auth/api/auth.api";
@@ -30,7 +31,7 @@ import {
 } from "@/shared/components/ui/dropdown-menu";
 
 export function ShopNavbar() {
-  const { data: cart } = useCart();
+  const { data: cart, conflicts } = useCart();
   const session = useSession();
   const pathname = usePathname();
   const router = useRouter();
@@ -104,7 +105,14 @@ export function ShopNavbar() {
             href="/cart"
             className="text-muted-foreground hover:text-primary relative flex items-center gap-1.5 text-sm font-medium transition-colors"
           >
-            <ShoppingCart className="h-4 w-4" />
+            <span className="relative flex items-center">
+              <ShoppingCart className="h-4 w-4" />
+              <CartConflictIndicator
+                conflicts={conflicts}
+                lines={cart?.lines ?? []}
+                className="absolute -right-1.5 -bottom-1.5"
+              />
+            </span>
             {n.cart}
             {itemCount > 0 && (
               <Badge className="absolute -top-2 -right-3 h-4 min-w-4 justify-center px-1 text-[10px]">
