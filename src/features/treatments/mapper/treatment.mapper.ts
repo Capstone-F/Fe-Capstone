@@ -81,7 +81,12 @@ export function mapBackendTreatmentToFrontend(
   const phases = [...(treatment.phases ?? [])]
     .sort((a, b) => a.phaseOrder - b.phaseOrder)
     .map(mapBackendPhase);
-  const totalPriceVnd = toMoney(treatment.totalPriceVnd);
+  const calculatedPhaseTotal = phases.reduce(
+    (sum, phase) => sum + (phase.priceVnd ?? 0),
+    0,
+  );
+  const totalPriceVnd =
+    toMoney(treatment.totalPriceVnd) ?? calculatedPhaseTotal;
 
   return {
     id: treatment.id,
