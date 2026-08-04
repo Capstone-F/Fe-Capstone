@@ -8,6 +8,8 @@ import {
   useUpdateQuantity,
 } from "@/features/commerce/hooks/useCart";
 import { CartItemRow } from "@/features/commerce/components/cart-item-row";
+import { CartConflictAlert } from "@/features/commerce/components/cart-conflict-alert";
+import { collectConflictingVariantIds } from "@/features/commerce/lib/cart-conflicts";
 import { OrderSummary } from "@/features/commerce/components/order-summary";
 import { Skeleton } from "@/shared/components/ui/skeleton";
 import { EmptyState } from "@/shared/components/ui/empty-state";
@@ -31,11 +33,12 @@ const cc = {
 
 export function CartPage() {
   const router = useRouter();
-  const { data: cart, isLoading } = useCart();
+  const { data: cart, conflicts, isLoading } = useCart();
   const updateQuantity = useUpdateQuantity();
   const removeFromCart = useRemoveFromCart();
 
   const lines = cart?.lines ?? [];
+  const conflictingVariantIds = collectConflictingVariantIds(conflicts);
 
   return (
     <div className="mx-auto flex w-full max-w-5xl flex-col gap-6">
@@ -73,10 +76,12 @@ export function CartPage() {
                 {cart.unresolvedVariantIds.length} {cc.unresolvedItemsNote}
               </p>
             )}
+            <CartConflictAlert conflicts={conflicts} />
             {lines.map((line) => (
               <CartItemRow
                 key={line.variant.id}
                 line={line}
+                hasConflict={conflictingVariantIds.has(line.variant.id)}
                 onUpdateQuantity={(variantId, quantity) =>
                   updateQuantity.mutate({
                     productVariantId: variantId,

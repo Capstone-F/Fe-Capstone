@@ -21,8 +21,29 @@ export interface CartSummary {
   unresolvedVariantIds: string[];
 }
 
+export type ConflictSeverity = "LOW" | "MEDIUM" | "HIGH";
+
+/**
+ * A soft ingredient-protocol conflict between two products currently in the
+ * cart. Informational only — it never blocks add-to-cart or checkout.
+ */
+export interface CartConflict {
+  protocolCode: string;
+  conflictingProtocolCode: string;
+  severity: ConflictSeverity;
+  /** Vietnamese warning text — the primary UI copy. */
+  description: string;
+  /** English internal reason; may be absent. */
+  reason: string | null;
+  /** Cart variant ids whose product maps to protocolCode. */
+  productVariantIds: string[];
+  /** Cart variant ids whose product maps to conflictingProtocolCode. */
+  conflictingProductVariantIds: string[];
+}
+
 export interface CartResponse {
   source: "SURVEY" | "CATALOG" | null;
   surveyRecommendationId: string | null;
   items: CartItem[];
+  conflicts: CartConflict[];
 }

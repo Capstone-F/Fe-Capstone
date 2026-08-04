@@ -1,8 +1,9 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { queryKeys } from "@/lib/query/keys";
-import type { CartSummary } from "@/types/domain";
+import type { CartItem, CartSummary } from "@/types/domain";
 import { useSession } from "@/features/auth/hooks/useSession";
 import { cartApi } from "../api/cart.api";
+import type { CartConflict } from "../types/cart.types";
 import { customersApi } from "../api/customers.api";
 import { productsApi } from "../api/products.api";
 import {
@@ -56,6 +57,8 @@ async function getAllProducts() {
 
 export function useCart(): {
   data: CartSummary | undefined;
+  /** Soft ingredient conflicts from the BE — informational, never blocking. */
+  conflicts: CartConflict[];
   isLoading: boolean;
   error: unknown;
 } {
@@ -64,13 +67,20 @@ export function useCart(): {
 
   const itemsQuery = useQuery({
     queryKey: queryKeys.cart,
-    queryFn: async () => {
+    queryFn: async (): Promise<{
+      items: CartItem[];
+      conflicts: CartConflict[];
+    }> => {
       if (isAuthed) {
         await ensureProvisionedOnce();
         const response = await cartApi.getCart();
-        return response.data.items;
+        return {
+          items: response.data.items,
+          conflicts: response.data.conflicts ?? [],
+        };
       }
-      return readGuestCart();
+      // Guest carts live in localStorage — the BE never sees them, so no conflicts.
+      return { items: readGuestCart(), conflicts: [] };
     },
     enabled: !session.isLoading,
   });
@@ -83,11 +93,12 @@ export function useCart(): {
 
   const data =
     itemsQuery.data && poolQuery.data
-      ? hydrateCart(itemsQuery.data, indexProductVariants(poolQuery.data))
+      ? hydrateCart(itemsQuery.data.items, indexProductVariants(poolQuery.data))
       : undefined;
 
   return {
     data,
+    conflicts: itemsQuery.data?.conflicts ?? [],
     isLoading: session.isLoading || itemsQuery.isLoading || poolQuery.isLoading,
     error: itemsQuery.error ?? poolQuery.error,
   };

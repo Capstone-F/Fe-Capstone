@@ -4,23 +4,36 @@ import Link from "next/link";
 import { Minus, Plus, Trash2 } from "lucide-react";
 import { CartLine } from "@/types/domain";
 import { formatVnd } from "@/shared/utils/format";
+import { cn } from "@/lib/utils";
 import { CategoryPlaceholder } from "./category-placeholder";
 import { Button } from "@/shared/components/ui/button";
+
+const cc = {
+  conflictHint: "Có lưu ý khi kết hợp với sản phẩm khác trong giỏ",
+};
 
 interface CartItemRowProps {
   line: CartLine;
   onUpdateQuantity: (productVariantId: string, quantity: number) => void;
   onRemove: (productVariantId: string) => void;
+  /** Marks the line as part of a soft ingredient conflict; purely visual. */
+  hasConflict?: boolean;
 }
 
 export function CartItemRow({
   line,
   onUpdateQuantity,
   onRemove,
+  hasConflict = false,
 }: CartItemRowProps) {
   const { product, variant, quantity, lineTotal } = line;
   return (
-    <div className="flex gap-3 rounded-xl border border-slate-200 bg-white p-3">
+    <div
+      className={cn(
+        "flex gap-3 rounded-xl border bg-white p-3",
+        hasConflict ? "border-warning/60" : "border-slate-200",
+      )}
+    >
       <Link
         href={`/products/${product.id}`}
         className="relative h-20 w-20 shrink-0 overflow-hidden rounded-lg bg-slate-50"
@@ -40,6 +53,11 @@ export function CartItemRow({
         <span className="text-sm font-bold text-slate-800">
           {formatVnd(lineTotal)}
         </span>
+        {hasConflict && (
+          <span className="text-warning text-[11px] font-medium">
+            {cc.conflictHint}
+          </span>
+        )}
       </div>
       <div className="flex flex-col items-end justify-between">
         <Button
