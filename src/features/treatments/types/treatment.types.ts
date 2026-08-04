@@ -158,6 +158,7 @@ export interface TreatmentPlan {
   startDate: string | null;
   endDate: string | null;
   totalPriceVnd: number | null;
+  submittedAt: string | null;
   paidAt: string | null;
   paidTransactionId: string | null;
   sourceConsultationId: string | null;
@@ -169,7 +170,8 @@ export interface TreatmentPlan {
   phases: TreatmentPhase[];
   createdAt: string;
   updatedAt: string;
-  readyForPayment: boolean;
+  canSubmitForPayment: boolean;
+  isSubmittedForPayment: boolean;
 }
 
 export interface CreateTreatmentPayload {

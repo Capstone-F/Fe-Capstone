@@ -22,7 +22,10 @@ import {
   useCompleteBooking,
   useStartBooking,
 } from "@/features/booking/hooks/useBooking";
-import { useTreatmentChart } from "@/features/treatments/hooks/useTreatments";
+import {
+  useTreatmentChart,
+  useTreatmentPlans,
+} from "@/features/treatments/hooks/useTreatments";
 import type { TreatmentStatus } from "@/features/treatments/types/treatment.types";
 import { Button } from "@/shared/components/ui/button";
 import { Badge } from "@/shared/components/ui/badge";
@@ -67,6 +70,13 @@ export function ConsultationWorkspace({
     bookingId,
     perspective === "expert",
   );
+  const expertTreatments = useTreatmentPlans(
+    "expert",
+    {},
+    {
+      enabled: perspective === "expert" && Boolean(booking?.customerId),
+    },
+  );
 
   if (isLoading) {
     return (
@@ -96,6 +106,24 @@ export function ConsultationWorkspace({
     perspective === "expert" ? booking.customerName : booking.expertName;
   const backPath =
     perspective === "expert" ? "/expert" : "/profile?tab=appointments";
+  const customerId = booking.customerId;
+  const customerName = booking.customerName || "Khách hàng";
+  const consultationId = booking.id;
+  const existingTreatment = expertTreatments.data?.find(
+    (plan) => plan.customerId === customerId,
+  );
+
+  function openTreatmentBuilder() {
+    const query = new URLSearchParams({
+      customerId,
+      customerName,
+      sourceConsultationId: consultationId,
+    });
+    if (existingTreatment) {
+      query.set("treatmentId", existingTreatment.id);
+    }
+    router.push(`/expert/treatments/builder?${query.toString()}`);
+  }
 
   async function startConsultation() {
     try {
@@ -168,14 +196,15 @@ export function ConsultationWorkspace({
                 booking.status === "completed") && (
                 <Button
                   variant="outline"
-                  onClick={() =>
-                    router.push(
-                      `/expert/treatments/builder?customerId=${booking.customerId}&customerName=${encodeURIComponent(booking.customerName || "Khách hàng")}&sourceConsultationId=${booking.id}`,
-                    )
-                  }
+                  onClick={openTreatmentBuilder}
+                  disabled={expertTreatments.isLoading}
                 >
-                  <ClipboardPlus className="mr-2 h-4 w-4" />
-                  Lập phác đồ
+                  {expertTreatments.isLoading ? (
+                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  ) : (
+                    <ClipboardPlus className="mr-2 h-4 w-4" />
+                  )}
+                  {existingTreatment ? "Mở phác đồ" : "Lập phác đồ"}
                 </Button>
               )}
               {booking.status === "in_progress" && (

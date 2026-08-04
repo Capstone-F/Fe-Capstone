@@ -26,6 +26,11 @@ import {
   useTreatmentPlans,
 } from "../hooks/useTreatments";
 import type { TreatmentPhase, TreatmentPlan } from "../types/treatment.types";
+import {
+  getTreatmentStatusLabel,
+  treatmentPhaseStatusLabel,
+  treatmentPhaseTypeLabel,
+} from "../lib/treatment-labels";
 import { Badge } from "@/shared/components/ui/badge";
 import { Button } from "@/shared/components/ui/button";
 import {
@@ -91,7 +96,8 @@ export function CustomerTreatmentView() {
           Chưa có phác đồ điều trị
         </h3>
         <p className="mt-1 text-sm text-slate-500">
-          Đặt lịch tư vấn để chuyên gia đánh giá và lập phác đồ theo phase.
+          Đặt lịch tư vấn để chuyên gia đánh giá và lập phác đồ theo từng giai
+          đoạn.
         </p>
         <Button className="mt-4" onClick={() => router.push("/experts")}>
           Tìm chuyên gia
@@ -196,11 +202,7 @@ function TreatmentHeader({
             <h2 className="text-lg font-semibold text-slate-950">
               {plan.title}
             </h2>
-            <Badge variant="outline">
-              {plan.status === "DRAFT" && plan.readyForPayment
-                ? "Chờ thanh toán"
-                : plan.status}
-            </Badge>
+            <Badge variant="outline">{getTreatmentStatusLabel(plan)}</Badge>
           </div>
           <p className="mt-2 max-w-3xl text-sm text-slate-600">
             {plan.description || "Không có mô tả."}
@@ -214,13 +216,13 @@ function TreatmentHeader({
               <WalletCards className="h-3.5 w-3.5" />{" "}
               {formatVnd(plan.totalPriceVnd ?? 0)}
             </span>
-            <span>{plan.phases.length} phase</span>
+            <span>{plan.phases.length} giai đoạn</span>
           </div>
         </div>
         <div className="flex flex-wrap gap-2">
           {plan.status === "DRAFT" && (
             <Button
-              disabled={!plan.readyForPayment || payMutation.isPending}
+              disabled={!plan.isSubmittedForPayment || payMutation.isPending}
               onClick={() => void pay()}
             >
               {payMutation.isPending ? (
@@ -228,7 +230,9 @@ function TreatmentHeader({
               ) : (
                 <WalletCards className="mr-2 h-4 w-4" />
               )}
-              Thanh toán
+              {plan.isSubmittedForPayment
+                ? "Thanh toán"
+                : "Đang chờ chuyên gia gửi"}
             </Button>
           )}
           {plan.status === "ACTIVE" && (
@@ -267,11 +271,14 @@ function PhaseRecord({ phase }: { phase: TreatmentPhase }) {
     <article className="grid gap-3 p-5 md:grid-cols-[120px_1fr_auto]">
       <div>
         <p className="text-xs font-medium text-slate-500">
-          Phase {phase.phaseOrder + 1}
+          Giai đoạn {phase.phaseOrder + 1}
         </p>
         <Badge className="mt-1" variant="outline">
-          {phase.status}
+          {treatmentPhaseStatusLabel[phase.status]}
         </Badge>
+        <p className="mt-2 text-xs text-slate-500">
+          {treatmentPhaseTypeLabel[phase.phaseType]}
+        </p>
       </div>
       <div>
         <h4 className="text-sm font-semibold text-slate-950">
@@ -461,7 +468,7 @@ function TreatmentActivity({
               </p>
             </div>
             <div>
-              <p className="text-xs text-slate-500">Phase hiện tại</p>
+              <p className="text-xs text-slate-500">Giai đoạn hiện tại</p>
               <p className="mt-1 flex items-center gap-2 text-sm font-semibold text-slate-900">
                 <CheckCircle2 className="h-4 w-4 text-emerald-700" />{" "}
                 {plan.phases.find((phase) => phase.status === "ACTIVE")
@@ -517,8 +524,8 @@ function CancelTreatmentDialog({
         <DialogHeader>
           <DialogTitle>Hủy phần điều trị còn lại</DialogTitle>
           <DialogDescription>
-            Phase đã hoàn thành và phase đang hoạt động vẫn được giữ. Dự kiến
-            hoàn phí các phase chưa bắt đầu: {formatVnd(refundable)}.
+            Giai đoạn đã hoàn thành và giai đoạn đang hoạt động vẫn được giữ. Dự
+            kiến hoàn phí các giai đoạn chưa bắt đầu: {formatVnd(refundable)}.
           </DialogDescription>
         </DialogHeader>
         <div className="space-y-2">

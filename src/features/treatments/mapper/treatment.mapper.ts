@@ -36,6 +36,7 @@ export interface BackendTreatmentResponse {
   startDate: string | null;
   endDate: string | null;
   totalPriceVnd: string | number | null;
+  submittedAt?: string | null;
   paidAt: string | null;
   paidTransactionId: string | null;
   sourceConsultationId: string | null;
@@ -100,6 +101,7 @@ export function mapBackendTreatmentToFrontend(
     startDate: treatment.startDate,
     endDate: treatment.endDate,
     totalPriceVnd,
+    submittedAt: treatment.submittedAt ?? null,
     paidAt: treatment.paidAt,
     paidTransactionId: treatment.paidTransactionId,
     sourceConsultationId: treatment.sourceConsultationId,
@@ -111,7 +113,7 @@ export function mapBackendTreatmentToFrontend(
     phases,
     createdAt: treatment.createdAt,
     updatedAt: treatment.updatedAt,
-    readyForPayment:
+    canSubmitForPayment:
       treatment.status === "DRAFT" &&
       Boolean(treatment.startDate && treatment.endDate) &&
       phases.length > 0 &&
@@ -119,5 +121,6 @@ export function mapBackendTreatmentToFrontend(
         (phase) => phase.noteByExpert?.trim() && phase.priceVnd >= 0,
       ) &&
       (totalPriceVnd ?? 0) > 0,
+    isSubmittedForPayment: Boolean(treatment.submittedAt),
   };
 }

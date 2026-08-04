@@ -28,11 +28,13 @@ function useInvalidateTreatments() {
 export function useTreatmentPlans(
   as: "customer" | "expert" = "customer",
   filters: TreatmentListFilters = {},
+  options: { enabled?: boolean } = {},
 ) {
   return useQuery({
     queryKey: queryKeys.treatmentPlans(as, filters),
     queryFn: async () => (await treatmentApi.getPlans(as, filters)).data,
     placeholderData: (previous) => previous,
+    enabled: options.enabled ?? true,
   });
 }
 

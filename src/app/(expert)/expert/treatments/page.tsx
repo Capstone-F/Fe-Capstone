@@ -13,6 +13,7 @@ import {
 } from "lucide-react";
 
 import { useTreatmentPlans } from "@/features/treatments/hooks/useTreatments";
+import { getTreatmentStatusLabel } from "@/features/treatments/lib/treatment-labels";
 import { Badge } from "@/shared/components/ui/badge";
 import { Button } from "@/shared/components/ui/button";
 import { Input } from "@/shared/components/ui/input";
@@ -113,7 +114,7 @@ export default function ExpertTreatmentsPage() {
               htmlFor="treatment-phase-count"
               className="text-xs font-medium text-slate-600"
             >
-              Số phase
+              Số giai đoạn
             </label>
             <Input
               id="treatment-phase-count"
@@ -172,9 +173,7 @@ export default function ExpertTreatmentsPage() {
                       {plan.title}
                     </h2>
                     <Badge variant="outline">
-                      {plan.status === "DRAFT" && plan.readyForPayment
-                        ? "Chờ thanh toán"
-                        : plan.status}
+                      {getTreatmentStatusLabel(plan)}
                     </Badge>
                   </div>
                   <div className="mt-2 flex flex-wrap gap-x-5 gap-y-1 text-xs text-slate-500">
@@ -188,7 +187,7 @@ export default function ExpertTreatmentsPage() {
                       {plan.endDate || "Chưa đặt ngày"}
                     </span>
                     <span>
-                      {plan.phases.length} phase ·{" "}
+                      {plan.phases.length} giai đoạn ·{" "}
                       {formatVnd(plan.totalPriceVnd ?? 0)}
                     </span>
                   </div>

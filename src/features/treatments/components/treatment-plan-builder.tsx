@@ -1,6 +1,6 @@
 "use client";
 
-import { FormEvent, useMemo, useState } from "react";
+import { FormEvent, useCallback, useEffect, useMemo, useState } from "react";
 import Image from "next/image";
 import { useRouter, useSearchParams } from "next/navigation";
 import {
@@ -9,7 +9,10 @@ import {
   CalendarCheck,
   Camera,
   Check,
+  CheckCircle2,
   ClipboardCheck,
+  Circle,
+  CircleAlert,
   Loader2,
   PackageCheck,
   Plus,
@@ -19,11 +22,23 @@ import {
   Sun,
   Moon,
   Trash2,
+  TriangleAlert,
 } from "lucide-react";
 import { toast } from "sonner";
 
 import { Badge } from "@/shared/components/ui/badge";
 import { Button } from "@/shared/components/ui/button";
+import {
+  Accordion,
+  AccordionContent,
+  AccordionItem,
+  AccordionTrigger,
+} from "@/shared/components/ui/accordion";
+import {
+  Alert,
+  AlertDescription,
+  AlertTitle,
+} from "@/shared/components/ui/alert";
 import { Checkbox } from "@/shared/components/ui/checkbox";
 import { Input } from "@/shared/components/ui/input";
 import { Label } from "@/shared/components/ui/label";
@@ -42,6 +57,7 @@ import {
   TabsTrigger,
 } from "@/shared/components/ui/tabs";
 import { formatVnd } from "@/shared/utils/format";
+import { cn } from "@/lib/utils";
 import {
   useActivatePhase,
   useAddPhase,
@@ -56,6 +72,7 @@ import {
   useSubmitPlan,
   useTreatmentChart,
   useTreatmentPlanDetail,
+  useTreatmentPlans,
   useUpdatePhase,
   useUpdateRoutine,
 } from "../hooks/useTreatments";
@@ -67,7 +84,13 @@ import type {
   TreatmentPhase,
   TreatmentPhasePayload,
   TreatmentPhaseType,
+  TreatmentPlan,
 } from "../types/treatment.types";
+import {
+  getTreatmentStatusLabel,
+  treatmentPhaseStatusLabel,
+  treatmentPhaseTypeLabel,
+} from "../lib/treatment-labels";
 
 const isUuid = (value: string | null) =>
   Boolean(
@@ -84,13 +107,6 @@ function toLocalDateInput(date: Date): string {
   return `${year}-${month}-${day}`;
 }
 
-const phaseTypeLabel: Record<TreatmentPhaseType, string> = {
-  INITIAL_ASSESSMENT: "Đánh giá ban đầu",
-  ACTIVE_TREATMENT: "Điều trị tích cực",
-  MAINTENANCE: "Duy trì",
-  RECOVERY: "Phục hồi",
-};
-
 export function TreatmentPlanBuilder() {
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -100,8 +116,59 @@ export function TreatmentPlanBuilder() {
   const sourceConsultationId = searchParams.get("sourceConsultationId");
   const detail = useTreatmentPlanDetail(treatmentId);
   const createMutation = useCreateTreatmentPlan();
+  const existingPlans = useTreatmentPlans(
+    "expert",
+    {},
+    { enabled: !treatmentId && Boolean(customerId) },
+  );
+  const existingPlan = existingPlans.data?.find(
+    (plan) => plan.customerId === customerId,
+  );
+
+  useEffect(() => {
+    if (treatmentId || !existingPlan) return;
+    const query = new URLSearchParams({
+      treatmentId: existingPlan.id,
+      customerId: existingPlan.customerId,
+      customerName,
+    });
+    if (existingPlan.sourceConsultationId || sourceConsultationId) {
+      query.set(
+        "sourceConsultationId",
+        existingPlan.sourceConsultationId || sourceConsultationId || "",
+      );
+    }
+    router.replace(`/expert/treatments/builder?${query.toString()}`);
+  }, [customerName, existingPlan, router, sourceConsultationId, treatmentId]);
 
   if (!treatmentId) {
+    if (customerId && (existingPlans.isLoading || existingPlan)) {
+      return (
+        <div className="flex min-h-[520px] items-center justify-center text-sm text-slate-500">
+          <Loader2 className="mr-2 h-4 w-4 animate-spin" /> Đang kiểm tra phác
+          đồ hiện có...
+        </div>
+      );
+    }
+
+    if (customerId && existingPlans.isError) {
+      return (
+        <div className="flex min-h-[520px] flex-col items-center justify-center gap-3 p-6 text-center">
+          <CircleAlert className="h-8 w-8 text-red-500" />
+          <p className="max-w-md text-sm text-slate-700">
+            Không thể kiểm tra phác đồ hiện có. Tạm thời chưa thể tạo mới để
+            tránh trùng dữ liệu.
+          </p>
+          <Button
+            variant="outline"
+            onClick={() => void existingPlans.refetch()}
+          >
+            Thử lại
+          </Button>
+        </div>
+      );
+    }
+
     return (
       <CreatePlanForm
         customerId={customerId}
@@ -164,10 +231,10 @@ export function TreatmentPlanBuilder() {
                 <h1 className="text-lg font-semibold text-slate-950">
                   {plan.title}
                 </h1>
-                <Badge variant="outline">{plan.status}</Badge>
+                <Badge variant="outline">{getTreatmentStatusLabel(plan)}</Badge>
               </div>
               <p className="mt-1 text-xs text-slate-500">
-                {customerName} · {plan.phases.length} phase ·{" "}
+                {customerName} · {plan.phases.length} giai đoạn ·{" "}
                 {formatVnd(plan.totalPriceVnd ?? 0)}
               </p>
             </div>
@@ -191,9 +258,7 @@ export function TreatmentPlanBuilder() {
         <PlanSummary plan={plan} />
         {canEditDraft ? (
           <DraftPhaseEditor
-            treatmentId={plan.id}
-            phases={plan.phases}
-            readyForPayment={plan.readyForPayment}
+            plan={plan}
             onRefresh={() => void detail.refetch()}
           />
         ) : plan.status === "ACTIVE" ? (
@@ -203,8 +268,8 @@ export function TreatmentPlanBuilder() {
           />
         ) : (
           <div className="border bg-white p-5 text-sm text-slate-600">
-            Phác đồ đang ở trạng thái {plan.status.toLowerCase()} và không thể
-            chỉnh sửa phase.
+            Phác đồ đang ở trạng thái {getTreatmentStatusLabel(plan)} và không
+            thể chỉnh sửa giai đoạn.
           </div>
         )}
         {plan.status !== "DRAFT" && (
@@ -339,7 +404,7 @@ function ChartPhaseNotes({ chart }: { chart: TreatmentChart }) {
   return (
     <div>
       <h3 className="text-sm font-semibold text-slate-950">
-        Ghi chú theo phase
+        Ghi chú theo giai đoạn
       </h3>
       <div className="mt-3 space-y-3">
         {chart.phases.map((phase) => (
@@ -349,9 +414,12 @@ function ChartPhaseNotes({ chart }: { chart: TreatmentChart }) {
           >
             <div className="flex flex-wrap items-center gap-2">
               <p className="text-sm font-medium text-slate-900">
-                Phase {phase.phaseOrder + 1}: {phase.title || "Chưa đặt tên"}
+                Giai đoạn {phase.phaseOrder + 1}:{" "}
+                {phase.title || "Chưa đặt tên"}
               </p>
-              <Badge variant="outline">{phase.status}</Badge>
+              <Badge variant="outline">
+                {treatmentPhaseStatusLabel[phase.status]}
+              </Badge>
             </div>
             <p className="mt-1 text-sm whitespace-pre-wrap text-slate-600">
               {phase.noteByExpert || "Chưa có ghi chú chuyên môn."}
@@ -585,34 +653,103 @@ function PlanSummary({
   );
 }
 
+function translateSubmitError(reason: unknown): string {
+  const fallback = "Không thể gửi phác đồ cho khách hàng.";
+  if (!(reason instanceof Error)) return fallback;
+  const message = reason.message;
+  if (message.includes("at least one phase")) {
+    return "Phác đồ cần có ít nhất một giai đoạn điều trị.";
+  }
+  if (message.includes("noteByExpert")) {
+    return "Mỗi giai đoạn cần có lý do chuyên môn trước khi gửi.";
+  }
+  if (message.includes("greater than 0")) {
+    return "Tổng phí phác đồ phải lớn hơn 0 đồng.";
+  }
+  if (message.includes("startDate") || message.includes("endDate")) {
+    return "Cần nhập đủ ngày bắt đầu và ngày kết thúc phác đồ.";
+  }
+  return message || fallback;
+}
+
 function DraftPhaseEditor({
-  treatmentId,
-  phases,
-  readyForPayment,
+  plan,
   onRefresh,
 }: {
-  treatmentId: string;
-  phases: TreatmentPhase[];
-  readyForPayment: boolean;
+  plan: TreatmentPlan;
   onRefresh: () => void;
 }) {
+  const treatmentId = plan.id;
+  const phases = plan.phases;
   const addMutation = useAddPhase();
   const updateMutation = useUpdatePhase();
   const deleteMutation = useDeletePhase();
   const submitMutation = useSubmitPlan();
   const [showNew, setShowNew] = useState(phases.length === 0);
+  const [dirtyPhaseIds, setDirtyPhaseIds] = useState<Set<string>>(new Set());
+
+  const updateDirtyPhase = useCallback((formKey: string, dirty: boolean) => {
+    setDirtyPhaseIds((current) => {
+      const next = new Set(current);
+      if (dirty) next.add(formKey);
+      else next.delete(formKey);
+      if (
+        next.size === current.size &&
+        [...next].every((id) => current.has(id))
+      ) {
+        return current;
+      }
+      return next;
+    });
+  }, []);
+
+  const hasUnsavedChanges = showNew || dirtyPhaseIds.size > 0;
+  const totalPhasePrice = phases.reduce(
+    (total, phase) => total + phase.priceVnd,
+    0,
+  );
+  const submissionChecks = [
+    {
+      label: "Đã nhập ngày bắt đầu và ngày kết thúc phác đồ",
+      complete: Boolean(plan.startDate && plan.endDate),
+    },
+    {
+      label: "Có ít nhất một giai đoạn điều trị",
+      complete: phases.length > 0,
+    },
+    {
+      label: "Mỗi giai đoạn có lý do chuyên môn",
+      complete:
+        phases.length > 0 &&
+        phases.every((phase) => Boolean(phase.noteByExpert?.trim())),
+    },
+    {
+      label: "Tổng phí phác đồ lớn hơn 0 đồng",
+      complete: totalPhasePrice > 0,
+    },
+    {
+      label: "Không còn thay đổi chưa lưu",
+      complete: !hasUnsavedChanges,
+    },
+  ];
+  const canSubmit =
+    plan.canSubmitForPayment &&
+    !hasUnsavedChanges &&
+    !plan.isSubmittedForPayment;
+  const defaultOpenPhases = phases
+    .filter((phase) => !phase.noteByExpert?.trim())
+    .map((phase) => phase.id);
+  if (defaultOpenPhases.length === 0 && phases[0]) {
+    defaultOpenPhases.push(phases[0].id);
+  }
 
   async function submitForPayment() {
     try {
       await submitMutation.mutateAsync(treatmentId);
-      toast.success(
-        "Phác đồ đã qua kiểm tra và sẵn sàng để khách hàng thanh toán.",
-      );
+      toast.success("Đã gửi phác đồ cho khách hàng thanh toán.");
       onRefresh();
     } catch (reason) {
-      toast.error(
-        reason instanceof Error ? reason.message : "Không thể gửi phác đồ.",
-      );
+      toast.error(translateSubmitError(reason));
     }
   }
 
@@ -621,89 +758,188 @@ function DraftPhaseEditor({
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div>
           <h2 className="text-base font-semibold text-slate-950">
-            Các phase điều trị
+            Các giai đoạn điều trị
           </h2>
           <p className="text-xs text-slate-500">
-            Mỗi phase phải có lý do chuyên môn trước khi gửi thanh toán.
+            Có thể lưu bản nháp trước, sau đó hoàn thiện để gửi khách hàng.
           </p>
         </div>
         <Button variant="outline" onClick={() => setShowNew(true)}>
-          <Plus className="mr-2 h-4 w-4" /> Thêm phase
+          <Plus className="mr-2 h-4 w-4" /> Thêm giai đoạn
         </Button>
       </div>
 
-      {phases.map((phase) => (
-        <PhaseForm
-          key={`${phase.id}:${phase.ingredients.map((item) => item.ingredientId).join(",")}:${phase.products.map((item) => item.productVariantId).join(",")}`}
-          phase={phase}
-          submitLabel="Lưu phase"
-          isPending={updateMutation.isPending || deleteMutation.isPending}
-          onSubmit={async (payload) => {
-            await updateMutation.mutateAsync({
-              phaseId: phase.id,
-              treatmentId,
-              payload,
-            });
-            toast.success(`Đã lưu phase ${phase.phaseOrder + 1}.`);
-            onRefresh();
-          }}
-          onDelete={async () => {
-            await deleteMutation.mutateAsync({
-              phaseId: phase.id,
-              treatmentId,
-            });
-            toast.success("Đã xóa phase.");
-            onRefresh();
-          }}
-        />
-      ))}
-
-      {showNew && (
-        <PhaseForm
-          phaseOrder={
-            phases.length
-              ? Math.max(...phases.map((phase) => phase.phaseOrder)) + 1
-              : 0
-          }
-          submitLabel="Tạo phase"
-          isPending={addMutation.isPending}
-          onCancel={() => setShowNew(false)}
-          onSubmit={async (payload) => {
-            await addMutation.mutateAsync({ treatmentId, payload });
-            toast.success("Đã thêm phase.");
-            setShowNew(false);
-            onRefresh();
-          }}
-        />
+      {phases.length > 0 && (
+        <Accordion
+          multiple
+          defaultValue={defaultOpenPhases}
+          className="overflow-hidden border bg-white"
+        >
+          {phases.map((phase) => {
+            const complete = Boolean(phase.noteByExpert?.trim());
+            return (
+              <AccordionItem key={phase.id} value={phase.id}>
+                <AccordionTrigger className="px-4 py-4 hover:no-underline sm:px-5">
+                  <div className="flex min-w-0 flex-1 flex-col gap-2 pr-4 sm:flex-row sm:items-center sm:justify-between">
+                    <div className="flex min-w-0 items-center gap-3">
+                      {complete ? (
+                        <CheckCircle2 className="h-5 w-5 shrink-0 text-emerald-600" />
+                      ) : (
+                        <CircleAlert className="h-5 w-5 shrink-0 text-amber-600" />
+                      )}
+                      <div className="min-w-0">
+                        <p className="truncate font-semibold text-slate-950">
+                          Giai đoạn {phase.phaseOrder + 1}:{" "}
+                          {phase.title || "Chưa đặt tên"}
+                        </p>
+                        <p className="mt-0.5 text-xs font-normal text-slate-500">
+                          {treatmentPhaseTypeLabel[phase.phaseType]}
+                        </p>
+                      </div>
+                    </div>
+                    <div className="flex shrink-0 flex-wrap items-center gap-2 pl-8 sm:pl-0">
+                      <Badge variant="outline">
+                        {treatmentPhaseStatusLabel[phase.status]}
+                      </Badge>
+                      <span className="text-xs font-semibold text-slate-700">
+                        {formatVnd(phase.priceVnd)}
+                      </span>
+                    </div>
+                  </div>
+                </AccordionTrigger>
+                <AccordionContent className="border-t bg-slate-50/60 px-4 py-4 sm:px-5">
+                  <PhaseForm
+                    key={`${phase.id}:${phase.ingredients.map((item) => item.ingredientId).join(",")}:${phase.products.map((item) => item.productVariantId).join(",")}`}
+                    formKey={phase.id}
+                    phase={phase}
+                    submitLabel="Lưu giai đoạn"
+                    isPending={
+                      updateMutation.isPending || deleteMutation.isPending
+                    }
+                    onDirtyChange={updateDirtyPhase}
+                    onSubmit={async (payload) => {
+                      await updateMutation.mutateAsync({
+                        phaseId: phase.id,
+                        treatmentId,
+                        payload,
+                      });
+                      toast.success(
+                        `Đã lưu giai đoạn ${phase.phaseOrder + 1}.`,
+                      );
+                      onRefresh();
+                    }}
+                    onDelete={async () => {
+                      await deleteMutation.mutateAsync({
+                        phaseId: phase.id,
+                        treatmentId,
+                      });
+                      toast.success("Đã xóa giai đoạn.");
+                      onRefresh();
+                    }}
+                  />
+                </AccordionContent>
+              </AccordionItem>
+            );
+          })}
+        </Accordion>
       )}
 
-      <div className="flex flex-col gap-3 border bg-white p-5 sm:flex-row sm:items-center sm:justify-between">
-        <div>
-          <p className="text-sm font-semibold text-slate-900">
-            Kiểm tra trước thanh toán
-          </p>
-          <p className="text-xs text-slate-500">
-            Cần ngày điều trị, ít nhất một phase, tổng phí lớn hơn 0 và note
-            chuyên môn cho mọi phase.
-          </p>
+      {showNew && (
+        <section className="border border-emerald-200 bg-white">
+          <div className="border-b bg-emerald-50/60 px-5 py-4">
+            <h3 className="text-sm font-semibold text-slate-950">
+              Giai đoạn mới
+            </h3>
+            <p className="mt-1 text-xs text-slate-500">
+              Nhập phí hợp lệ để lưu bản nháp; các nội dung chuyên môn có thể
+              hoàn thiện sau.
+            </p>
+          </div>
+          <div className="p-4 sm:p-5">
+            <PhaseForm
+              formKey="new-phase"
+              phaseOrder={
+                phases.length
+                  ? Math.max(...phases.map((phase) => phase.phaseOrder)) + 1
+                  : 0
+              }
+              submitLabel="Tạo giai đoạn"
+              isPending={addMutation.isPending}
+              onCancel={() => setShowNew(false)}
+              onSubmit={async (payload) => {
+                await addMutation.mutateAsync({ treatmentId, payload });
+                toast.success("Đã thêm giai đoạn.");
+                setShowNew(false);
+                onRefresh();
+              }}
+            />
+          </div>
+        </section>
+      )}
+
+      {hasUnsavedChanges && (
+        <Alert className="border-amber-300 bg-amber-50 text-amber-950">
+          <TriangleAlert />
+          <AlertTitle>Có thay đổi chưa lưu</AlertTitle>
+          <AlertDescription className="text-amber-800">
+            Các trường đã chỉnh sửa được đánh dấu màu vàng. Hãy lưu hoặc hủy
+            thay đổi trước khi gửi phác đồ.
+          </AlertDescription>
+        </Alert>
+      )}
+
+      <section className="border bg-white p-5">
+        <div className="grid gap-5 lg:grid-cols-[1fr_auto] lg:items-end">
+          <div>
+            <div className="flex items-center gap-2">
+              <ClipboardCheck className="h-5 w-5 text-emerald-700" />
+              <h3 className="text-sm font-semibold text-slate-950">
+                Kiểm tra trước thanh toán
+              </h3>
+            </div>
+            <div className="mt-4 grid gap-2 sm:grid-cols-2">
+              {submissionChecks.map((check) => (
+                <div
+                  key={check.label}
+                  className={cn(
+                    "flex items-start gap-2 text-xs",
+                    check.complete ? "text-emerald-700" : "text-amber-700",
+                  )}
+                >
+                  {check.complete ? (
+                    <CheckCircle2 className="mt-0.5 h-4 w-4 shrink-0" />
+                  ) : (
+                    <Circle className="mt-0.5 h-4 w-4 shrink-0" />
+                  )}
+                  <span>{check.label}</span>
+                </div>
+              ))}
+            </div>
+          </div>
+          <Button
+            className="w-full lg:w-auto"
+            disabled={!canSubmit || submitMutation.isPending}
+            onClick={() => void submitForPayment()}
+          >
+            {submitMutation.isPending ? (
+              <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+            ) : plan.isSubmittedForPayment ? (
+              <CheckCircle2 className="mr-2 h-4 w-4" />
+            ) : (
+              <ClipboardCheck className="mr-2 h-4 w-4" />
+            )}
+            {plan.isSubmittedForPayment
+              ? "Đã gửi khách hàng thanh toán"
+              : "Gửi khách hàng thanh toán"}
+          </Button>
         </div>
-        <Button
-          disabled={!readyForPayment || submitMutation.isPending}
-          onClick={() => void submitForPayment()}
-        >
-          {submitMutation.isPending ? (
-            <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-          ) : (
-            <ClipboardCheck className="mr-2 h-4 w-4" />
-          )}
-          Gửi khách hàng thanh toán
-        </Button>
-      </div>
+      </section>
     </section>
   );
 }
 
 function PhaseForm({
+  formKey,
   phase,
   phaseOrder = 0,
   submitLabel,
@@ -711,7 +947,9 @@ function PhaseForm({
   onSubmit,
   onDelete,
   onCancel,
+  onDirtyChange,
 }: {
+  formKey: string;
   phase?: TreatmentPhase;
   phaseOrder?: number;
   submitLabel: string;
@@ -719,6 +957,7 @@ function PhaseForm({
   onSubmit: (payload: TreatmentPhasePayload) => Promise<void>;
   onDelete?: () => Promise<void>;
   onCancel?: () => void;
+  onDirtyChange?: (formKey: string, dirty: boolean) => void;
 }) {
   const [phaseType, setPhaseType] = useState<TreatmentPhaseType>(
     phase?.phaseType ?? "ACTIVE_TREATMENT",
@@ -727,14 +966,72 @@ function PhaseForm({
   const [goals, setGoals] = useState(phase?.goals ?? "");
   const [notes, setNotes] = useState(phase?.notes ?? "");
   const [noteByExpert, setNoteByExpert] = useState(phase?.noteByExpert ?? "");
-  const [priceVnd, setPriceVnd] = useState(phase?.priceVnd ?? 0);
+  const [priceVnd, setPriceVnd] = useState(phase ? String(phase.priceVnd) : "");
   const [startDate, setStartDate] = useState(phase?.startDate ?? "");
   const [endDate, setEndDate] = useState(phase?.endDate ?? "");
-  const validPrice = Number.isInteger(priceVnd) && priceVnd >= 0;
+  const [priceTouched, setPriceTouched] = useState(false);
+  const [savedValues, setSavedValues] = useState(() => ({
+    phaseType: phase?.phaseType ?? "ACTIVE_TREATMENT",
+    title: phase?.title ?? "",
+    goals: phase?.goals ?? "",
+    notes: phase?.notes ?? "",
+    noteByExpert: phase?.noteByExpert ?? "",
+    priceVnd: phase ? String(phase.priceVnd) : "",
+    startDate: phase?.startDate ?? "",
+    endDate: phase?.endDate ?? "",
+  }));
+  const priceNumber = Number(priceVnd);
+  const validPrice =
+    priceVnd.trim() !== "" && Number.isInteger(priceNumber) && priceNumber >= 0;
   const validDates = !startDate || !endDate || endDate >= startDate;
+  const currentValues = useMemo(
+    () => ({
+      phaseType,
+      title,
+      goals,
+      notes,
+      noteByExpert,
+      priceVnd,
+      startDate,
+      endDate,
+    }),
+    [
+      endDate,
+      goals,
+      noteByExpert,
+      notes,
+      phaseType,
+      priceVnd,
+      startDate,
+      title,
+    ],
+  );
+  const dirtyFields = {
+    phaseType: currentValues.phaseType !== savedValues.phaseType,
+    title: currentValues.title !== savedValues.title,
+    goals: currentValues.goals !== savedValues.goals,
+    notes: currentValues.notes !== savedValues.notes,
+    noteByExpert: currentValues.noteByExpert !== savedValues.noteByExpert,
+    priceVnd: currentValues.priceVnd !== savedValues.priceVnd,
+    startDate: currentValues.startDate !== savedValues.startDate,
+    endDate: currentValues.endDate !== savedValues.endDate,
+  };
+  const isDirty = Object.values(dirtyFields).some(Boolean);
+
+  useEffect(() => {
+    onDirtyChange?.(formKey, isDirty);
+  }, [formKey, isDirty, onDirtyChange]);
+
+  useEffect(
+    () => () => {
+      onDirtyChange?.(formKey, false);
+    },
+    [formKey, onDirtyChange],
+  );
 
   async function handleSubmit(event: FormEvent) {
     event.preventDefault();
+    setPriceTouched(true);
     if (!validPrice || !validDates) return;
     try {
       await onSubmit({
@@ -744,29 +1041,24 @@ function PhaseForm({
         goals: goals.trim() || null,
         notes: notes.trim() || null,
         noteByExpert: noteByExpert.trim() || null,
-        priceVnd,
+        priceVnd: priceNumber,
         startDate: startDate || null,
         endDate: endDate || null,
       });
+      setSavedValues(currentValues);
     } catch (reason) {
       toast.error(
-        reason instanceof Error ? reason.message : "Không thể lưu phase.",
+        reason instanceof Error ? reason.message : "Không thể lưu giai đoạn.",
       );
     }
   }
 
   return (
-    <form onSubmit={handleSubmit} className="border bg-white p-5">
-      <div className="flex items-center justify-between gap-3">
-        <h3 className="text-sm font-semibold text-slate-950">
-          Phase {(phase?.phaseOrder ?? phaseOrder) + 1}
-        </h3>
-        <Badge variant="outline">{phase ? phase.status : "Mới"}</Badge>
-      </div>
-      <div className="mt-4 grid gap-4 md:grid-cols-2">
+    <form onSubmit={handleSubmit}>
+      <div className="grid gap-4 md:grid-cols-2">
         <div className="space-y-2">
           <Label htmlFor={`phase-type-${phase?.id ?? phaseOrder}`}>
-            Loại phase
+            Loại giai đoạn
           </Label>
           <Select
             value={phaseType}
@@ -774,12 +1066,15 @@ function PhaseForm({
           >
             <SelectTrigger
               id={`phase-type-${phase?.id ?? phaseOrder}`}
-              className="w-full"
+              className={cn(
+                "w-full",
+                dirtyFields.phaseType && "border-amber-400 bg-amber-50/60",
+              )}
             >
               <SelectValue />
             </SelectTrigger>
             <SelectContent>
-              {Object.entries(phaseTypeLabel).map(([value, label]) => (
+              {Object.entries(treatmentPhaseTypeLabel).map(([value, label]) => (
                 <SelectItem key={value} value={value}>
                   {label}
                 </SelectItem>
@@ -788,12 +1083,14 @@ function PhaseForm({
           </Select>
         </div>
         <div className="space-y-2">
-          <Label>Tên phase</Label>
+          <Label>Tên giai đoạn</Label>
           <Input
             value={title}
             onChange={(event) => setTitle(event.target.value)}
             maxLength={200}
-            required
+            className={cn(
+              dirtyFields.title && "border-amber-400 bg-amber-50/60",
+            )}
           />
         </div>
         <div className="space-y-2 md:col-span-2">
@@ -802,6 +1099,9 @@ function PhaseForm({
             value={goals}
             onChange={(event) => setGoals(event.target.value)}
             rows={2}
+            className={cn(
+              dirtyFields.goals && "border-amber-400 bg-amber-50/60",
+            )}
           />
         </div>
         <div className="space-y-2 md:col-span-2">
@@ -810,7 +1110,9 @@ function PhaseForm({
             value={noteByExpert}
             onChange={(event) => setNoteByExpert(event.target.value)}
             rows={3}
-            required
+            className={cn(
+              dirtyFields.noteByExpert && "border-amber-400 bg-amber-50/60",
+            )}
           />
         </div>
         <div className="space-y-2 md:col-span-2">
@@ -819,18 +1121,30 @@ function PhaseForm({
             value={notes}
             onChange={(event) => setNotes(event.target.value)}
             rows={2}
+            className={cn(
+              dirtyFields.notes && "border-amber-400 bg-amber-50/60",
+            )}
           />
         </div>
         <div className="space-y-2">
-          <Label>Phí phase (VND)</Label>
+          <Label>Phí giai đoạn (VND)</Label>
           <Input
             type="number"
             min={0}
             step={1000}
             value={priceVnd}
-            onChange={(event) => setPriceVnd(Number(event.target.value))}
-            required
+            onChange={(event) => setPriceVnd(event.target.value)}
+            onBlur={() => setPriceTouched(true)}
+            aria-invalid={priceTouched && !validPrice}
+            className={cn(
+              dirtyFields.priceVnd && "border-amber-400 bg-amber-50/60",
+            )}
           />
+          {priceTouched && !validPrice && (
+            <p className="text-xs text-red-600">
+              Phí phải là số nguyên từ 0 đồng trở lên.
+            </p>
+          )}
         </div>
         <div className="grid grid-cols-2 gap-3">
           <div className="space-y-2">
@@ -839,6 +1153,9 @@ function PhaseForm({
               type="date"
               value={startDate}
               onChange={(event) => setStartDate(event.target.value)}
+              className={cn(
+                dirtyFields.startDate && "border-amber-400 bg-amber-50/60",
+              )}
             />
           </div>
           <div className="space-y-2">
@@ -849,6 +1166,9 @@ function PhaseForm({
               value={endDate}
               onChange={(event) => setEndDate(event.target.value)}
               aria-invalid={!validDates}
+              className={cn(
+                dirtyFields.endDate && "border-amber-400 bg-amber-50/60",
+              )}
             />
             {!validDates && (
               <p className="text-xs text-red-600">
@@ -877,13 +1197,7 @@ function PhaseForm({
         )}
         <Button
           type="submit"
-          disabled={
-            isPending ||
-            !title.trim() ||
-            !noteByExpert.trim() ||
-            !validPrice ||
-            !validDates
-          }
+          disabled={isPending || !validPrice || !validDates}
         >
           {isPending ? (
             <Loader2 className="mr-2 h-4 w-4 animate-spin" />
@@ -915,10 +1229,10 @@ function PaidPhaseConfiguration({
     <section className="space-y-4">
       <div>
         <h2 className="text-base font-semibold text-slate-950">
-          Cấu hình phase sau thanh toán
+          Cấu hình giai đoạn sau thanh toán
         </h2>
         <p className="text-xs text-slate-500">
-          Chọn hoạt chất, sản phẩm, tạo routine rồi kích hoạt phase.
+          Chọn hoạt chất, sản phẩm, tạo routine rồi kích hoạt giai đoạn.
         </p>
       </div>
       <div className="flex flex-wrap gap-2">
@@ -928,7 +1242,7 @@ function PaidPhaseConfiguration({
             variant={item.id === selectedPhaseId ? "default" : "outline"}
             onClick={() => setSelectedPhaseId(item.id)}
           >
-            Phase {item.phaseOrder + 1}
+            Giai đoạn {item.phaseOrder + 1}
           </Button>
         ))}
       </div>
@@ -987,7 +1301,7 @@ function PhaseConfiguration({
         phaseId: phase.id,
         ingredientIds,
       });
-      toast.success("Đã lưu hoạt chất cho phase.");
+      toast.success("Đã lưu hoạt chất cho giai đoạn.");
       await candidates.refetch();
       onRefresh();
     } catch (reason) {
@@ -1003,7 +1317,7 @@ function PhaseConfiguration({
         phaseId: phase.id,
         productVariantIds: productIds,
       });
-      toast.success("Đã lưu sản phẩm cho phase.");
+      toast.success("Đã lưu sản phẩm cho giai đoạn.");
       onRefresh();
     } catch (reason) {
       toast.error(
@@ -1087,11 +1401,13 @@ function PhaseConfiguration({
   async function activate() {
     try {
       await activateMutation.mutateAsync(phase.id);
-      toast.success("Phase đã được kích hoạt.");
+      toast.success("Giai đoạn đã được kích hoạt.");
       onRefresh();
     } catch (reason) {
       toast.error(
-        reason instanceof Error ? reason.message : "Không thể kích hoạt phase.",
+        reason instanceof Error
+          ? reason.message
+          : "Không thể kích hoạt giai đoạn.",
       );
     }
   }
@@ -1219,7 +1535,7 @@ function PhaseConfiguration({
           disabled={busy || phase.status === "ACTIVE" || hasDraftRoutine}
           onClick={() => void activate()}
         >
-          <Check className="mr-2 h-4 w-4" /> Kích hoạt phase
+          <Check className="mr-2 h-4 w-4" /> Kích hoạt giai đoạn
         </Button>
       </div>
     </div>
