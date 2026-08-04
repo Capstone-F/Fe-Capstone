@@ -22,6 +22,7 @@ import {
 import { toPaymentErrorMessage } from "@/features/commerce/lib/payment-errors";
 import { formatVnd } from "@/shared/utils/format";
 import { OrderSummary } from "@/features/commerce/components/order-summary";
+import { CartConflictAlert } from "@/features/commerce/components/cart-conflict-alert";
 import { CheckoutStepper } from "@/features/commerce/components/checkout-stepper";
 import { GhnAddressForm } from "@/features/commerce/components/ghn-address-form";
 import { useSession } from "@/features/auth/hooks/useSession";
@@ -80,7 +81,7 @@ const LAST_STEP = 3;
 
 export function CheckoutPage() {
   const router = useRouter();
-  const { data: cart } = useCart();
+  const { data: cart, conflicts } = useCart();
   const createOrder = useCreateOrder();
   const session = useSession();
 
@@ -197,6 +198,8 @@ export function CheckoutPage() {
                     }
                   </p>
                 )}
+                {/* Informational only — conflicts never block placing the order. */}
+                <CartConflictAlert conflicts={conflicts} />
                 {lines.map((line) => (
                   <div
                     key={line.variant.id}
