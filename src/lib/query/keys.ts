@@ -20,6 +20,7 @@ export const queryKeys = {
     ["treatments", id, "events", type ?? "all"] as const,
   profile: ["profile"] as const,
   surveyHistory: ["surveyHistory"] as const,
+  inProgressSurvey: ["surveyHistory", "in-progress"] as const,
   allergyOptions: ["allergyOptions"] as const,
   routines: ["routines"] as const,
   routineToday: (period: string) => ["routines", "today", period] as const,
