@@ -117,7 +117,13 @@ export const API_ENDPOINTS = {
     CHECKOUT: "/payments/checkout",
     STATUS: (paymentId: string | number) => `/payments/${paymentId}`,
   },
-  SURVEYS: { BASE: "/surveys", QUESTIONS: "/surveys/questions" },
+  SURVEYS: {
+    BASE: "/surveys",
+    QUESTIONS: "/surveys/questions",
+    DETAIL: (id: string) => `/surveys/${id}`,
+    ANSWERS: (id: string) => `/surveys/${id}/answers`,
+    COMPLETE: (id: string) => `/surveys/${id}/complete`,
+  },
   RECOMMENDATIONS: { LATEST: "/recommendations/latest" },
   ROUTINES: {
     GENERATE: "/routines/generate",
