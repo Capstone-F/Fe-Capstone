@@ -259,6 +259,11 @@ export function CustomerDashboard() {
     );
   }
 
+  const baumannResult = mapBaumannResult(
+    profile.skinType,
+    profile.baumannScores,
+  );
+
   return (
     <div className="mx-auto w-full max-w-6xl px-4 py-8">
       <div className="mb-8">
@@ -384,30 +389,21 @@ export function CustomerDashboard() {
                 </CardDescription>
               </CardHeader>
               <CardContent className="flex flex-col gap-6 p-6">
-                {(() => {
-                  const baumannResult = mapBaumannResult(
-                    profile.skinType,
-                    profile.baumannScores,
-                  );
-
-                  if (!baumannResult) {
-                    return (
-                      <div className="flex flex-col items-center gap-3 rounded-2xl border border-dashed border-slate-200 bg-slate-50/60 p-8 text-center">
-                        <Award className="h-8 w-8 text-slate-300" />
-                        <h3 className="text-sm font-bold text-slate-800">
-                          Chưa xác định loại da
-                        </h3>
-                        <p className="max-w-md text-xs text-slate-500">
-                          Bạn chưa hoàn tất bài test loại da. Làm bài test để hệ
-                          thống xác định loại da Baumann và cá nhân hóa lộ trình
-                          chăm sóc.
-                        </p>
-                      </div>
-                    );
-                  }
-
-                  return <BaumannResultCard result={baumannResult} />;
-                })()}
+                {baumannResult ? (
+                  <BaumannResultCard result={baumannResult} />
+                ) : (
+                  <div className="flex flex-col items-center gap-3 rounded-2xl border border-dashed border-slate-200 bg-slate-50/60 p-8 text-center">
+                    <Award className="h-8 w-8 text-slate-300" />
+                    <h3 className="text-sm font-bold text-slate-800">
+                      Chưa xác định loại da
+                    </h3>
+                    <p className="max-w-md text-xs text-slate-500">
+                      Bạn chưa hoàn tất bài test loại da. Làm bài test để hệ
+                      thống xác định loại da Baumann và cá nhân hóa lộ trình
+                      chăm sóc.
+                    </p>
+                  </div>
+                )}
 
                 <div className="flex flex-wrap gap-3 border-t border-slate-100 pt-4">
                   <Button

@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
+import { useQueryClient } from "@tanstack/react-query";
 import { Loader2 } from "lucide-react";
 import { toast } from "sonner";
 
@@ -9,6 +10,7 @@ import {
   useInProgressSurveyId,
   useProfile,
 } from "@/features/profile/hooks/useProfile";
+import { queryKeys } from "@/lib/query/keys";
 import type { SurveyQuestionDto, SurveyResponseDto } from "@/types/survey";
 import { QuizGate } from "../components/quiz-gate";
 import { QuizIntro } from "../components/quiz-intro";
@@ -37,6 +39,7 @@ function toAnswerMap(session: SurveyResponseDto): QuizAnswerMap {
 
 export function SkinQuizPage() {
   const router = useRouter();
+  const queryClient = useQueryClient();
   const { data: profile, isLoading: isProfileLoading } = useProfile();
   const { data: pendingSurveyId, isLoading: isPendingLoading } =
     useInProgressSurveyId();
@@ -102,6 +105,13 @@ export function SkinQuizPage() {
           onCompleted={() => router.replace("/skin-quiz/result")}
           onSessionLost={() => {
             setActiveQuiz(null);
+            // Drop the cached pending id too: the query is stale-for-60s and does
+            // not refetch on focus, so without this the intro would keep offering
+            // "resume" for a survey that now 404s.
+            queryClient.setQueryData<string | null>(
+              queryKeys.inProgressSurvey,
+              null,
+            );
             toast.error(
               "Phiên khảo sát không còn tồn tại. Hãy bắt đầu bài test mới.",
             );

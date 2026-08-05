@@ -53,6 +53,7 @@ export function BaumannResultCard({ result }: BaumannResultCardProps) {
       <div className="flex flex-col gap-5">
         {result.axes.map((axis) => (
           <div key={axis.id} className="flex flex-col gap-2">
+            <h3 className="text-xs font-bold text-slate-800">{axis.title}</h3>
             <div className="flex items-center justify-between text-[11px] font-bold">
               <span
                 className={
