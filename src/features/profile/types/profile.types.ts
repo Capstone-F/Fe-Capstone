@@ -1,3 +1,5 @@
+import type { BaumannScoresDto, SkinTypeSummaryDto } from "@/types/survey";
+
 export interface UserProfile {
   id: string;
   name: string;
@@ -8,6 +10,10 @@ export interface UserProfile {
   allergies: string[];
   baumannCode?: string;
   oilyDryScore?: number | null;
+  /** Full skin type summary from GET /customers/me (null until the first completed quiz). */
+  skinType?: SkinTypeSummaryDto | null;
+  /** Signed axis scores — see features/survey/mapper/baumann.mapper.ts before rendering. */
+  baumannScores?: BaumannScoresDto | null;
 }
 
 export interface AllergyLabelResponse {
@@ -22,7 +28,7 @@ export interface CustomerDetailsResponse {
   avatarUrl: string | null;
   dateOfBirth: string | null;
   gender: string;
-  skinType: { code: string; name: string } | null;
+  skinType: { code: string; name: string; description?: string | null } | null;
   baumannScores: {
     oilyDryScore: number | null;
     sensitiveResistantScore: number | null;
