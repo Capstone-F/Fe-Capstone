@@ -12,6 +12,8 @@ export type BaumannSignalStrength = "Tín hiệu nhẹ" | "Rõ" | "Rất rõ";
 
 export interface BaumannAxisView {
   id: BaumannAxisId;
+  /** Vietnamese heading for the axis, e.g. "Tuyến bã nhờn". */
+  title: string;
   /** Letter shown at the 0% end of the track (O / S / P / W). */
   leftLetter: string;
   /** Letter shown at the 100% end of the track (D / R / N / T). */

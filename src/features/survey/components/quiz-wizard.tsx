@@ -33,6 +33,33 @@ function firstUnansweredIndex(
   return index === -1 ? Math.max(questions.length - 1, 0) : index;
 }
 
+/**
+ * Merge a freshly fetched question list into the local wizard list.
+ *
+ * Appends whatever the backend has newly unlocked and drops the entries it has
+ * stopped returning — but only those positioned after `currentIndex`. Anything
+ * at or before the cursor has already been answered, and removing it would
+ * shift the cursor onto a different question.
+ *
+ * NOTE: this only prunes the local list. Answers already stored server-side for
+ * the retracted questions stay in the survey and keep feeding the Baumann
+ * scoring; clearing them needs a backend delete-answer endpoint, which does not
+ * exist yet.
+ */
+function reconcileQuestions(
+  current: SurveyQuestionDto[],
+  refreshed: SurveyQuestionDto[],
+  currentIndex: number,
+): SurveyQuestionDto[] {
+  const refreshedIds = new Set(refreshed.map((item) => item.id));
+  const kept = current.filter(
+    (item, position) => position <= currentIndex || refreshedIds.has(item.id),
+  );
+  const keptIds = new Set(kept.map((item) => item.id));
+  const unlocked = refreshed.filter((item) => !keptIds.has(item.id));
+  return [...kept, ...unlocked];
+}
+
 export function QuizWizard({
   surveyId,
   initialQuestions,
@@ -46,6 +73,9 @@ export function QuizWizard({
   const [index, setIndex] = useState(() =>
     firstUnansweredIndex(initialQuestions, initialAnswers),
   );
+  // Set once the customer uses "Quay lại": from then on a re-submitted answer can
+  // retract conditional questions that an earlier answer had unlocked.
+  const [hasNavigatedBack, setHasNavigatedBack] = useState(false);
 
   const submitAnswer = useSubmitAnswer();
   const unlockQuestions = useUnlockQuestions();
@@ -67,21 +97,26 @@ export function QuizWizard({
     toast.error(getApiErrorMessage(error, fallback));
   };
 
-  /** Move forward, pulling in conditional questions unlocked by the answers so far. */
-  const advance = async () => {
-    if (index < questions.length - 1) {
-      setIndex(index + 1);
+  /**
+   * Move forward, pulling in conditional questions unlocked by the answers so far.
+   * `list` lets the caller pass a list it has just reconciled, because the
+   * `questions` state read here is still the pre-update render value.
+   */
+  const advance = async (list: SurveyQuestionDto[] = questions) => {
+    if (index < list.length - 1) {
+      setIndex((prev) => prev + 1);
       return;
     }
 
     try {
       const refreshed = await unlockQuestions.mutateAsync(surveyId);
-      const knownIds = new Set(questions.map((item) => item.id));
-      const unlocked = refreshed.filter((item) => !knownIds.has(item.id));
+      const merged = reconcileQuestions(list, refreshed, index);
 
-      if (unlocked.length > 0) {
-        setQuestions([...questions, ...unlocked]);
-        setIndex(index + 1);
+      if (index < merged.length - 1) {
+        // `merged` only drives the branch; the write goes through the queue so it
+        // composes with a reconcile the caller may already have queued.
+        setQuestions((prev) => reconcileQuestions(prev, refreshed, index));
+        setIndex((prev) => prev + 1);
         return;
       }
     } catch (error) {
@@ -98,6 +133,8 @@ export function QuizWizard({
   };
 
   const handleNext = async () => {
+    let list = questions;
+
     if (hasAnswer) {
       try {
         await submitAnswer.mutateAsync({
@@ -112,8 +149,25 @@ export function QuizWizard({
         handleFailure(error, "Không thể lưu câu trả lời. Vui lòng thử lại.");
         return;
       }
+
+      // After a backward edit, re-read the question set so the branches the old
+      // answer had unlocked disappear from the remaining steps.
+      if (hasNavigatedBack && index < questions.length - 1) {
+        try {
+          const refreshed = await unlockQuestions.mutateAsync(surveyId);
+          list = reconcileQuestions(questions, refreshed, index);
+          setQuestions(list);
+        } catch (error) {
+          if (isSessionGoneError(error)) {
+            onSessionLost();
+            return;
+          }
+          // Non-fatal: the answer is saved, so keep walking the stale local list.
+        }
+      }
     }
-    await advance();
+
+    await advance(list);
   };
 
   const isLastKnownQuestion = index === questions.length - 1;
@@ -125,7 +179,6 @@ export function QuizWizard({
           <span>
             Câu {index + 1} / {questions.length}
           </span>
-          <span className="uppercase">{question.category}</span>
         </div>
         <div className="h-1.5 w-full overflow-hidden rounded-full bg-slate-100">
           <div
@@ -138,7 +191,9 @@ export function QuizWizard({
       <QuestionCard
         question={question}
         draft={draft}
-        onChange={(next) => setAnswers({ ...answers, [question.id]: next })}
+        onChange={(next) =>
+          setAnswers((prev) => ({ ...prev, [question.id]: next }))
+        }
       />
 
       <div className="flex items-center justify-between gap-3 border-t border-slate-100 pt-4">
@@ -146,7 +201,10 @@ export function QuizWizard({
           type="button"
           variant="ghost"
           disabled={index === 0 || isBusy}
-          onClick={() => setIndex(index - 1)}
+          onClick={() => {
+            setHasNavigatedBack(true);
+            setIndex((prev) => prev - 1);
+          }}
           className="text-xs font-semibold"
         >
           <ArrowLeft className="mr-1.5 h-4 w-4" />
@@ -158,7 +216,7 @@ export function QuizWizard({
             type="button"
             variant="ghost"
             disabled={isBusy}
-            onClick={advance}
+            onClick={() => advance()}
             className="text-xs font-medium text-slate-400 hover:text-slate-600"
           >
             Bỏ qua

@@ -23,6 +23,7 @@ function optionLabel(option: SurveyQuestionOptionDto): string {
 export function QuestionCard({ question, draft, onChange }: QuestionCardProps) {
   const isMultiSelect = question.questionType === "MULTI_SELECT";
   const hasOptions = question.options.length > 0;
+  const headingId = `quiz-question-${question.id}`;
 
   const toggleOption = (labelCode: string) => {
     if (isMultiSelect) {
@@ -38,7 +39,9 @@ export function QuestionCard({ question, draft, onChange }: QuestionCardProps) {
   return (
     <div className="flex flex-col gap-4">
       <div className="flex flex-col gap-1">
-        <h2 className="text-lg font-bold text-slate-900">{question.text}</h2>
+        <h2 id={headingId} className="text-lg font-bold text-slate-900">
+          {question.text}
+        </h2>
         {question.description && (
           <p className="text-xs text-slate-500">{question.description}</p>
         )}
@@ -50,13 +53,21 @@ export function QuestionCard({ question, draft, onChange }: QuestionCardProps) {
       </div>
 
       {hasOptions ? (
-        <div className="flex flex-col gap-2">
+        <div
+          className="flex flex-col gap-2"
+          role={isMultiSelect ? "group" : "radiogroup"}
+          aria-labelledby={headingId}
+        >
           {question.options.map((option) => {
             const isSelected = draft.labelCodes.includes(option.labelCode);
             return (
               <button
                 key={option.labelCode}
                 type="button"
+                // Selection is otherwise conveyed by colour alone.
+                role={isMultiSelect ? undefined : "radio"}
+                aria-pressed={isMultiSelect ? isSelected : undefined}
+                aria-checked={isMultiSelect ? undefined : isSelected}
                 onClick={() => toggleOption(option.labelCode)}
                 className={`flex items-start gap-3 rounded-xl border-2 px-4 py-3 text-left transition-all ${
                   isSelected

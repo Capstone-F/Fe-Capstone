@@ -95,11 +95,10 @@ export function useCompleteQuiz() {
     },
     onSuccess: async () => {
       await queryClient.invalidateQueries({ queryKey: queryKeys.profile });
+      // queryKeys.surveyHistory (["surveyHistory"]) prefix-matches
+      // queryKeys.inProgressSurvey (["surveyHistory", "in-progress"]).
       await queryClient.invalidateQueries({
         queryKey: queryKeys.surveyHistory,
-      });
-      await queryClient.invalidateQueries({
-        queryKey: queryKeys.inProgressSurvey,
       });
     },
   });
