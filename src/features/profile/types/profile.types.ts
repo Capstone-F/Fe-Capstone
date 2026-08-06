@@ -1,3 +1,5 @@
+import type { BaumannScoresDto, SkinTypeSummaryDto } from "@/types/survey";
+
 export interface UserProfile {
   id: string;
   name: string;
@@ -8,6 +10,19 @@ export interface UserProfile {
   allergies: string[];
   baumannCode?: string;
   oilyDryScore?: number | null;
+  /** Full skin type summary from GET /customers/me (null until first assessed). */
+  skinType?: SkinTypeSummaryDto | null;
+  /** Signed axis scores; null on every axis until a code is saved with scores. */
+  baumannScores?: BaumannScoresDto | null;
+}
+
+/** Body of PATCH /customers/me/skin-type. Omitted scores are cleared by the backend. */
+export interface UpdateSkinTypeBody {
+  skinTypeCode: string;
+  oilyDryScore: number;
+  sensitiveResistantScore: number;
+  pigmentedNonPigmentedScore: number;
+  wrinkledTightScore: number;
 }
 
 export interface AllergyLabelResponse {
@@ -22,7 +37,7 @@ export interface CustomerDetailsResponse {
   avatarUrl: string | null;
   dateOfBirth: string | null;
   gender: string;
-  skinType: { code: string; name: string } | null;
+  skinType: { code: string; name: string; description?: string | null } | null;
   baumannScores: {
     oilyDryScore: number | null;
     sensitiveResistantScore: number | null;
