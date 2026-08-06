@@ -34,14 +34,6 @@ export function useProfile(enabled = true) {
           allergies: data.allergies?.map((a) => a.code) ?? [],
           baumannCode: data.customer?.skinType?.code,
           oilyDryScore: data.customer?.baumannScores?.oilyDryScore,
-          skinType: data.customer?.skinType
-            ? {
-                code: data.customer.skinType.code,
-                name: data.customer.skinType.name,
-                description: data.customer.skinType.description ?? null,
-              }
-            : null,
-          baumannScores: data.customer?.baumannScores ?? null,
         };
       } catch {
         return null;
@@ -95,14 +87,6 @@ export function useUpdateProfile() {
             allergies: data.allergies?.map((a) => a.code) ?? [],
             baumannCode: data.customer?.skinType?.code,
             oilyDryScore: data.customer?.baumannScores?.oilyDryScore,
-            skinType: data.customer?.skinType
-              ? {
-                  code: data.customer.skinType.code,
-                  name: data.customer.skinType.name,
-                  description: data.customer.skinType.description ?? null,
-                }
-              : null,
-            baumannScores: data.customer?.baumannScores ?? null,
           };
         },
       });
@@ -162,24 +146,6 @@ export function useAllergyOptions() {
       }
       const response = await profileApi.getAllergyOptions();
       return response.data;
-    },
-  });
-}
-
-/**
- * Id of the customer's most recent unfinished survey, used to resume the quiz.
- * GET /customers/me returns every survey (newest first), completed or not.
- */
-export function useInProgressSurveyId() {
-  return useQuery({
-    queryKey: queryKeys.inProgressSurvey,
-    queryFn: async (): Promise<string | null> => {
-      if (appConfig.useMockApi) {
-        return null;
-      }
-      const response = await profileApi.getCustomerMe();
-      const pending = response.data.surveyHistory.find((s) => !s.isCompleted);
-      return pending?.id ?? null;
     },
   });
 }

@@ -2,8 +2,6 @@ export interface SurveyQuestionOptionDto {
   labelCode: string;
   name: string;
   description: string | null;
-  /** Vietnamese display name from the label taxonomy; falls back to `name` when null. */
-  vietnameseNormalized?: string | null;
 }
 
 export interface SurveyQuestionDto {

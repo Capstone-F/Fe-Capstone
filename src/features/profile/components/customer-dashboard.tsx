@@ -24,8 +24,6 @@ import { toast } from "sonner";
 import { FeedbackModal } from "@/features/booking/components/feedback-modal";
 import { WalletCard } from "@/features/wallet/components/wallet-card";
 import { CustomerTreatmentView } from "@/features/treatments/components/customer-treatment-view";
-import { BaumannResultCard } from "@/features/survey/components/baumann-result-card";
-import { mapBaumannResult } from "@/features/survey/mapper/baumann.mapper";
 import { Button } from "@/shared/components/ui/button";
 import { Input } from "@/shared/components/ui/input";
 import { Label } from "@/shared/components/ui/label";
@@ -259,11 +257,6 @@ export function CustomerDashboard() {
     );
   }
 
-  const baumannResult = mapBaumannResult(
-    profile.skinType,
-    profile.baumannScores,
-  );
-
   return (
     <div className="mx-auto w-full max-w-6xl px-4 py-8">
       <div className="mb-8">
@@ -388,32 +381,75 @@ export function CustomerDashboard() {
                   chuyên sâu.
                 </CardDescription>
               </CardHeader>
-              <CardContent className="flex flex-col gap-6 p-6">
-                {baumannResult ? (
-                  <BaumannResultCard result={baumannResult} />
-                ) : (
-                  <div className="flex flex-col items-center gap-3 rounded-2xl border border-dashed border-slate-200 bg-slate-50/60 p-8 text-center">
-                    <Award className="h-8 w-8 text-slate-300" />
+              <CardContent className="space-y-6 p-6">
+                <div className="flex flex-col items-center gap-4 rounded-2xl border border-emerald-100 bg-emerald-50/50 p-5 sm:flex-row">
+                  <div className="flex h-14 w-14 shrink-0 items-center justify-center rounded-2xl bg-emerald-500 text-white shadow-xs">
+                    <Award className="h-8 w-8" />
+                  </div>
+                  <div>
                     <h3 className="text-sm font-bold text-slate-800">
-                      Chưa xác định loại da
+                      Loại Da Của Bạn:{" "}
+                      <strong className="text-base font-black text-emerald-700">
+                        {profile.baumannCode || "CHƯA XÁC ĐỊNH"}
+                      </strong>
                     </h3>
-                    <p className="max-w-md text-xs text-slate-500">
-                      Bạn chưa hoàn tất bài test loại da. Làm bài test để hệ
-                      thống xác định loại da Baumann và cá nhân hóa lộ trình
-                      chăm sóc.
+                    <p className="mt-1 text-xs text-slate-500">
+                      {profile.baumannCode
+                        ? `Làn da của bạn thuộc nhóm ${profile.baumannCode}. Chúng tôi đã cá nhân hóa routine chăm sóc da dựa trên đặc tính này.`
+                        : "Bạn chưa hoàn tất bài phân tích da. Hãy quét da ngay để nhận routine tối ưu nhất."}
                     </p>
+                  </div>
+                </div>
+
+                {profile.baumannCode && (
+                  <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+                    <div className="space-y-2 rounded-xl border border-slate-200 bg-slate-50/50 p-4">
+                      <span className="block text-xs font-bold text-slate-700">
+                        Tuyến Bã Nhờn
+                      </span>
+                      <p className="text-xs leading-relaxed text-slate-600">
+                        {profile.baumannCode.includes("O")
+                          ? "Oily (Da Dầu): Tuyến bã nhờn hoạt động mạnh, có khuynh hướng bóng dầu vùng chữ T và dễ bít tắc tạo mụn đầu đen."
+                          : "Dry (Da Khô): Thiếu hụt lượng dầu tự nhiên bảo vệ da, dễ gây cảm giác khô căng sau khi rửa mặt."}
+                      </p>
+                    </div>
+
+                    <div className="space-y-2 rounded-xl border border-slate-200 bg-slate-50/50 p-4">
+                      <span className="block text-xs font-bold text-slate-700">
+                        Mức Độ Nhạy Cảm
+                      </span>
+                      <p className="text-xs leading-relaxed text-slate-600">
+                        {profile.baumannCode.includes("S")
+                          ? "Sensitive (Da Nhạy Cảm): Dễ đỏ, ngứa hoặc mẩn rát khi gặp thay đổi thời tiết hoặc các hoạt chất điều trị mạnh (Retinol, AHA)."
+                          : "Resistant (Da Khỏe): Hàng rào bảo vệ da vững chắc, ít khi kích ứng, thích hợp với nhiều nồng độ treatment cao."}
+                      </p>
+                    </div>
+
+                    <div className="space-y-2 rounded-xl border border-slate-200 bg-slate-50/50 p-4">
+                      <span className="block text-xs font-bold text-slate-700">
+                        Sắc Tố
+                      </span>
+                      <p className="text-xs leading-relaxed text-slate-600">
+                        {profile.baumannCode.includes("P")
+                          ? "Pigmented (Tăng Sắc Tố): Dễ bị thâm sau mụn, dễ hình thành tàn nhang và sạm nám khi tiếp xúc với tia cực tím."
+                          : "Non-pigmented (Không Sắc Tố): Ít bị thâm sạm, da có khuynh hướng đều màu và phục hồi sắc tố nhanh hơn."}
+                      </p>
+                    </div>
+
+                    <div className="space-y-2 rounded-xl border border-slate-200 bg-slate-50/50 p-4">
+                      <span className="block text-xs font-bold text-slate-700">
+                        Độ Đàn Hồi
+                      </span>
+                      <p className="text-xs leading-relaxed text-slate-600">
+                        {profile.baumannCode.includes("W")
+                          ? "Wrinkled (Nhăn): Cần bổ sung chất chống oxy hóa và collagen sớm để chống chảy sệ và nếp nhăn đuôi mắt."
+                          : "Tight (Căng): Độ đàn hồi tự nhiên rất tốt, hàng rào bảo vệ vững vàng trước các dấu hiệu tuổi tác."}
+                      </p>
+                    </div>
                   </div>
                 )}
 
                 <div className="flex flex-wrap gap-3 border-t border-slate-100 pt-4">
-                  <Button
-                    onClick={() => router.push("/skin-quiz")}
-                    className="rounded-xl bg-[#2C3E35] px-6 text-xs font-bold text-white hover:bg-[#22302a]"
-                  >
-                    {profile.skinType
-                      ? "Cập nhật loại da Baumann"
-                      : "Làm bài test loại da"}
-                  </Button>
                   <Button
                     onClick={() => router.push("/scan?view=plan")}
                     className="rounded-xl bg-[#6b5cf6] px-6 text-xs font-bold text-white shadow-md hover:bg-[#5a4ae5]"
