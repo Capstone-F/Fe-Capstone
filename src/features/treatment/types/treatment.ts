@@ -1,6 +1,7 @@
 import {
   SurveyRecord,
   SurveyQuestionDto,
+  SurveyFaceLabelDto,
   RecommendationResponseDto,
   CustomerProfileResponseDto,
 } from "@/types/domain";
@@ -76,6 +77,9 @@ export type TreatmentData = {
   dynamicQuestions: SurveyQuestionDto[];
   dynamicAnswers: Record<string, string[]>;
   dynamicTextAnswers: Record<string, string>;
+  faceImageUrl: string | null;
+  faceScannedAt: string | null;
+  faceLabels: SurveyFaceLabelDto[];
   recommendations: RecommendationResponseDto | null;
   customerProfile: CustomerProfileResponseDto | null;
   isLoadingDynamic?: boolean;

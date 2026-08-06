@@ -10,6 +10,7 @@ import { useSession } from "@/features/auth/hooks/useSession";
 import { appConfig } from "@/lib/env";
 import { useTreatment } from "@/features/treatment/components/treatment-context";
 import { shouldRedirectToLogin } from "@/features/auth/lib/session-access";
+import { SurveyFaceScan } from "./survey-face-scan";
 
 export function SurveyQuestions() {
   const {
@@ -97,8 +98,12 @@ export function SurveyQuestions() {
 
     setIsSubmittingStep(true);
     try {
-      await submitDynamicAnswersAndNext([currentQ.id]);
-      setSurveyStep(step + 1);
+      const wasSaved = await submitDynamicAnswersAndNext([currentQ.id]);
+      if (wasSaved) {
+        setSurveyStep(step + 1);
+      } else {
+        setErrorMsg("Không thể lưu câu trả lời. Vui lòng thử lại.");
+      }
     } catch (e) {
       console.error(e);
       setErrorMsg("Có lỗi khi lưu câu trả lời. Vui lòng thử lại.");
@@ -165,40 +170,12 @@ export function SurveyQuestions() {
   // If we passed all questions
   if (step > questionsCount) {
     return (
-      <div className="flex flex-1 flex-col items-center justify-center space-y-6 p-8 text-center">
-        <h3 className="font-heading text-2xl font-bold text-[#131336]">
-          Bạn đã hoàn thành các câu hỏi!
-        </h3>
-        <p className="max-w-md text-base text-[#131336]/70">
-          Hệ thống AI GlowScan sẽ tính toán điểm Baumann và thiết kế phác đồ phù
-          hợp với làn da của bạn.
-        </p>
-
-        {errorMsg && (
-          <div className="mx-auto max-w-md rounded-2xl border border-red-200 bg-red-50 p-4 text-sm text-red-600">
-            <p className="font-semibold">{errorMsg}</p>
-            <Button
-              variant="outline"
-              onClick={() => startDynamicSurvey()}
-              className="mt-3 rounded-full border-red-300 text-xs font-bold text-red-700 hover:bg-red-100"
-            >
-              Làm lại khảo sát mới
-            </Button>
-          </div>
-        )}
-
-        <Button
-          onClick={handleComplete}
-          disabled={isSubmittingStep}
-          className="h-14 w-full max-w-xs rounded-full bg-[#6b5cf6] px-8 text-lg font-bold text-white shadow-md hover:bg-[#5a4ae5]"
-        >
-          {isSubmittingStep ? (
-            <Loader2 className="h-5 w-5 animate-spin" />
-          ) : (
-            <span>Phân tích kết quả</span>
-          )}
-        </Button>
-      </div>
+      <SurveyFaceScan
+        isCompleting={isSubmittingStep}
+        errorMessage={errorMsg}
+        onBack={() => setSurveyStep(Math.max(1, questionsCount))}
+        onComplete={() => void handleComplete()}
+      />
     );
   }
 
@@ -303,13 +280,8 @@ export function SurveyQuestions() {
                         }`}
                       >
                         <span className={`text-base font-bold text-[#131336]`}>
-                          {option.name}
+                          {option.vietnameseNormalized || option.name}
                         </span>
-                        {option.description && (
-                          <span className="mt-1.5 text-xs leading-relaxed text-[#131336]/60">
-                            {option.description}
-                          </span>
-                        )}
                       </div>
                     );
                   })
