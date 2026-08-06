@@ -23,6 +23,18 @@ export const treatmentApi = {
     return apiClient.post<SurveyResponseDto>(API_ENDPOINTS.SURVEYS.BASE);
   },
 
+  scanSurveyFace: (
+    sessionId: string,
+    file: File,
+  ): Promise<AxiosResponse<SurveyResponseDto>> => {
+    const formData = new FormData();
+    formData.append("file", file);
+    return apiClient.post<SurveyResponseDto>(
+      API_ENDPOINTS.SURVEYS.FACE_SCAN(sessionId),
+      formData,
+    );
+  },
+
   submitSurveyAnswers: (
     sessionId: string,
     answers: { questionId: string; labelCodes: string[]; value?: string }[],

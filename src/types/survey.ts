@@ -2,6 +2,7 @@ export interface SurveyQuestionOptionDto {
   labelCode: string;
   name: string;
   description: string | null;
+  vietnameseNormalized: string | null;
 }
 
 export interface SurveyQuestionDto {
@@ -29,6 +30,14 @@ export interface SubmitAnswersPayload {
 export interface SurveyAnswerLabelDto {
   code: string;
   name: string;
+  vietnameseNormalized?: string | null;
+}
+
+export interface SurveyFaceLabelDto {
+  code: string;
+  name: string;
+  vietnameseNormalized: string | null;
+  explanation: string;
 }
 
 export interface SurveyAnswerItemDto {
@@ -42,6 +51,9 @@ export interface SurveyResponseDto {
   id: string;
   isCompleted: boolean;
   completedAt: string | null;
+  faceImageUrl: string | null;
+  faceScannedAt: string | null;
+  faceLabels: SurveyFaceLabelDto[];
   answers: SurveyAnswerItemDto[];
   createdAt: string;
 }

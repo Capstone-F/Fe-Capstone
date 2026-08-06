@@ -10,6 +10,7 @@ import {
 import type {
   CustomerProfileResponseDto,
   RecommendationResponseDto,
+  SurveyResponseDto,
 } from "@/types/domain";
 import { DEFAULT_ANSWERS, LOCAL_STORAGE_KEY } from "../constants/treatment";
 import { treatmentApi } from "../api/treatment.api";
@@ -35,6 +36,7 @@ type TreatmentContextType = {
     value?: string,
   ) => void;
   submitDynamicAnswersAndNext: (questionIds: string[]) => Promise<boolean>;
+  scanSurveyFace: (file: File) => Promise<SurveyResponseDto>;
   completeDynamicSurvey: () => Promise<boolean>;
   fetchLatestRecommendations: () => Promise<RecommendationResponseDto | null>;
   fetchCustomerProfile: () => Promise<CustomerProfileResponseDto | null>;
@@ -85,6 +87,9 @@ export function TreatmentProvider({ children }: { children: React.ReactNode }) {
       dynamicQuestions: [],
       dynamicAnswers: {},
       dynamicTextAnswers: {},
+      faceImageUrl: null,
+      faceScannedAt: null,
+      faceLabels: [],
       recommendations: null,
       customerProfile: null,
       isLoadingDynamic: false,
@@ -114,6 +119,9 @@ export function TreatmentProvider({ children }: { children: React.ReactNode }) {
           dynamicQuestions: parsed.dynamicQuestions || [],
           dynamicAnswers: parsed.dynamicAnswers || {},
           dynamicTextAnswers: parsed.dynamicTextAnswers || {},
+          faceImageUrl: parsed.faceImageUrl || null,
+          faceScannedAt: parsed.faceScannedAt || null,
+          faceLabels: parsed.faceLabels || [],
         };
       }
     } catch {
@@ -175,6 +183,9 @@ export function TreatmentProvider({ children }: { children: React.ReactNode }) {
         dynamicQuestions: questions,
         dynamicAnswers: {},
         dynamicTextAnswers: {},
+        faceImageUrl: session.faceImageUrl || null,
+        faceScannedAt: session.faceScannedAt || null,
+        faceLabels: session.faceLabels || [],
         recommendations: null,
         surveyStep: 1,
         isLoadingDynamic: false,
@@ -206,6 +217,31 @@ export function TreatmentProvider({ children }: { children: React.ReactNode }) {
       }));
     },
     [],
+  );
+
+  const scanSurveyFace = useCallback(
+    async (file: File): Promise<SurveyResponseDto> => {
+      if (!state.surveySessionId) {
+        throw new ApiError({
+          message: "Phiên khảo sát không tồn tại. Vui lòng làm lại khảo sát.",
+          status: 404,
+        });
+      }
+
+      const response = await treatmentApi.scanSurveyFace(
+        state.surveySessionId,
+        file,
+      );
+      const survey = response.data;
+      setState((prev) => ({
+        ...prev,
+        faceImageUrl: survey.faceImageUrl || null,
+        faceScannedAt: survey.faceScannedAt || null,
+        faceLabels: survey.faceLabels || [],
+      }));
+      return survey;
+    },
+    [state.surveySessionId],
   );
 
   const fetchCustomerProfile =
@@ -488,6 +524,9 @@ export function TreatmentProvider({ children }: { children: React.ReactNode }) {
       dynamicQuestions: [],
       dynamicAnswers: {},
       dynamicTextAnswers: {},
+      faceImageUrl: null,
+      faceScannedAt: null,
+      faceLabels: [],
       recommendations: null,
       customerProfile: null,
       isLoadingDynamic: false,
@@ -508,6 +547,7 @@ export function TreatmentProvider({ children }: { children: React.ReactNode }) {
         startDynamicSurvey,
         setDynamicAnswer,
         submitDynamicAnswersAndNext,
+        scanSurveyFace,
         completeDynamicSurvey,
         fetchLatestRecommendations,
         fetchCustomerProfile,

@@ -120,7 +120,11 @@ export const API_ENDPOINTS = {
     CHECKOUT: "/payments/checkout",
     STATUS: (paymentId: string | number) => `/payments/${paymentId}`,
   },
-  SURVEYS: { BASE: "/surveys", QUESTIONS: "/surveys/questions" },
+  SURVEYS: {
+    BASE: "/surveys",
+    QUESTIONS: "/surveys/questions",
+    FACE_SCAN: (id: string) => `/surveys/${id}/face-scan`,
+  },
   RECOMMENDATIONS: { LATEST: "/recommendations/latest" },
   ROUTINES: {
     GENERATE: "/routines/generate",
