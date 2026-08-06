@@ -4,7 +4,11 @@ import { appConfig } from "@/lib/env";
 import { profileApi } from "../api/profile.api";
 import { profileMock } from "../api/profile.mock";
 import { extractBaumannFromAnswers } from "../mapper/profile-mapper";
-import type { UserProfile, AllergyLabelResponse } from "../types/profile.types";
+import type {
+  UserProfile,
+  AllergyLabelResponse,
+  UpdateSkinTypeBody,
+} from "../types/profile.types";
 import type { SurveyAnswers, SurveyRecord } from "@/types/domain";
 
 export function useProfile(enabled = true) {
@@ -34,6 +38,14 @@ export function useProfile(enabled = true) {
           allergies: data.allergies?.map((a) => a.code) ?? [],
           baumannCode: data.customer?.skinType?.code,
           oilyDryScore: data.customer?.baumannScores?.oilyDryScore,
+          skinType: data.customer?.skinType
+            ? {
+                code: data.customer.skinType.code,
+                name: data.customer.skinType.name,
+                description: data.customer.skinType.description ?? null,
+              }
+            : null,
+          baumannScores: data.customer?.baumannScores ?? null,
         };
       } catch {
         return null;
@@ -87,6 +99,14 @@ export function useUpdateProfile() {
             allergies: data.allergies?.map((a) => a.code) ?? [],
             baumannCode: data.customer?.skinType?.code,
             oilyDryScore: data.customer?.baumannScores?.oilyDryScore,
+            skinType: data.customer?.skinType
+              ? {
+                  code: data.customer.skinType.code,
+                  name: data.customer.skinType.name,
+                  description: data.customer.skinType.description ?? null,
+                }
+              : null,
+            baumannScores: data.customer?.baumannScores ?? null,
           };
         },
       });
@@ -95,6 +115,23 @@ export function useUpdateProfile() {
         throw new Error("Không thể tải thông tin profile sau khi cập nhật");
       }
       return updated;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: queryKeys.profile });
+    },
+  });
+}
+
+/**
+ * Saves the Baumann code together with all four axis scores. The backend clears
+ * any score left out of the body, so the form always sends the full set.
+ */
+export function useUpdateSkinType() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async (body: UpdateSkinTypeBody) => {
+      const response = await profileApi.patchSkinType(body);
+      return response.data;
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: queryKeys.profile });

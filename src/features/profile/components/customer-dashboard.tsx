@@ -22,6 +22,7 @@ import { toast } from "sonner";
 
 import { FeedbackModal } from "@/features/booking/components/feedback-modal";
 import { WalletCard } from "@/features/wallet/components/wallet-card";
+import { BaumannSkinTypePanel } from "./baumann-skin-type-panel";
 import { Button } from "@/shared/components/ui/button";
 import { Input } from "@/shared/components/ui/input";
 import { Label } from "@/shared/components/ui/label";
@@ -393,29 +394,12 @@ export function CustomerDashboard() {
                   Hồ Sơ Loại Da Baumann
                 </CardTitle>
                 <CardDescription className="text-xs">
-                  Được chẩn đoán tự động thông qua camera AI và bài trắc nghiệm
-                  chuyên sâu.
+                  Bốn trục đặc tính da của bạn. Bấm &quot;Chỉnh sửa&quot; nếu
+                  muốn cập nhật lại.
                 </CardDescription>
               </CardHeader>
               <CardContent className="space-y-6 p-6">
-                <div className="flex flex-col items-center gap-4 rounded-2xl border border-emerald-100 bg-emerald-50/50 p-5 sm:flex-row">
-                  <div className="flex h-14 w-14 shrink-0 items-center justify-center rounded-2xl bg-emerald-500 text-white shadow-xs">
-                    <Award className="h-8 w-8" />
-                  </div>
-                  <div>
-                    <h3 className="text-sm font-bold text-slate-800">
-                      Loại Da Của Bạn:{" "}
-                      <strong className="text-base font-black text-emerald-700">
-                        {profile.baumannCode || "CHƯA XÁC ĐỊNH"}
-                      </strong>
-                    </h3>
-                    <p className="mt-1 text-xs text-slate-500">
-                      {profile.baumannCode
-                        ? `Làn da của bạn thuộc nhóm ${profile.baumannCode}. Chúng tôi đã cá nhân hóa routine chăm sóc da dựa trên đặc tính này.`
-                        : "Bạn chưa hoàn tất bài phân tích da. Hãy quét da ngay để nhận routine tối ưu nhất."}
-                    </p>
-                  </div>
-                </div>
+                <BaumannSkinTypePanel profile={profile} />
 
                 {profile.baumannCode && (
                   <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">

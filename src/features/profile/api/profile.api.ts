@@ -4,6 +4,7 @@ import type { AxiosResponse } from "axios";
 import type {
   AllergyLabelResponse,
   CustomerProfileResponse,
+  UpdateSkinTypeBody,
 } from "../types/profile.types";
 import type { SessionUser } from "@/features/auth/types/auth.types";
 
@@ -25,6 +26,15 @@ export const profileApi = {
   ): Promise<AxiosResponse<CustomerProfileResponse>> => {
     return apiClient.patch<CustomerProfileResponse>(
       API_ENDPOINTS.CUSTOMERS.ME,
+      body,
+    );
+  },
+
+  patchSkinType: (
+    body: UpdateSkinTypeBody,
+  ): Promise<AxiosResponse<CustomerProfileResponse>> => {
+    return apiClient.patch<CustomerProfileResponse>(
+      API_ENDPOINTS.CUSTOMERS.SKIN_TYPE,
       body,
     );
   },

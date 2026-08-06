@@ -22,6 +22,7 @@ export const API_ENDPOINTS = {
   },
   CUSTOMERS: {
     ME: "/customers/me",
+    SKIN_TYPE: "/customers/me/skin-type",
     ALLERGIES: "/customers/allergies",
     CONSULTATION_CONTEXT: (id: string) =>
       `/customers/${id}/consultation-context`,
