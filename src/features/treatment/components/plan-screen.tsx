@@ -100,7 +100,7 @@ export function PlanScreen() {
             PROTOCOL KHUYẾN NGHỊ
           </span>
           <h3 className="font-heading text-foreground pt-1 text-xl font-extrabold tracking-tight">
-            Phác Đồ Từ Backend
+            Phác Đồ Từ Khuyến Nghị
           </h3>
           <p className="text-muted-foreground text-[10px]">
             Routine chi tiết chỉ được kích hoạt sau khi thanh toán survey thành

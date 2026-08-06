@@ -10,7 +10,7 @@ import {
 import { Button } from "@/shared/components/ui/button";
 import { useWallet, useWalletTransactions } from "../hooks/useWallet";
 import { WalletTopUpModal } from "./wallet-topup-modal";
-import { formatVnd } from "@/shared/utils/format";
+import formatCurrency from "@/shared/utils/currency";
 
 export function WalletCard() {
   const { data: wallet, isLoading } = useWallet();
@@ -51,7 +51,7 @@ export function WalletCard() {
             Số Dư Khả Dụng
           </span>
           <strong className="text-2xl font-black tracking-tight text-white sm:text-3xl">
-            {isLoading ? "---" : formatVnd(wallet?.balanceVnd || 0)}
+            {isLoading ? "---" : formatCurrency(wallet?.balanceVnd || 0)}
           </strong>
         </div>
       </div>
@@ -106,7 +106,7 @@ export function WalletCard() {
                   }`}
                 >
                   {tx.type === "TOP_UP" || tx.type === "REFUND" ? "+" : "-"}
-                  {formatVnd(tx.amountVnd)}
+                  {formatCurrency(tx.amountVnd)}
                 </strong>
               </div>
             ))}

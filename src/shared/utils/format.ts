@@ -1,4 +1,7 @@
-/** Format a VND amount consistently with existing screens (e.g. "320.000đ"). */
+import formatCurrency from "./currency";
+
+/** Format a VND amount consistently using currency utility. */
 export function formatVnd(value: number): string {
-  return `${value.toLocaleString("vi-VN")}đ`;
+  return formatCurrency(value);
 }
+export { formatCurrency };

@@ -1,6 +1,6 @@
 "use client";
 
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { queryKeys } from "@/lib/query/keys";
 import { ApiError } from "@/core/api/errors";
 import type { Order } from "@/types/domain";
@@ -144,4 +144,26 @@ export function useOrder(id: string): {
       orderQuery.error instanceof ApiError && orderQuery.error.status === 404,
     error: orderQuery.error ?? poolQuery.error,
   };
+}
+
+export function useCancelOrder() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: ({ id, reason }: { id: string; reason: string }) =>
+      ordersApi.cancelOrder(id, reason).then((res) => res.data),
+    onSuccess: (_, variables) => {
+      queryClient.invalidateQueries({ queryKey: ["orders"] });
+      queryClient.invalidateQueries({ queryKey: ["order", variables.id] });
+    },
+  });
+}
+
+export function useReorder() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (id: string) => ordersApi.reorder(id).then((res) => res.data),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: queryKeys.cart });
+    },
+  });
 }

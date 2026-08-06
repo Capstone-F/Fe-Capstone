@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { Activity, Frown, Meh, Smile } from "lucide-react";
+import { Activity, AlertCircle, Frown, Meh, Smile } from "lucide-react";
 import { toast } from "sonner";
 import { ApiError } from "@/core/api/errors";
 import { Button } from "@/shared/components/ui/button";
@@ -12,39 +12,56 @@ import {
   DialogTitle,
 } from "@/shared/components/ui/dialog";
 import { Textarea } from "@/shared/components/ui/textarea";
-import {
-  MOOD_LABELS,
-  MOOD_OPTIONS,
-  SIDE_EFFECT_LABELS,
-  SIDE_EFFECT_OPTIONS,
-} from "../constants/routine-tracking";
 import { useCreateCheckIn } from "../hooks/useRoutineTracking";
-import type {
-  CheckInMood,
-  RoutinePeriod,
-  SideEffectType,
-} from "../types/routine-tracking.types";
+import type { RoutinePeriod } from "../types/routine-tracking.types";
 
-const MOOD_ICONS: Record<CheckInMood, typeof Smile> = {
-  GOOD: Smile,
-  OK: Meh,
-  BAD: Frown,
-};
+export type OverallFeeling = "BETTER" | "SAME" | "WORSE";
+export type SymptomKey =
+  | "oiliness"
+  | "dryness"
+  | "redness"
+  | "acne"
+  | "itching"
+  | "burning"
+  | "peeling"
+  | "new_breakout";
 
-const MOOD_ACTIVE_CLASS: Record<CheckInMood, string> = {
-  GOOD: "border-emerald-500 bg-emerald-50 text-emerald-700",
-  OK: "border-amber-500 bg-amber-50 text-amber-700",
-  BAD: "border-red-500 bg-red-50 text-red-700",
-};
+const FEELINGS: {
+  key: OverallFeeling;
+  label: string;
+  icon: typeof Smile;
+  color: string;
+}[] = [
+  {
+    key: "BETTER",
+    label: "Tốt hơn",
+    icon: Smile,
+    color: "border-emerald-500 bg-emerald-50 text-emerald-700",
+  },
+  {
+    key: "SAME",
+    label: "Như cũ",
+    icon: Meh,
+    color: "border-amber-500 bg-amber-50 text-amber-700",
+  },
+  {
+    key: "WORSE",
+    label: "Kém hơn",
+    icon: Frown,
+    color: "border-rose-500 bg-rose-50 text-rose-700",
+  },
+];
 
-const LEVEL_FIELDS = [
-  { key: "acneLevel", label: "Mụn" },
-  { key: "oilLevel", label: "Dầu" },
-  { key: "rednessLevel", label: "Mẩn đỏ" },
-  { key: "moistureLevel", label: "Độ ẩm" },
-] as const;
-
-type LevelKey = (typeof LEVEL_FIELDS)[number]["key"];
+const SYMPTOMS: { key: SymptomKey; label: string }[] = [
+  { key: "oiliness", label: "Dầu" },
+  { key: "dryness", label: "Khô" },
+  { key: "redness", label: "Đỏ" },
+  { key: "acne", label: "Mụn" },
+  { key: "itching", label: "Ngứa" },
+  { key: "burning", label: "Châm chích" },
+  { key: "peeling", label: "Bong da" },
+  { key: "new_breakout", label: "Mụn mới" },
+];
 
 interface DailyCheckInDialogProps {
   open: boolean;
@@ -59,39 +76,53 @@ export function DailyCheckInDialog({
   routineId,
   period,
 }: DailyCheckInDialogProps) {
-  const [mood, setMood] = useState<CheckInMood>("OK");
-  const [levels, setLevels] = useState<Record<LevelKey, number>>({
-    acneLevel: 0,
-    oilLevel: 0,
-    rednessLevel: 0,
-    moistureLevel: 3,
-  });
-  const [sideEffects, setSideEffects] = useState<SideEffectType[]>([]);
+  const [feeling, setFeeling] = useState<OverallFeeling>("SAME");
+  const [selectedSymptoms, setSelectedSymptoms] = useState<SymptomKey[]>([]);
   const [note, setNote] = useState("");
 
   const createCheckIn = useCreateCheckIn(routineId);
 
-  const toggleSideEffect = (type: SideEffectType) => {
-    setSideEffects((previous) =>
-      previous.includes(type)
-        ? previous.filter((item) => item !== type)
-        : [...previous, type],
+  const toggleSymptom = (key: SymptomKey) => {
+    setSelectedSymptoms((prev) =>
+      prev.includes(key) ? prev.filter((item) => item !== key) : [...prev, key],
     );
   };
 
   const handleSubmit = (event: React.FormEvent) => {
     event.preventDefault();
+
+    // Map to exact Backend DTO as Mobile mo_capstone mappers.ts
+    const moodMap: Record<OverallFeeling, "GOOD" | "OK" | "BAD"> = {
+      BETTER: "GOOD",
+      SAME: "OK",
+      WORSE: "BAD",
+    };
+
+    const sideEffects: {
+      type: "ITCHING" | "BURNING" | "PEELING" | "BREAKOUT" | "REDNESS";
+      severity?: number;
+    }[] = [];
+    if (selectedSymptoms.includes("itching"))
+      sideEffects.push({ type: "ITCHING", severity: 3 });
+    if (selectedSymptoms.includes("burning"))
+      sideEffects.push({ type: "BURNING", severity: 3 });
+    if (selectedSymptoms.includes("peeling"))
+      sideEffects.push({ type: "PEELING", severity: 3 });
+    if (selectedSymptoms.includes("new_breakout"))
+      sideEffects.push({ type: "BREAKOUT", severity: 3 });
+    if (selectedSymptoms.includes("redness"))
+      sideEffects.push({ type: "REDNESS", severity: 3 });
+
     createCheckIn.mutate(
       {
         period,
-        overallMood: mood,
-        acneLevel: levels.acneLevel,
-        oilLevel: levels.oilLevel,
-        rednessLevel: levels.rednessLevel,
-        moistureLevel: levels.moistureLevel,
+        overallMood: moodMap[feeling],
+        acneLevel: selectedSymptoms.includes("acne") ? 3 : 0,
+        oilLevel: selectedSymptoms.includes("oiliness") ? 3 : 0,
+        rednessLevel: selectedSymptoms.includes("redness") ? 3 : 0,
+        moistureLevel: selectedSymptoms.includes("dryness") ? 1 : 4,
         note: note.trim() ? note.trim() : undefined,
-        // Severity is not collected in this MVP form; the backend accepts it as optional.
-        sideEffects: sideEffects.map((type) => ({ type })),
+        sideEffects: sideEffects.length > 0 ? sideEffects : undefined,
       },
       {
         onSuccess: () => {
@@ -113,6 +144,10 @@ export function DailyCheckInDialog({
     );
   };
 
+  const hasDangerousSymptom =
+    selectedSymptoms.includes("burning") ||
+    selectedSymptoms.includes("itching");
+
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-md">
@@ -123,102 +158,82 @@ export function DailyCheckInDialog({
           </DialogTitle>
         </DialogHeader>
         <form onSubmit={handleSubmit} className="space-y-4 pt-2">
+          {/* Cảm nhận chung */}
           <div className="space-y-2">
-            <label className="text-xs font-bold text-slate-700">
+            <label className="text-xs font-bold tracking-wider text-slate-700 uppercase">
               Cảm giác chung trên da hôm nay
             </label>
             <div className="grid grid-cols-3 gap-2">
-              {MOOD_OPTIONS.map((option) => {
-                const Icon = MOOD_ICONS[option];
-                const active = mood === option;
+              {FEELINGS.map((item) => {
+                const Icon = item.icon;
+                const active = feeling === item.key;
                 return (
                   <button
-                    key={option}
+                    key={item.key}
                     type="button"
-                    onClick={() => setMood(option)}
-                    className={`flex flex-col items-center gap-1.5 rounded-xl border p-3 transition-all ${
-                      active ? MOOD_ACTIVE_CLASS[option] : "border-slate-200"
-                    }`}
-                  >
-                    <Icon className="h-6 w-6" />
-                    <span className="text-[10px] font-bold">
-                      {MOOD_LABELS[option]}
-                    </span>
-                  </button>
-                );
-              })}
-            </div>
-          </div>
-
-          <div className="space-y-2">
-            <label className="text-xs font-bold text-slate-700">
-              Mức độ hiện tại (0 - 5)
-            </label>
-            <div className="space-y-2">
-              {LEVEL_FIELDS.map((field) => (
-                <div key={field.key} className="flex items-center gap-2">
-                  <span className="w-16 text-xs text-slate-600">
-                    {field.label}
-                  </span>
-                  <div className="flex gap-1">
-                    {[0, 1, 2, 3, 4, 5].map((value) => (
-                      <button
-                        key={value}
-                        type="button"
-                        onClick={() =>
-                          setLevels((previous) => ({
-                            ...previous,
-                            [field.key]: value,
-                          }))
-                        }
-                        className={`h-7 w-7 rounded-lg border text-[11px] font-bold transition-all ${
-                          levels[field.key] === value
-                            ? "border-[#6b5cf6] bg-[#6b5cf6] text-white"
-                            : "border-slate-200 text-slate-500 hover:border-slate-300"
-                        }`}
-                      >
-                        {value}
-                      </button>
-                    ))}
-                  </div>
-                </div>
-              ))}
-            </div>
-          </div>
-
-          <div className="space-y-2">
-            <label className="text-xs font-bold text-slate-700">
-              Tác dụng phụ gặp phải (nếu có)
-            </label>
-            <div className="flex flex-wrap gap-2">
-              {SIDE_EFFECT_OPTIONS.map((type) => {
-                const active = sideEffects.includes(type);
-                return (
-                  <button
-                    key={type}
-                    type="button"
-                    onClick={() => toggleSideEffect(type)}
-                    className={`rounded-full border px-3 py-1.5 text-xs transition-all ${
+                    onClick={() => setFeeling(item.key)}
+                    className={`flex flex-col items-center gap-1.5 rounded-xl border p-3.5 transition-all ${
                       active
-                        ? "border-red-500 bg-red-50 text-red-700"
+                        ? item.color
                         : "border-slate-200 bg-white text-slate-600 hover:border-slate-300"
                     }`}
                   >
-                    {SIDE_EFFECT_LABELS[type]}
+                    <Icon className="h-6 w-6" />
+                    <span className="text-xs font-bold">{item.label}</span>
                   </button>
                 );
               })}
             </div>
           </div>
 
+          {/* Tình trạng da */}
           <div className="space-y-2">
-            <label className="text-xs font-bold text-slate-700">
+            <label className="text-xs font-bold tracking-wider text-slate-700 uppercase">
+              Tình trạng da ghi nhận
+            </label>
+            <div className="flex flex-wrap gap-2">
+              {SYMPTOMS.map((symptom) => {
+                const active = selectedSymptoms.includes(symptom.key);
+                return (
+                  <button
+                    key={symptom.key}
+                    type="button"
+                    onClick={() => toggleSymptom(symptom.key)}
+                    className={`rounded-full border px-3.5 py-1.5 text-xs font-semibold transition-all ${
+                      active
+                        ? "border-[#6b5cf6] bg-[#6b5cf6] text-white shadow-xs"
+                        : "border-slate-200 bg-slate-50 text-slate-700 hover:border-slate-300"
+                    }`}
+                  >
+                    {symptom.label}
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+
+          {/* Dangerous symptom warning prompt */}
+          {hasDangerousSymptom && (
+            <div className="flex items-start gap-2.5 rounded-xl border border-rose-200 bg-rose-50 p-3 text-xs text-rose-800">
+              <AlertCircle className="mt-0.5 h-4 w-4 shrink-0 text-rose-600" />
+              <div>
+                <span className="font-bold">Lưu ý kích ứng:</span> Phát hiện
+                biểu hiện châm chích/ngứa. Bạn có thể sử dụng nút{" "}
+                <strong>&quot;Báo Tác Dụng Phụ&quot;</strong> để chuyển thông
+                tin tới Bác sĩ điều trị.
+              </div>
+            </div>
+          )}
+
+          {/* Ghi chú thêm */}
+          <div className="space-y-2">
+            <label className="text-xs font-bold tracking-wider text-slate-700 uppercase">
               Ghi chú thêm về da
             </label>
             <Textarea
               value={note}
               onChange={(event) => setNote(event.target.value)}
-              placeholder="Ví dụ: Vùng má còn hơi đỏ sau khi rửa mặt..."
+              placeholder="Ví dụ: Vùng má hơi đỏ nhẹ sau khi rửa mặt..."
               className="h-20 text-xs"
             />
           </div>
@@ -238,7 +253,7 @@ export function DailyCheckInDialog({
               disabled={createCheckIn.isPending}
               className="bg-[#6b5cf6] font-bold text-white hover:bg-[#5a4ae5]"
             >
-              Lưu Check-in
+              {createCheckIn.isPending ? "Đang lưu..." : "Lưu Check-in"}
             </Button>
           </div>
         </form>

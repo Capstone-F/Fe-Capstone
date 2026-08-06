@@ -8,8 +8,6 @@ import {
   UserCircle2,
   LogOut,
   Scan,
-  HeartPulse,
-  Stethoscope,
   ArrowLeft,
   CalendarDays,
 } from "lucide-react";
@@ -297,14 +295,6 @@ export function Navbar() {
                 <DropdownMenuItem render={<Link href="/orders" />}>
                   <ShoppingBag className="mr-2 h-4 w-4" />
                   Đơn hàng của tôi
-                </DropdownMenuItem>
-                <DropdownMenuItem render={<Link href="/care" />}>
-                  <HeartPulse className="mr-2 h-4 w-4" />
-                  Lộ trình Chăm sóc
-                </DropdownMenuItem>
-                <DropdownMenuItem render={<Link href="/experts" />}>
-                  <Stethoscope className="mr-2 h-4 w-4" />
-                  Chuyên gia & Lịch khám
                 </DropdownMenuItem>
                 <DropdownMenuSeparator />
                 <DropdownMenuItem

@@ -1,6 +1,6 @@
 "use client";
 
-import React from "react";
+import React, { useState } from "react";
 import Link from "next/link";
 import {
   Calendar,
@@ -9,15 +9,19 @@ import {
   MessageSquare,
   CalendarX,
   Info,
+  XCircle,
 } from "lucide-react";
 import { useBookings } from "@/features/booking/hooks/useBooking";
 import { Button } from "@/shared/components/ui/button";
 import { Card, CardContent } from "@/shared/components/ui/card";
 import { EmptyState } from "@/shared/components/ui/empty-state";
 import { AppointmentCardSkeleton } from "@/features/booking/components/appointment-card-skeleton";
+import { CancelBookingDialog } from "@/features/booking/components/cancel-booking-dialog";
 
 export function AppointmentsPage() {
   const { data: bookings, isLoading } = useBookings();
+  const [cancelBookingId, setCancelBookingId] = useState<string | null>(null);
+
   const t = {
     title: "Lịch hẹn tư vấn của tôi",
     subtitle:
@@ -128,114 +132,131 @@ export function AppointmentsPage() {
         </div>
       ) : bookings && bookings.length > 0 ? (
         <div className="flex flex-col gap-4">
-          {bookings.map((bk) => (
-            <Card
-              key={bk.id}
-              className="hover:border-slate-350 overflow-hidden border-slate-200 shadow-xs transition-colors"
-            >
-              <div className="flex flex-col items-start justify-between gap-2 border-b border-slate-100 bg-slate-50 p-4 sm:flex-row sm:items-center">
-                <span className="text-xs font-semibold text-slate-700">
-                  Lịch tư vấn với {bk.expertName}
-                </span>
-                <div className="flex items-center gap-3">
-                  <span className="text-muted-foreground text-[10px]">
-                    {t.bookedAtLabel}{" "}
-                    {new Date(bk.createdAt).toLocaleDateString("vi-VN")}
+          {bookings.map((bk) => {
+            const canCancel =
+              bk.status === "pending" || bk.status === "confirmed";
+            return (
+              <Card
+                key={bk.id}
+                className="hover:border-slate-350 overflow-hidden border-slate-200 shadow-xs transition-colors"
+              >
+                <div className="flex flex-col items-start justify-between gap-2 border-b border-slate-100 bg-slate-50 p-4 sm:flex-row sm:items-center">
+                  <span className="text-xs font-semibold text-slate-700">
+                    Lịch tư vấn với {bk.expertName}
                   </span>
-                  {getStatusBadge(bk)}
-                </div>
-              </div>
-
-              <CardContent className="grid grid-cols-1 gap-4 p-4 md:grid-cols-12">
-                {/* Doctor details */}
-                <div className="flex items-center gap-2.5 md:col-span-4">
-                  <div className="flex h-10 w-10 items-center justify-center rounded-full bg-slate-100 text-slate-400">
-                    <User className="h-5 w-5" />
-                  </div>
-                  <div>
-                    <span className="text-muted-foreground block text-[9px] font-semibold uppercase">
-                      {t.expertInCharge}
+                  <div className="flex items-center gap-3">
+                    <span className="text-muted-foreground text-[10px]">
+                      {t.bookedAtLabel}{" "}
+                      {new Date(bk.createdAt).toLocaleDateString("vi-VN")}
                     </span>
-                    <span className="block text-sm font-bold text-slate-800">
-                      {bk.expertName}
-                    </span>
+                    {getStatusBadge(bk)}
                   </div>
                 </div>
 
-                {/* Time slot */}
-                <div className="flex items-center gap-2.5 md:col-span-4">
-                  <Calendar className="text-primary h-5 w-5 shrink-0" />
-                  <div>
-                    <span className="text-muted-foreground block text-[9px] font-semibold uppercase">
-                      {t.appointmentTime}
-                    </span>
-                    <span className="block text-xs font-bold text-slate-700">
-                      {formatTime(bk.dateTime)} - {formatDate(bk.dateTime)}
-                    </span>
+                <CardContent className="grid grid-cols-1 gap-4 p-4 md:grid-cols-12">
+                  {/* Doctor details */}
+                  <div className="flex items-center gap-2.5 md:col-span-4">
+                    <div className="flex h-10 w-10 items-center justify-center rounded-full bg-slate-100 text-slate-400">
+                      <User className="h-5 w-5" />
+                    </div>
+                    <div>
+                      <span className="text-muted-foreground block text-[9px] font-semibold uppercase">
+                        {t.expertInCharge}
+                      </span>
+                      <span className="block text-sm font-bold text-slate-800">
+                        {bk.expertName}
+                      </span>
+                    </div>
                   </div>
-                </div>
 
-                {/* Amount details */}
-                <div className="flex items-center gap-2.5 md:col-span-2">
-                  <CreditCard className="text-primary h-5 w-5 shrink-0" />
-                  <div>
-                    <span className="text-muted-foreground block text-[9px] font-semibold uppercase">
-                      {t.serviceFee}
-                    </span>
-                    <span className="block text-xs font-bold text-slate-700">
-                      {bk.isFollowUp
-                        ? "0 đ (Tái khám)"
-                        : `${bk.amount.toLocaleString("vi-VN")} đ`}
-                    </span>
+                  {/* Time slot */}
+                  <div className="flex items-center gap-2.5 md:col-span-4">
+                    <Calendar className="text-primary h-5 w-5 shrink-0" />
+                    <div>
+                      <span className="text-muted-foreground block text-[9px] font-semibold uppercase">
+                        {t.appointmentTime}
+                      </span>
+                      <span className="block text-xs font-bold text-slate-700">
+                        {formatTime(bk.dateTime)} - {formatDate(bk.dateTime)}
+                      </span>
+                    </div>
                   </div>
-                </div>
 
-                <div className="flex flex-wrap items-center justify-end gap-2 md:col-span-2">
-                  {bk.status === "pending" && !bk.isPaid && !bk.isFollowUp && (
-                    <Link
-                      href={`/booking/${bk.expertId}/checkout?bookingId=${bk.id}`}
-                    >
+                  {/* Amount details */}
+                  <div className="flex items-center gap-2.5 md:col-span-2">
+                    <CreditCard className="text-primary h-5 w-5 shrink-0" />
+                    <div>
+                      <span className="text-muted-foreground block text-[9px] font-semibold uppercase">
+                        {t.serviceFee}
+                      </span>
+                      <span className="block text-xs font-bold text-slate-700">
+                        {bk.isFollowUp
+                          ? "0 đ (Tái khám)"
+                          : `${bk.amount.toLocaleString("vi-VN")} đ`}
+                      </span>
+                    </div>
+                  </div>
+
+                  <div className="flex flex-wrap items-center justify-end gap-2 md:col-span-2">
+                    {bk.status === "pending" &&
+                      !bk.isPaid &&
+                      !bk.isFollowUp && (
+                        <Link
+                          href={`/booking/${bk.expertId}/checkout?bookingId=${bk.id}`}
+                        >
+                          <Button
+                            size="sm"
+                            className="bg-amber-600 text-xs text-white hover:bg-amber-700"
+                          >
+                            {t.payNow}
+                          </Button>
+                        </Link>
+                      )}
+                    {canCancel && (
                       <Button
                         size="sm"
-                        className="bg-amber-600 text-xs text-white hover:bg-amber-700"
+                        variant="outline"
+                        onClick={() => setCancelBookingId(bk.id)}
+                        className="border-rose-200 text-xs text-rose-600 hover:bg-rose-50 hover:text-rose-700"
                       >
-                        {t.payNow}
+                        <XCircle className="mr-1 h-3.5 w-3.5" />
+                        Hủy hẹn
                       </Button>
-                    </Link>
-                  )}
-                  {bk.status !== "cancelled" && (
-                    <Link href={`/appointments/${bk.id}`}>
-                      <Button size="sm" variant="outline" className="text-xs">
-                        <Info className="mr-1.5 h-3.5 w-3.5" />
-                        Chi tiết
+                    )}
+                    {bk.status !== "cancelled" && (
+                      <Link href={`/appointments/${bk.id}`}>
+                        <Button size="sm" variant="outline" className="text-xs">
+                          <Info className="mr-1.5 h-3.5 w-3.5" />
+                          Chi tiết
+                        </Button>
+                      </Link>
+                    )}
+                    {bk.status === "cancelled" && (
+                      <Button
+                        size="sm"
+                        variant="ghost"
+                        disabled
+                        className="text-xs"
+                      >
+                        Đã hủy
                       </Button>
-                    </Link>
-                  )}
-                  {bk.status === "cancelled" && (
-                    <Button
-                      size="sm"
-                      variant="ghost"
-                      disabled
-                      className="text-xs"
-                    >
-                      Đã hủy
-                    </Button>
-                  )}
-                </div>
-              </CardContent>
+                    )}
+                  </div>
+                </CardContent>
 
-              {/* Symptoms collapse */}
-              <div className="flex gap-2 border-t border-slate-100/50 bg-slate-50/10 px-4 py-2 text-xs text-slate-600">
-                <MessageSquare className="text-muted-foreground mt-0.5 h-4 w-4 shrink-0" />
-                <div className="leading-normal italic">
-                  <strong className="text-slate-700 not-italic">
-                    {t.concernLabel}
-                  </strong>{" "}
-                  {bk.symptoms}
+                {/* Symptoms collapse */}
+                <div className="flex gap-2 border-t border-slate-100/50 bg-slate-50/10 px-4 py-2 text-xs text-slate-600">
+                  <MessageSquare className="text-muted-foreground mt-0.5 h-4 w-4 shrink-0" />
+                  <div className="leading-normal italic">
+                    <strong className="text-slate-700 not-italic">
+                      {t.concernLabel}
+                    </strong>{" "}
+                    {bk.symptoms}
+                  </div>
                 </div>
-              </div>
-            </Card>
-          ))}
+              </Card>
+            );
+          })}
         </div>
       ) : (
         <EmptyState
@@ -243,6 +264,14 @@ export function AppointmentsPage() {
           title={t.emptyTitle}
           description={t.emptyHint}
           action={{ label: t.emptyAction, href: "/experts" }}
+        />
+      )}
+
+      {cancelBookingId && (
+        <CancelBookingDialog
+          isOpen={Boolean(cancelBookingId)}
+          onClose={() => setCancelBookingId(null)}
+          bookingId={cancelBookingId}
         />
       )}
     </div>

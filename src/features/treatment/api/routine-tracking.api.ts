@@ -81,4 +81,36 @@ export const routineTrackingApi = {
       API_ENDPOINTS.ROUTINES.HISTORY_DAY(routineId, date),
       { params: period ? { period } : undefined },
     ),
+
+  submitWeeklyCheckIn: (
+    routineId: string,
+    payload: {
+      erythemaScore: number;
+      drynessScore: number;
+      acneScore: number;
+      oilinessScore: number;
+      symptoms: string[];
+      photoUrls?: string[];
+      notes?: string;
+    },
+  ): Promise<AxiosResponse<CheckInResponseDto>> =>
+    apiClient.post<CheckInResponseDto>(
+      API_ENDPOINTS.ROUTINES.WEEKLY_CHECK_IN(routineId),
+      payload,
+    ),
+
+  reportSideEffect: (
+    routineId: string,
+    payload: {
+      stepId?: string;
+      productId?: string;
+      severity: "MILD" | "MODERATE" | "SEVERE";
+      description: string;
+      photoUrls?: string[];
+    },
+  ): Promise<AxiosResponse<{ id: string; status: string }>> =>
+    apiClient.post<{ id: string; status: string }>(
+      API_ENDPOINTS.ROUTINES.SIDE_EFFECT(routineId),
+      payload,
+    ),
 };
