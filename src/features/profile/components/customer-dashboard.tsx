@@ -15,7 +15,6 @@ import {
   ChevronRight,
   Star,
   Wallet as WalletIcon,
-  Sparkles,
   Info,
   Video,
 } from "lucide-react";
@@ -23,7 +22,6 @@ import { toast } from "sonner";
 
 import { FeedbackModal } from "@/features/booking/components/feedback-modal";
 import { WalletCard } from "@/features/wallet/components/wallet-card";
-import { CustomerTreatmentView } from "@/features/treatments/components/customer-treatment-view";
 import { Button } from "@/shared/components/ui/button";
 import { Input } from "@/shared/components/ui/input";
 import { Label } from "@/shared/components/ui/label";
@@ -158,13 +156,7 @@ function ProfileForm({ profile, updateProfileMutation }: ProfileFormProps) {
   );
 }
 
-type TabType =
-  | "profile"
-  | "baumann"
-  | "orders"
-  | "appointments"
-  | "wallet"
-  | "treatment";
+type TabType = "profile" | "baumann" | "orders" | "appointments" | "wallet";
 
 export function CustomerDashboard() {
   const router = useRouter();
@@ -174,8 +166,7 @@ export function CustomerDashboard() {
     requestedTab === "baumann" ||
     requestedTab === "orders" ||
     requestedTab === "appointments" ||
-    requestedTab === "wallet" ||
-    requestedTab === "treatment"
+    requestedTab === "wallet"
       ? requestedTab
       : "profile";
 
@@ -310,18 +301,6 @@ export function CustomerDashboard() {
           </button>
           <button
             type="button"
-            onClick={() => selectTab("treatment")}
-            className={`flex w-full items-center gap-3 rounded-xl px-4 py-3 text-xs font-bold transition-all ${
-              activeTab === "treatment"
-                ? "bg-[#2C3E35] text-white"
-                : "text-slate-600 hover:bg-slate-50 hover:text-slate-900"
-            }`}
-          >
-            <Sparkles className="h-4.5 w-4.5 text-amber-400" />
-            Phác Đồ Da & Routine
-          </button>
-          <button
-            type="button"
             onClick={() => selectTab("orders")}
             className={`flex w-full items-center gap-3 rounded-xl px-4 py-3 text-xs font-bold transition-all ${
               activeTab === "orders"
@@ -350,23 +329,60 @@ export function CustomerDashboard() {
         <div className="min-h-[480px] w-full flex-1">
           {/* Tab 1: Profile Information */}
           {activeTab === "profile" && (
-            <Card className="border-slate-200 shadow-2xs">
-              <CardHeader className="border-b border-slate-100 p-6">
-                <CardTitle className="text-lg font-bold text-slate-900">
-                  Thông Tin Cá Nhân
-                </CardTitle>
-                <CardDescription className="text-xs">
-                  Cập nhật thông tin liên hệ và cơ bản để bác sĩ dễ dàng hỗ trợ
-                  bạn.
-                </CardDescription>
-              </CardHeader>
-              <CardContent className="p-6">
-                <ProfileForm
-                  profile={profile}
-                  updateProfileMutation={updateProfileMutation}
-                />
-              </CardContent>
-            </Card>
+            <div className="space-y-6">
+              {/* Baumann Skin Summary Hero Card */}
+              <Card className="border-emerald-100 bg-emerald-50/40 shadow-2xs">
+                <CardContent className="flex flex-col gap-4 p-5 sm:flex-row sm:items-center sm:justify-between">
+                  <div className="flex items-center gap-4">
+                    <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-emerald-600 text-white shadow-xs">
+                      <Award className="h-6 w-6" />
+                    </div>
+                    <div>
+                      <div className="flex items-center gap-2">
+                        <span className="text-xs font-bold text-slate-500">
+                          Hồ Sơ Da Baumann
+                        </span>
+                        <span className="rounded-md bg-emerald-100 px-2 py-0.5 text-xs font-black text-emerald-800">
+                          {profile?.baumannCode || "Chưa khảo sát"}
+                        </span>
+                      </div>
+                      <p className="mt-0.5 text-xs text-slate-600">
+                        {profile?.baumannCode
+                          ? `Loại da ${profile.baumannCode}: Routine được cá nhân hóa theo tình trạng tuyến nhờn & nhạy cảm.`
+                          : "Thực hiện bài test da AI để xác định chính xác loại da Baumann của bạn."}
+                      </p>
+                    </div>
+                  </div>
+                  <Button
+                    onClick={() => router.push("/survey")}
+                    size="sm"
+                    className="shrink-0 rounded-xl bg-[#2C3E35] text-xs font-bold text-white hover:bg-[#3A5246]"
+                  >
+                    {profile?.baumannCode
+                      ? "Làm Lại Bài Test Da AI"
+                      : "Bắt Đầu Bài Test Da AI"}
+                  </Button>
+                </CardContent>
+              </Card>
+
+              <Card className="border-slate-200 shadow-2xs">
+                <CardHeader className="border-b border-slate-100 p-6">
+                  <CardTitle className="text-lg font-bold text-slate-900">
+                    Thông Tin Cá Nhân
+                  </CardTitle>
+                  <CardDescription className="text-xs">
+                    Cập nhật thông tin liên hệ và cơ bản để bác sĩ dễ dàng hỗ
+                    trợ bạn.
+                  </CardDescription>
+                </CardHeader>
+                <CardContent className="p-6">
+                  <ProfileForm
+                    profile={profile}
+                    updateProfileMutation={updateProfileMutation}
+                  />
+                </CardContent>
+              </Card>
+            </div>
           )}
 
           {/* Tab 2: Baumann Skin Profile */}
@@ -555,9 +571,6 @@ export function CustomerDashboard() {
 
           {/* Tab: Wallet & Top-up */}
           {activeTab === "wallet" && <WalletCard />}
-
-          {/* Tab: Treatment Plan & Routine */}
-          {activeTab === "treatment" && <CustomerTreatmentView />}
 
           {/* Tab 4: Doctor Appointments */}
           {activeTab === "appointments" && (

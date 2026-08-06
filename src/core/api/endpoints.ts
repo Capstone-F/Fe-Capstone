@@ -105,6 +105,8 @@ export const API_ENDPOINTS = {
     CREATE: "/orders",
     LIST: "/orders",
     DETAIL: (id: string | number) => `/orders/${id}`,
+    CANCEL: (id: string | number) => `/orders/${id}/cancel`,
+    REORDER: (id: string | number) => `/orders/${id}/reorder`,
   },
   DELIVERY: {
     PROVINCES: "/delivery/provinces",
@@ -128,6 +130,9 @@ export const API_ENDPOINTS = {
     STEP_SKIP: (routineId: string, stepId: string) =>
       `/routines/${routineId}/steps/${stepId}/skip`,
     CHECK_INS: (routineId: string) => `/routines/${routineId}/check-ins`,
+    WEEKLY_CHECK_IN: (routineId: string) =>
+      `/routines/${routineId}/weekly-check-in`,
+    SIDE_EFFECT: (routineId: string) => `/routines/${routineId}/side-effects`,
     HISTORY: (routineId: string) => `/routines/${routineId}/history`,
     HISTORY_DAY: (routineId: string, date: string) =>
       `/routines/${routineId}/history/${date}`,

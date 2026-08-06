@@ -181,3 +181,64 @@ export function useHistoryDay(
     enabled: Boolean(routineId) && Boolean(date),
   });
 }
+
+export function useSubmitWeeklyCheckIn(routineId: string) {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (payload: {
+      feeling?: "BETTER" | "SAME" | "WORSE";
+      erythemaScore?: number;
+      drynessScore?: number;
+      acneScore?: number;
+      oilinessScore?: number;
+      symptoms: string[];
+      photoUrls?: string[];
+      notes?: string;
+    }) =>
+      routineTrackingApi
+        .submitWeeklyCheckIn(routineId, {
+          erythemaScore: payload.erythemaScore ?? 1,
+          drynessScore: payload.drynessScore ?? 1,
+          acneScore: payload.acneScore ?? 1,
+          oilinessScore: payload.oilinessScore ?? 1,
+          symptoms: payload.symptoms,
+          photoUrls: payload.photoUrls,
+          notes: payload.notes,
+        })
+        .then((res) => res.data),
+    onSuccess: () => {
+      void queryClient.invalidateQueries({ queryKey: queryKeys.routines });
+    },
+  });
+}
+
+export function useReportSideEffect(routineId: string) {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (payload: {
+      stepId?: string;
+      productId?: string;
+      severity: "MILD" | "MODERATE" | "SEVERE";
+      symptoms?: string[];
+      affectedArea?: string;
+      description?: string;
+      photoUrls?: string[];
+    }) =>
+      routineTrackingApi
+        .reportSideEffect(routineId, {
+          stepId: payload.stepId,
+          productId: payload.productId,
+          severity: payload.severity,
+          description:
+            payload.description ||
+            `Biểu hiện: ${(payload.symptoms || []).join(", ") || "Dị ứng"}. Vùng da: ${
+              payload.affectedArea || "Không rõ"
+            }`,
+          photoUrls: payload.photoUrls,
+        })
+        .then((res) => res.data),
+    onSuccess: () => {
+      void queryClient.invalidateQueries({ queryKey: queryKeys.routines });
+    },
+  });
+}

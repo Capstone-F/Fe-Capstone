@@ -169,9 +169,10 @@ export function useCancelBooking() {
       const response = await bookingApi.cancelBooking(id, reason);
       return mapBackendBookingToFrontend(response.data);
     },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["expert-bookings"] });
+    onSuccess: (data) => {
       queryClient.invalidateQueries({ queryKey: queryKeys.bookings });
+      queryClient.invalidateQueries({ queryKey: queryKeys.booking(data.id) });
+      queryClient.invalidateQueries({ queryKey: ["expert-bookings"] });
       queryClient.invalidateQueries({ queryKey: ["wallet"] });
     },
   });

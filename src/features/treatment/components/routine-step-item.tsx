@@ -15,6 +15,7 @@ interface RoutineStepItemProps {
   isPending: boolean;
   onComplete: () => void;
   onSkip: () => void;
+  onSelectDetail?: () => void;
 }
 
 export function RoutineStepItem({
@@ -24,6 +25,7 @@ export function RoutineStepItem({
   isPending,
   onComplete,
   onSkip,
+  onSelectDetail,
 }: RoutineStepItemProps) {
   const { isCompleted: isDone, isSkipped, isActed, dosageLabel } = step;
 
@@ -36,13 +38,16 @@ export function RoutineStepItem({
       }`}
     >
       <CardContent className="flex items-start justify-between gap-4 p-5">
-        <div className="flex gap-3">
+        <div
+          className="flex flex-1 cursor-pointer gap-3"
+          onClick={() => onSelectDetail?.()}
+        >
           <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-[#E2EBE6] text-xs font-bold text-[#2C3E35]">
             {index + 1}
           </span>
           <div className="space-y-1">
             <h3
-              className={`text-sm font-bold ${
+              className={`text-sm font-bold hover:underline ${
                 isActed ? "text-slate-500 line-through" : "text-slate-900"
               }`}
             >

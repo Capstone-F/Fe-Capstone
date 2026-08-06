@@ -64,4 +64,17 @@ export const ordersApi = {
       },
     });
   },
+
+  cancelOrder: (
+    id: string,
+    reason: string,
+  ): Promise<AxiosResponse<OrderResponse>> => {
+    return apiClient.post<OrderResponse>(API_ENDPOINTS.ORDERS.CANCEL(id), {
+      reason,
+    });
+  },
+
+  reorder: (id: string): Promise<AxiosResponse<OrderResponse>> => {
+    return apiClient.post<OrderResponse>(API_ENDPOINTS.ORDERS.REORDER(id));
+  },
 };
