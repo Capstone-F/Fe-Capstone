@@ -39,10 +39,11 @@ export const authApi = {
   loginDirect: (
     username: string,
     password: string,
+    guestToken?: string,
   ): Promise<AxiosResponse<MobileTokenResponse>> => {
     return publicApiClient.post<MobileTokenResponse>(
       API_ENDPOINTS.AUTH.MOBILE_LOGIN,
-      { username, password },
+      { username, password, ...(guestToken ? { guestToken } : {}) },
     );
   },
 
@@ -61,10 +62,11 @@ export const authApi = {
     email: string,
     password: string,
     name: string,
+    guestToken?: string,
   ): Promise<AxiosResponse<MobileTokenResponse>> => {
     return publicApiClient.post<MobileTokenResponse>(
       API_ENDPOINTS.AUTH.MOBILE_REGISTER,
-      { email, password, name },
+      { email, password, name, ...(guestToken ? { guestToken } : {}) },
     );
   },
 

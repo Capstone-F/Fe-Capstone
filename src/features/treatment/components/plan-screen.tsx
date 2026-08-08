@@ -5,9 +5,11 @@ import { ArrowLeft, Check, Sparkles } from "lucide-react";
 import { Button } from "@/shared/components/ui/button";
 import { useTreatment } from "@/features/treatment/components/treatment-context";
 import { validateSurveyRecommendation } from "@/features/treatment/lib/survey-flow";
+import { useRouter } from "next/navigation";
 
 export function PlanScreen() {
   const { state, setFlowState, getRecommendedProducts } = useTreatment();
+  const router = useRouter();
   const products = getRecommendedProducts();
   // Loading state while fetching recommendations
   if (state.isLoadingDynamic || !state.recommendations) {
@@ -184,10 +186,22 @@ export function PlanScreen() {
 
       <div className="shrink-0 pt-4">
         <Button
-          onClick={() => setFlowState("purchase")}
+          onClick={() => {
+            if (state.surveyMode === "guest") {
+              router.push(
+                `/login?redirectTo=${encodeURIComponent("/scan?view=plan")}`,
+              );
+              return;
+            }
+            setFlowState("purchase");
+          }}
           className="shadow-primary/20 hover:shadow-primary/30 bg-primary hover:bg-primary/95 flex w-full items-center justify-center gap-1.5 rounded-2xl py-6 text-base font-bold text-white shadow-lg transition-all duration-300"
         >
-          <span>Chọn Sản Phẩm Khuyến Nghị</span>
+          <span>
+            {state.surveyMode === "guest"
+              ? "Đăng nhập để lưu kết quả"
+              : "Chọn Sản Phẩm Khuyến Nghị"}
+          </span>
           <Check className="h-5 w-5" />
         </Button>
       </div>

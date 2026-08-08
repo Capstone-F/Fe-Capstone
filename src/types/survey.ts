@@ -56,6 +56,7 @@ export interface SurveyResponseDto {
   faceLabels: SurveyFaceLabelDto[];
   answers: SurveyAnswerItemDto[];
   createdAt: string;
+  guestToken?: string;
 }
 
 export interface RankedVariantDto {
