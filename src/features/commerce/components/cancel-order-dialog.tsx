@@ -1,6 +1,7 @@
 "use client";
 
-import { useState } from "react";
+import { zodResolver } from "@hookform/resolvers/zod";
+import { useForm, useWatch } from "react-hook-form";
 import { AlertTriangle, Loader2 } from "lucide-react";
 import { toast } from "sonner";
 
@@ -15,6 +16,11 @@ import {
 } from "@/shared/components/ui/dialog";
 import { Textarea } from "@/shared/components/ui/textarea";
 import { useCancelOrder } from "../hooks/useOrders";
+import { FormController } from "@/shared/components/form/form-controller";
+import {
+  cancellationSchema,
+  type CancellationFormValues,
+} from "@/features/commerce/schemas/commerce-forms.schema";
 
 interface CancelOrderDialogProps {
   isOpen: boolean;
@@ -34,18 +40,24 @@ export function CancelOrderDialog({
   onClose,
   orderId,
 }: CancelOrderDialogProps) {
-  const [reason, setReason] = useState("");
-  const [selectedReason, setSelectedReason] = useState("");
+  const form = useForm<CancellationFormValues>({
+    resolver: zodResolver(cancellationSchema),
+    defaultValues: { selectedReason: "", customReason: "" },
+  });
+  const selectedReason = useWatch({
+    control: form.control,
+    name: "selectedReason",
+  });
   const cancelMutation = useCancelOrder();
 
-  const handleCancel = () => {
-    const finalReason =
-      reason.trim() || selectedReason || "Hủy đơn hàng theo yêu cầu khách hàng";
+  const handleCancel = (values: CancellationFormValues) => {
+    const finalReason = values.customReason || values.selectedReason;
     cancelMutation.mutate(
       { id: orderId, reason: finalReason },
       {
         onSuccess: () => {
           toast.success("Đã hủy đơn hàng thành công");
+          form.reset();
           onClose();
         },
         onError: (err) => {
@@ -70,64 +82,73 @@ export function CancelOrderDialog({
           </DialogDescription>
         </DialogHeader>
 
-        <div className="flex flex-col gap-3 py-2">
-          <label className="text-xs font-semibold text-slate-700">
-            Lý do hủy đơn hàng:
-          </label>
-          <div className="flex flex-wrap gap-2">
-            {COMMON_REASONS.map((r) => (
-              <button
-                key={r}
-                type="button"
-                onClick={() => {
-                  setSelectedReason(r);
-                  setReason("");
-                }}
-                className={`rounded-lg border px-3 py-1.5 text-xs font-medium transition-colors ${
-                  selectedReason === r
-                    ? "border-rose-500 bg-rose-50 text-rose-700"
-                    : "border-slate-200 bg-slate-50 text-slate-600 hover:bg-slate-100"
-                }`}
-              >
-                {r}
-              </button>
-            ))}
+        <form onSubmit={form.handleSubmit(handleCancel)} noValidate>
+          <div className="flex flex-col gap-3 py-2">
+            <label className="text-xs font-semibold text-slate-700">
+              Lý do hủy đơn hàng:
+            </label>
+            <div className="flex flex-wrap gap-2">
+              {COMMON_REASONS.map((r) => (
+                <button
+                  key={r}
+                  type="button"
+                  onClick={() => {
+                    form.setValue("selectedReason", r, {
+                      shouldValidate: true,
+                    });
+                    form.setValue("customReason", "");
+                  }}
+                  className={`rounded-lg border px-3 py-1.5 text-xs font-medium transition-colors ${
+                    selectedReason === r
+                      ? "border-rose-500 bg-rose-50 text-rose-700"
+                      : "border-slate-200 bg-slate-50 text-slate-600 hover:bg-slate-100"
+                  }`}
+                >
+                  {r}
+                </button>
+              ))}
+            </div>
+
+            <FormController control={form.control} name="customReason">
+              {(field) => (
+                <Textarea
+                  {...field}
+                  placeholder="Hoặc nhập lý do khác..."
+                  maxLength={500}
+                  onChange={(event) => {
+                    field.onChange(event);
+                    form.setValue("selectedReason", "");
+                  }}
+                  rows={3}
+                  className="mt-1 rounded-xl border-slate-200 text-xs focus-visible:ring-rose-500"
+                  aria-invalid={Boolean(form.formState.errors.customReason)}
+                />
+              )}
+            </FormController>
           </div>
 
-          <Textarea
-            placeholder="Hoặc nhập lý do khác..."
-            value={reason}
-            onChange={(e) => {
-              setReason(e.target.value);
-              setSelectedReason("");
-            }}
-            rows={3}
-            className="mt-1 rounded-xl border-slate-200 text-xs focus-visible:ring-rose-500"
-          />
-        </div>
-
-        <DialogFooter className="gap-2 sm:gap-0">
-          <Button
-            type="button"
-            variant="outline"
-            onClick={onClose}
-            className="rounded-xl text-xs"
-          >
-            Quay lại
-          </Button>
-          <Button
-            type="button"
-            disabled={cancelMutation.isPending}
-            onClick={handleCancel}
-            className="rounded-xl bg-rose-600 text-xs font-bold text-white shadow-xs hover:bg-rose-700"
-          >
-            {cancelMutation.isPending ? (
-              <Loader2 className="h-4 w-4 animate-spin" />
-            ) : (
-              "Xác Nhận Hủy Đơn"
-            )}
-          </Button>
-        </DialogFooter>
+          <DialogFooter className="gap-2 sm:gap-0">
+            <Button
+              type="button"
+              variant="outline"
+              onClick={onClose}
+              className="rounded-xl text-xs"
+            >
+              Quay lại
+            </Button>
+            <Button
+              type="submit"
+              disabled={cancelMutation.isPending}
+              className="rounded-xl bg-rose-600 text-xs font-bold text-white shadow-xs hover:bg-rose-700"
+            >
+              {cancelMutation.isPending ? (
+                <Loader2 className="h-4 w-4 animate-spin" />
+              ) : (
+                "Xác Nhận Hủy Đơn"
+              )}
+            </Button>
+          </DialogFooter>
+        </form>
       </DialogContent>
     </Dialog>
   );

@@ -1,6 +1,8 @@
 "use client";
 
 import React, { useState, useEffect } from "react";
+import { zodResolver } from "@hookform/resolvers/zod";
+import { useForm, useWatch } from "react-hook-form";
 import Link from "next/link";
 import { useParams, useRouter } from "next/navigation";
 import {
@@ -30,7 +32,11 @@ import {
   CardFooter,
 } from "@/shared/components/ui/card";
 import { Textarea } from "@/shared/components/ui/textarea";
-import { Label } from "@/shared/components/ui/label";
+import { FormController } from "@/shared/components/form/form-controller";
+import {
+  bookingFormSchema,
+  type BookingFormValues,
+} from "@/features/booking/schemas/booking-forms.schema";
 import { Badge } from "@/shared/components/ui/badge";
 import { toast } from "sonner";
 import type { TimeSlot } from "../types/booking.types";
@@ -67,8 +73,11 @@ export function BookSlotPage() {
   const createBookingMutation = useCreateBooking();
 
   const [selectedDateStr, setSelectedDateStr] = useState<string>("");
-  const [selectedSlotId, setSelectedSlotId] = useState<string>("");
-  const [symptoms, setSymptoms] = useState<string>("");
+  const form = useForm<BookingFormValues>({
+    resolver: zodResolver(bookingFormSchema),
+    defaultValues: { slotId: "", symptoms: "" },
+  });
+  const selectedSlotId = useWatch({ control: form.control, name: "slotId" });
 
   // Group slots by date
   const slotsByDate: Record<string, TimeSlot[]> = {};
@@ -114,19 +123,8 @@ export function BookSlotPage() {
     });
   };
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-
-    if (!selectedSlotId || !selectedSlot) {
-      toast.error("Vui lòng chọn một khung giờ hẹn.");
-      return;
-    }
-
-    if (!symptoms.trim()) {
-      toast.error("Vui lòng mô tả sơ bộ tình trạng da của bạn.");
-      return;
-    }
-
+  const handleSubmit = async (values: BookingFormValues) => {
+    if (!selectedSlot) return;
     if (!expert) return;
 
     try {
@@ -135,7 +133,7 @@ export function BookSlotPage() {
         expertName: expert.name,
         slotId: selectedSlot.id,
         dateTime: selectedSlot.dateTime,
-        symptoms: symptoms,
+        symptoms: values.symptoms,
         amount: expert.fee,
       });
 
@@ -184,7 +182,7 @@ export function BookSlotPage() {
         </Link>
       </div>
 
-      <form onSubmit={handleSubmit}>
+      <form onSubmit={form.handleSubmit(handleSubmit)} noValidate>
         <Card className="rounded-2xl border-slate-200/80 shadow-sm">
           <CardHeader className="border-b border-slate-100 bg-slate-50/60 p-6">
             <div className="flex items-center justify-between">
@@ -357,7 +355,12 @@ export function BookSlotPage() {
                                       : "outline"
                                 }
                                 disabled={slot.isBooked}
-                                onClick={() => setSelectedSlotId(slot.id)}
+                                onClick={() =>
+                                  form.setValue("slotId", slot.id, {
+                                    shouldDirty: true,
+                                    shouldValidate: true,
+                                  })
+                                }
                                 className={`h-11 rounded-xl px-3 text-xs font-bold transition-all ${
                                   slot.isBooked
                                     ? "cursor-not-allowed border-dashed bg-slate-100 text-slate-400 line-through"
@@ -377,6 +380,11 @@ export function BookSlotPage() {
                   )}
                 </div>
               )}
+              {form.formState.errors.slotId && (
+                <p className="text-xs text-red-600">
+                  {form.formState.errors.slotId.message}
+                </p>
+              )}
             </div>
 
             {/* Step 2: Symptoms description */}
@@ -385,22 +393,22 @@ export function BookSlotPage() {
                 <FileText className="h-4.5 w-4.5 text-emerald-600" />
                 2. Mô Tả Tình Trạng Da & Triệu Chứng
               </h3>
-              <div className="flex flex-col gap-1.5">
-                <Label
-                  htmlFor="symptoms"
-                  className="text-xs font-medium text-slate-600"
-                >
-                  Ghi rõ các biểu hiện (như rát đỏ, mụn sưng, ngứa vùng má, dị
-                  ứng mỹ phẩm...):
-                </Label>
-                <Textarea
-                  id="symptoms"
-                  placeholder="Ví dụ: Da tôi bị nổi mụn đỏ sưng tấy 2 tuần nay sau khi đổi kem dưỡng mới. Vùng má rát đỏ nhẹ khi rửa mặt..."
-                  value={symptoms}
-                  onChange={(e) => setSymptoms(e.target.value)}
-                  className="min-h-[100px] rounded-xl border-slate-200 text-xs leading-relaxed focus:border-emerald-500 focus:ring-emerald-500/20"
-                />
-              </div>
+              <FormController
+                control={form.control}
+                name="symptoms"
+                label="Ghi rõ các biểu hiện như rát đỏ, mụn sưng, ngứa hoặc dị ứng mỹ phẩm"
+              >
+                {(field) => (
+                  <Textarea
+                    {...field}
+                    id={field.name}
+                    maxLength={2000}
+                    placeholder="Ví dụ: Da tôi bị nổi mụn đỏ sưng tấy 2 tuần nay sau khi đổi kem dưỡng mới. Vùng má rát đỏ nhẹ khi rửa mặt..."
+                    className="min-h-[100px] rounded-xl border-slate-200 text-xs leading-relaxed focus:border-emerald-500 focus:ring-emerald-500/20"
+                    aria-invalid={Boolean(form.formState.errors.symptoms)}
+                  />
+                )}
+              </FormController>
             </div>
 
             {/* Notification reminder */}

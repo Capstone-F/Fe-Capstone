@@ -1,6 +1,8 @@
 "use client";
 
-import React, { useState } from "react";
+import { useState } from "react";
+import { zodResolver } from "@hookform/resolvers/zod";
+import { useForm, useWatch } from "react-hook-form";
 import Link from "next/link";
 import {
   UserPlus,
@@ -23,7 +25,6 @@ import { toast } from "sonner";
 import { Button } from "@/shared/components/ui/button";
 import { Input } from "@/shared/components/ui/input";
 import { Badge } from "@/shared/components/ui/badge";
-import { Label } from "@/shared/components/ui/label";
 import {
   Select,
   SelectContent,
@@ -47,6 +48,18 @@ import {
   useAdminQuickBook,
 } from "@/features/admin/hooks/useAdminUsers";
 import { useExperts } from "@/features/experts/hooks/useExperts";
+import { FormController } from "@/shared/components/form/form-controller";
+import {
+  CurrencyInput,
+  parseVndInput,
+} from "@/shared/components/form/currency-input";
+import { formatVnd } from "@/shared/utils/format";
+import {
+  createExpertSchema,
+  quickBookSchema,
+  type CreateExpertValues,
+  type QuickBookValues,
+} from "@/features/admin/schemas/admin-forms.schema";
 
 const EXPERT_SPECIALTIES = [
   { value: "DERMATOLOGY", label: "Dermatology (Da Liễu Chung)" },
@@ -56,6 +69,14 @@ const EXPERT_SPECIALTIES = [
   { value: "ANTI_AGING", label: "Anti-Aging (Chống Lão Hóa)" },
   { value: "PIGMENTATION", label: "Pigmentation (Trị Nám / Tàn Nhanh)" },
 ];
+const DEFAULT_EXPERT_PASSWORD = "password123";
+
+function defaultDateStr() {
+  const tomorrow = new Date();
+  tomorrow.setDate(tomorrow.getDate() + 1);
+  tomorrow.setHours(10, 0, 0, 0);
+  return tomorrow.toISOString().slice(0, 16);
+}
 
 export function ExpertManagementView() {
   const [isCreateExpertOpen, setIsCreateExpertOpen] = useState(false);
@@ -64,27 +85,38 @@ export function ExpertManagementView() {
   const [searchTerm, setSearchTerm] = useState("");
   const [copiedId, setCopiedId] = useState<string | null>(null);
 
-  // Form State: Create Expert
-  const [emailPrefix, setEmailPrefix] = useState("");
-  const [emailDomain, setEmailDomain] = useState("@glowscan.com");
-  const [fullName, setFullName] = useState("");
-  const [temporaryPassword, setTemporaryPassword] = useState("password123");
-  const [selectedClinicId, setSelectedClinicId] = useState("");
-  const [selectedSpecialty, setSelectedSpecialty] = useState("DERMATOLOGY");
-  const [consultationFee, setConsultationFee] = useState("300000");
-
-  // Form State: Quick Book Cheat
-  const defaultDateStr = () => {
-    const tomorrow = new Date();
-    tomorrow.setDate(tomorrow.getDate() + 1);
-    tomorrow.setHours(10, 0, 0, 0);
-    return tomorrow.toISOString().slice(0, 16);
-  };
-  const [quickExpertId, setQuickExpertId] = useState("");
-  const [quickScheduledAt, setQuickScheduledAt] = useState(defaultDateStr());
-  const [quickReason, setQuickReason] = useState(
-    "Khảo sát da OSNT - Khám tư vấn mụn nhọt & phác đồ điều trị",
-  );
+  const createExpertForm = useForm<CreateExpertValues>({
+    resolver: zodResolver(createExpertSchema),
+    defaultValues: {
+      emailPrefix: "",
+      emailDomain: "@glowscan.com",
+      fullName: "",
+      temporaryPassword: DEFAULT_EXPERT_PASSWORD,
+      clinicId: "",
+      specialization: "DERMATOLOGY",
+      consultationFee: "300000",
+    },
+  });
+  const quickBookForm = useForm<QuickBookValues>({
+    resolver: zodResolver(quickBookSchema),
+    defaultValues: {
+      expertId: "",
+      scheduledAt: defaultDateStr(),
+      reason: "Khảo sát da OSNT - Khám tư vấn mụn nhọt & phác đồ điều trị",
+    },
+  });
+  const emailPrefix = useWatch({
+    control: createExpertForm.control,
+    name: "emailPrefix",
+  });
+  const emailDomain = useWatch({
+    control: createExpertForm.control,
+    name: "emailDomain",
+  });
+  const consultationFee = useWatch({
+    control: createExpertForm.control,
+    name: "consultationFee",
+  });
 
   // Queries & Mutations
   const { data: clinics = [], isLoading: isLoadingClinics } = useClinics();
@@ -116,52 +148,31 @@ export function ExpertManagementView() {
   // Handlers: Create Expert
   const handleOpenCreateExpertModal = () => {
     setIsCreateExpertOpen(true);
-    setEmailPrefix("");
-    setFullName("");
-    setTemporaryPassword("password123");
-    setConsultationFee("300000");
-    if (clinics.length > 0) {
-      setSelectedClinicId(clinics[0].id);
-    }
+    createExpertForm.reset({
+      emailPrefix: "",
+      emailDomain: "@glowscan.com",
+      fullName: "",
+      temporaryPassword: DEFAULT_EXPERT_PASSWORD,
+      clinicId: clinics[0]?.id ?? "",
+      specialization: "DERMATOLOGY",
+      consultationFee: "300000",
+    });
   };
 
-  const handleCreateExpert = (e: React.FormEvent) => {
-    e.preventDefault();
-
-    let fullEmail = emailPrefix.trim();
-    if (!fullEmail) {
-      toast.error("Vui lòng nhập tên tài khoản Email.");
-      return;
-    }
-    if (!fullEmail.includes("@")) {
-      fullEmail = `${fullEmail}${emailDomain}`;
-    }
-
-    if (!fullName.trim()) {
-      toast.error("Vui lòng nhập họ và tên chuyên gia.");
-      return;
-    }
-
-    if (!temporaryPassword.trim()) {
-      toast.error("Vui lòng nhập Mật khẩu tạm thời.");
-      return;
-    }
-
-    const fee = Number(consultationFee);
-    if (!Number.isInteger(fee) || fee <= 0) {
-      toast.error("Phí tư vấn phải là số nguyên lớn hơn 0 đồng.");
-      return;
-    }
+  const handleCreateExpert = (values: CreateExpertValues) => {
+    const fullEmail = values.emailPrefix.includes("@")
+      ? values.emailPrefix
+      : `${values.emailPrefix}${values.emailDomain}`;
 
     createExpertMutation.mutate(
       {
         email: fullEmail,
-        name: fullName.trim(),
+        name: values.fullName,
         role: "expert",
-        clinicId: selectedClinicId || undefined,
-        temporaryPassword,
-        specialization: selectedSpecialty,
-        consultationFee: fee,
+        clinicId: values.clinicId || undefined,
+        temporaryPassword: values.temporaryPassword,
+        specialization: values.specialization,
+        consultationFee: parseVndInput(values.consultationFee),
       },
       {
         onSuccess: (newUser) => {
@@ -180,25 +191,19 @@ export function ExpertManagementView() {
   // Handlers: Quick Book Cheat
   const handleOpenQuickBookModal = () => {
     setIsQuickBookOpen(true);
-    if (expertsList.length > 0) {
-      setQuickExpertId(expertsList[0].id);
-    }
+    quickBookForm.reset({
+      expertId: doctorOptions[0]?.id ?? "",
+      scheduledAt: defaultDateStr(),
+      reason: "Khảo sát da OSNT - Khám tư vấn mụn nhọt & phác đồ điều trị",
+    });
   };
 
-  const handleExecuteQuickBook = (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!quickExpertId) {
-      toast.error("Vui lòng chọn chuyên gia phụ trách.");
-      return;
-    }
-
-    const isoDate = new Date(quickScheduledAt).toISOString();
-
+  const handleExecuteQuickBook = (values: QuickBookValues) => {
     quickBookMutation.mutate(
       {
-        expertId: quickExpertId,
-        scheduledAt: isoDate,
-        reason: quickReason,
+        expertId: values.expertId,
+        scheduledAt: new Date(values.scheduledAt).toISOString(),
+        reason: values.reason,
       },
       {
         onSuccess: () => {
@@ -222,7 +227,7 @@ export function ExpertManagementView() {
   };
 
   const handleCopyCredentials = (email: string, id: string) => {
-    const text = `Tài khoản chuyên gia:\nEmail: ${email}\nMật khẩu: ${temporaryPassword}`;
+    const text = `Tài khoản chuyên gia:\nEmail: ${email}\nMật khẩu mặc định: ${DEFAULT_EXPERT_PASSWORD}`;
     navigator.clipboard.writeText(text);
     setCopiedId(id);
     toast.success("Đã sao chép thông tin đăng nhập!");
@@ -450,37 +455,56 @@ export function ExpertManagementView() {
             </DialogDescription>
           </DialogHeader>
 
-          <form onSubmit={handleCreateExpert} className="space-y-4 py-2">
+          <form
+            onSubmit={createExpertForm.handleSubmit(handleCreateExpert)}
+            className="space-y-4 py-2"
+            noValidate
+          >
             {/* Email Field with Auto Domain */}
-            <div className="space-y-1.5">
-              <Label className="text-xs font-bold text-slate-700">
-                Email Đăng Nhập <span className="text-red-500">*</span>
-              </Label>
-              <div className="flex items-center gap-1">
-                <div className="relative flex-1">
-                  <Mail className="absolute top-1/2 left-3 h-4 w-4 -translate-y-1/2 text-slate-400" />
-                  <Input
-                    type="text"
-                    placeholder="VD: dr.nguyen"
-                    value={emailPrefix}
-                    onChange={(e) => setEmailPrefix(e.target.value)}
-                    className="rounded-xl border-slate-200 pl-9 text-xs"
-                    required
-                  />
-                </div>
-                <Select
-                  value={emailDomain}
-                  onValueChange={(value) => value && setEmailDomain(value)}
+            <div className="space-y-2">
+              <div className="grid gap-2 sm:grid-cols-[1fr_160px]">
+                <FormController
+                  control={createExpertForm.control}
+                  name="emailPrefix"
+                  label="Email đăng nhập"
                 >
-                  <SelectTrigger className="w-40">
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="@glowscan.com">@glowscan.com</SelectItem>
-                    <SelectItem value="@glowscan.vn">@glowscan.vn</SelectItem>
-                    <SelectItem value="@gmail.com">@gmail.com</SelectItem>
-                  </SelectContent>
-                </Select>
+                  {(field) => (
+                    <div className="relative">
+                      <Mail className="absolute top-1/2 left-3 h-4 w-4 -translate-y-1/2 text-slate-400" />
+                      <Input
+                        {...field}
+                        id={field.name}
+                        placeholder="VD: dr.nguyen"
+                        className="rounded-xl border-slate-200 pl-9 text-xs"
+                        aria-invalid={Boolean(
+                          createExpertForm.formState.errors.emailPrefix,
+                        )}
+                      />
+                    </div>
+                  )}
+                </FormController>
+                <FormController
+                  control={createExpertForm.control}
+                  name="emailDomain"
+                  label="Tên miền"
+                >
+                  {(field) => (
+                    <Select value={field.value} onValueChange={field.onChange}>
+                      <SelectTrigger id={field.name} className="w-full">
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="@glowscan.com">
+                          @glowscan.com
+                        </SelectItem>
+                        <SelectItem value="@glowscan.vn">
+                          @glowscan.vn
+                        </SelectItem>
+                        <SelectItem value="@gmail.com">@gmail.com</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  )}
+                </FormController>
               </div>
               <p className="text-[11px] text-slate-400">
                 Tài khoản đầy đủ:{" "}
@@ -493,61 +517,69 @@ export function ExpertManagementView() {
             </div>
 
             {/* Full Name */}
-            <div className="space-y-1.5">
-              <label className="text-xs font-bold text-slate-700">
-                Họ và tên chuyên gia <span className="text-red-500">*</span>
-              </label>
-              <div className="relative">
-                <User className="absolute top-1/2 left-3 h-4 w-4 -translate-y-1/2 text-slate-400" />
-                <Input
-                  type="text"
-                  placeholder="VD: BS. Nguyễn Văn An"
-                  value={fullName}
-                  onChange={(e) => setFullName(e.target.value)}
-                  className="rounded-xl border-slate-200 pl-9 text-xs"
-                  required
-                />
-              </div>
-            </div>
+            <FormController
+              control={createExpertForm.control}
+              name="fullName"
+              label="Họ và tên chuyên gia"
+            >
+              {(field) => (
+                <div className="relative">
+                  <User className="absolute top-1/2 left-3 h-4 w-4 -translate-y-1/2 text-slate-400" />
+                  <Input
+                    {...field}
+                    id={field.name}
+                    placeholder="VD: BS. Nguyễn Văn An"
+                    className="rounded-xl border-slate-200 pl-9 text-xs"
+                    aria-invalid={Boolean(
+                      createExpertForm.formState.errors.fullName,
+                    )}
+                  />
+                </div>
+              )}
+            </FormController>
 
             {/* Temporary Password */}
-            <div className="space-y-1.5">
-              <label className="text-xs font-bold text-slate-700">
-                Mật Khẩu Tạm Thời <span className="text-red-500">*</span>
-              </label>
-              <div className="relative">
-                <KeyRound className="absolute top-1/2 left-3 h-4 w-4 -translate-y-1/2 text-slate-400" />
-                <Input
-                  type="text"
-                  value={temporaryPassword}
-                  onChange={(e) => setTemporaryPassword(e.target.value)}
-                  className="rounded-xl border-slate-200 pl-9 font-mono text-xs"
-                  required
-                />
-              </div>
-            </div>
+            <FormController
+              control={createExpertForm.control}
+              name="temporaryPassword"
+              label="Mật khẩu tạm thời"
+            >
+              {(field) => (
+                <div className="relative">
+                  <KeyRound className="absolute top-1/2 left-3 h-4 w-4 -translate-y-1/2 text-slate-400" />
+                  <Input
+                    {...field}
+                    id={field.name}
+                    className="rounded-xl border-slate-200 pl-9 font-mono text-xs"
+                    aria-invalid={Boolean(
+                      createExpertForm.formState.errors.temporaryPassword,
+                    )}
+                  />
+                </div>
+              )}
+            </FormController>
 
             {/* Specialty */}
-            <div className="space-y-1.5">
-              <label className="text-xs font-bold text-slate-700">
-                Chuyên Khoa Da Liễu
-              </label>
-              <Select
-                value={selectedSpecialty}
-                onValueChange={(value) => value && setSelectedSpecialty(value)}
-              >
-                <SelectTrigger className="w-full">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  {EXPERT_SPECIALTIES.map((spec) => (
-                    <SelectItem key={spec.value} value={spec.value}>
-                      {spec.label}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
+            <FormController
+              control={createExpertForm.control}
+              name="specialization"
+              label="Chuyên khoa da liễu"
+            >
+              {(field) => (
+                <Select value={field.value} onValueChange={field.onChange}>
+                  <SelectTrigger id={field.name} className="w-full">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {EXPERT_SPECIALTIES.map((spec) => (
+                      <SelectItem key={spec.value} value={spec.value}>
+                        {spec.label}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              )}
+            </FormController>
 
             {/* Clinic Dropdown */}
             <div className="space-y-1.5">
@@ -557,47 +589,50 @@ export function ExpertManagementView() {
               {isLoadingClinics ? (
                 <p className="text-xs text-slate-400">Đang nạp phòng khám...</p>
               ) : (
-                <Select
-                  value={selectedClinicId}
-                  onValueChange={(value) => setSelectedClinicId(value ?? "")}
+                <FormController
+                  control={createExpertForm.control}
+                  name="clinicId"
                 >
-                  <SelectTrigger className="w-full">
-                    <SelectValue placeholder="Chọn phòng khám" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {clinics.map((clinic) => (
-                      <SelectItem key={clinic.id} value={clinic.id}>
-                        {clinic.name} ({clinic.address})
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
+                  {(field) => (
+                    <Select value={field.value} onValueChange={field.onChange}>
+                      <SelectTrigger id={field.name} className="w-full">
+                        <SelectValue placeholder="Chọn phòng khám" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {clinics.map((clinic) => (
+                          <SelectItem key={clinic.id} value={clinic.id}>
+                            {clinic.name} ({clinic.address})
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  )}
+                </FormController>
               )}
             </div>
 
-            <div className="space-y-1.5">
-              <Label
-                htmlFor="expert-consultation-fee"
-                className="text-xs font-bold text-slate-700"
-              >
-                Phí tư vấn (VND) <span className="text-red-500">*</span>
-              </Label>
-              <Input
-                id="expert-consultation-fee"
-                type="number"
-                min={1}
-                step={10000}
-                value={consultationFee}
-                onChange={(event) => setConsultationFee(event.target.value)}
-                className="rounded-xl border-slate-200 text-xs"
-                required
-              />
-              <p className="text-[11px] text-slate-500">
-                Khách hàng sẽ thanh toán{" "}
-                {Number(consultationFee || 0).toLocaleString("vi-VN")}đ cho mỗi
-                ca tư vấn thường.
-              </p>
-            </div>
+            <FormController
+              control={createExpertForm.control}
+              name="consultationFee"
+              label="Phí tư vấn (VND)"
+              description={
+                consultationFee
+                  ? `Khách hàng sẽ thanh toán ${formatVnd(Number(consultationFee))} cho mỗi ca tư vấn thường.`
+                  : "Vui lòng nhập phí tư vấn."
+              }
+            >
+              {(field) => (
+                <CurrencyInput
+                  id={field.name}
+                  value={field.value}
+                  onValueChange={field.onChange}
+                  className="rounded-xl border-slate-200 text-xs"
+                  aria-invalid={Boolean(
+                    createExpertForm.formState.errors.consultationFee,
+                  )}
+                />
+              )}
+            </FormController>
 
             <DialogFooter className="gap-2 pt-2">
               <Button
@@ -640,63 +675,81 @@ export function ExpertManagementView() {
             </DialogDescription>
           </DialogHeader>
 
-          <form onSubmit={handleExecuteQuickBook} className="space-y-4 py-2">
+          <form
+            onSubmit={quickBookForm.handleSubmit(handleExecuteQuickBook)}
+            className="space-y-4 py-2"
+            noValidate
+          >
             {/* Select Expert */}
-            <div className="space-y-1.5">
-              <label className="text-xs font-bold text-slate-700">
-                Chọn chuyên gia phụ trách{" "}
-                <span className="text-red-500">*</span>
-              </label>
-              <Select
-                value={quickExpertId}
-                onValueChange={(value) => setQuickExpertId(value ?? "")}
-              >
-                <SelectTrigger className="w-full">
-                  <SelectValue placeholder="Chọn chuyên gia" />
-                </SelectTrigger>
-                <SelectContent>
-                  {doctorOptions.map((doc) => (
-                    <SelectItem key={doc.id} value={doc.id}>
-                      {doc.name} - {doc.subtitle}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
+            <FormController
+              control={quickBookForm.control}
+              name="expertId"
+              label="Chọn chuyên gia phụ trách"
+            >
+              {(field) => (
+                <Select value={field.value} onValueChange={field.onChange}>
+                  <SelectTrigger
+                    id={field.name}
+                    className="w-full"
+                    aria-invalid={Boolean(
+                      quickBookForm.formState.errors.expertId,
+                    )}
+                  >
+                    <SelectValue placeholder="Chọn chuyên gia" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {doctorOptions.map((doc) => (
+                      <SelectItem key={doc.id} value={doc.id}>
+                        {doc.name} - {doc.subtitle}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              )}
+            </FormController>
 
             {/* Scheduled Date/Time */}
-            <div className="space-y-1.5">
-              <label className="text-xs font-bold text-slate-700">
-                Thời Gian Ca Hẹn (Scheduled At){" "}
-                <span className="text-red-500">*</span>
-              </label>
-              <div className="relative">
-                <Calendar className="absolute top-1/2 left-3 h-4 w-4 -translate-y-1/2 text-slate-400" />
-                <Input
-                  type="datetime-local"
-                  value={quickScheduledAt}
-                  onChange={(e) => setQuickScheduledAt(e.target.value)}
-                  className="rounded-xl border-slate-200 pl-9 text-xs"
-                  required
-                />
-              </div>
-            </div>
+            <FormController
+              control={quickBookForm.control}
+              name="scheduledAt"
+              label="Thời gian ca hẹn"
+            >
+              {(field) => (
+                <div className="relative">
+                  <Calendar className="absolute top-1/2 left-3 h-4 w-4 -translate-y-1/2 text-slate-400" />
+                  <Input
+                    {...field}
+                    id={field.name}
+                    type="datetime-local"
+                    className="rounded-xl border-slate-200 pl-9 text-xs"
+                    aria-invalid={Boolean(
+                      quickBookForm.formState.errors.scheduledAt,
+                    )}
+                  />
+                </div>
+              )}
+            </FormController>
 
             {/* Reason */}
-            <div className="space-y-1.5">
-              <label className="text-xs font-bold text-slate-700">
-                Lý Do / Triệu Chứng Tư Vấn
-              </label>
-              <div className="relative">
-                <MessageSquare className="absolute top-1/2 left-3 h-4 w-4 -translate-y-1/2 text-slate-400" />
-                <Input
-                  type="text"
-                  value={quickReason}
-                  onChange={(e) => setQuickReason(e.target.value)}
-                  className="rounded-xl border-slate-200 pl-9 text-xs"
-                />
-              </div>
-            </div>
+            <FormController
+              control={quickBookForm.control}
+              name="reason"
+              label="Lý do / triệu chứng tư vấn"
+            >
+              {(field) => (
+                <div className="relative">
+                  <MessageSquare className="absolute top-1/2 left-3 h-4 w-4 -translate-y-1/2 text-slate-400" />
+                  <Input
+                    {...field}
+                    id={field.name}
+                    className="rounded-xl border-slate-200 pl-9 text-xs"
+                    aria-invalid={Boolean(
+                      quickBookForm.formState.errors.reason,
+                    )}
+                  />
+                </div>
+              )}
+            </FormController>
 
             <DialogFooter className="gap-2 pt-2">
               <Button

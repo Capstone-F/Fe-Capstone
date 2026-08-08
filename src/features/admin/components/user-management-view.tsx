@@ -1,6 +1,8 @@
 "use client";
 
-import { useDeferredValue, useState } from "react";
+import { useState } from "react";
+import { zodResolver } from "@hookform/resolvers/zod";
+import { useForm } from "react-hook-form";
 import {
   CircleDollarSign,
   Info,
@@ -35,7 +37,6 @@ import {
   DialogTitle,
 } from "@/shared/components/ui/dialog";
 import { Input } from "@/shared/components/ui/input";
-import { Label } from "@/shared/components/ui/label";
 import {
   Select,
   SelectContent,
@@ -59,6 +60,16 @@ import {
   TooltipTrigger,
 } from "@/shared/components/ui/tooltip";
 import { formatVnd } from "@/shared/utils/format";
+import useDebounce from "@/shared/hooks/useDebounce";
+import { FormController } from "@/shared/components/form/form-controller";
+import {
+  CurrencyInput,
+  parseVndInput,
+} from "@/shared/components/form/currency-input";
+import {
+  adminWalletTopUpSchema,
+  type AdminWalletTopUpValues,
+} from "@/features/admin/schemas/admin-forms.schema";
 
 const roleOptions = [
   { value: "customer", label: "Khách hàng" },
@@ -75,11 +86,11 @@ const roleLabel = new Map<string, string>(
 export function UserManagementView() {
   const session = useSession();
   const [search, setSearch] = useState("");
-  const deferredSearch = useDeferredValue(search.trim());
+  const debouncedSearch = useDebounce(search.trim(), 350);
   const [role, setRole] = useState("all");
   const [selectedUserId, setSelectedUserId] = useState("");
   const directory = useAdminUserDirectory({
-    q: deferredSearch || undefined,
+    q: debouncedSearch || undefined,
     role: role === "all" ? undefined : role,
     page: 1,
     limit: 100,
@@ -282,8 +293,10 @@ function UserDetailDialog({
   const statusMutation = useUpdateAdminUserStatus();
   const topUpMutation = useAdminWalletTopUp();
   const [roleDraft, setRoleDraft] = useState<string[] | null>(null);
-  const [amountVnd, setAmountVnd] = useState(500_000);
-  const [note, setNote] = useState("");
+  const topUpForm = useForm<AdminWalletTopUpValues>({
+    resolver: zodResolver(adminWalletTopUpSchema),
+    defaultValues: { amountVnd: "500000", note: "" },
+  });
 
   const roles = roleDraft ?? detail.data?.roles ?? [];
 
@@ -325,15 +338,16 @@ function UserDetailDialog({
     }
   }
 
-  async function topUp() {
-    if (!detail.data || !Number.isInteger(amountVnd) || amountVnd <= 0) return;
+  async function topUp(values: AdminWalletTopUpValues) {
+    if (!detail.data) return;
+    const amountVnd = parseVndInput(values.amountVnd);
     try {
       await topUpMutation.mutateAsync({
         userId: detail.data.id,
         amountVnd,
-        note: note.trim() || undefined,
+        note: values.note || undefined,
       });
-      setNote("");
+      topUpForm.reset({ amountVnd: values.amountVnd, note: "" });
       toast.success(`Đã cộng ${formatVnd(amountVnd)} vào ví.`);
     } catch (reason) {
       toast.error(
@@ -461,37 +475,44 @@ function UserDetailDialog({
                       : "Không khả dụng"}
                 </p>
               </div>
-              <div className="mt-4 grid gap-3 sm:grid-cols-[180px_1fr_auto] sm:items-end">
-                <div className="space-y-2">
-                  <Label htmlFor="admin-wallet-amount">Số tiền</Label>
-                  <Input
-                    id="admin-wallet-amount"
-                    type="number"
-                    min={1}
-                    step={1000}
-                    value={amountVnd}
-                    onChange={(event) =>
-                      setAmountVnd(Number(event.target.value))
-                    }
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="admin-wallet-note">Ghi chú</Label>
-                  <Textarea
-                    id="admin-wallet-note"
-                    rows={1}
-                    maxLength={500}
-                    value={note}
-                    onChange={(event) => setNote(event.target.value)}
-                    placeholder="Lý do hỗ trợ số dư"
-                  />
-                </div>
-                <Button
-                  disabled={
-                    busy || !Number.isInteger(amountVnd) || amountVnd <= 0
-                  }
-                  onClick={() => void topUp()}
+              <form
+                onSubmit={topUpForm.handleSubmit(topUp)}
+                className="mt-4 grid gap-3 sm:grid-cols-[180px_1fr_auto] sm:items-end"
+                noValidate
+              >
+                <FormController
+                  control={topUpForm.control}
+                  name="amountVnd"
+                  label="Số tiền"
                 >
+                  {(field) => (
+                    <CurrencyInput
+                      id={field.name}
+                      value={field.value}
+                      onValueChange={field.onChange}
+                      aria-invalid={Boolean(
+                        topUpForm.formState.errors.amountVnd,
+                      )}
+                    />
+                  )}
+                </FormController>
+                <FormController
+                  control={topUpForm.control}
+                  name="note"
+                  label="Ghi chú"
+                >
+                  {(field) => (
+                    <Textarea
+                      {...field}
+                      id={field.name}
+                      rows={1}
+                      maxLength={500}
+                      placeholder="Lý do hỗ trợ số dư"
+                      aria-invalid={Boolean(topUpForm.formState.errors.note)}
+                    />
+                  )}
+                </FormController>
+                <Button type="submit" disabled={busy}>
                   {topUpMutation.isPending ? (
                     <Loader2 className="animate-spin" />
                   ) : (
@@ -499,7 +520,7 @@ function UserDetailDialog({
                   )}
                   Cộng tiền
                 </Button>
-              </div>
+              </form>
             </section>
           </div>
         )}
