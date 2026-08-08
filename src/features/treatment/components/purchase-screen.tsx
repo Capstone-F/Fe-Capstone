@@ -12,6 +12,7 @@ import {
 import { useRouter } from "next/navigation";
 
 import { Button } from "@/shared/components/ui/button";
+import { formatVnd } from "@/shared/utils/format";
 import { useTreatment } from "@/features/treatment/components/treatment-context";
 import { validateSurveyRecommendation } from "@/features/treatment/lib/survey-flow";
 
@@ -98,13 +99,6 @@ export function PurchaseScreen() {
       setPaymentStep("checkout");
       setCartMessage("Có lỗi khi chuyển sang thanh toán. Vui lòng thử lại.");
     }
-  };
-
-  const formatPrice = (value: number) => {
-    return new Intl.NumberFormat("vi-VN", {
-      style: "currency",
-      currency: "VND",
-    }).format(value);
   };
 
   if (recommendationStatus !== "ok" || dynamicProducts.length === 0) {
@@ -257,7 +251,7 @@ export function PurchaseScreen() {
                       isSelected ? "text-foreground" : "text-muted-foreground"
                     }`}
                   >
-                    {formatPrice(product.price)}
+                    {formatVnd(product.price)}
                   </span>
                 </div>
               </div>
@@ -280,13 +274,13 @@ export function PurchaseScreen() {
         <div className="space-y-1.5 rounded-2xl border border-white/50 bg-white/40 p-3 text-[10px] shadow-sm">
           <div className="text-muted-foreground flex justify-between">
             <span>Tạm tính ({selectedProducts.length} sản phẩm):</span>
-            <span>{formatPrice(totalSelected)}</span>
+            <span>{formatVnd(totalSelected)}</span>
           </div>
 
           {isComboEligible ? (
             <div className="flex justify-between font-bold text-emerald-700">
               <span>Giảm giá Combo Survey (10%):</span>
-              <span>-{formatPrice(comboDiscount)}</span>
+              <span>-{formatVnd(comboDiscount)}</span>
             </div>
           ) : (
             <div className="flex justify-between text-amber-700">
@@ -305,7 +299,7 @@ export function PurchaseScreen() {
           <div className="text-foreground flex justify-between text-xs font-bold">
             <span>Tổng thanh toán trước checkout:</span>
             <span className="text-primary text-sm font-black">
-              {formatPrice(finalTotal)}
+              {formatVnd(finalTotal)}
             </span>
           </div>
         </div>

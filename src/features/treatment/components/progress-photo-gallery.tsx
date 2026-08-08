@@ -1,6 +1,8 @@
 "use client";
 
 import { useRef, useState } from "react";
+import { zodResolver } from "@hookform/resolvers/zod";
+import { useForm } from "react-hook-form";
 import Image from "next/image";
 import {
   Camera,
@@ -18,6 +20,12 @@ import {
   useTreatmentPlans,
 } from "@/features/treatments/hooks/useTreatments";
 import { Button } from "@/shared/components/ui/button";
+import { FormController } from "@/shared/components/form/form-controller";
+import { Input } from "@/shared/components/ui/input";
+import {
+  progressPhotoSchema,
+  type ProgressPhotoFormValues,
+} from "../schemas/routine-tracking-forms.schema";
 
 const FALLBACK_IMAGE =
   "https://images.unsplash.com/photo-1544005313-94ddf0286df2?auto=format&fit=crop&w=600&q=80";
@@ -46,9 +54,11 @@ export function ProgressPhotoGallery() {
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
-  const [title, setTitle] = useState("");
-  const [note, setNote] = useState("");
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const form = useForm<ProgressPhotoFormValues>({
+    resolver: zodResolver(progressPhotoSchema),
+    defaultValues: { title: "", note: "" },
+  });
 
   const [beforeIndex, setBeforeIndex] = useState(0);
   const [afterIndex, setAfterIndex] = useState(1);
@@ -72,8 +82,7 @@ export function ProgressPhotoGallery() {
     }
   };
 
-  const handleUploadSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
+  const handleUploadSubmit = (values: ProgressPhotoFormValues) => {
     if (!selectedFile || !treatmentId) {
       toast.error("Vui lòng chọn ảnh và phác đồ điều trị hoạt động.");
       return;
@@ -83,16 +92,15 @@ export function ProgressPhotoGallery() {
       {
         treatmentId,
         file: selectedFile,
-        title: title.trim() || `Ảnh tiến trình mốc ${photos.length + 1}`,
-        note: note.trim() || undefined,
+        title: values.title,
+        note: values.note || undefined,
       },
       {
         onSuccess: () => {
           toast.success("Đã đăng tải ảnh tiến trình da mới thành công!");
           setSelectedFile(null);
           setPreviewUrl(null);
-          setTitle("");
-          setNote("");
+          form.reset();
           setIsModalOpen(false);
         },
         onError: (err) => {
@@ -397,32 +405,37 @@ export function ProgressPhotoGallery() {
               />
             </div>
 
-            <form onSubmit={handleUploadSubmit} className="space-y-3">
-              <div>
-                <label className="text-xs font-semibold text-slate-700">
-                  Tên mốc ảnh theo dõi:
-                </label>
-                <input
-                  type="text"
-                  placeholder="VD: Tuần 3 - Sau 3 tuần dùng Retinol"
-                  value={title}
-                  onChange={(e) => setTitle(e.target.value)}
-                  className="mt-1 w-full rounded-xl border border-slate-200 px-3 py-2 text-xs"
-                />
-              </div>
+            <form
+              onSubmit={form.handleSubmit(handleUploadSubmit)}
+              className="space-y-3"
+            >
+              <FormController
+                control={form.control}
+                name="title"
+                label="Tên mốc ảnh theo dõi"
+              >
+                {(field) => (
+                  <Input
+                    {...field}
+                    placeholder="VD: Tuần 3 - Sau 3 tuần dùng Retinol"
+                    className="text-xs"
+                  />
+                )}
+              </FormController>
 
-              <div>
-                <label className="text-xs font-semibold text-slate-700">
-                  Ghi chú tiến trình da (Tùy chọn):
-                </label>
-                <input
-                  type="text"
-                  placeholder="VD: Vùng má giảm đỏ 80%, không xuất hiện mụn mới"
-                  value={note}
-                  onChange={(e) => setNote(e.target.value)}
-                  className="mt-1 w-full rounded-xl border border-slate-200 px-3 py-2 text-xs"
-                />
-              </div>
+              <FormController
+                control={form.control}
+                name="note"
+                label="Ghi chú tiến trình da (Tùy chọn)"
+              >
+                {(field) => (
+                  <Input
+                    {...field}
+                    placeholder="VD: Vùng má giảm đỏ 80%, không xuất hiện mụn mới"
+                    className="text-xs"
+                  />
+                )}
+              </FormController>
 
               <div className="flex justify-end gap-2 pt-2">
                 <Button
