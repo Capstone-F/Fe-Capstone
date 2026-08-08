@@ -1,6 +1,8 @@
 "use client";
 
-import { FormEvent, useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
+import { zodResolver } from "@hookform/resolvers/zod";
+import { useForm, useWatch } from "react-hook-form";
 import Image from "next/image";
 import { useRouter, useSearchParams } from "next/navigation";
 import {
@@ -57,6 +59,8 @@ import {
   TabsTrigger,
 } from "@/shared/components/ui/tabs";
 import { formatVnd } from "@/shared/utils/format";
+import { FormController } from "@/shared/components/form/form-controller";
+import { CurrencyInput } from "@/shared/components/form/currency-input";
 import { cn } from "@/lib/utils";
 import {
   useActivatePhase,
@@ -83,7 +87,6 @@ import type {
   TreatmentChart,
   TreatmentPhase,
   TreatmentPhasePayload,
-  TreatmentPhaseType,
   TreatmentPlan,
 } from "../types/treatment.types";
 import {
@@ -91,6 +94,13 @@ import {
   treatmentPhaseStatusLabel,
   treatmentPhaseTypeLabel,
 } from "../lib/treatment-labels";
+import {
+  createTreatmentPlanSchema,
+  routineSchema,
+  treatmentPhaseFormSchema,
+  type CreateTreatmentPlanValues,
+  type TreatmentPhaseFormValues,
+} from "../schemas/treatment-forms.schema";
 
 const isUuid = (value: string | null) =>
   Boolean(
@@ -511,28 +521,29 @@ function CreatePlanForm({
   }) => Promise<void>;
 }) {
   const router = useRouter();
-  const [title, setTitle] = useState("");
-  const [description, setDescription] = useState("");
-  const [startDate, setStartDate] = useState(() =>
-    toLocalDateInput(new Date()),
-  );
-  const [endDate, setEndDate] = useState(() => {
-    const date = new Date();
-    date.setMonth(date.getMonth() + 3);
-    return toLocalDateInput(date);
+  const defaultEndDate = new Date();
+  defaultEndDate.setMonth(defaultEndDate.getMonth() + 3);
+  const form = useForm<CreateTreatmentPlanValues>({
+    resolver: zodResolver(createTreatmentPlanSchema),
+    defaultValues: {
+      title: "",
+      description: "",
+      startDate: toLocalDateInput(new Date()),
+      endDate: toLocalDateInput(defaultEndDate),
+    },
   });
+  const startDate = useWatch({ control: form.control, name: "startDate" });
   const validSource = isUuid(customerId) && isUuid(sourceConsultationId);
 
-  async function handleSubmit(event: FormEvent) {
-    event.preventDefault();
+  async function handleSubmit(values: CreateTreatmentPlanValues) {
     if (!customerId || !sourceConsultationId || !validSource) return;
     try {
       await onCreate({
         customerId,
-        title: title.trim(),
-        description: description.trim() || undefined,
-        startDate,
-        endDate,
+        title: values.title,
+        description: values.description || undefined,
+        startDate: values.startDate,
+        endDate: values.endDate,
         sourceConsultationId,
       });
       toast.success("Đã tạo bản nháp phác đồ.");
@@ -562,53 +573,72 @@ function CreatePlanForm({
             từ ca tư vấn đang diễn ra hoặc đã hoàn thành.
           </p>
         ) : (
-          <form onSubmit={handleSubmit} className="mt-6 space-y-5">
-            <div className="space-y-2">
-              <Label htmlFor="plan-title">Tên phác đồ</Label>
-              <Input
-                id="plan-title"
-                value={title}
-                onChange={(event) => setTitle(event.target.value)}
-                maxLength={200}
-                required
-              />
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="plan-description">Tóm tắt đánh giá</Label>
-              <Textarea
-                id="plan-description"
-                value={description}
-                onChange={(event) => setDescription(event.target.value)}
-                rows={4}
-              />
-            </div>
-            <div className="grid gap-4 sm:grid-cols-2">
-              <div className="space-y-2">
-                <Label htmlFor="plan-start">Ngày bắt đầu</Label>
-                <Input
-                  id="plan-start"
-                  type="date"
-                  value={startDate}
-                  onChange={(event) => setStartDate(event.target.value)}
-                  required
-                />
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="plan-end">Ngày kết thúc</Label>
-                <Input
-                  id="plan-end"
-                  type="date"
-                  min={startDate}
-                  value={endDate}
-                  onChange={(event) => setEndDate(event.target.value)}
-                  required
-                />
-              </div>
-            </div>
-            <Button
-              type="submit"
-              disabled={isPending || !title.trim() || endDate < startDate}
+          <form
+            onSubmit={form.handleSubmit(handleSubmit)}
+            className="mt-6 space-y-5"
+            noValidate
+          >
+            <FormController
+              control={form.control}
+              name="title"
+              label="Tên phác đồ"
             >
+              {(field) => (
+                <Input
+                  {...field}
+                  id={field.name}
+                  maxLength={200}
+                  aria-invalid={Boolean(form.formState.errors.title)}
+                />
+              )}
+            </FormController>
+            <FormController
+              control={form.control}
+              name="description"
+              label="Tóm tắt đánh giá"
+            >
+              {(field) => (
+                <Textarea
+                  {...field}
+                  id={field.name}
+                  maxLength={2000}
+                  rows={4}
+                  aria-invalid={Boolean(form.formState.errors.description)}
+                />
+              )}
+            </FormController>
+            <div className="grid gap-4 sm:grid-cols-2">
+              <FormController
+                control={form.control}
+                name="startDate"
+                label="Ngày bắt đầu"
+              >
+                {(field) => (
+                  <Input
+                    {...field}
+                    id={field.name}
+                    type="date"
+                    aria-invalid={Boolean(form.formState.errors.startDate)}
+                  />
+                )}
+              </FormController>
+              <FormController
+                control={form.control}
+                name="endDate"
+                label="Ngày kết thúc"
+              >
+                {(field) => (
+                  <Input
+                    {...field}
+                    id={field.name}
+                    type="date"
+                    min={startDate}
+                    aria-invalid={Boolean(form.formState.errors.endDate)}
+                  />
+                )}
+              </FormController>
+            </div>
+            <Button type="submit" disabled={isPending}>
               {isPending ? (
                 <Loader2 className="mr-2 h-4 w-4 animate-spin" />
               ) : (
@@ -959,64 +989,22 @@ function PhaseForm({
   onCancel?: () => void;
   onDirtyChange?: (formKey: string, dirty: boolean) => void;
 }) {
-  const [phaseType, setPhaseType] = useState<TreatmentPhaseType>(
-    phase?.phaseType ?? "ACTIVE_TREATMENT",
-  );
-  const [title, setTitle] = useState(phase?.title ?? "");
-  const [goals, setGoals] = useState(phase?.goals ?? "");
-  const [notes, setNotes] = useState(phase?.notes ?? "");
-  const [noteByExpert, setNoteByExpert] = useState(phase?.noteByExpert ?? "");
-  const [priceVnd, setPriceVnd] = useState(phase ? String(phase.priceVnd) : "");
-  const [startDate, setStartDate] = useState(phase?.startDate ?? "");
-  const [endDate, setEndDate] = useState(phase?.endDate ?? "");
-  const [priceTouched, setPriceTouched] = useState(false);
-  const [savedValues, setSavedValues] = useState(() => ({
-    phaseType: phase?.phaseType ?? "ACTIVE_TREATMENT",
-    title: phase?.title ?? "",
-    goals: phase?.goals ?? "",
-    notes: phase?.notes ?? "",
-    noteByExpert: phase?.noteByExpert ?? "",
-    priceVnd: phase ? String(phase.priceVnd) : "",
-    startDate: phase?.startDate ?? "",
-    endDate: phase?.endDate ?? "",
-  }));
-  const priceNumber = Number(priceVnd);
-  const validPrice =
-    priceVnd.trim() !== "" && Number.isInteger(priceNumber) && priceNumber >= 0;
-  const validDates = !startDate || !endDate || endDate >= startDate;
-  const currentValues = useMemo(
-    () => ({
-      phaseType,
-      title,
-      goals,
-      notes,
-      noteByExpert,
-      priceVnd,
-      startDate,
-      endDate,
-    }),
-    [
-      endDate,
-      goals,
-      noteByExpert,
-      notes,
-      phaseType,
-      priceVnd,
-      startDate,
-      title,
-    ],
-  );
-  const dirtyFields = {
-    phaseType: currentValues.phaseType !== savedValues.phaseType,
-    title: currentValues.title !== savedValues.title,
-    goals: currentValues.goals !== savedValues.goals,
-    notes: currentValues.notes !== savedValues.notes,
-    noteByExpert: currentValues.noteByExpert !== savedValues.noteByExpert,
-    priceVnd: currentValues.priceVnd !== savedValues.priceVnd,
-    startDate: currentValues.startDate !== savedValues.startDate,
-    endDate: currentValues.endDate !== savedValues.endDate,
-  };
-  const isDirty = Object.values(dirtyFields).some(Boolean);
+  const form = useForm<TreatmentPhaseFormValues>({
+    resolver: zodResolver(treatmentPhaseFormSchema),
+    defaultValues: {
+      phaseType: phase?.phaseType ?? "ACTIVE_TREATMENT",
+      title: phase?.title ?? "",
+      goals: phase?.goals ?? "",
+      notes: phase?.notes ?? "",
+      noteByExpert: phase?.noteByExpert ?? "",
+      priceVnd: phase ? String(phase.priceVnd) : "",
+      startDate: phase?.startDate ?? "",
+      endDate: phase?.endDate ?? "",
+    },
+  });
+  const startDate = useWatch({ control: form.control, name: "startDate" });
+  const dirtyFields = form.formState.dirtyFields;
+  const isDirty = form.formState.isDirty;
 
   useEffect(() => {
     onDirtyChange?.(formKey, isDirty);
@@ -1029,23 +1017,20 @@ function PhaseForm({
     [formKey, onDirtyChange],
   );
 
-  async function handleSubmit(event: FormEvent) {
-    event.preventDefault();
-    setPriceTouched(true);
-    if (!validPrice || !validDates) return;
+  async function handleSubmit(values: TreatmentPhaseFormValues) {
     try {
       await onSubmit({
-        phaseType,
+        phaseType: values.phaseType,
         phaseOrder: phase?.phaseOrder ?? phaseOrder,
-        title: title.trim() || null,
-        goals: goals.trim() || null,
-        notes: notes.trim() || null,
-        noteByExpert: noteByExpert.trim() || null,
-        priceVnd: priceNumber,
-        startDate: startDate || null,
-        endDate: endDate || null,
+        title: values.title || null,
+        goals: values.goals || null,
+        notes: values.notes || null,
+        noteByExpert: values.noteByExpert || null,
+        priceVnd: Number(values.priceVnd),
+        startDate: values.startDate || null,
+        endDate: values.endDate || null,
       });
-      setSavedValues(currentValues);
+      form.reset(values);
     } catch (reason) {
       toast.error(
         reason instanceof Error ? reason.message : "Không thể lưu giai đoạn.",
@@ -1054,128 +1039,165 @@ function PhaseForm({
   }
 
   return (
-    <form onSubmit={handleSubmit}>
+    <form onSubmit={form.handleSubmit(handleSubmit)} noValidate>
       <div className="grid gap-4 md:grid-cols-2">
-        <div className="space-y-2">
-          <Label htmlFor={`phase-type-${phase?.id ?? phaseOrder}`}>
-            Loại giai đoạn
-          </Label>
-          <Select
-            value={phaseType}
-            onValueChange={(value) => setPhaseType(value as TreatmentPhaseType)}
-          >
-            <SelectTrigger
-              id={`phase-type-${phase?.id ?? phaseOrder}`}
-              className={cn(
-                "w-full",
-                dirtyFields.phaseType && "border-amber-400 bg-amber-50/60",
-              )}
-            >
-              <SelectValue />
-            </SelectTrigger>
-            <SelectContent>
-              {Object.entries(treatmentPhaseTypeLabel).map(([value, label]) => (
-                <SelectItem key={value} value={value}>
-                  {label}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-        </div>
-        <div className="space-y-2">
-          <Label>Tên giai đoạn</Label>
-          <Input
-            value={title}
-            onChange={(event) => setTitle(event.target.value)}
-            maxLength={200}
-            className={cn(
-              dirtyFields.title && "border-amber-400 bg-amber-50/60",
-            )}
-          />
-        </div>
-        <div className="space-y-2 md:col-span-2">
-          <Label>Mục tiêu</Label>
-          <Textarea
-            value={goals}
-            onChange={(event) => setGoals(event.target.value)}
-            rows={2}
-            className={cn(
-              dirtyFields.goals && "border-amber-400 bg-amber-50/60",
-            )}
-          />
-        </div>
-        <div className="space-y-2 md:col-span-2">
-          <Label>Lý do chuyên môn dùng trong hồ sơ bệnh án</Label>
-          <Textarea
-            value={noteByExpert}
-            onChange={(event) => setNoteByExpert(event.target.value)}
-            rows={3}
-            className={cn(
-              dirtyFields.noteByExpert && "border-amber-400 bg-amber-50/60",
-            )}
-          />
-        </div>
-        <div className="space-y-2 md:col-span-2">
-          <Label>Ghi chú vận hành</Label>
-          <Textarea
-            value={notes}
-            onChange={(event) => setNotes(event.target.value)}
-            rows={2}
-            className={cn(
-              dirtyFields.notes && "border-amber-400 bg-amber-50/60",
-            )}
-          />
-        </div>
-        <div className="space-y-2">
-          <Label>Phí giai đoạn (VND)</Label>
-          <Input
-            type="number"
-            min={0}
-            step={1000}
-            value={priceVnd}
-            onChange={(event) => setPriceVnd(event.target.value)}
-            onBlur={() => setPriceTouched(true)}
-            aria-invalid={priceTouched && !validPrice}
-            className={cn(
-              dirtyFields.priceVnd && "border-amber-400 bg-amber-50/60",
-            )}
-          />
-          {priceTouched && !validPrice && (
-            <p className="text-xs text-red-600">
-              Phí phải là số nguyên từ 0 đồng trở lên.
-            </p>
+        <FormController
+          control={form.control}
+          name="phaseType"
+          label="Loại giai đoạn"
+        >
+          {(field) => (
+            <Select value={field.value} onValueChange={field.onChange}>
+              <SelectTrigger
+                id={field.name}
+                className={cn(
+                  "w-full",
+                  dirtyFields.phaseType && "border-amber-400 bg-amber-50/60",
+                )}
+              >
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                {Object.entries(treatmentPhaseTypeLabel).map(
+                  ([value, label]) => (
+                    <SelectItem key={value} value={value}>
+                      {label}
+                    </SelectItem>
+                  ),
+                )}
+              </SelectContent>
+            </Select>
           )}
-        </div>
+        </FormController>
+        <FormController
+          control={form.control}
+          name="title"
+          label="Tên giai đoạn"
+        >
+          {(field) => (
+            <Input
+              {...field}
+              id={field.name}
+              maxLength={200}
+              className={cn(
+                dirtyFields.title && "border-amber-400 bg-amber-50/60",
+              )}
+              aria-invalid={Boolean(form.formState.errors.title)}
+            />
+          )}
+        </FormController>
+        <FormController
+          control={form.control}
+          name="goals"
+          label="Mục tiêu"
+          className="md:col-span-2"
+        >
+          {(field) => (
+            <Textarea
+              {...field}
+              id={field.name}
+              rows={2}
+              maxLength={2000}
+              className={cn(
+                dirtyFields.goals && "border-amber-400 bg-amber-50/60",
+              )}
+              aria-invalid={Boolean(form.formState.errors.goals)}
+            />
+          )}
+        </FormController>
+        <FormController
+          control={form.control}
+          name="noteByExpert"
+          label="Lý do chuyên môn dùng trong hồ sơ bệnh án"
+          className="md:col-span-2"
+        >
+          {(field) => (
+            <Textarea
+              {...field}
+              id={field.name}
+              rows={3}
+              maxLength={4000}
+              className={cn(
+                dirtyFields.noteByExpert && "border-amber-400 bg-amber-50/60",
+              )}
+              aria-invalid={Boolean(form.formState.errors.noteByExpert)}
+            />
+          )}
+        </FormController>
+        <FormController
+          control={form.control}
+          name="notes"
+          label="Ghi chú vận hành"
+          className="md:col-span-2"
+        >
+          {(field) => (
+            <Textarea
+              {...field}
+              id={field.name}
+              rows={2}
+              maxLength={2000}
+              className={cn(
+                dirtyFields.notes && "border-amber-400 bg-amber-50/60",
+              )}
+              aria-invalid={Boolean(form.formState.errors.notes)}
+            />
+          )}
+        </FormController>
+        <FormController
+          control={form.control}
+          name="priceVnd"
+          label="Phí giai đoạn (VND)"
+        >
+          {(field) => (
+            <CurrencyInput
+              id={field.name}
+              name={field.name}
+              ref={field.ref}
+              onBlur={field.onBlur}
+              value={field.value}
+              onValueChange={field.onChange}
+              aria-invalid={Boolean(form.formState.errors.priceVnd)}
+              className={cn(
+                dirtyFields.priceVnd && "border-amber-400 bg-amber-50/60",
+              )}
+            />
+          )}
+        </FormController>
         <div className="grid grid-cols-2 gap-3">
-          <div className="space-y-2">
-            <Label>Bắt đầu</Label>
-            <Input
-              type="date"
-              value={startDate}
-              onChange={(event) => setStartDate(event.target.value)}
-              className={cn(
-                dirtyFields.startDate && "border-amber-400 bg-amber-50/60",
-              )}
-            />
-          </div>
-          <div className="space-y-2">
-            <Label>Kết thúc</Label>
-            <Input
-              type="date"
-              min={startDate}
-              value={endDate}
-              onChange={(event) => setEndDate(event.target.value)}
-              aria-invalid={!validDates}
-              className={cn(
-                dirtyFields.endDate && "border-amber-400 bg-amber-50/60",
-              )}
-            />
-            {!validDates && (
-              <p className="text-xs text-red-600">
-                Ngày kết thúc phải từ ngày bắt đầu trở đi.
-              </p>
+          <FormController
+            control={form.control}
+            name="startDate"
+            label="Bắt đầu"
+          >
+            {(field) => (
+              <Input
+                {...field}
+                id={field.name}
+                type="date"
+                className={cn(
+                  dirtyFields.startDate && "border-amber-400 bg-amber-50/60",
+                )}
+              />
             )}
-          </div>
+          </FormController>
+          <FormController
+            control={form.control}
+            name="endDate"
+            label="Kết thúc"
+          >
+            {(field) => (
+              <Input
+                {...field}
+                id={field.name}
+                type="date"
+                min={startDate}
+                className={cn(
+                  dirtyFields.endDate && "border-amber-400 bg-amber-50/60",
+                )}
+                aria-invalid={Boolean(form.formState.errors.endDate)}
+              />
+            )}
+          </FormController>
         </div>
       </div>
       <div className="mt-5 flex flex-wrap justify-end gap-2">
@@ -1195,10 +1217,7 @@ function PhaseForm({
             <Trash2 className="mr-2 h-4 w-4" /> Xóa
           </Button>
         )}
-        <Button
-          type="submit"
-          disabled={isPending || !validPrice || !validDates}
-        >
+        <Button type="submit" disabled={isPending}>
           {isPending ? (
             <Loader2 className="mr-2 h-4 w-4 animate-spin" />
           ) : (
@@ -1357,12 +1376,19 @@ function PhaseConfiguration({
 
   async function saveRoutine() {
     if (!routine) return;
-    if (!routine.title.trim()) {
-      toast.error("Tên routine không được để trống.");
-      return;
-    }
-    if ((routine.steps ?? []).some((step) => !step.name.trim())) {
-      toast.error("Tên bước routine không được để trống.");
+    const parsed = routineSchema.safeParse({
+      title: routine.title,
+      description: routine.description ?? "",
+      steps: (routine.steps ?? []).map((step) => ({
+        name: step.name,
+        period: step.period,
+        instructions: step.instructions ?? "",
+        dosageText: step.dosageText ?? "",
+        waitMinutes: step.waitMinutes,
+      })),
+    });
+    if (!parsed.success) {
+      toast.error(parsed.error.issues[0]?.message ?? "Routine chưa hợp lệ.");
       return;
     }
 

@@ -1,6 +1,8 @@
 "use client";
 
-import { FormEvent, useState } from "react";
+import { useState } from "react";
+import { zodResolver } from "@hookform/resolvers/zod";
+import { useForm } from "react-hook-form";
 import { useRouter } from "next/navigation";
 import Image from "next/image";
 import {
@@ -45,6 +47,13 @@ import { Input } from "@/shared/components/ui/input";
 import { Label } from "@/shared/components/ui/label";
 import { Textarea } from "@/shared/components/ui/textarea";
 import { formatVnd } from "@/shared/utils/format";
+import { FormController } from "@/shared/components/form/form-controller";
+import {
+  cancelTreatmentSchema,
+  type CancelTreatmentFormValues,
+  progressPhotoSchema,
+  type ProgressPhotoFormValues,
+} from "@/features/treatment/schemas/routine-tracking-forms.schema";
 
 export function CustomerTreatmentView() {
   const router = useRouter();
@@ -325,22 +334,25 @@ function ProgressPhotos({
 }) {
   const mutation = useCreateProgressPhoto();
   const [file, setFile] = useState<File | null>(null);
-  const [title, setTitle] = useState("");
-  const [note, setNote] = useState("");
+  const form = useForm<ProgressPhotoFormValues>({
+    resolver: zodResolver(progressPhotoSchema),
+    defaultValues: { title: "", note: "" },
+  });
 
-  async function submit(event: FormEvent) {
-    event.preventDefault();
-    if (!file || !title.trim()) return;
+  async function submit(values: ProgressPhotoFormValues) {
+    if (!file) {
+      toast.error("Vui lòng chọn ảnh tiến độ.");
+      return;
+    }
     try {
       await mutation.mutateAsync({
         treatmentId: plan.id,
         file,
-        title: title.trim(),
-        note: note.trim() || undefined,
+        title: values.title,
+        note: values.note || undefined,
       });
       setFile(null);
-      setTitle("");
-      setNote("");
+      form.reset();
       toast.success("Đã thêm ảnh tiến độ.");
       onRefresh();
     } catch (reason) {
@@ -382,17 +394,18 @@ function ProgressPhotos({
         )}
       </div>
       {plan.status === "ACTIVE" && (
-        <form onSubmit={submit} className="space-y-3 border-t p-5">
+        <form
+          onSubmit={form.handleSubmit(submit)}
+          className="space-y-3 border-t p-5"
+        >
           <div className="grid gap-3 sm:grid-cols-2">
-            <div className="space-y-2">
-              <Label htmlFor="progress-title">Tên mốc tiến độ</Label>
-              <Input
-                id="progress-title"
-                value={title}
-                onChange={(event) => setTitle(event.target.value)}
-                required
-              />
-            </div>
+            <FormController
+              control={form.control}
+              name="title"
+              label="Tên mốc tiến độ"
+            >
+              {(field) => <Input {...field} />}
+            </FormController>
             <div className="space-y-2">
               <Label htmlFor="progress-file">Ảnh (tối đa 5MB)</Label>
               <Input
@@ -404,18 +417,13 @@ function ProgressPhotos({
               />
             </div>
           </div>
-          <div className="space-y-2">
-            <Label htmlFor="progress-note">Ghi chú</Label>
-            <Input
-              id="progress-note"
-              value={note}
-              onChange={(event) => setNote(event.target.value)}
-            />
-          </div>
+          <FormController control={form.control} name="note" label="Ghi chú">
+            {(field) => <Input {...field} />}
+          </FormController>
           <Button
             type="submit"
             variant="outline"
-            disabled={!file || !title.trim() || mutation.isPending}
+            disabled={!file || mutation.isPending}
           >
             {mutation.isPending ? (
               <Loader2 className="mr-2 h-4 w-4 animate-spin" />
@@ -494,21 +502,24 @@ function CancelTreatmentDialog({
   onSuccess: () => void;
 }) {
   const mutation = useCancelTreatment();
-  const [reason, setReason] = useState("");
+  const form = useForm<CancelTreatmentFormValues>({
+    resolver: zodResolver(cancelTreatmentSchema),
+    defaultValues: { reason: "" },
+  });
   const refundable = plan.phases
     .filter((phase) => phase.status === "PENDING")
     .reduce((sum, phase) => sum + phase.priceVnd, 0);
 
-  async function cancel() {
+  async function cancel(values: CancelTreatmentFormValues) {
     try {
       const result = await mutation.mutateAsync({
         id: plan.id,
-        reason: reason.trim() || undefined,
+        reason: values.reason || undefined,
       });
       toast.success(
         `Đã hủy phần còn lại. Hoàn ví ${formatVnd(result.refundedAmountVnd ?? 0)}.`,
       );
-      setReason("");
+      form.reset();
       onOpenChange(false);
       onSuccess();
     } catch (cause) {
@@ -528,31 +539,30 @@ function CancelTreatmentDialog({
             kiến hoàn phí các giai đoạn chưa bắt đầu: {formatVnd(refundable)}.
           </DialogDescription>
         </DialogHeader>
-        <div className="space-y-2">
-          <Label htmlFor="cancel-reason">Lý do</Label>
-          <Textarea
-            id="cancel-reason"
-            value={reason}
-            onChange={(event) => setReason(event.target.value)}
-            maxLength={2000}
-            rows={4}
-          />
-        </div>
-        <DialogFooter>
-          <Button variant="ghost" onClick={() => onOpenChange(false)}>
-            Quay lại
-          </Button>
-          <Button
-            variant="destructive"
-            onClick={() => void cancel()}
-            disabled={mutation.isPending}
-          >
-            {mutation.isPending && (
-              <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-            )}{" "}
-            Xác nhận hủy
-          </Button>
-        </DialogFooter>
+        <form onSubmit={form.handleSubmit(cancel)} className="space-y-4">
+          <FormController control={form.control} name="reason" label="Lý do">
+            {(field) => <Textarea {...field} maxLength={2000} rows={4} />}
+          </FormController>
+          <DialogFooter>
+            <Button
+              type="button"
+              variant="ghost"
+              onClick={() => onOpenChange(false)}
+            >
+              Quay lại
+            </Button>
+            <Button
+              type="submit"
+              variant="destructive"
+              disabled={mutation.isPending}
+            >
+              {mutation.isPending && (
+                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+              )}{" "}
+              Xác nhận hủy
+            </Button>
+          </DialogFooter>
+        </form>
       </DialogContent>
     </Dialog>
   );

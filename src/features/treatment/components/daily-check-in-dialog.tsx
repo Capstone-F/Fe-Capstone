@@ -1,6 +1,7 @@
 "use client";
 
-import { useState } from "react";
+import { zodResolver } from "@hookform/resolvers/zod";
+import { useForm, useWatch } from "react-hook-form";
 import { Activity, AlertCircle, Frown, Meh, Smile } from "lucide-react";
 import { toast } from "sonner";
 import { ApiError } from "@/core/api/errors";
@@ -12,7 +13,12 @@ import {
   DialogTitle,
 } from "@/shared/components/ui/dialog";
 import { Textarea } from "@/shared/components/ui/textarea";
+import { FormController } from "@/shared/components/form/form-controller";
 import { useCreateCheckIn } from "../hooks/useRoutineTracking";
+import {
+  dailyCheckInSchema,
+  type DailyCheckInFormValues,
+} from "../schemas/routine-tracking-forms.schema";
 import type { RoutinePeriod } from "../types/routine-tracking.types";
 
 export type OverallFeeling = "BETTER" | "SAME" | "WORSE";
@@ -76,21 +82,29 @@ export function DailyCheckInDialog({
   routineId,
   period,
 }: DailyCheckInDialogProps) {
-  const [feeling, setFeeling] = useState<OverallFeeling>("SAME");
-  const [selectedSymptoms, setSelectedSymptoms] = useState<SymptomKey[]>([]);
-  const [note, setNote] = useState("");
+  const form = useForm<DailyCheckInFormValues>({
+    resolver: zodResolver(dailyCheckInSchema),
+    defaultValues: { feeling: "SAME", symptoms: [], note: "" },
+  });
+  const feeling = useWatch({ control: form.control, name: "feeling" });
+  const selectedSymptoms = useWatch({
+    control: form.control,
+    name: "symptoms",
+  });
 
   const createCheckIn = useCreateCheckIn(routineId);
 
   const toggleSymptom = (key: SymptomKey) => {
-    setSelectedSymptoms((prev) =>
-      prev.includes(key) ? prev.filter((item) => item !== key) : [...prev, key],
+    form.setValue(
+      "symptoms",
+      selectedSymptoms.includes(key)
+        ? selectedSymptoms.filter((item) => item !== key)
+        : [...selectedSymptoms, key],
+      { shouldDirty: true, shouldValidate: true },
     );
   };
 
-  const handleSubmit = (event: React.FormEvent) => {
-    event.preventDefault();
-
+  const handleSubmit = (values: DailyCheckInFormValues) => {
     // Map to exact Backend DTO as Mobile mo_capstone mappers.ts
     const moodMap: Record<OverallFeeling, "GOOD" | "OK" | "BAD"> = {
       BETTER: "GOOD",
@@ -121,12 +135,13 @@ export function DailyCheckInDialog({
         oilLevel: selectedSymptoms.includes("oiliness") ? 3 : 0,
         rednessLevel: selectedSymptoms.includes("redness") ? 3 : 0,
         moistureLevel: selectedSymptoms.includes("dryness") ? 1 : 4,
-        note: note.trim() ? note.trim() : undefined,
+        note: values.note || undefined,
         sideEffects: sideEffects.length > 0 ? sideEffects : undefined,
       },
       {
         onSuccess: () => {
           toast.success("Đã ghi nhận nhật ký da hôm nay!");
+          form.reset();
           onOpenChange(false);
         },
         onError: (error) => {
@@ -157,7 +172,10 @@ export function DailyCheckInDialog({
             Check-in Tình Trạng Da Hàng Ngày
           </DialogTitle>
         </DialogHeader>
-        <form onSubmit={handleSubmit} className="space-y-4 pt-2">
+        <form
+          onSubmit={form.handleSubmit(handleSubmit)}
+          className="space-y-4 pt-2"
+        >
           {/* Cảm nhận chung */}
           <div className="space-y-2">
             <label className="text-xs font-bold tracking-wider text-slate-700 uppercase">
@@ -171,7 +189,11 @@ export function DailyCheckInDialog({
                   <button
                     key={item.key}
                     type="button"
-                    onClick={() => setFeeling(item.key)}
+                    onClick={() =>
+                      form.setValue("feeling", item.key, {
+                        shouldDirty: true,
+                      })
+                    }
                     className={`flex flex-col items-center gap-1.5 rounded-xl border p-3.5 transition-all ${
                       active
                         ? item.color
@@ -226,17 +248,19 @@ export function DailyCheckInDialog({
           )}
 
           {/* Ghi chú thêm */}
-          <div className="space-y-2">
-            <label className="text-xs font-bold tracking-wider text-slate-700 uppercase">
-              Ghi chú thêm về da
-            </label>
-            <Textarea
-              value={note}
-              onChange={(event) => setNote(event.target.value)}
-              placeholder="Ví dụ: Vùng má hơi đỏ nhẹ sau khi rửa mặt..."
-              className="h-20 text-xs"
-            />
-          </div>
+          <FormController
+            control={form.control}
+            name="note"
+            label="Ghi chú thêm về da"
+          >
+            {(field) => (
+              <Textarea
+                {...field}
+                placeholder="Ví dụ: Vùng má hơi đỏ nhẹ sau khi rửa mặt..."
+                className="h-20 text-xs"
+              />
+            )}
+          </FormController>
 
           <div className="flex justify-end gap-2 pt-2">
             <Button
