@@ -13,17 +13,25 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useState, useEffect } from "react";
 import { toast } from "sonner";
+import { zodResolver } from "@hookform/resolvers/zod";
+import { useForm, useWatch } from "react-hook-form";
 
 import { Button } from "@/shared/components/ui/button";
 import { Spinner } from "@/shared/components/ui/spinner";
 import { Input } from "@/shared/components/ui/input";
-import { Label } from "@/shared/components/ui/label";
+import { FormController } from "@/shared/components/form/form-controller";
 
 import { authApi } from "../api/auth.api";
 import { authMock } from "../api/auth.mock";
 import { tokenStorage } from "../utils/token-storage";
 import { useSession } from "../hooks/useSession";
 import { appConfig } from "@/lib/env";
+import {
+  authFormSchema,
+  type AuthFormValues,
+} from "../schemas/auth-form.schema";
+import { guestSurveyStorage } from "@/features/survey/lib/guest-survey-storage";
+import { treatmentApi } from "@/features/treatment/api/treatment.api";
 
 type LoginPanelProps = {
   redirectTo: string;
@@ -55,46 +63,48 @@ export function LoginPanel({ redirectTo }: LoginPanelProps) {
     }
   }, [router, redirectTo, session.data]);
 
-  const [mode, setMode] = useState<"login" | "register">("login");
-  const [email, setEmail] = useState("");
-  const [password, setPassword] = useState("");
-  const [name, setName] = useState("");
+  const form = useForm<AuthFormValues>({
+    resolver: zodResolver(authFormSchema),
+    defaultValues: {
+      mode: "login",
+      email: "",
+      password: "",
+      name: "",
+    },
+  });
+  const mode = useWatch({ control: form.control, name: "mode" });
   const [showPassword, setShowPassword] = useState(false);
-  const [isSubmitting, setIsSubmitting] = useState(false);
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setIsSubmitting(true);
+  const handleSubmit = async (values: AuthFormValues) => {
+    const guestSurvey = guestSurveyStorage.get();
     try {
       let tokenData;
       if (appConfig.useMockApi) {
         if (mode === "login") {
-          tokenData = await authMock.loginDirect(email);
+          tokenData = await authMock.loginDirect(values.email);
           toast.success("Đăng nhập thành công (Mock)!");
         } else {
-          if (!name.trim()) {
-            toast.error("Vui lòng nhập họ và tên.");
-            setIsSubmitting(false);
-            return;
-          }
-          tokenData = await authMock.registerDirect(email, name.trim());
+          tokenData = await authMock.registerDirect(
+            values.email,
+            values.name.trim(),
+          );
           toast.success("Đăng ký thành công (Mock)!");
         }
       } else {
         if (mode === "login") {
-          const res = await authApi.loginDirect(email, password);
+          const res = await authApi.loginDirect(
+            values.email,
+            values.password,
+            guestSurvey?.guestToken,
+          );
           tokenData = res.data;
           toast.success("Đăng nhập thành công!");
         } else {
-          if (!name.trim()) {
-            toast.error("Vui lòng nhập họ và tên.");
-            setIsSubmitting(false);
-            return;
-          }
           const res = await authApi.registerDirect(
-            email,
-            password,
-            name.trim(),
+            values.email,
+            values.password,
+            values.name.trim(),
+            guestSurvey?.guestToken,
           );
           tokenData = res.data;
           toast.success("Đăng ký thành công!");
@@ -106,22 +116,36 @@ export function LoginPanel({ redirectTo }: LoginPanelProps) {
         tokenStorage.setRefreshToken(tokenData.refreshToken);
       }
 
+      if (guestSurvey && !appConfig.useMockApi) {
+        try {
+          const recommendation =
+            await treatmentApi.fetchLatestRecommendations();
+          if (recommendation.data.customerSurveyId !== guestSurvey.surveyId) {
+            throw new Error("Survey claim chưa hoàn tất.");
+          }
+          guestSurveyStorage.clear();
+          toast.success("Đã lưu kết quả khảo sát vào tài khoản.");
+        } catch {
+          toast.warning(
+            "Đăng nhập thành công nhưng BE chưa xác nhận liên kết khảo sát guest. Dữ liệu guest vẫn được giữ để thử lại.",
+          );
+        }
+      }
+
       // The cached session was resolved before the new token existed. Use the
       // authenticated response so role-based redirects work on the first login.
       const roles: string[] =
         tokenData.user?.roles ?? session.data?.roles ?? [];
       const targetPath = getRoleBasedRedirectPath(roles, redirectTo);
 
-      // Redirect to target path
-      window.location.href = targetPath;
+      router.replace(targetPath);
+      router.refresh();
     } catch (error: unknown) {
       console.error(error);
       const e = error as Error;
       const msg =
         e?.message || "Đăng nhập thất bại. Vui lòng kiểm tra lại thông tin.";
       toast.error(msg);
-    } finally {
-      setIsSubmitting(false);
     }
   };
 
@@ -214,7 +238,7 @@ export function LoginPanel({ redirectTo }: LoginPanelProps) {
             <div className="mb-5 flex border-b border-[#E0E8E4]">
               <button
                 type="button"
-                onClick={() => setMode("login")}
+                onClick={() => form.setValue("mode", "login")}
                 className={`flex-1 border-b-2 pb-2.5 text-sm font-bold transition-colors ${
                   mode === "login"
                     ? "border-[#2C3E35] text-[#2C3E35]"
@@ -225,7 +249,13 @@ export function LoginPanel({ redirectTo }: LoginPanelProps) {
               </button>
               <button
                 type="button"
-                onClick={() => setMode("register")}
+                onClick={() => {
+                  form.setValue("mode", "register");
+                  const storedName = guestSurveyStorage.get()?.baseProfile.name;
+                  if (storedName && !form.getValues("name")) {
+                    form.setValue("name", storedName);
+                  }
+                }}
                 className={`flex-1 border-b-2 pb-2.5 text-sm font-bold transition-colors ${
                   mode === "register"
                     ? "border-[#2C3E35] text-[#2C3E35]"
@@ -236,83 +266,91 @@ export function LoginPanel({ redirectTo }: LoginPanelProps) {
               </button>
             </div>
 
-            <form onSubmit={handleSubmit} className="space-y-4">
+            <form
+              onSubmit={form.handleSubmit(handleSubmit)}
+              className="space-y-4"
+              noValidate
+            >
               {mode === "register" && (
-                <div className="space-y-1.5">
-                  <Label
-                    htmlFor="reg-name"
-                    className="text-xs font-bold text-[#2C3E35]"
-                  >
-                    Họ và tên
-                  </Label>
-                  <Input
-                    id="reg-name"
-                    placeholder="Nhập họ và tên..."
-                    value={name}
-                    onChange={(e) => setName(e.target.value)}
-                    className="h-11 rounded-xl border-[#E0E8E4] text-sm focus-visible:ring-[#2C3E35]"
-                    required
-                  />
-                </div>
+                <FormController
+                  control={form.control}
+                  name="name"
+                  label="Họ và tên"
+                >
+                  {(field) => (
+                    <Input
+                      {...field}
+                      id={field.name}
+                      placeholder="Nhập họ và tên..."
+                      autoComplete="name"
+                      className="h-11 rounded-xl border-[#E0E8E4] text-sm focus-visible:ring-[#2C3E35]"
+                      aria-invalid={Boolean(form.formState.errors.name)}
+                    />
+                  )}
+                </FormController>
               )}
 
-              <div className="space-y-1.5">
-                <Label
-                  htmlFor="login-email"
-                  className="text-xs font-bold text-[#2C3E35]"
-                >
-                  Địa chỉ Email
-                </Label>
-                <Input
-                  id="login-email"
-                  type="email"
-                  placeholder="name@example.com"
-                  value={email}
-                  onChange={(e) => setEmail(e.target.value)}
-                  className="h-11 rounded-xl border-[#E0E8E4] text-sm focus-visible:ring-[#2C3E35]"
-                  required
-                />
-              </div>
-
-              <div className="space-y-1.5">
-                <Label
-                  htmlFor="login-password"
-                  className="text-xs font-bold text-[#2C3E35]"
-                >
-                  Mật khẩu
-                </Label>
-                <div className="relative">
+              <FormController
+                control={form.control}
+                name="email"
+                label="Địa chỉ Email"
+              >
+                {(field) => (
                   <Input
-                    id="login-password"
-                    type={showPassword ? "text" : "password"}
-                    placeholder="••••••••"
-                    value={password}
-                    onChange={(e) => setPassword(e.target.value)}
-                    className="h-11 rounded-xl border-[#E0E8E4] pr-10 text-sm focus-visible:ring-[#2C3E35]"
-                    required
+                    {...field}
+                    id={field.name}
+                    type="email"
+                    placeholder="name@example.com"
+                    autoComplete="email"
+                    className="h-11 rounded-xl border-[#E0E8E4] text-sm focus-visible:ring-[#2C3E35]"
+                    aria-invalid={Boolean(form.formState.errors.email)}
                   />
-                  <button
-                    type="button"
-                    onClick={() => setShowPassword(!showPassword)}
-                    className="absolute top-1/2 right-3 -translate-y-1/2 text-[#6A8275] transition-colors hover:text-[#2C3E35] focus:outline-hidden"
-                    tabIndex={-1}
-                    aria-label={showPassword ? "Ẩn mật khẩu" : "Hiện mật khẩu"}
-                  >
-                    {showPassword ? (
-                      <EyeOff className="h-4.5 w-4.5" />
-                    ) : (
-                      <Eye className="h-4.5 w-4.5" />
-                    )}
-                  </button>
-                </div>
-              </div>
+                )}
+              </FormController>
+
+              <FormController
+                control={form.control}
+                name="password"
+                label="Mật khẩu"
+              >
+                {(field) => (
+                  <div className="relative">
+                    <Input
+                      {...field}
+                      id={field.name}
+                      type={showPassword ? "text" : "password"}
+                      placeholder="••••••••"
+                      autoComplete={
+                        mode === "login" ? "current-password" : "new-password"
+                      }
+                      className="h-11 rounded-xl border-[#E0E8E4] pr-10 text-sm focus-visible:ring-[#2C3E35]"
+                      aria-invalid={Boolean(form.formState.errors.password)}
+                    />
+                    <button
+                      type="button"
+                      onClick={() => setShowPassword(!showPassword)}
+                      className="absolute top-1/2 right-3 -translate-y-1/2 text-[#6A8275] transition-colors hover:text-[#2C3E35] focus:outline-hidden"
+                      tabIndex={-1}
+                      aria-label={
+                        showPassword ? "Ẩn mật khẩu" : "Hiện mật khẩu"
+                      }
+                    >
+                      {showPassword ? (
+                        <EyeOff className="h-4.5 w-4.5" />
+                      ) : (
+                        <Eye className="h-4.5 w-4.5" />
+                      )}
+                    </button>
+                  </div>
+                )}
+              </FormController>
 
               <Button
                 type="submit"
-                disabled={isSubmitting}
+                disabled={form.formState.isSubmitting}
                 className="group relative mt-2 h-12 w-full rounded-xl bg-[#2C3E35] px-6 text-sm font-bold text-white shadow-md transition-all duration-200 hover:bg-[#3A5246] hover:shadow-lg active:scale-[0.99]"
               >
-                {isSubmitting ? (
+                {form.formState.isSubmitting ? (
                   <span className="flex items-center justify-center gap-2">
                     <Spinner className="text-white" />
                     <span>Đang xử lý...</span>

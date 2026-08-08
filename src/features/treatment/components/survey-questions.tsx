@@ -1,15 +1,11 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { Loader2 } from "lucide-react";
+import { Loader2, ShieldCheck } from "lucide-react";
 import { Button } from "@/shared/components/ui/button";
-import { usePathname } from "next/navigation";
 import { cn } from "@/lib/utils";
 
-import { useSession } from "@/features/auth/hooks/useSession";
-import { appConfig } from "@/lib/env";
 import { useTreatment } from "@/features/treatment/components/treatment-context";
-import { shouldRedirectToLogin } from "@/features/auth/lib/session-access";
 import { SurveyFaceScan } from "./survey-face-scan";
 
 export function SurveyQuestions() {
@@ -24,9 +20,6 @@ export function SurveyQuestions() {
   } = useTreatment();
 
   const step = state.surveyStep;
-  const sessionQuery = useSession();
-  const pathname = usePathname();
-
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
   const [isSubmittingStep, setIsSubmittingStep] = useState(false);
 
@@ -44,23 +37,6 @@ export function SurveyQuestions() {
     state.isLoadingDynamic,
     startDynamicSurvey,
   ]);
-
-  // Handle route protection client side
-  useEffect(() => {
-    if (appConfig.devBypassAuth) {
-      return;
-    }
-
-    if (
-      shouldRedirectToLogin({
-        isLoading: sessionQuery.isLoading,
-        hasSession: Boolean(sessionQuery.data),
-      })
-    ) {
-      const loginTarget = `/login?redirectTo=${encodeURIComponent(pathname || "/scan")}`;
-      window.location.href = loginTarget;
-    }
-  }, [pathname, sessionQuery.data, sessionQuery.isLoading]);
 
   const questionsCount = state.dynamicQuestions.length;
   const currentQ =
@@ -169,6 +145,46 @@ export function SurveyQuestions() {
 
   // If we passed all questions
   if (step > questionsCount) {
+    if (state.surveyMode === "guest") {
+      return (
+        <div className="flex flex-1 flex-col items-center justify-center gap-5 px-6 text-center">
+          <div className="flex h-14 w-14 items-center justify-center rounded-full bg-[#6b5cf6]/10 text-[#6b5cf6]">
+            <ShieldCheck className="h-7 w-7" />
+          </div>
+          <div className="space-y-2">
+            <h2 className="font-heading text-2xl font-bold text-[#131336]">
+              Sẵn sàng xem kết quả
+            </h2>
+            <p className="mx-auto max-w-md text-sm text-[#131336]/65">
+              Quét khuôn mặt là bước tùy chọn dành cho tài khoản đã đăng nhập.
+              Bạn có thể hoàn tất khảo sát guest ngay bây giờ.
+            </p>
+          </div>
+          {errorMsg && <p className="text-sm text-red-600">{errorMsg}</p>}
+          <div className="flex w-full max-w-sm gap-3">
+            <Button
+              variant="outline"
+              onClick={() => setSurveyStep(Math.max(1, questionsCount))}
+              disabled={isSubmittingStep}
+              className="flex-1"
+            >
+              Quay lại
+            </Button>
+            <Button
+              onClick={() => void handleComplete()}
+              disabled={isSubmittingStep}
+              className="flex-1 bg-[#6b5cf6] text-white hover:bg-[#5a4ae5]"
+            >
+              {isSubmittingStep ? (
+                <Loader2 className="h-5 w-5 animate-spin" />
+              ) : (
+                "Xem kết quả"
+              )}
+            </Button>
+          </div>
+        </div>
+      );
+    }
     return (
       <SurveyFaceScan
         isCompleting={isSubmittingStep}

@@ -55,6 +55,7 @@ export type FlowState =
   | "dashboard";
 
 export type DashboardTab = "home" | "report" | "history" | "profile";
+export type SurveyMode = "guest" | "authenticated";
 
 export type AiObservation = {
   acneSeverity: "Nhẹ" | "Trung bình" | "Nặng";
@@ -84,6 +85,7 @@ export type TreatmentData = {
   customerProfile: CustomerProfileResponseDto | null;
   isLoadingDynamic?: boolean;
   dynamicError?: string | null;
+  surveyMode: SurveyMode;
 };
 
 export type SkincareProduct = {

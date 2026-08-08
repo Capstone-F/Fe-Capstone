@@ -31,6 +31,7 @@ export interface LoginRequestDto {
   username?: string;
   email?: string;
   password?: string;
+  guestToken?: string;
 }
 
 export type LoginResponse = MobileTokenResponse;

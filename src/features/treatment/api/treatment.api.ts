@@ -1,4 +1,4 @@
-import { apiClient } from "@/core/api/client";
+import { apiClient, publicApiClient } from "@/core/api/client";
 import { API_ENDPOINTS } from "@/core/api/endpoints";
 import type { AxiosResponse } from "axios";
 import type {
@@ -8,19 +8,45 @@ import type {
   CustomerProfileResponseDto,
 } from "@/types/domain";
 import type { CartResponse } from "@/features/commerce/types/cart.types";
+import type { AllergyLabelResponse } from "@/features/profile/types/profile.types";
+import type { GuestSurveyBaseProfile } from "@/features/survey/lib/guest-survey-storage";
+
+type SurveyRequestContext = {
+  guestToken?: string | null;
+};
+
+const guestHeaders = (guestToken?: string | null) =>
+  guestToken ? { "X-Guest-Token": guestToken } : undefined;
+
+const surveyClient = (guestToken?: string | null) =>
+  guestToken ? publicApiClient : apiClient;
 
 export const treatmentApi = {
   fetchQuestions: (
     surveyId?: string,
+    context: SurveyRequestContext = {},
   ): Promise<AxiosResponse<SurveyQuestionDto[]>> => {
     const url = surveyId
       ? `${API_ENDPOINTS.SURVEYS.QUESTIONS}?surveyId=${surveyId}`
       : API_ENDPOINTS.SURVEYS.QUESTIONS;
-    return apiClient.get<SurveyQuestionDto[]>(url);
+    return surveyClient(context.guestToken).get<SurveyQuestionDto[]>(url, {
+      headers: guestHeaders(context.guestToken),
+    });
   },
 
-  createSurveySession: (): Promise<AxiosResponse<SurveyResponseDto>> => {
-    return apiClient.post<SurveyResponseDto>(API_ENDPOINTS.SURVEYS.BASE);
+  createSurveySession: (
+    mode: "guest" | "authenticated",
+    profile?: GuestSurveyBaseProfile,
+  ): Promise<AxiosResponse<SurveyResponseDto>> => {
+    const body = profile
+      ? {
+          dateOfBirth: profile.dateOfBirth,
+          gender: profile.gender,
+          allergyCodes: profile.allergyCodes,
+        }
+      : {};
+    const client = mode === "guest" ? publicApiClient : apiClient;
+    return client.post<SurveyResponseDto>(API_ENDPOINTS.SURVEYS.BASE, body);
   },
 
   scanSurveyFace: (
@@ -38,10 +64,20 @@ export const treatmentApi = {
   submitSurveyAnswers: (
     sessionId: string,
     answers: { questionId: string; labelCodes: string[]; value?: string }[],
+    context: SurveyRequestContext = {},
   ): Promise<AxiosResponse<unknown>> => {
-    return apiClient.post<unknown>(
+    return surveyClient(context.guestToken).post<unknown>(
       `${API_ENDPOINTS.SURVEYS.BASE}/${sessionId}/answers`,
       { answers },
+      { headers: guestHeaders(context.guestToken) },
+    );
+  },
+
+  fetchAllergyOptionsForGuest: (): Promise<
+    AxiosResponse<AllergyLabelResponse[]>
+  > => {
+    return publicApiClient.get<AllergyLabelResponse[]>(
+      API_ENDPOINTS.CUSTOMERS.ALLERGIES,
     );
   },
 
@@ -53,17 +89,23 @@ export const treatmentApi = {
     );
   },
 
-  fetchLatestRecommendations: (): Promise<
-    AxiosResponse<RecommendationResponseDto>
-  > => {
-    return apiClient.get<RecommendationResponseDto>(
+  fetchLatestRecommendations: (
+    context: SurveyRequestContext = {},
+  ): Promise<AxiosResponse<RecommendationResponseDto>> => {
+    return surveyClient(context.guestToken).get<RecommendationResponseDto>(
       API_ENDPOINTS.RECOMMENDATIONS.LATEST,
+      { headers: guestHeaders(context.guestToken) },
     );
   },
 
-  completeSurvey: (sessionId: string): Promise<AxiosResponse<unknown>> => {
-    return apiClient.post<unknown>(
+  completeSurvey: (
+    sessionId: string,
+    context: SurveyRequestContext = {},
+  ): Promise<AxiosResponse<unknown>> => {
+    return surveyClient(context.guestToken).post<unknown>(
       `${API_ENDPOINTS.SURVEYS.BASE}/${sessionId}/complete`,
+      undefined,
+      { headers: guestHeaders(context.guestToken) },
     );
   },
 
