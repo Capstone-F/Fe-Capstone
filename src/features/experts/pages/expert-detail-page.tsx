@@ -15,6 +15,7 @@ import {
 import { useExpertDetail } from "@/features/experts/hooks/useExperts";
 import { useSession } from "@/features/auth/hooks/useSession";
 import { Button } from "@/shared/components/ui/button";
+import { formatVnd } from "@/shared/utils/format";
 import {
   Card,
   CardHeader,
@@ -229,7 +230,7 @@ export function ExpertDetailPage() {
               {t.feeLabel}
             </span>
             <span className="text-primary text-xl font-bold">
-              {expert.fee.toLocaleString("vi-VN")} đ
+              {formatVnd(expert.fee)}
             </span>
           </div>
           <Link href={`/booking/${expert.id}`} className="w-full sm:w-auto">

@@ -13,6 +13,7 @@ import {
 } from "lucide-react";
 import { useBookings } from "@/features/booking/hooks/useBooking";
 import { Button } from "@/shared/components/ui/button";
+import { formatVnd } from "@/shared/utils/format";
 import { Card, CardContent } from "@/shared/components/ui/card";
 import { EmptyState } from "@/shared/components/ui/empty-state";
 import { AppointmentCardSkeleton } from "@/features/booking/components/appointment-card-skeleton";
@@ -192,7 +193,7 @@ export function AppointmentsPage() {
                       <span className="block text-xs font-bold text-slate-700">
                         {bk.isFollowUp
                           ? "0 đ (Tái khám)"
-                          : `${bk.amount.toLocaleString("vi-VN")} đ`}
+                          : formatVnd(bk.amount)}
                       </span>
                     </div>
                   </div>

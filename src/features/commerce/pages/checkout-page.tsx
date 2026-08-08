@@ -1,6 +1,8 @@
 "use client";
 
 import { useMemo, useState } from "react";
+import { zodResolver } from "@hookform/resolvers/zod";
+import { useForm, useWatch } from "react-hook-form";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { CreditCard, Truck } from "lucide-react";
@@ -34,6 +36,10 @@ import {
   CardTitle,
 } from "@/shared/components/ui/card";
 import { cn } from "@/lib/utils";
+import {
+  shippingAddressSchema,
+  type ShippingAddressFormValues,
+} from "@/features/commerce/schemas/commerce-forms.schema";
 
 const ck = {
   title: "Thanh toán",
@@ -86,7 +92,13 @@ export function CheckoutPage() {
   const session = useSession();
 
   const [step, setStep] = useState(0);
-  const [draft, setDraft] = useState(emptyShippingAddressDraft);
+  const addressForm = useForm<ShippingAddressFormValues>({
+    resolver: zodResolver(shippingAddressSchema),
+    defaultValues: emptyShippingAddressDraft(),
+  });
+  const draft = useWatch({
+    control: addressForm.control,
+  }) as ShippingAddressFormValues;
   const [payment] = useState<PaymentMethod>("vnpay");
   const [isPlacing, setIsPlacing] = useState(false);
 
@@ -173,6 +185,29 @@ export function CheckoutPage() {
     }
   };
 
+  const updateDraft = (next: ShippingAddressFormValues) => {
+    addressForm.setValue("recipientName", next.recipientName, {
+      shouldDirty: true,
+    });
+    addressForm.setValue("recipientPhone", next.recipientPhone, {
+      shouldDirty: true,
+    });
+    addressForm.setValue("provinceId", next.provinceId, { shouldDirty: true });
+    addressForm.setValue("districtId", next.districtId, { shouldDirty: true });
+    addressForm.setValue("wardCode", next.wardCode, { shouldDirty: true });
+    addressForm.setValue("streetAddress", next.streetAddress, {
+      shouldDirty: true,
+    });
+  };
+
+  const continueCheckout = async () => {
+    if (step === 1) {
+      const valid = await addressForm.trigger(undefined, { shouldFocus: true });
+      if (!valid) return;
+    }
+    setStep((current) => current + 1);
+  };
+
   return (
     <div className="mx-auto flex w-full max-w-4xl flex-col gap-6">
       <h2 className="text-2xl font-bold tracking-tight text-slate-900">
@@ -228,7 +263,23 @@ export function CheckoutPage() {
                 <p className="text-muted-foreground text-xs">
                   {ck.shipping.carrierNote}
                 </p>
-                <GhnAddressForm value={draft} onChange={setDraft} />
+                <GhnAddressForm
+                  value={draft}
+                  onChange={updateDraft}
+                  errors={{
+                    recipientName:
+                      addressForm.formState.errors.recipientName?.message,
+                    recipientPhone:
+                      addressForm.formState.errors.recipientPhone?.message,
+                    provinceId:
+                      addressForm.formState.errors.provinceId?.message,
+                    districtId:
+                      addressForm.formState.errors.districtId?.message,
+                    wardCode: addressForm.formState.errors.wardCode?.message,
+                    streetAddress:
+                      addressForm.formState.errors.streetAddress?.message,
+                  }}
+                />
                 {address && feeQuote.isLoading && (
                   <p className="text-muted-foreground text-xs">
                     {ck.shipping.feeLoading}
@@ -305,8 +356,7 @@ export function CheckoutPage() {
               <Button
                 size="sm"
                 // The fee preview is not a gate — the order re-quotes server-side.
-                disabled={step === 1 && address === null}
-                onClick={() => setStep((s) => s + 1)}
+                onClick={() => void continueCheckout()}
                 className="rounded-lg text-xs font-semibold"
               >
                 {ck.next}

@@ -1,6 +1,7 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
+import { zodResolver } from "@hookform/resolvers/zod";
+import { useForm, useWatch } from "react-hook-form";
 import {
   User,
   Phone,
@@ -32,6 +33,11 @@ import { Input } from "@/shared/components/ui/input";
 import { Label } from "@/shared/components/ui/label";
 import { Checkbox } from "@/shared/components/ui/checkbox";
 import { toast } from "sonner";
+import { FormController } from "@/shared/components/form/form-controller";
+import {
+  profileFormSchema,
+  type ProfileFormValues,
+} from "@/features/profile/schemas/profile-form.schema";
 
 export function ProfilePage() {
   const { data: profile } = useProfile();
@@ -41,37 +47,37 @@ export function ProfilePage() {
   const { data: routines, isLoading: isRoutinesLoading } = useRoutines();
   const updateProfileMutation = useUpdateProfile();
 
-  const [name, setName] = useState("");
-  const [phone, setPhone] = useState("");
-  const [allergies, setAllergies] = useState<string[]>([]);
-
-  // Set local state when profile is loaded
-  useEffect(() => {
-    if (profile) {
-      const timer = setTimeout(() => {
-        setName(profile.name || "");
-        setPhone(profile.phone || "");
-        setAllergies(profile.allergies || []);
-      }, 0);
-      return () => clearTimeout(timer);
-    }
-  }, [profile]);
+  const form = useForm<ProfileFormValues>({
+    resolver: zodResolver(profileFormSchema),
+    values: {
+      name: profile?.name ?? "",
+      phone: profile?.phone ?? "",
+      gender:
+        profile?.gender === "MALE" || profile?.gender === "FEMALE"
+          ? profile.gender
+          : "OTHER",
+      dateOfBirth: profile?.dateOfBirth?.split("T")[0] ?? "",
+      allergies: profile?.allergies ?? [],
+    },
+  });
+  const allergies = useWatch({ control: form.control, name: "allergies" });
 
   const handleAllergyToggle = (allergenCode: string) => {
-    setAllergies((prev) =>
-      prev.includes(allergenCode)
-        ? prev.filter((a) => a !== allergenCode)
-        : [...prev, allergenCode],
+    form.setValue(
+      "allergies",
+      allergies.includes(allergenCode)
+        ? allergies.filter((code) => code !== allergenCode)
+        : [...allergies, allergenCode],
+      { shouldDirty: true, shouldValidate: true },
     );
   };
 
-  const handleSave = async (e: React.FormEvent) => {
-    e.preventDefault();
+  const handleSave = async (values: ProfileFormValues) => {
     try {
       await updateProfileMutation.mutateAsync({
-        name,
-        phone,
-        allergies,
+        name: values.name,
+        phone: values.phone,
+        allergies: values.allergies,
       });
       toast.success("Cập nhật hồ sơ cá nhân thành công!");
     } catch {
@@ -106,7 +112,7 @@ export function ProfilePage() {
       <div className="grid grid-cols-1 gap-6 md:grid-cols-12">
         {/* Profile edit card */}
         <Card className="border-slate-200 shadow-sm md:col-span-7">
-          <form onSubmit={handleSave}>
+          <form onSubmit={form.handleSubmit(handleSave)} noValidate>
             <CardHeader className="border-b border-slate-100 bg-slate-50/50 p-5">
               <CardTitle className="flex items-center gap-1.5 text-sm font-bold text-slate-800">
                 <User className="text-primary h-4.5 w-4.5" />
@@ -115,24 +121,23 @@ export function ProfilePage() {
             </CardHeader>
             <CardContent className="flex flex-col gap-4 p-5">
               {/* Name */}
-              <div className="flex flex-col gap-1.5">
-                <Label
-                  htmlFor="name"
-                  className="text-xs font-semibold text-slate-700"
-                >
-                  Họ và tên
-                </Label>
-                <div className="relative">
-                  <User className="text-muted-foreground absolute top-2.5 left-2.5 h-4 w-4" />
-                  <Input
-                    id="name"
-                    value={name}
-                    onChange={(e) => setName(e.target.value)}
-                    className="pl-8 text-xs"
-                    required
-                  />
-                </div>
-              </div>
+              <FormController
+                control={form.control}
+                name="name"
+                label="Họ và tên"
+              >
+                {(field) => (
+                  <div className="relative">
+                    <User className="text-muted-foreground absolute top-2.5 left-2.5 h-4 w-4" />
+                    <Input
+                      {...field}
+                      id={field.name}
+                      className="pl-8 text-xs"
+                      aria-invalid={Boolean(form.formState.errors.name)}
+                    />
+                  </div>
+                )}
+              </FormController>
 
               {/* Email (Read-only) */}
               <div className="flex flex-col gap-1.5 opacity-80">
@@ -154,24 +159,25 @@ export function ProfilePage() {
               </div>
 
               {/* Phone */}
-              <div className="flex flex-col gap-1.5">
-                <Label
-                  htmlFor="phone"
-                  className="text-xs font-semibold text-slate-700"
-                >
-                  Số điện thoại liên hệ
-                </Label>
-                <div className="relative">
-                  <Phone className="text-muted-foreground absolute top-2.5 left-2.5 h-4 w-4" />
-                  <Input
-                    id="phone"
-                    placeholder="Nhập số điện thoại..."
-                    value={phone}
-                    onChange={(e) => setPhone(e.target.value)}
-                    className="pl-8 text-xs"
-                  />
-                </div>
-              </div>
+              <FormController
+                control={form.control}
+                name="phone"
+                label="Số điện thoại liên hệ"
+              >
+                {(field) => (
+                  <div className="relative">
+                    <Phone className="text-muted-foreground absolute top-2.5 left-2.5 h-4 w-4" />
+                    <Input
+                      {...field}
+                      id={field.name}
+                      inputMode="tel"
+                      placeholder="Nhập số điện thoại..."
+                      className="pl-8 text-xs"
+                      aria-invalid={Boolean(form.formState.errors.phone)}
+                    />
+                  </div>
+                )}
+              </FormController>
 
               {/* Allergy Edit — Dynamic from backend */}
               <div className="mt-2 flex flex-col gap-2.5 border-t border-slate-100 pt-4">

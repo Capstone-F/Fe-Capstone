@@ -1,6 +1,8 @@
 "use client";
 
-import React, { useState } from "react";
+import { useState } from "react";
+import { zodResolver } from "@hookform/resolvers/zod";
+import { useForm } from "react-hook-form";
 import { useRouter, useSearchParams } from "next/navigation";
 
 import {
@@ -18,7 +20,6 @@ import {
   Info,
   Video,
 } from "lucide-react";
-import { toast } from "sonner";
 
 import { FeedbackModal } from "@/features/booking/components/feedback-modal";
 import { WalletCard } from "@/features/wallet/components/wallet-card";
@@ -26,6 +27,14 @@ import { BaumannSkinTypePanel } from "./baumann-skin-type-panel";
 import { Button } from "@/shared/components/ui/button";
 import { Input } from "@/shared/components/ui/input";
 import { Label } from "@/shared/components/ui/label";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/shared/components/ui/select";
+import { FormController } from "@/shared/components/form/form-controller";
 import {
   Card,
   CardContent,
@@ -38,6 +47,10 @@ import { useOrders } from "@/features/commerce/hooks/useOrders";
 import { useBookings } from "@/features/booking/hooks/useBooking";
 import { formatVnd } from "@/shared/utils/format";
 import type { UserProfile } from "../types/profile.types";
+import {
+  profileFormSchema,
+  type ProfileFormValues,
+} from "@/features/profile/schemas/profile-form.schema";
 
 interface ProfileFormProps {
   profile: UserProfile;
@@ -48,44 +61,47 @@ interface ProfileFormProps {
 }
 
 function ProfileForm({ profile, updateProfileMutation }: ProfileFormProps) {
-  const [name, setName] = useState(() => profile.name || "");
-  const [phone, setPhone] = useState(() => profile.phone || "");
-  const [gender, setGender] = useState<"MALE" | "FEMALE" | "OTHER">(
-    () => (profile.gender as "MALE" | "FEMALE" | "OTHER") || "OTHER",
-  );
-  const [dateOfBirth, setDateOfBirth] = useState(() =>
-    profile.dateOfBirth ? profile.dateOfBirth.split("T")[0] : "",
-  );
+  const form = useForm<ProfileFormValues>({
+    resolver: zodResolver(profileFormSchema),
+    defaultValues: {
+      name: profile.name ?? "",
+      phone: profile.phone ?? "",
+      gender:
+        profile.gender === "MALE" || profile.gender === "FEMALE"
+          ? profile.gender
+          : "OTHER",
+      dateOfBirth: profile.dateOfBirth?.split("T")[0] ?? "",
+      allergies: profile.allergies ?? [],
+    },
+  });
 
-  const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!name.trim()) {
-      toast.error("Họ và tên không được để trống.");
-      return;
-    }
+  const handleSubmit = (values: ProfileFormValues) => {
     updateProfileMutation.mutate({
-      name: name.trim(),
-      phone: phone.trim(),
-      gender,
-      dateOfBirth: dateOfBirth || null,
+      name: values.name,
+      phone: values.phone,
+      gender: values.gender,
+      dateOfBirth: values.dateOfBirth || null,
     });
   };
 
   return (
-    <form onSubmit={handleSubmit} className="max-w-xl space-y-4">
+    <form
+      onSubmit={form.handleSubmit(handleSubmit)}
+      className="max-w-xl space-y-4"
+      noValidate
+    >
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-        <div className="space-y-1.5">
-          <Label htmlFor="name" className="text-xs font-bold text-slate-700">
-            Họ và tên
-          </Label>
-          <Input
-            id="name"
-            value={name}
-            onChange={(e) => setName(e.target.value)}
-            className="rounded-xl border-slate-200 text-xs"
-            placeholder="Nguyễn Văn A"
-          />
-        </div>
+        <FormController control={form.control} name="name" label="Họ và tên">
+          {(field) => (
+            <Input
+              {...field}
+              id={field.name}
+              className="rounded-xl border-slate-200 text-xs"
+              placeholder="Nguyễn Văn A"
+              aria-invalid={Boolean(form.formState.errors.name)}
+            />
+          )}
+        </FormController>
         <div className="space-y-1.5">
           <Label htmlFor="email" className="text-xs font-bold text-slate-700">
             Email
@@ -100,49 +116,55 @@ function ProfileForm({ profile, updateProfileMutation }: ProfileFormProps) {
       </div>
 
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-        <div className="space-y-1.5">
-          <Label htmlFor="phone" className="text-xs font-bold text-slate-700">
-            Số điện thoại
-          </Label>
-          <Input
-            id="phone"
-            value={phone}
-            onChange={(e) => setPhone(e.target.value)}
-            className="rounded-xl border-slate-200 text-xs"
-            placeholder="09xxxxxxxx"
-          />
-        </div>
-        <div className="space-y-1.5">
-          <Label htmlFor="gender" className="text-xs font-bold text-slate-700">
-            Giới tính
-          </Label>
-          <select
-            id="gender"
-            value={gender}
-            onChange={(e) =>
-              setGender(e.target.value as "MALE" | "FEMALE" | "OTHER")
-            }
-            className="w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-xs text-slate-800 shadow-2xs outline-none"
-          >
-            <option value="MALE">Nam</option>
-            <option value="FEMALE">Nữ</option>
-            <option value="OTHER">Khác</option>
-          </select>
-        </div>
+        <FormController
+          control={form.control}
+          name="phone"
+          label="Số điện thoại"
+        >
+          {(field) => (
+            <Input
+              {...field}
+              id={field.name}
+              inputMode="tel"
+              className="rounded-xl border-slate-200 text-xs"
+              placeholder="09xxxxxxxx"
+              aria-invalid={Boolean(form.formState.errors.phone)}
+            />
+          )}
+        </FormController>
+        <FormController control={form.control} name="gender" label="Giới tính">
+          {(field) => (
+            <Select value={field.value} onValueChange={field.onChange}>
+              <SelectTrigger id={field.name} className="w-full rounded-xl">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="MALE">Nam</SelectItem>
+                <SelectItem value="FEMALE">Nữ</SelectItem>
+                <SelectItem value="OTHER">Khác</SelectItem>
+              </SelectContent>
+            </Select>
+          )}
+        </FormController>
       </div>
 
-      <div className="space-y-1.5">
-        <Label htmlFor="dob" className="text-xs font-bold text-slate-700">
-          Ngày sinh
-        </Label>
-        <Input
-          id="dob"
-          type="date"
-          value={dateOfBirth}
-          onChange={(e) => setDateOfBirth(e.target.value)}
-          className="w-full max-w-sm rounded-xl border-slate-200 text-xs"
-        />
-      </div>
+      <FormController
+        control={form.control}
+        name="dateOfBirth"
+        label="Ngày sinh"
+        className="max-w-sm"
+      >
+        {(field) => (
+          <Input
+            {...field}
+            id={field.name}
+            type="date"
+            max={new Date().toISOString().slice(0, 10)}
+            className="w-full rounded-xl border-slate-200 text-xs"
+            aria-invalid={Boolean(form.formState.errors.dateOfBirth)}
+          />
+        )}
+      </FormController>
 
       <div className="flex justify-end border-t border-slate-100 pt-4">
         <Button

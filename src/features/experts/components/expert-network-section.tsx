@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { Star, MapPin, ArrowRight } from "lucide-react";
 import { Button } from "@/shared/components/ui/button";
+import { formatVnd } from "@/shared/utils/format";
 
 import { MOCK_EXPERTS } from "../constants/expert-mock";
 
@@ -81,10 +82,7 @@ export function ExpertNetworkSection() {
                     Phí tư vấn từ
                   </span>
                   <span className="text-foreground text-sm font-bold">
-                    {expert.price ||
-                      (expert.fee
-                        ? `${expert.fee.toLocaleString("vi-VN")} đ`
-                        : "")}
+                    {expert.price || (expert.fee ? formatVnd(expert.fee) : "")}
                   </span>
                 </div>
                 <Link href="/experts" passHref>
