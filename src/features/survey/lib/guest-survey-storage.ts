@@ -9,10 +9,7 @@ export const guestSurveyBaseProfileSchema = z.object({
   phone: z
     .string()
     .trim()
-    .regex(
-      /^(?:0|\+84)\d{9,10}$/,
-      "Số điện thoại phải bắt đầu bằng 0 hoặc +84 và có độ dài hợp lệ.",
-    ),
+    .regex(/^0\d{9}$/, "Số điện thoại phải gồm 10 chữ số và bắt đầu bằng 0."),
   dateOfBirth: z
     .string()
     .min(1, "Vui lòng chọn ngày sinh.")

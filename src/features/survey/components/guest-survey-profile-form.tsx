@@ -6,6 +6,7 @@ import { useEffect, useState } from "react";
 import { useForm, useWatch } from "react-hook-form";
 
 import { FormController } from "@/shared/components/form/form-controller";
+import { DatePicker } from "@/shared/components/form/date-picker";
 import { Button } from "@/shared/components/ui/button";
 import { Checkbox } from "@/shared/components/ui/checkbox";
 import { Input } from "@/shared/components/ui/input";
@@ -36,6 +37,7 @@ export function GuestSurveyProfileForm({
   const [allergyOptions, setAllergyOptions] = useState<AllergyLabelResponse[]>(
     [],
   );
+  const [allergyError, setAllergyError] = useState(false);
   const form = useForm<GuestSurveyBaseProfile>({
     resolver: zodResolver(guestSurveyBaseProfileSchema),
     defaultValues: {
@@ -56,39 +58,13 @@ export function GuestSurveyProfileForm({
     treatmentApi
       .fetchAllergyOptionsForGuest()
       .then((response) => {
-        if (active) setAllergyOptions(response.data);
+        if (active) {
+          setAllergyOptions(response.data);
+          setAllergyError(false);
+        }
       })
       .catch(() => {
-        if (active) {
-          setAllergyOptions([
-            { id: "allergy-paraben", code: "PARABEN", name: "Parabens" },
-            {
-              id: "allergy-fragrance",
-              code: "FRAGRANCE",
-              name: "Hương liệu (Fragrance/Perfume)",
-            },
-            {
-              id: "allergy-alcohol",
-              code: "ALCOHOL",
-              name: "Cồn khô (Denatured Alcohol)",
-            },
-            {
-              id: "allergy-retinoid",
-              code: "RETINOID",
-              name: "Retinoids / Vitamin A",
-            },
-            {
-              id: "allergy-salicylic",
-              code: "SALICYLIC",
-              name: "Salicylic Acid (BHA)",
-            },
-            {
-              id: "allergy-sulfate",
-              code: "SULFATE",
-              name: "Sulfates (SLS/SLES)",
-            },
-          ]);
-        }
+        if (active) setAllergyError(true);
       });
     return () => {
       active = false;
@@ -133,9 +109,13 @@ export function GuestSurveyProfileForm({
             <Input
               {...field}
               id={field.name}
-              inputMode="tel"
+              inputMode="numeric"
+              pattern="[0-9]*"
               autoComplete="tel"
               placeholder="Số điện thoại"
+              onChange={(event) =>
+                field.onChange(event.target.value.replace(/\D/g, ""))
+              }
               aria-invalid={Boolean(form.formState.errors.phone)}
             />
           )}
@@ -147,12 +127,12 @@ export function GuestSurveyProfileForm({
           label="Ngày sinh"
         >
           {(field) => (
-            <Input
-              {...field}
+            <DatePicker
               id={field.name}
-              type="date"
-              max={new Date().toISOString().slice(0, 10)}
-              aria-invalid={Boolean(form.formState.errors.dateOfBirth)}
+              value={field.value}
+              onChange={field.onChange}
+              invalid={Boolean(form.formState.errors.dateOfBirth)}
+              placeholder="Chọn ngày sinh"
             />
           )}
         </FormController>
@@ -165,7 +145,13 @@ export function GuestSurveyProfileForm({
                 className="h-9 w-full"
                 aria-invalid={Boolean(form.formState.errors.gender)}
               >
-                <SelectValue />
+                <SelectValue>
+                  {field.value === "FEMALE"
+                    ? "Nữ"
+                    : field.value === "MALE"
+                      ? "Nam"
+                      : "Không muốn cung cấp"}
+                </SelectValue>
               </SelectTrigger>
               <SelectContent>
                 <SelectItem value="FEMALE">Nữ</SelectItem>
@@ -187,29 +173,36 @@ export function GuestSurveyProfileForm({
       >
         {(field) => (
           <div className="grid gap-2 sm:grid-cols-2">
-            {allergyOptions.map((option) => {
-              const checked = selectedAllergies.includes(option.code);
-              return (
-                <label
-                  key={option.code}
-                  className="flex cursor-pointer items-center gap-2 rounded-lg border p-3 text-sm"
-                >
-                  <Checkbox
-                    checked={checked}
-                    onCheckedChange={(nextChecked) => {
-                      field.onChange(
-                        nextChecked
-                          ? [...selectedAllergies, option.code]
-                          : selectedAllergies.filter(
-                              (code) => code !== option.code,
-                            ),
-                      );
-                    }}
-                  />
-                  <span>{option.name}</span>
-                </label>
-              );
-            })}
+            {allergyError ? (
+              <p className="text-destructive text-sm">
+                Không tải được danh sách dị ứng. Bạn vẫn có thể tiếp tục và cập
+                nhật sau.
+              </p>
+            ) : (
+              allergyOptions.map((option) => {
+                const checked = selectedAllergies.includes(option.code);
+                return (
+                  <label
+                    key={option.code}
+                    className="flex cursor-pointer items-center gap-2 rounded-lg border p-3 text-sm"
+                  >
+                    <Checkbox
+                      checked={checked}
+                      onCheckedChange={(nextChecked) => {
+                        field.onChange(
+                          nextChecked
+                            ? [...selectedAllergies, option.code]
+                            : selectedAllergies.filter(
+                                (code) => code !== option.code,
+                              ),
+                        );
+                      }}
+                    />
+                    <span>{option.name}</span>
+                  </label>
+                );
+              })
+            )}
           </div>
         )}
       </FormController>

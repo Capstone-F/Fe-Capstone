@@ -173,23 +173,14 @@ export function SurveyFaceScan({
               </p>
             </div>
 
-            <div className="flex flex-col gap-3 pt-2 sm:flex-row sm:items-center sm:justify-center">
+            <div className="flex justify-center pt-2">
               <Button
                 type="button"
-                onClick={() => router.push("/login?redirectTo=/survey")}
+                onClick={() => router.push("/login?redirectTo=/scan")}
                 className="h-12 gap-2 rounded-2xl bg-[#6b5cf6] px-6 text-xs font-bold text-white shadow-md hover:bg-[#5a4ae5]"
               >
                 <LogIn className="h-4 w-4" />
                 Đăng Nhập / Đăng Ký Để Quét Da AI
-              </Button>
-
-              <Button
-                type="button"
-                variant="outline"
-                onClick={onComplete}
-                className="h-12 rounded-2xl border-slate-200 bg-white px-6 text-xs font-bold text-slate-700 hover:bg-slate-50"
-              >
-                Bỏ qua bước này & Xem Kết Quả →
               </Button>
             </div>
           </div>
@@ -212,7 +203,7 @@ export function SurveyFaceScan({
               onClick={onComplete}
               className="h-12 flex-[2] rounded-2xl bg-[#6b5cf6] text-xs font-bold text-white shadow-lg hover:bg-[#5a4ae5]"
             >
-              <span>Xem Kết Quả Khảo Sát</span>
+              <span>Bỏ qua bước này & Xem kết quả</span>
               <ArrowRight className="ml-1.5 h-4 w-4" />
             </Button>
           </div>
