@@ -40,8 +40,10 @@ export const queryKeys = {
     ["delivery", "districts", provinceId] as const,
   wards: (districtId: number | null) =>
     ["delivery", "wards", districtId] as const,
-  shippingFeeQuote: (address: unknown) =>
-    ["delivery", "fee-quote", address] as const,
+  // Keyed by destination only — GHN prices a quote from district + ward, so the
+  // recipient and street fields must stay out of the key.
+  shippingFeeQuote: (districtId: number | null, wardCode: string | null) =>
+    ["delivery", "fee-quote", districtId, wardCode] as const,
   orderDelivery: (orderId: string) => ["delivery", "order", orderId] as const,
   orders: (query: unknown) => ["orders", query] as const,
   ordersAll: ["orders"] as const,

@@ -20,6 +20,7 @@ import {
   isValidRecipientPhone,
 } from "@/features/commerce/lib/shipping-address";
 import type { ShippingAddressDraft } from "@/features/commerce/types/delivery";
+import useDebounce from "@/shared/hooks/useDebounce";
 
 const t = {
   recipientName: "Họ và tên người nhận",
@@ -62,9 +63,13 @@ export function GhnAddressForm({
   const districts = useDistricts(value.provinceId);
   const wards = useWards(value.districtId);
 
-  const phoneTouched = value.recipientPhone.trim() !== "";
+  // A 10-digit number is invalid for its first nine keystrokes, so the error is held
+  // back until typing settles — and dropped as soon as the number becomes valid.
+  const settledPhone = useDebounce(value.recipientPhone, 350);
   const showPhoneError =
-    phoneTouched && !isValidRecipientPhone(value.recipientPhone);
+    settledPhone.trim() !== "" &&
+    !isValidRecipientPhone(settledPhone) &&
+    !isValidRecipientPhone(value.recipientPhone);
 
   // Selecting a parent invalidates its children, so they reset together.
   const handleProvinceChange = (provinceId: number) => {
