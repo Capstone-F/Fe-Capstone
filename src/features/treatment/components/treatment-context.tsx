@@ -6,6 +6,7 @@ import {
   DashboardTab,
   TreatmentData,
   SkincareProduct,
+  SurveyMode,
 } from "../types/treatment";
 import type {
   CustomerProfileResponseDto,
@@ -19,6 +20,12 @@ import {
   mapRecommendationProducts,
   validateSurveyRecommendation,
 } from "../lib/survey-flow";
+import { appConfig } from "@/lib/env";
+import { tokenStorage } from "@/features/auth/utils/token-storage";
+import {
+  guestSurveyStorage,
+  type GuestSurveyBaseProfile,
+} from "@/features/survey/lib/guest-survey-storage";
 
 type TreatmentContextType = {
   state: TreatmentData;
@@ -29,7 +36,7 @@ type TreatmentContextType = {
   getRecommendedProducts: () => SkincareProduct[];
   resetAll: () => void;
   // Dynamic API methods
-  startDynamicSurvey: () => Promise<void>;
+  startDynamicSurvey: (profile?: GuestSurveyBaseProfile) => Promise<boolean>;
   setDynamicAnswer: (
     questionId: string,
     labelCodes: string[],
@@ -72,138 +79,239 @@ function checkIs404Error(e: unknown): boolean {
   );
 }
 
+function checkIs401Error(e: unknown): boolean {
+  if (e instanceof ApiError) return e.status === 401;
+  const errObj = e as {
+    status?: number;
+    response?: { status?: number };
+    message?: string;
+  };
+  return (
+    errObj.status === 401 ||
+    errObj.response?.status === 401 ||
+    Boolean(errObj.message?.toLowerCase().includes("guest token expired"))
+  );
+}
+
 export function TreatmentProvider({ children }: { children: React.ReactNode }) {
-  const [state, setState] = useState<TreatmentData>(() => {
-    const defaultState: TreatmentData = {
-      surveyAnswers: DEFAULT_ANSWERS,
-      surveyStep: 1,
-      flowState: "intro",
-      dashboardTab: "home",
-      morningRoutine: [],
-      eveningRoutine: [],
-      aiObservation: null,
-      surveyHistory: [],
-      surveySessionId: null,
-      dynamicQuestions: [],
-      dynamicAnswers: {},
-      dynamicTextAnswers: {},
-      faceImageUrl: null,
-      faceScannedAt: null,
-      faceLabels: [],
-      recommendations: null,
-      customerProfile: null,
-      isLoadingDynamic: false,
-      dynamicError: null,
-    };
-    if (typeof window === "undefined") return defaultState;
+  const [state, setState] = useState<TreatmentData>(() => ({
+    surveyAnswers: DEFAULT_ANSWERS,
+    surveyStep: 1,
+    flowState: "intro",
+    dashboardTab: "home",
+    morningRoutine: [],
+    eveningRoutine: [],
+    aiObservation: null,
+    surveyHistory: [],
+    surveySessionId: null,
+    dynamicQuestions: [],
+    dynamicAnswers: {},
+    dynamicTextAnswers: {},
+    faceImageUrl: null,
+    faceScannedAt: null,
+    faceLabels: [],
+    recommendations: null,
+    customerProfile: null,
+    isLoadingDynamic: false,
+    dynamicError: null,
+    surveyMode: "authenticated",
+  }));
+
+  const isHydratedRef = React.useRef(false);
+
+  // Hydrate state from localStorage AFTER mount to avoid SSR hydration mismatch
+  useEffect(() => {
     try {
       const stored = localStorage.getItem(LOCAL_STORAGE_KEY);
       if (stored) {
         const parsed = JSON.parse(stored) as TreatmentData;
-        const validFlows = [
-          "intro",
-          "survey",
-          "analyzing",
-          "report",
-          "plan",
-          "purchase",
-          "success",
-        ];
-        const flowState = validFlows.includes(parsed.flowState)
-          ? parsed.flowState
-          : "intro";
-        return {
-          ...defaultState,
-          ...parsed,
-          flowState,
-          dynamicQuestions: parsed.dynamicQuestions || [],
-          dynamicAnswers: parsed.dynamicAnswers || {},
-          dynamicTextAnswers: parsed.dynamicTextAnswers || {},
-          faceImageUrl: parsed.faceImageUrl || null,
-          faceScannedAt: parsed.faceScannedAt || null,
-          faceLabels: parsed.faceLabels || [],
-        };
+        const hasToken = Boolean(tokenStorage.getAccessToken());
+
+        // If user logged out or storage belongs to old authenticated flow, purge it
+        if (!hasToken && parsed.surveyMode === "authenticated") {
+          localStorage.removeItem(LOCAL_STORAGE_KEY);
+          return;
+        }
+
+        // Only restore if flow is actively mid-survey
+        if (parsed.flowState === "survey") {
+          // eslint-disable-next-line react-hooks/set-state-in-effect
+          setState((prev) => ({
+            ...prev,
+            ...parsed,
+            surveyMode: hasToken ? "authenticated" : "guest",
+            flowState: "survey",
+            dynamicQuestions: parsed.dynamicQuestions || [],
+            dynamicAnswers: parsed.dynamicAnswers || {},
+            dynamicTextAnswers: parsed.dynamicTextAnswers || {},
+          }));
+        } else {
+          localStorage.removeItem(LOCAL_STORAGE_KEY);
+        }
       }
     } catch {
       // ignore malformed storage
+    } finally {
+      isHydratedRef.current = true;
     }
-    return defaultState;
-  });
+  }, []);
 
-  // Persist changes to localStorage
+  // Persist changes to localStorage ONLY while actively mid-survey
   useEffect(() => {
+    if (!isHydratedRef.current) return;
     try {
-      localStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify(state));
+      if (state.flowState === "survey") {
+        // Save draft answers only (do not store completed recommendations in localStorage)
+        const draftData = {
+          flowState: "survey",
+          surveyStep: state.surveyStep,
+          surveyMode: state.surveyMode,
+          dynamicQuestions: state.dynamicQuestions,
+          dynamicAnswers: state.dynamicAnswers,
+          dynamicTextAnswers: state.dynamicTextAnswers,
+        };
+        localStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify(draftData));
+      } else {
+        localStorage.removeItem(LOCAL_STORAGE_KEY);
+      }
     } catch (e) {
       console.error("Failed to save treatment data to localStorage", e);
     }
   }, [state]);
 
-  const setSurveyStep = (step: number) => {
+  const setSurveyStep = useCallback((step: number) => {
     setState((prev) => ({ ...prev, surveyStep: step }));
-  };
+  }, []);
 
-  const setFlowState = (flowState: FlowState) => {
-    setState((prev) => ({ ...prev, flowState }));
-  };
-
-  const setDashboardTab = (dashboardTab: DashboardTab) => {
-    setState((prev) => ({ ...prev, dashboardTab }));
-  };
-
-  const toggleRoutine = (id: string, type: "morning" | "evening") => {
+  const setFlowState = useCallback((flowState: FlowState) => {
     setState((prev) => {
-      const key = type === "morning" ? "morningRoutine" : "eveningRoutine";
-      const updated = prev[key].map((item) =>
-        item.id === id ? { ...item, completed: !item.completed } : item,
-      );
-      return { ...prev, [key]: updated };
+      if (flowState === "intro") {
+        return {
+          ...prev,
+          flowState,
+          surveySessionId: null,
+          dynamicQuestions: [],
+          dynamicAnswers: {},
+          dynamicTextAnswers: {},
+          faceImageUrl: null,
+          faceScannedAt: null,
+          faceLabels: [],
+          recommendations: null,
+          surveyStep: 1,
+          isLoadingDynamic: false,
+          dynamicError: null,
+        };
+      }
+      return { ...prev, flowState };
     });
-  };
+  }, []);
 
-  // Dynamic API methods
-  const startDynamicSurvey = useCallback(async () => {
-    setState((prev) => ({
-      ...prev,
-      isLoadingDynamic: true,
-      dynamicError: null,
-    }));
-    try {
-      // 1. Fetch CORE survey questions from BE
-      const questionsResponse = await treatmentApi.fetchQuestions();
-      const questions = questionsResponse.data || [];
+  const setDashboardTab = useCallback((dashboardTab: DashboardTab) => {
+    setState((prev) => ({ ...prev, dashboardTab }));
+  }, []);
 
-      // 2. Create Real Survey Session on BE
-      const sessionResponse = await treatmentApi.createSurveySession();
-      const session = sessionResponse.data;
+  const toggleRoutine = useCallback(
+    (id: string, type: "morning" | "evening") => {
+      setState((prev) => {
+        const key = type === "morning" ? "morningRoutine" : "eveningRoutine";
+        const updated = prev[key].map((item) =>
+          item.id === id ? { ...item, completed: !item.completed } : item,
+        );
+        return { ...prev, [key]: updated };
+      });
+    },
+    [],
+  );
 
+  const startDynamicSurvey = useCallback(
+    async (profile?: GuestSurveyBaseProfile): Promise<boolean> => {
       setState((prev) => ({
         ...prev,
-        surveySessionId: session.id,
-        dynamicQuestions: questions,
+        surveySessionId: null,
         dynamicAnswers: {},
         dynamicTextAnswers: {},
-        faceImageUrl: session.faceImageUrl || null,
-        faceScannedAt: session.faceScannedAt || null,
-        faceLabels: session.faceLabels || [],
         recommendations: null,
-        surveyStep: 1,
-        isLoadingDynamic: false,
+        isLoadingDynamic: true,
         dynamicError: null,
       }));
-    } catch (e: unknown) {
-      console.error("Failed to start dynamic survey via Real API:", e);
-      const msg =
-        e instanceof Error
-          ? e.message
-          : "Không thể kết nối đến hệ thống Backend để tải ngân hàng câu hỏi.";
-      setState((prev) => ({
-        ...prev,
-        isLoadingDynamic: false,
-        dynamicError: msg,
-      }));
-    }
-  }, []);
+      try {
+        const mode: SurveyMode =
+          appConfig.devBypassAuth || tokenStorage.getAccessToken()
+            ? "authenticated"
+            : "guest";
+        const guestProfile = profile ?? guestSurveyStorage.get()?.baseProfile;
+
+        if (mode === "guest" && !guestProfile) {
+          throw new ApiError({
+            message:
+              "Vui lòng nhập thông tin cơ bản trước khi bắt đầu khảo sát.",
+            status: 400,
+          });
+        }
+
+        // 1. Create Real Survey Session on BE
+        const sessionResponse = await treatmentApi.createSurveySession(
+          mode,
+          guestProfile,
+        );
+        const session = sessionResponse.data;
+
+        if (mode === "guest") {
+          if (!session.guestToken || !guestProfile) {
+            throw new ApiError({
+              message:
+                "Khảo sát dành cho khách vãng lai hiện chưa khả dụng. Vui lòng thử lại sau.",
+              status: 503,
+            });
+          }
+          guestSurveyStorage.set({
+            guestToken: session.guestToken,
+            surveyId: session.id,
+            baseProfile: guestProfile,
+            createdAt: new Date().toISOString(),
+          });
+        }
+
+        // 2. Fetch CORE survey questions from BE with created session context
+        const questionsResponse = await treatmentApi.fetchQuestions(
+          session.id,
+          { guestToken: session.guestToken },
+          mode,
+        );
+        const questions = questionsResponse.data || [];
+
+        setState((prev) => ({
+          ...prev,
+          surveySessionId: session.id,
+          dynamicQuestions: questions,
+          dynamicAnswers: {},
+          dynamicTextAnswers: {},
+          faceImageUrl: session.faceImageUrl || null,
+          faceScannedAt: session.faceScannedAt || null,
+          faceLabels: session.faceLabels || [],
+          recommendations: null,
+          surveyStep: 1,
+          isLoadingDynamic: false,
+          dynamicError: null,
+          surveyMode: mode,
+        }));
+        return true;
+      } catch (e: unknown) {
+        console.error("Failed to start dynamic survey via Real API:", e);
+        const msg =
+          e instanceof Error
+            ? e.message
+            : "Không thể kết nối đến hệ thống Backend để tải ngân hàng câu hỏi.";
+        setState((prev) => ({
+          ...prev,
+          isLoadingDynamic: false,
+          dynamicError: msg,
+        }));
+        return false;
+      }
+    },
+    [],
+  );
 
   const setDynamicAnswer = useCallback(
     (questionId: string, labelCodes: string[], value?: string) => {
@@ -221,6 +329,12 @@ export function TreatmentProvider({ children }: { children: React.ReactNode }) {
 
   const scanSurveyFace = useCallback(
     async (file: File): Promise<SurveyResponseDto> => {
+      if (state.surveyMode === "guest") {
+        throw new ApiError({
+          message: "Vui lòng đăng nhập để sử dụng tính năng quét khuôn mặt.",
+          status: 401,
+        });
+      }
       if (!state.surveySessionId) {
         throw new ApiError({
           message: "Phiên khảo sát không tồn tại. Vui lòng làm lại khảo sát.",
@@ -241,7 +355,7 @@ export function TreatmentProvider({ children }: { children: React.ReactNode }) {
       }));
       return survey;
     },
-    [state.surveySessionId],
+    [state.surveyMode, state.surveySessionId],
   );
 
   const fetchCustomerProfile =
@@ -261,7 +375,12 @@ export function TreatmentProvider({ children }: { children: React.ReactNode }) {
     useCallback(async (): Promise<RecommendationResponseDto | null> => {
       setState((prev) => ({ ...prev, isLoadingDynamic: true }));
       try {
-        const response = await treatmentApi.fetchLatestRecommendations();
+        const response = await treatmentApi.fetchLatestRecommendations({
+          guestToken:
+            state.surveyMode === "guest"
+              ? guestSurveyStorage.get()?.guestToken
+              : undefined,
+        });
         const data = response.data;
         setState((prev) => ({
           ...prev,
@@ -271,10 +390,22 @@ export function TreatmentProvider({ children }: { children: React.ReactNode }) {
         return data;
       } catch (e) {
         console.error("Failed to fetch latest recommendations:", e);
+        if (state.surveyMode === "guest" && checkIs401Error(e)) {
+          guestSurveyStorage.clear();
+          setState((prev) => ({
+            ...prev,
+            surveySessionId: null,
+            flowState: "intro",
+            isLoadingDynamic: false,
+            dynamicError:
+              "Phiên khảo sát guest đã hết hạn. Vui lòng bắt đầu lại.",
+          }));
+          return null;
+        }
         setState((prev) => ({ ...prev, isLoadingDynamic: false }));
         return null;
       }
-    }, []);
+    }, [state.surveyMode]);
 
   const completeDynamicSurvey = useCallback(async (): Promise<boolean> => {
     if (!state.surveySessionId) return false;
@@ -286,7 +417,12 @@ export function TreatmentProvider({ children }: { children: React.ReactNode }) {
     try {
       // Complete on backend
       try {
-        await treatmentApi.completeSurvey(state.surveySessionId);
+        await treatmentApi.completeSurvey(state.surveySessionId, {
+          guestToken:
+            state.surveyMode === "guest"
+              ? guestSurveyStorage.get()?.guestToken
+              : undefined,
+        });
       } catch (err: unknown) {
         const errMsg = (err as Error)?.message?.toLowerCase() || "";
         const errObj = err as {
@@ -309,7 +445,9 @@ export function TreatmentProvider({ children }: { children: React.ReactNode }) {
 
       // Fetch the canonical backend outputs for this survey.
       const [profile, recommendation] = await Promise.all([
-        fetchCustomerProfile(),
+        state.surveyMode === "authenticated"
+          ? fetchCustomerProfile()
+          : Promise.resolve(null),
         fetchLatestRecommendations(),
       ]);
 
@@ -323,6 +461,18 @@ export function TreatmentProvider({ children }: { children: React.ReactNode }) {
       return true;
     } catch (e: unknown) {
       console.error("Failed to complete dynamic survey:", e);
+      if (state.surveyMode === "guest" && checkIs401Error(e)) {
+        guestSurveyStorage.clear();
+        setState((prev) => ({
+          ...prev,
+          surveySessionId: null,
+          flowState: "intro",
+          isLoadingDynamic: false,
+          dynamicError:
+            "Phiên khảo sát guest đã hết hạn. Vui lòng bắt đầu lại.",
+        }));
+        return false;
+      }
       if (checkIs404Error(e)) {
         console.warn(
           "Survey session 404 on complete. Restarting new survey session...",
@@ -344,6 +494,7 @@ export function TreatmentProvider({ children }: { children: React.ReactNode }) {
     }
   }, [
     state.surveySessionId,
+    state.surveyMode,
     fetchCustomerProfile,
     fetchLatestRecommendations,
     startDynamicSurvey,
@@ -367,11 +518,23 @@ export function TreatmentProvider({ children }: { children: React.ReactNode }) {
         await treatmentApi.submitSurveyAnswers(
           state.surveySessionId,
           payloadAnswers,
+          {
+            guestToken:
+              state.surveyMode === "guest"
+                ? guestSurveyStorage.get()?.guestToken
+                : undefined,
+          },
         );
 
         // Check if any conditional questions (L2) unlocked
         const nextQuestionsResponse = await treatmentApi.fetchQuestions(
           state.surveySessionId,
+          {
+            guestToken:
+              state.surveyMode === "guest"
+                ? guestSurveyStorage.get()?.guestToken
+                : undefined,
+          },
         );
         const nextQuestions = nextQuestionsResponse.data;
 
@@ -383,6 +546,18 @@ export function TreatmentProvider({ children }: { children: React.ReactNode }) {
         return true;
       } catch (e: unknown) {
         console.error("Failed to submit answers:", e);
+        if (state.surveyMode === "guest" && checkIs401Error(e)) {
+          guestSurveyStorage.clear();
+          setState((prev) => ({
+            ...prev,
+            surveySessionId: null,
+            flowState: "intro",
+            isLoadingDynamic: false,
+            dynamicError:
+              "Phiên khảo sát guest đã hết hạn. Vui lòng bắt đầu lại.",
+          }));
+          return false;
+        }
         if (checkIs404Error(e)) {
           console.warn("Survey session 404. Restarting new survey session...");
           await startDynamicSurvey();
@@ -406,8 +581,24 @@ export function TreatmentProvider({ children }: { children: React.ReactNode }) {
           );
           try {
             // 1. Create a fresh survey session on BE
-            const sessionResponse = await treatmentApi.createSurveySession();
+            const guestProfile = guestSurveyStorage.get()?.baseProfile;
+            const sessionResponse = await treatmentApi.createSurveySession(
+              state.surveyMode,
+              guestProfile,
+            );
             const newSession = sessionResponse.data;
+
+            if (state.surveyMode === "guest") {
+              if (!newSession.guestToken || !guestProfile) {
+                throw new Error("Backend không trả về guestToken hợp lệ.");
+              }
+              guestSurveyStorage.set({
+                guestToken: newSession.guestToken,
+                surveyId: newSession.id,
+                baseProfile: guestProfile,
+                createdAt: new Date().toISOString(),
+              });
+            }
 
             // 2. Re-submit current step answers to the new session
             const payloadAnswers = questionIds.map((qId) => ({
@@ -419,11 +610,23 @@ export function TreatmentProvider({ children }: { children: React.ReactNode }) {
             await treatmentApi.submitSurveyAnswers(
               newSession.id,
               payloadAnswers,
+              {
+                guestToken:
+                  state.surveyMode === "guest"
+                    ? newSession.guestToken
+                    : undefined,
+              },
             );
 
             // 3. Fetch any unlocked conditional questions
             const nextQuestionsResponse = await treatmentApi.fetchQuestions(
               newSession.id,
+              {
+                guestToken:
+                  state.surveyMode === "guest"
+                    ? newSession.guestToken
+                    : undefined,
+              },
             );
 
             setState((prev) => ({
@@ -462,6 +665,7 @@ export function TreatmentProvider({ children }: { children: React.ReactNode }) {
       state.surveySessionId,
       state.dynamicAnswers,
       state.dynamicTextAnswers,
+      state.surveyMode,
       startDynamicSurvey,
     ],
   );
@@ -506,11 +710,17 @@ export function TreatmentProvider({ children }: { children: React.ReactNode }) {
   );
 
   // Helper to generate recommended products dynamically for the checkout cart
-  const getRecommendedProducts = (): SkincareProduct[] => {
+  const getRecommendedProducts = useCallback((): SkincareProduct[] => {
     return mapRecommendationProducts(state.recommendations);
-  };
+  }, [state.recommendations]);
 
-  const resetAll = () => {
+  const resetAll = useCallback(() => {
+    guestSurveyStorage.clear();
+    try {
+      localStorage.removeItem(LOCAL_STORAGE_KEY);
+    } catch {
+      // ignore
+    }
     setState({
       surveyAnswers: DEFAULT_ANSWERS,
       surveyStep: 1,
@@ -531,8 +741,20 @@ export function TreatmentProvider({ children }: { children: React.ReactNode }) {
       customerProfile: null,
       isLoadingDynamic: false,
       dynamicError: null,
+      surveyMode: "authenticated",
     });
-  };
+  }, []);
+
+  // Listen to logout event to wipe React state in memory immediately upon logout
+  useEffect(() => {
+    const handleLogout = () => {
+      resetAll();
+    };
+    window.addEventListener("glowscan-logout", handleLogout);
+    return () => {
+      window.removeEventListener("glowscan-logout", handleLogout);
+    };
+  }, [resetAll]);
 
   return (
     <TreatmentContext.Provider

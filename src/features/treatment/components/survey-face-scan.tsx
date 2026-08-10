@@ -8,10 +8,18 @@ import {
   Loader2,
   RefreshCw,
   ShieldCheck,
+  Sparkles,
+  ArrowLeft,
+  ArrowRight,
+  ScanLine,
 } from "lucide-react";
 import { normalizeApiError } from "@/core/api/errors";
 import { Button } from "@/shared/components/ui/button";
 import { useTreatment } from "./treatment-context";
+
+import { useSession } from "@/features/auth/hooks/useSession";
+import { useRouter } from "next/navigation";
+import { Lock, LogIn } from "lucide-react";
 
 const MAX_FACE_IMAGE_BYTES = 5 * 1024 * 1024;
 const ACCEPTED_FACE_IMAGE_TYPES = new Set([
@@ -78,6 +86,10 @@ export function SurveyFaceScan({
   onBack,
   onComplete,
 }: SurveyFaceScanProps) {
+  const router = useRouter();
+  const sessionQuery = useSession();
+  const isAuthenticated = Boolean(sessionQuery.data);
+
   const { state, scanSurveyFace } = useTreatment();
   const cameraInputRef = useRef<HTMLInputElement>(null);
   const galleryInputRef = useRef<HTMLInputElement>(null);
@@ -124,161 +136,268 @@ export function SurveyFaceScan({
   const isUploaded = Boolean(state.faceImageUrl && state.faceScannedAt);
   const isBusy = isScanning || isCompleting;
 
-  return (
-    <div className="mx-auto flex w-full max-w-3xl flex-1 flex-col px-4 py-6 sm:py-10">
-      <div className="space-y-3 text-center">
-        <span className="text-sm font-bold text-[#6b5cf6]">Bước tùy chọn</span>
-        <h2 className="font-heading text-2xl font-bold text-[#131336] sm:text-3xl">
-          Thêm ảnh khuôn mặt hiện tại
-        </h2>
-        <p className="mx-auto max-w-xl text-sm leading-6 text-[#131336]/70 sm:text-base">
-          Ảnh giúp hệ thống bổ sung tín hiệu khi xếp hạng sản phẩm. Kết quả này
-          không thay thế chẩn đoán y khoa và không làm thay đổi loại da Baumann.
-        </p>
-      </div>
-
-      <div className="mt-8 overflow-hidden rounded-lg border border-slate-200 bg-white">
-        <div className="relative aspect-[4/3] w-full bg-slate-100 sm:aspect-[16/9]">
-          {previewUrl ? (
-            <Image
-              src={previewUrl}
-              alt="Ảnh khuôn mặt dùng để hỗ trợ phân tích da"
-              fill
-              unoptimized
-              className="object-contain"
-            />
-          ) : (
-            <div className="flex h-full flex-col items-center justify-center gap-3 px-6 text-center text-slate-500">
-              <Camera className="h-10 w-10" aria-hidden="true" />
-              <p className="text-sm">
-                Chụp chính diện trong điều kiện đủ sáng.
-              </p>
-            </div>
-          )}
-          {isScanning && (
-            <div className="absolute inset-0 flex items-center justify-center gap-2 bg-slate-950/60 text-sm font-semibold text-white">
-              <Loader2 className="h-5 w-5 animate-spin" />
-              Đang tải ảnh và phân tích...
-            </div>
-          )}
-        </div>
-
-        <div className="space-y-4 p-4 sm:p-5">
-          <div className="grid gap-3 sm:grid-cols-2">
-            <Button
-              type="button"
-              variant="outline"
-              disabled={isBusy}
-              onClick={() => cameraInputRef.current?.click()}
-              className="h-11 gap-2"
-            >
-              <Camera className="h-4 w-4" />
-              Chụp ảnh
-            </Button>
-            <Button
-              type="button"
-              variant="outline"
-              disabled={isBusy}
-              onClick={() => galleryInputRef.current?.click()}
-              className="h-11 gap-2"
-            >
-              <ImagePlus className="h-4 w-4" />
-              Chọn từ thiết bị
-            </Button>
+  // Guest view: Show lock banner requiring login for face scan
+  if (!isAuthenticated) {
+    return (
+      <div className="mx-auto flex w-full max-w-3xl flex-1 flex-col justify-between px-4 py-6 duration-300">
+        <div className="space-y-6">
+          <div className="space-y-2 text-center">
+            <span className="inline-flex items-center gap-1.5 rounded-full bg-amber-500/10 px-3.5 py-1 text-xs font-bold text-amber-700 uppercase">
+              <Lock className="h-3.5 w-3.5" />
+              Tính Năng Dành Cho Thành Viên
+            </span>
+            <h2 className="font-heading text-2xl font-extrabold text-[#131336] sm:text-3xl">
+              Quét & Phân Tích Khuôn Mặt AI
+            </h2>
+            <p className="mx-auto max-w-lg text-xs leading-relaxed text-slate-600 sm:text-sm">
+              Thuật toán AI sẽ quét phân tích ảnh bề mặt da mặt để bổ sung thêm
+              dữ liệu phân tích thị giác y khoa.
+            </p>
           </div>
 
-          <input
-            ref={cameraInputRef}
-            type="file"
-            accept="image/*"
-            capture="user"
-            onChange={handleFileChange}
-            className="hidden"
-          />
-          <input
-            ref={galleryInputRef}
-            type="file"
-            accept="image/jpeg,image/png,image/webp,image/gif,image/heic,image/heif,.heic,.heif"
-            onChange={handleFileChange}
-            className="hidden"
-          />
-
-          {scanError && (
-            <div className="rounded-lg border border-red-200 bg-red-50 p-3 text-sm text-red-700">
-              <p>{scanError}</p>
-              {selectedFile && (
-                <Button
-                  type="button"
-                  variant="ghost"
-                  size="sm"
-                  disabled={isBusy}
-                  onClick={() => void uploadFile(selectedFile)}
-                  className="mt-2 gap-2 text-red-700 hover:bg-red-100 hover:text-red-800"
-                >
-                  <RefreshCw className="h-4 w-4" />
-                  Tải lại ảnh
-                </Button>
-              )}
-            </div>
-          )}
-
-          {isUploaded && !isScanning && (
-            <div className="rounded-lg border border-emerald-200 bg-emerald-50 p-3 text-sm text-emerald-800">
-              <div className="flex items-center gap-2 font-semibold">
-                <ShieldCheck className="h-4 w-4" />
-                Đã thêm ảnh vào khảo sát
+          <div className="space-y-5 rounded-[32px] border border-indigo-100 bg-gradient-to-b from-indigo-50/80 via-white to-white p-6 text-center shadow-xl backdrop-blur-xl sm:p-8">
+            <div className="relative mx-auto flex h-20 w-20 items-center justify-center rounded-3xl bg-[#6b5cf6] shadow-lg shadow-[#6b5cf6]/30">
+              <Camera className="h-10 w-10 text-white" />
+              <div className="absolute -right-2 -bottom-2 flex h-8 w-8 items-center justify-center rounded-full border-2 border-white bg-amber-400 text-slate-900 shadow-md">
+                <Lock className="h-4 w-4" />
               </div>
-              {state.faceLabels.length > 0 && (
-                <div className="mt-3 flex flex-wrap gap-2">
-                  {state.faceLabels.map((label) => (
-                    <span
-                      key={label.code}
-                      className="rounded-full border border-emerald-200 bg-white px-3 py-1 text-xs font-medium"
-                    >
-                      {label.vietnameseNormalized || label.name}
-                    </span>
-                  ))}
-                </div>
-              )}
             </div>
-          )}
 
-          <p className="text-center text-xs text-slate-500">
-            JPEG, PNG, WebP, GIF, HEIC hoặc HEIF; tối đa 5 MB.
-          </p>
+            <div className="space-y-2">
+              <h3 className="text-lg font-bold text-[#131336]">
+                Yêu Cầu Đăng Nhập Để Sử Dụng Camera / Tải Ảnh
+              </h3>
+              <p className="mx-auto max-w-md text-xs leading-relaxed text-slate-600 sm:text-sm">
+                Tính năng phân tích hình ảnh AI yêu cầu tạo tài khoản để bảo mật
+                dữ liệu sinh trắc học và lưu giữ hình ảnh trong hồ sơ cá nhân.
+              </p>
+            </div>
+
+            <div className="flex flex-col gap-3 pt-2 sm:flex-row sm:items-center sm:justify-center">
+              <Button
+                type="button"
+                onClick={() => router.push("/login?redirectTo=/survey")}
+                className="h-12 gap-2 rounded-2xl bg-[#6b5cf6] px-6 text-xs font-bold text-white shadow-md hover:bg-[#5a4ae5]"
+              >
+                <LogIn className="h-4 w-4" />
+                Đăng Nhập / Đăng Ký Để Quét Da AI
+              </Button>
+
+              <Button
+                type="button"
+                variant="outline"
+                onClick={onComplete}
+                className="h-12 rounded-2xl border-slate-200 bg-white px-6 text-xs font-bold text-slate-700 hover:bg-slate-50"
+              >
+                Bỏ qua bước này & Xem Kết Quả →
+              </Button>
+            </div>
+          </div>
+        </div>
+
+        {/* Footer */}
+        <div className="sticky bottom-0 left-0 z-10 w-full border-t border-slate-100 bg-white/80 py-4 backdrop-blur-md">
+          <div className="flex w-full items-center justify-between gap-4">
+            <Button
+              type="button"
+              variant="outline"
+              onClick={onBack}
+              className="h-12 flex-1 rounded-2xl text-xs font-bold text-slate-700"
+            >
+              <ArrowLeft className="mr-1.5 h-4 w-4" />
+              Quay lại
+            </Button>
+            <Button
+              type="button"
+              onClick={onComplete}
+              className="h-12 flex-[2] rounded-2xl bg-[#6b5cf6] text-xs font-bold text-white shadow-lg hover:bg-[#5a4ae5]"
+            >
+              <span>Xem Kết Quả Khảo Sát</span>
+              <ArrowRight className="ml-1.5 h-4 w-4" />
+            </Button>
+          </div>
         </div>
       </div>
+    );
+  }
 
-      {(errorMessage || state.dynamicError) && (
-        <div className="mt-4 rounded-lg border border-red-200 bg-red-50 p-4 text-sm font-medium text-red-700">
-          {errorMessage || state.dynamicError}
+  return (
+    <div className="mx-auto flex w-full max-w-3xl flex-1 flex-col justify-between px-4 py-6 duration-300">
+      <div className="space-y-6">
+        <div className="space-y-2 text-center">
+          <span className="rounded-full bg-[#6b5cf6]/10 px-3.5 py-1 text-xs font-bold text-[#6b5cf6] uppercase">
+            Bước bổ sung (Tùy chọn)
+          </span>
+          <h2 className="font-heading text-2xl font-extrabold text-[#131336] sm:text-3xl">
+            Tải Ảnh Phân Tích Khuôn Mặt AI
+          </h2>
+          <p className="mx-auto max-w-lg text-xs leading-relaxed text-slate-600 sm:text-sm">
+            Thuật toán AI sẽ quét các tín hiệu trên khuôn mặt để bổ sung thêm dữ
+            liệu khi xếp hạng sản phẩm kê đơn.
+          </p>
         </div>
-      )}
 
-      <div className="mt-6 flex flex-col-reverse gap-3 sm:flex-row sm:justify-between">
-        <Button
-          type="button"
-          variant="ghost"
-          disabled={isBusy}
-          onClick={onBack}
-          className="h-12 sm:min-w-32"
-        >
-          Quay lại
-        </Button>
-        <Button
-          type="button"
-          disabled={isBusy}
-          onClick={onComplete}
-          className="h-12 bg-[#6b5cf6] px-8 font-bold text-white hover:bg-[#5a4ae5] sm:min-w-56"
-        >
-          {isCompleting ? (
-            <Loader2 className="h-5 w-5 animate-spin" />
-          ) : isUploaded ? (
-            "Phân tích kết quả"
-          ) : (
-            "Bỏ qua và phân tích"
-          )}
-        </Button>
+        <div className="overflow-hidden rounded-[32px] border border-white/80 bg-white/90 p-5 shadow-xl backdrop-blur-xl">
+          <div className="relative aspect-[4/3] w-full overflow-hidden rounded-2xl bg-slate-100 sm:aspect-[16/9]">
+            {previewUrl ? (
+              <Image
+                src={previewUrl}
+                alt="Ảnh khuôn mặt phân tích da"
+                fill
+                unoptimized
+                className="object-contain"
+              />
+            ) : (
+              <div className="flex h-full flex-col items-center justify-center gap-3 px-6 text-center text-slate-400">
+                <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-[#6b5cf6]/10 text-[#6b5cf6]">
+                  <Camera className="h-7 w-7" />
+                </div>
+                <p className="text-xs font-semibold text-slate-600">
+                  Chụp chính diện khuôn mặt trong điều kiện ánh sáng tốt
+                </p>
+              </div>
+            )}
+
+            {/* Laser scanning animation */}
+            {isScanning && (
+              <div className="absolute inset-0 flex flex-col items-center justify-center gap-2 bg-slate-950/70 text-xs font-bold text-white backdrop-blur-xs">
+                <ScanLine className="h-8 w-8 animate-pulse text-[#6b5cf6]" />
+                <span className="flex items-center gap-2">
+                  <Loader2 className="h-4 w-4 animate-spin text-[#6b5cf6]" />
+                  Đang quét và trích xuất nhãn da AI...
+                </span>
+              </div>
+            )}
+          </div>
+
+          <div className="space-y-4 pt-5">
+            <div className="grid gap-3 sm:grid-cols-2">
+              <Button
+                type="button"
+                variant="outline"
+                disabled={isBusy}
+                onClick={() => cameraInputRef.current?.click()}
+                className="h-12 gap-2 rounded-2xl text-xs font-bold"
+              >
+                <Camera className="h-4 w-4 text-[#6b5cf6]" />
+                Chụp trực tiếp
+              </Button>
+              <Button
+                type="button"
+                variant="outline"
+                disabled={isBusy}
+                onClick={() => galleryInputRef.current?.click()}
+                className="h-12 gap-2 rounded-2xl text-xs font-bold"
+              >
+                <ImagePlus className="h-4 w-4 text-[#6b5cf6]" />
+                Chọn ảnh từ máy
+              </Button>
+            </div>
+
+            <input
+              ref={cameraInputRef}
+              type="file"
+              accept="image/*"
+              capture="user"
+              onChange={handleFileChange}
+              className="hidden"
+            />
+            <input
+              ref={galleryInputRef}
+              type="file"
+              accept="image/jpeg,image/png,image/webp,image/gif,image/heic,image/heif,.heic,.heif"
+              onChange={handleFileChange}
+              className="hidden"
+            />
+
+            {scanError && (
+              <div className="rounded-2xl border border-red-200 bg-red-50 p-4 text-left text-xs font-semibold text-red-700">
+                <p>{scanError}</p>
+                {selectedFile && (
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="sm"
+                    disabled={isBusy}
+                    onClick={() => void uploadFile(selectedFile)}
+                    className="mt-2 gap-2 text-xs font-bold text-red-700 hover:bg-red-100"
+                  >
+                    <RefreshCw className="h-3.5 w-3.5" />
+                    Thử lại
+                  </Button>
+                )}
+              </div>
+            )}
+
+            {isUploaded && !isScanning && (
+              <div className="rounded-2xl border border-emerald-200 bg-emerald-50/90 p-4 text-left text-xs text-emerald-800 shadow-xs">
+                <div className="flex items-center gap-2 font-bold">
+                  <ShieldCheck className="h-4 w-4 text-emerald-600" />
+                  Đã tải ảnh & phân tích thành công
+                </div>
+                {state.faceLabels.length > 0 && (
+                  <div className="mt-3 flex flex-wrap gap-2">
+                    {state.faceLabels.map((label) => (
+                      <span
+                        key={label.code}
+                        className="flex items-center gap-1 rounded-full border border-emerald-300 bg-white px-3 py-1 text-[11px] font-bold text-emerald-900 shadow-xs"
+                      >
+                        <Sparkles className="h-3 w-3 text-emerald-600" />
+                        {label.vietnameseNormalized || label.name}
+                      </span>
+                    ))}
+                  </div>
+                )}
+              </div>
+            )}
+
+            <p className="text-center text-[10px] text-slate-400">
+              Hỗ trợ JPG, PNG, WebP, GIF, HEIC; tối đa 5 MB.
+            </p>
+          </div>
+        </div>
+
+        {(errorMessage || state.dynamicError) && (
+          <div className="rounded-2xl border border-red-200 bg-red-50 p-4 text-left text-xs font-semibold text-red-700">
+            {errorMessage || state.dynamicError}
+          </div>
+        )}
+      </div>
+
+      {/* Bottom Footer Actions */}
+      <div className="sticky bottom-0 left-0 z-10 w-full border-t border-slate-100 bg-white/80 py-4 backdrop-blur-md">
+        <div className="flex w-full items-center justify-between gap-4">
+          <Button
+            type="button"
+            variant="outline"
+            disabled={isBusy}
+            onClick={onBack}
+            className="h-12 flex-1 rounded-2xl text-xs font-bold text-slate-700"
+          >
+            <ArrowLeft className="mr-1.5 h-4 w-4" />
+            Quay lại
+          </Button>
+          <Button
+            type="button"
+            disabled={isBusy}
+            onClick={onComplete}
+            className="h-12 flex-[2] rounded-2xl bg-[#6b5cf6] text-xs font-bold text-white shadow-lg hover:bg-[#5a4ae5]"
+          >
+            {isCompleting ? (
+              <Loader2 className="mx-auto h-5 w-5 animate-spin" />
+            ) : isUploaded ? (
+              <>
+                <span>Xem Kết Quả Khảo Sát</span>
+                <ArrowRight className="ml-1.5 h-4 w-4" />
+              </>
+            ) : (
+              <>
+                <span>Bỏ qua & Xem Kết Quả</span>
+                <ArrowRight className="ml-1.5 h-4 w-4" />
+              </>
+            )}
+          </Button>
+        </div>
       </div>
     </div>
   );

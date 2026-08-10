@@ -23,7 +23,11 @@ export const authMock = {
     return { authenticated: true };
   },
 
-  loginDirect: async (username: string): Promise<MobileTokenResponse> => {
+  loginDirect: async (
+    username: string,
+    _guestToken?: string,
+  ): Promise<MobileTokenResponse> => {
+    void _guestToken;
     return {
       accessToken: "mock-access-token",
       refreshToken: "mock-refresh-token",
@@ -39,7 +43,9 @@ export const authMock = {
   registerDirect: async (
     email: string,
     name: string,
+    _guestToken?: string,
   ): Promise<MobileTokenResponse> => {
+    void _guestToken;
     return {
       accessToken: "mock-access-token",
       refreshToken: "mock-refresh-token",

@@ -45,6 +45,7 @@ const t = {
 interface GhnAddressFormProps {
   value: ShippingAddressDraft;
   onChange: (next: ShippingAddressDraft) => void;
+  errors?: Partial<Record<keyof ShippingAddressDraft, string>>;
 }
 
 /**
@@ -52,7 +53,11 @@ interface GhnAddressFormProps {
  * free text cannot be turned into a valid shipping order — so all three come from the
  * master-data endpoints.
  */
-export function GhnAddressForm({ value, onChange }: GhnAddressFormProps) {
+export function GhnAddressForm({
+  value,
+  onChange,
+  errors = {},
+}: GhnAddressFormProps) {
   const provinces = useProvinces();
   const districts = useDistricts(value.provinceId);
   const wards = useWards(value.districtId);
@@ -72,7 +77,7 @@ export function GhnAddressForm({ value, onChange }: GhnAddressFormProps) {
 
   return (
     <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
-      <Field label={t.recipientName}>
+      <Field label={t.recipientName} error={errors.recipientName}>
         <Input
           value={value.recipientName}
           maxLength={RECIPIENT_NAME_MAX_LENGTH}
@@ -86,7 +91,9 @@ export function GhnAddressForm({ value, onChange }: GhnAddressFormProps) {
 
       <Field
         label={t.recipientPhone}
-        error={showPhoneError ? t.phoneInvalid : undefined}
+        error={
+          errors.recipientPhone ?? (showPhoneError ? t.phoneInvalid : undefined)
+        }
       >
         <Input
           value={value.recipientPhone}
@@ -100,7 +107,7 @@ export function GhnAddressForm({ value, onChange }: GhnAddressFormProps) {
         />
       </Field>
 
-      <Field label={t.province}>
+      <Field label={t.province} error={errors.provinceId}>
         <LocationSelect
           value={value.provinceId === null ? "" : `${value.provinceId}`}
           placeholder={t.selectProvince}
@@ -114,7 +121,7 @@ export function GhnAddressForm({ value, onChange }: GhnAddressFormProps) {
         />
       </Field>
 
-      <Field label={t.district}>
+      <Field label={t.district} error={errors.districtId}>
         <LocationSelect
           value={value.districtId === null ? "" : `${value.districtId}`}
           placeholder={
@@ -133,7 +140,7 @@ export function GhnAddressForm({ value, onChange }: GhnAddressFormProps) {
         />
       </Field>
 
-      <Field label={t.ward}>
+      <Field label={t.ward} error={errors.wardCode}>
         <LocationSelect
           value={value.wardCode ?? ""}
           placeholder={
@@ -151,7 +158,7 @@ export function GhnAddressForm({ value, onChange }: GhnAddressFormProps) {
       </Field>
 
       <div className="sm:col-span-2">
-        <Field label={t.streetAddress}>
+        <Field label={t.streetAddress} error={errors.streetAddress}>
           <Input
             value={value.streetAddress}
             maxLength={STREET_ADDRESS_MAX_LENGTH}

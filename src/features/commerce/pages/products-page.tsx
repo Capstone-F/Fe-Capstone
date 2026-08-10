@@ -34,6 +34,7 @@ import {
 } from "@/shared/components/ui/select";
 import { EmptyState } from "@/shared/components/ui/empty-state";
 import { cn } from "@/lib/utils";
+import useDebounce from "@/shared/hooks/useDebounce";
 
 const c = {
   title: "Cửa hàng sản phẩm",
@@ -74,6 +75,7 @@ export function ProductsPage() {
   const paramSection = searchParams.get("section");
 
   const [search, setSearch] = useState("");
+  const debouncedSearch = useDebounce(search.trim(), 350);
   const [prevParamCategoryId, setPrevParamCategoryId] = useState<string | null>(
     paramCategoryId,
   );
@@ -88,6 +90,7 @@ export function ProductsPage() {
 
   const [brand, setBrand] = useState(ALL);
   const [ingredient, setIngredient] = useState("");
+  const debouncedIngredient = useDebounce(ingredient.trim(), 350);
   const [page, setPage] = useState(1);
   const [pageSize, setPageSize] = useState(8);
   const [sortBy, setSortBy] = useState<SortBy>("newest");
@@ -104,8 +107,8 @@ export function ProductsPage() {
   const queryFilters = {
     categoryId: categoryId !== ALL ? categoryId : undefined,
     brandName: brand !== ALL ? brand : undefined,
-    ingredientName: ingredient || undefined,
-    query: search || undefined,
+    ingredientName: debouncedIngredient || undefined,
+    query: debouncedSearch || undefined,
     page,
     limit: pageSize,
   };
@@ -121,7 +124,7 @@ export function ProductsPage() {
   }, [isRecommendedSection, recommendedData, normalData]);
   const isLoading = isRecommendedSection ? isRecsLoading : isNormalLoading;
 
-  const filterKey = `${search}|${categoryId}|${brand}|${ingredient}|${pageSize}|${paramSection}`;
+  const filterKey = `${debouncedSearch}|${categoryId}|${brand}|${debouncedIngredient}|${pageSize}|${paramSection}`;
   const [prevFilterKey, setPrevFilterKey] = useState(filterKey);
   if (filterKey !== prevFilterKey) {
     setPrevFilterKey(filterKey);

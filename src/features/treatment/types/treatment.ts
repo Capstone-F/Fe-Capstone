@@ -46,6 +46,7 @@ export type RoutineItem = {
 
 export type FlowState =
   | "intro"
+  | "baumann"
   | "survey"
   | "analyzing"
   | "report"
@@ -55,12 +56,21 @@ export type FlowState =
   | "dashboard";
 
 export type DashboardTab = "home" | "report" | "history" | "profile";
+export type SurveyMode = "guest" | "authenticated";
 
 export type AiObservation = {
   acneSeverity: "Nhẹ" | "Trung bình" | "Nặng";
   darkSpots: "Nhẹ" | "Trung bình" | "Nặng";
   poreSize: "Mịn" | "Trung bình" | "Rộng";
   wrinkleDepth: "Thấp" | "Trung bình" | "Cao";
+};
+
+export type SurveyBaseProfile = {
+  name: string;
+  phone: string;
+  dateOfBirth: string;
+  gender: "MALE" | "FEMALE" | "OTHER";
+  allergyLabelCodes: string[];
 };
 
 export type TreatmentData = {
@@ -84,6 +94,7 @@ export type TreatmentData = {
   customerProfile: CustomerProfileResponseDto | null;
   isLoadingDynamic?: boolean;
   dynamicError?: string | null;
+  surveyMode: SurveyMode;
 };
 
 export type SkincareProduct = {

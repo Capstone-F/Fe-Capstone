@@ -1,5 +1,6 @@
 export interface ApiAuthHandlers {
   getAccessToken: () => string | undefined;
+  getGuestToken?: () => string | undefined;
   refreshAccessToken: () => Promise<string>;
   onSessionExpired: () => void;
 }

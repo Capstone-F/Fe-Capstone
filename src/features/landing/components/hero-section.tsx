@@ -40,7 +40,7 @@ export function HeroSection() {
             </p>
 
             <div className="flex flex-col gap-4 pt-2 sm:flex-row">
-              <a href="/login?redirectTo=/scan" className="w-full sm:w-auto">
+              <a href="/scan" className="w-full sm:w-auto">
                 <Button className="shadow-primary/25 hover:shadow-primary/35 w-full rounded-xl px-8 py-6 text-base font-bold shadow-lg transition-all duration-300">
                   Bắt đầu soi da miễn phí
                   <ArrowRight className="ml-2 h-5 w-5" />

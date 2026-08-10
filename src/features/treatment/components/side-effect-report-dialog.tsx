@@ -1,6 +1,7 @@
 "use client";
 
-import { useState } from "react";
+import { zodResolver } from "@hookform/resolvers/zod";
+import { useForm, useWatch } from "react-hook-form";
 import { Loader2, ShieldAlert } from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "@/shared/components/ui/button";
@@ -13,7 +14,12 @@ import {
   DialogTitle,
 } from "@/shared/components/ui/dialog";
 import { Textarea } from "@/shared/components/ui/textarea";
+import { FormController } from "@/shared/components/form/form-controller";
 import { useReportSideEffect } from "../hooks/useRoutineTracking";
+import {
+  sideEffectReportSchema,
+  type SideEffectReportFormValues,
+} from "../schemas/routine-tracking-forms.schema";
 
 export type SideEffectSymptomKey =
   | "redness"
@@ -47,41 +53,47 @@ export function SideEffectReportDialog({
   routineId,
   steps = [],
 }: SideEffectReportDialogProps) {
-  const [selectedSymptoms, setSelectedSymptoms] = useState<
-    SideEffectSymptomKey[]
-  >([]);
-  const [severity, setSeverity] = useState<"MILD" | "MODERATE" | "SEVERE">(
-    "MILD",
-  );
-  const [selectedStepId, setSelectedStepId] = useState<string>("");
-  const [affectedArea, setAffectedArea] = useState("");
-  const [description, setDescription] = useState("");
+  const form = useForm<SideEffectReportFormValues>({
+    resolver: zodResolver(sideEffectReportSchema),
+    defaultValues: {
+      symptoms: [],
+      severity: "MILD",
+      selectedStepId: "",
+      affectedArea: "",
+      description: "",
+    },
+  });
+  const selectedSymptoms = useWatch({
+    control: form.control,
+    name: "symptoms",
+  });
+  const severity = useWatch({ control: form.control, name: "severity" });
 
   const reportMutation = useReportSideEffect(routineId);
 
   const toggleSymptom = (sym: SideEffectSymptomKey) => {
-    setSelectedSymptoms((prev) =>
-      prev.includes(sym) ? prev.filter((s) => s !== sym) : [...prev, sym],
+    form.setValue(
+      "symptoms",
+      selectedSymptoms.includes(sym)
+        ? selectedSymptoms.filter((item) => item !== sym)
+        : [...selectedSymptoms, sym],
+      { shouldDirty: true, shouldValidate: true },
     );
   };
 
-  const handleSubmit = () => {
-    if (selectedSymptoms.length === 0) {
-      toast.error("Vui lòng chọn ít nhất 1 biểu hiện kích ứng.");
-      return;
-    }
-
+  const handleSubmit = (values: SideEffectReportFormValues) => {
     reportMutation.mutate(
       {
-        stepId: selectedStepId || undefined,
-        severity,
-        symptoms: selectedSymptoms,
-        affectedArea: affectedArea.trim() || "Chưa nêu",
-        description: description.trim() || undefined,
+        stepId: values.selectedStepId || undefined,
+        severity: values.severity,
+        symptoms: values.symptoms,
+        affectedArea: values.affectedArea || "Chưa nêu",
+        description: values.description || undefined,
       },
       {
         onSuccess: () => {
           toast.success("Báo cáo kích ứng đã được gửi tới Bác sĩ phụ trách!");
+          form.reset();
           onClose();
         },
         onError: (err) => {
@@ -104,7 +116,10 @@ export function SideEffectReportDialog({
           </DialogDescription>
         </DialogHeader>
 
-        <div className="flex flex-col gap-4 py-2">
+        <form
+          onSubmit={form.handleSubmit(handleSubmit)}
+          className="flex flex-col gap-4 py-2"
+        >
           {/* Biểu hiện kích ứng */}
           <div className="flex flex-col gap-1.5">
             <label className="text-xs font-bold tracking-wider text-slate-700 uppercase">
@@ -129,6 +144,11 @@ export function SideEffectReportDialog({
                 );
               })}
             </div>
+            {form.formState.errors.symptoms?.message && (
+              <p className="text-xs text-red-600">
+                {form.formState.errors.symptoms.message}
+              </p>
+            )}
           </div>
 
           {/* Severity Selector */}
@@ -139,7 +159,7 @@ export function SideEffectReportDialog({
             <div className="grid grid-cols-3 gap-2">
               <button
                 type="button"
-                onClick={() => setSeverity("MILD")}
+                onClick={() => form.setValue("severity", "MILD")}
                 className={`rounded-xl border p-2.5 text-center text-xs font-bold transition-all ${
                   severity === "MILD"
                     ? "border-amber-500 bg-amber-50 text-amber-800"
@@ -150,7 +170,7 @@ export function SideEffectReportDialog({
               </button>
               <button
                 type="button"
-                onClick={() => setSeverity("MODERATE")}
+                onClick={() => form.setValue("severity", "MODERATE")}
                 className={`rounded-xl border p-2.5 text-center text-xs font-bold transition-all ${
                   severity === "MODERATE"
                     ? "border-orange-500 bg-orange-50 text-orange-800"
@@ -161,7 +181,7 @@ export function SideEffectReportDialog({
               </button>
               <button
                 type="button"
-                onClick={() => setSeverity("SEVERE")}
+                onClick={() => form.setValue("severity", "SEVERE")}
                 className={`rounded-xl border p-2.5 text-center text-xs font-bold transition-all ${
                   severity === "SEVERE"
                     ? "border-rose-500 bg-rose-50 text-rose-800"
@@ -179,72 +199,78 @@ export function SideEffectReportDialog({
               <label className="text-xs font-bold tracking-wider text-slate-700 uppercase">
                 Sản phẩm nghi ngờ gây kích ứng:
               </label>
-              <select
-                value={selectedStepId}
-                onChange={(e) => setSelectedStepId(e.target.value)}
-                className="w-full rounded-xl border border-slate-200 bg-slate-50 p-2.5 text-xs font-medium text-slate-800 focus:ring-2 focus:ring-rose-500 focus:outline-none"
-              >
-                <option value="">-- Không rõ sản phẩm cụ thể --</option>
-                {steps.map((st) => (
-                  <option key={st.id} value={st.id}>
-                    {st.name}
-                  </option>
-                ))}
-              </select>
+              <FormController control={form.control} name="selectedStepId">
+                {(field) => (
+                  <select
+                    {...field}
+                    className="w-full rounded-xl border border-slate-200 bg-slate-50 p-2.5 text-xs font-medium text-slate-800 focus:ring-2 focus:ring-rose-500 focus:outline-none"
+                  >
+                    <option value="">-- Không rõ sản phẩm cụ thể --</option>
+                    {steps.map((step) => (
+                      <option key={step.id} value={step.id}>
+                        {step.name}
+                      </option>
+                    ))}
+                  </select>
+                )}
+              </FormController>
             </div>
           )}
 
           {/* Affected area */}
-          <div className="flex flex-col gap-1.5">
-            <label className="text-xs font-bold tracking-wider text-slate-700 uppercase">
-              Vùng da bị ảnh hưởng:
-            </label>
-            <input
-              type="text"
-              placeholder="VD: Toàn bộ mặt, 2 bên má, trán..."
-              value={affectedArea}
-              onChange={(e) => setAffectedArea(e.target.value)}
-              className="rounded-xl border border-slate-200 px-3 py-2 text-xs focus:ring-2 focus:ring-rose-500 focus:outline-none"
-            />
-          </div>
+          <FormController
+            control={form.control}
+            name="affectedArea"
+            label="Vùng da bị ảnh hưởng"
+          >
+            {(field) => (
+              <input
+                {...field}
+                type="text"
+                placeholder="VD: Toàn bộ mặt, 2 bên má, trán..."
+                className="rounded-xl border border-slate-200 px-3 py-2 text-xs focus:ring-2 focus:ring-rose-500 focus:outline-none"
+              />
+            )}
+          </FormController>
 
           {/* Description */}
-          <div className="flex flex-col gap-1.5">
-            <label className="text-xs font-bold tracking-wider text-slate-700 uppercase">
-              Ghi chú thêm:
-            </label>
-            <Textarea
-              placeholder="VD: Da bị châm chích 15 phút sau khi thoa Serum..."
-              value={description}
-              onChange={(e) => setDescription(e.target.value)}
-              rows={3}
-              className="rounded-xl border-slate-200 text-xs focus-visible:ring-rose-500"
-            />
-          </div>
-        </div>
-
-        <DialogFooter className="gap-2 sm:gap-0">
-          <Button
-            type="button"
-            variant="outline"
-            onClick={onClose}
-            className="rounded-xl text-xs"
+          <FormController
+            control={form.control}
+            name="description"
+            label="Ghi chú thêm"
           >
-            Hủy
-          </Button>
-          <Button
-            type="button"
-            disabled={reportMutation.isPending}
-            onClick={handleSubmit}
-            className="rounded-xl bg-rose-600 text-xs font-bold text-white shadow-xs hover:bg-rose-700"
-          >
-            {reportMutation.isPending ? (
-              <Loader2 className="h-4 w-4 animate-spin" />
-            ) : (
-              "Gửi Cảnh Báo Cho Bác Sĩ"
+            {(field) => (
+              <Textarea
+                {...field}
+                placeholder="VD: Da bị châm chích 15 phút sau khi thoa Serum..."
+                rows={3}
+                className="rounded-xl border-slate-200 text-xs focus-visible:ring-rose-500"
+              />
             )}
-          </Button>
-        </DialogFooter>
+          </FormController>
+
+          <DialogFooter className="gap-2 sm:gap-0">
+            <Button
+              type="button"
+              variant="outline"
+              onClick={onClose}
+              className="rounded-xl text-xs"
+            >
+              Hủy
+            </Button>
+            <Button
+              type="submit"
+              disabled={reportMutation.isPending}
+              className="rounded-xl bg-rose-600 text-xs font-bold text-white shadow-xs hover:bg-rose-700"
+            >
+              {reportMutation.isPending ? (
+                <Loader2 className="h-4 w-4 animate-spin" />
+              ) : (
+                "Gửi Cảnh Báo Cho Bác Sĩ"
+              )}
+            </Button>
+          </DialogFooter>
+        </form>
       </DialogContent>
     </Dialog>
   );

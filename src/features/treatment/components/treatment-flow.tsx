@@ -4,6 +4,7 @@ import { useEffect, useRef } from "react";
 import { useSearchParams } from "next/navigation";
 import { useTreatment } from "@/features/treatment/components/treatment-context";
 import { IntroScreen } from "./intro-screen";
+import { BaumannSkinTypeStep } from "./baumann-skin-type-step";
 import { SurveyQuestions } from "./survey-questions";
 import { AnalyzingScreen } from "./analyzing-screen";
 import { ReportScreen } from "./report-screen";
@@ -30,7 +31,7 @@ export function TreatmentFlow() {
     const mode = searchParams.get("mode");
 
     if (mode === "restart") {
-      startDynamicSurvey();
+      void startDynamicSurvey();
       setFlowState("survey");
     } else if (view === "plan" || view === "purchase") {
       // Fetch latest profile and recommendations for existing user
@@ -50,6 +51,7 @@ export function TreatmentFlow() {
 
   const validFlows = [
     "intro",
+    "baumann",
     "survey",
     "analyzing",
     "report",
@@ -65,6 +67,7 @@ export function TreatmentFlow() {
   return (
     <div className="mx-auto flex min-h-[600px] w-full max-w-md flex-col justify-between py-6 sm:max-w-lg md:max-w-5xl">
       {currentFlow === "intro" && <IntroScreen />}
+      {currentFlow === "baumann" && <BaumannSkinTypeStep />}
       {currentFlow === "survey" && <SurveyQuestions />}
       {currentFlow === "analyzing" && <AnalyzingScreen />}
       {currentFlow === "report" && <ReportScreen />}

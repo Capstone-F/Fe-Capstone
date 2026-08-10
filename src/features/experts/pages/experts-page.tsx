@@ -42,6 +42,9 @@ import {
 import { Label } from "@/shared/components/ui/label";
 import { EmptyState } from "@/shared/components/ui/empty-state";
 import { ExpertCardSkeleton } from "@/features/experts/components/expert-card-skeleton";
+import { CurrencyInput } from "@/shared/components/form/currency-input";
+import { formatVnd } from "@/shared/utils/format";
+import useDebounce from "@/shared/hooks/useDebounce";
 import {
   buildExpertDiscoveryLabel,
   EXPERT_DISCOVERY_STORAGE_KEY,
@@ -96,10 +99,11 @@ function readDiscoverySelection(): ExpertDiscoverySelection {
 export function ExpertsPage() {
   const session = useSession();
   const [search, setSearch] = useState("");
+  const debouncedSearch = useDebounce(search.trim(), 350);
   const [specialty, setSpecialty] = useState("Tất cả");
   const [maxDistance, setMaxDistance] = useState<number>(15);
   const [minRating, setMinRating] = useState<number>(0);
-  const [maxFee, setMaxFee] = useState<number>(500000);
+  const [maxFee, setMaxFee] = useState("500000");
 
   const [hoveredExpertId, setHoveredExpertId] = useState<string | null>(null);
   const [selectedExpertId, setSelectedExpertId] = useState<string | null>(null);
@@ -164,11 +168,12 @@ export function ExpertsPage() {
   }, [isAuthenticated]);
 
   const filters = {
-    search: search || undefined,
+    search: debouncedSearch || undefined,
     specialty: specialty !== "Tất cả" ? specialty : undefined,
     maxDistance: geolocation.status === "granted" ? maxDistance : undefined,
     minRating: minRating > 0 ? minRating : undefined,
-    maxFee: maxFee < 2000000 ? maxFee : undefined,
+    maxFee:
+      maxFee !== "" && Number(maxFee) < 2000000 ? Number(maxFee) : undefined,
     lat: geolocation.lat ?? undefined,
     lng: geolocation.lng ?? undefined,
   };
@@ -204,7 +209,7 @@ export function ExpertsPage() {
     setSpecialty("Tất cả");
     setMaxDistance(15);
     setMinRating(0);
-    setMaxFee(2000000);
+    setMaxFee("2000000");
     setSelectedExpertId(null);
   };
 
@@ -422,19 +427,13 @@ export function ExpertsPage() {
               >
                 {t.maxFeeLabel}
               </Label>
-              <Input
+              <CurrencyInput
                 id="maxFee"
-                type="number"
-                step="50000"
-                min="100000"
-                max="1000000"
                 value={maxFee}
-                onChange={(e) => setMaxFee(Number(e.target.value))}
+                onValueChange={setMaxFee}
+                maxLength={11}
                 className="text-sm"
               />
-              <span className="text-muted-foreground text-right text-[10px]">
-                {maxFee.toLocaleString("vi-VN")} đ
-              </span>
             </div>
 
             {/* Max Distance Slider */}
@@ -594,7 +593,7 @@ export function ExpertsPage() {
                             {t.feeLabel}
                           </span>
                           <span className="text-sm font-bold text-slate-800">
-                            {exp.fee.toLocaleString("vi-VN")} đ
+                            {formatVnd(exp.fee)}
                           </span>
                         </div>
                         <div className="flex items-center gap-2">
@@ -777,7 +776,7 @@ export function ExpertsPage() {
                       </p>
                       <div className="mt-2 flex items-center justify-between border-t border-slate-50 pt-2">
                         <span className="text-[10px] font-extrabold text-slate-800">
-                          {selectedExpert.fee.toLocaleString("vi-VN")} đ
+                          {formatVnd(selectedExpert.fee)}
                         </span>
                         <Link
                           href={`/experts/${selectedExpert.id}`}

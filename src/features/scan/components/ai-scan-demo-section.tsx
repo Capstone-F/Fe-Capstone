@@ -112,7 +112,7 @@ export function AiScanDemoSection() {
               </div>
             </div>
 
-            <a href="/login?redirectTo=/scan">
+            <a href="/scan">
               <Button className="mt-2 rounded-xl font-bold">
                 Trải nghiệm máy soi da AI
                 <ArrowRight className="ml-2 h-4 w-4" />

@@ -5,10 +5,14 @@ import type {
   SessionUser,
   AuthStatus,
   MobileTokenResponse,
+  LoginRequestDto,
   RefreshTokenRequestDto,
   RefreshTokenResponse,
+  RegisterRequestDto,
 } from "../types/auth.types";
 import type { AxiosResponse } from "axios";
+
+import { guestSurveyStorage } from "@/features/survey/lib/guest-survey-storage";
 
 export const authApi = {
   getSession: (): Promise<AxiosResponse<SessionUser>> => {
@@ -26,10 +30,9 @@ export const authApi = {
     });
   },
 
-  mobileLogin: (payload: {
-    username?: string;
-    password?: string;
-  }): Promise<AxiosResponse<MobileTokenResponse>> => {
+  mobileLogin: (
+    payload: LoginRequestDto,
+  ): Promise<AxiosResponse<MobileTokenResponse>> => {
     return publicApiClient.post<MobileTokenResponse>(
       API_ENDPOINTS.AUTH.MOBILE_LOGIN,
       payload,
@@ -39,18 +42,17 @@ export const authApi = {
   loginDirect: (
     username: string,
     password: string,
+    guestToken?: string,
   ): Promise<AxiosResponse<MobileTokenResponse>> => {
     return publicApiClient.post<MobileTokenResponse>(
       API_ENDPOINTS.AUTH.MOBILE_LOGIN,
-      { username, password },
+      { username, password, ...(guestToken ? { guestToken } : {}) },
     );
   },
 
-  mobileRegister: (payload: {
-    username?: string;
-    email?: string;
-    password?: string;
-  }): Promise<AxiosResponse<MobileTokenResponse>> => {
+  mobileRegister: (
+    payload: RegisterRequestDto,
+  ): Promise<AxiosResponse<MobileTokenResponse>> => {
     return publicApiClient.post<MobileTokenResponse>(
       API_ENDPOINTS.AUTH.MOBILE_REGISTER,
       payload,
@@ -61,10 +63,11 @@ export const authApi = {
     email: string,
     password: string,
     name: string,
+    guestToken?: string,
   ): Promise<AxiosResponse<MobileTokenResponse>> => {
     return publicApiClient.post<MobileTokenResponse>(
       API_ENDPOINTS.AUTH.MOBILE_REGISTER,
-      { email, password, name },
+      { email, password, name, ...(guestToken ? { guestToken } : {}) },
     );
   },
 
@@ -95,6 +98,15 @@ export const authApi = {
       // Ignore errors if session already destroyed
     } finally {
       tokenStorage.clear();
+      guestSurveyStorage.clear();
+      try {
+        localStorage.removeItem("glowscan_treatment_data_v2");
+      } catch {
+        // ignore
+      }
+      if (typeof window !== "undefined") {
+        window.dispatchEvent(new CustomEvent("glowscan-logout"));
+      }
     }
   },
 };

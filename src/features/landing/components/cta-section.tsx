@@ -15,7 +15,7 @@ export function CtaSection() {
           liệu trình chăm sóc được đề xuất riêng cho bạn bởi AI ngay hôm nay.
         </p>
         <div className="flex flex-col justify-center gap-4 pt-4 sm:flex-row">
-          <a href="/login?redirectTo=/scan">
+          <a href="/scan">
             <Button className="text-primary w-full rounded-xl bg-white px-8 py-6 text-base font-bold shadow-lg shadow-black/10 hover:bg-neutral-100">
               Soi da & Khảo sát ngay
               <ArrowRight className="text-primary ml-2 h-5 w-5" />

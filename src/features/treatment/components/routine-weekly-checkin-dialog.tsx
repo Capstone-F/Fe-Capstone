@@ -1,6 +1,7 @@
 "use client";
 
-import { useState } from "react";
+import { zodResolver } from "@hookform/resolvers/zod";
+import { useForm, useWatch } from "react-hook-form";
 import { Frown, Loader2, Meh, Smile, Sparkles } from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "@/shared/components/ui/button";
@@ -13,7 +14,12 @@ import {
   DialogTitle,
 } from "@/shared/components/ui/dialog";
 import { Textarea } from "@/shared/components/ui/textarea";
+import { FormController } from "@/shared/components/form/form-controller";
 import { useSubmitWeeklyCheckIn } from "../hooks/useRoutineTracking";
+import {
+  weeklyCheckInSchema,
+  type WeeklyCheckInFormValues,
+} from "../schemas/routine-tracking-forms.schema";
 
 interface WeeklyCheckInDialogProps {
   isOpen: boolean;
@@ -68,28 +74,39 @@ export function RoutineWeeklyCheckInDialog({
   onClose,
   routineId,
 }: WeeklyCheckInDialogProps) {
-  const [feeling, setFeeling] = useState<OverallFeeling>("SAME");
-  const [selectedSymptoms, setSelectedSymptoms] = useState<WeeklySymptom[]>([]);
-  const [note, setNote] = useState("");
+  const form = useForm<WeeklyCheckInFormValues>({
+    resolver: zodResolver(weeklyCheckInSchema),
+    defaultValues: { feeling: "SAME", symptoms: [], note: "" },
+  });
+  const feeling = useWatch({ control: form.control, name: "feeling" });
+  const selectedSymptoms = useWatch({
+    control: form.control,
+    name: "symptoms",
+  });
 
   const submitMutation = useSubmitWeeklyCheckIn(routineId);
 
   const toggleSymptom = (sym: WeeklySymptom) => {
-    setSelectedSymptoms((prev) =>
-      prev.includes(sym) ? prev.filter((s) => s !== sym) : [...prev, sym],
+    form.setValue(
+      "symptoms",
+      selectedSymptoms.includes(sym)
+        ? selectedSymptoms.filter((item) => item !== sym)
+        : [...selectedSymptoms, sym],
+      { shouldDirty: true, shouldValidate: true },
     );
   };
 
-  const handleSubmit = () => {
+  const handleSubmit = (values: WeeklyCheckInFormValues) => {
     submitMutation.mutate(
       {
-        feeling,
-        symptoms: selectedSymptoms,
-        notes: note.trim() || undefined,
+        feeling: values.feeling,
+        symptoms: values.symptoms,
+        notes: values.note || undefined,
       },
       {
         onSuccess: () => {
           toast.success("Đã hoàn tất gửi check-in tuần!");
+          form.reset();
           onClose();
         },
         onError: (err) => {
@@ -115,7 +132,10 @@ export function RoutineWeeklyCheckInDialog({
           </DialogDescription>
         </DialogHeader>
 
-        <div className="space-y-4 py-2">
+        <form
+          onSubmit={form.handleSubmit(handleSubmit)}
+          className="space-y-4 py-2"
+        >
           {/* Cảm nhận chung */}
           <div className="space-y-2">
             <label className="text-xs font-bold tracking-wider text-slate-700 uppercase">
@@ -129,7 +149,11 @@ export function RoutineWeeklyCheckInDialog({
                   <button
                     key={item.key}
                     type="button"
-                    onClick={() => setFeeling(item.key)}
+                    onClick={() =>
+                      form.setValue("feeling", item.key, {
+                        shouldDirty: true,
+                      })
+                    }
                     className={`flex flex-col items-center gap-1.5 rounded-xl border p-3 transition-all ${
                       active
                         ? item.color
@@ -171,42 +195,43 @@ export function RoutineWeeklyCheckInDialog({
           </div>
 
           {/* Ghi chú */}
-          <div className="space-y-2">
-            <label className="text-xs font-bold tracking-wider text-slate-700 uppercase">
-              Ghi chú tiến trình cho Bác sĩ
-            </label>
-            <Textarea
-              placeholder="Nhập ghi chú chi tiết cho tuần này..."
-              value={note}
-              onChange={(e) => setNote(e.target.value)}
-              rows={3}
-              className="rounded-xl border-slate-200 text-xs focus-visible:ring-amber-500"
-            />
-          </div>
-        </div>
-
-        <DialogFooter className="gap-2 sm:gap-0">
-          <Button
-            type="button"
-            variant="outline"
-            onClick={onClose}
-            className="rounded-xl text-xs"
+          <FormController
+            control={form.control}
+            name="note"
+            label="Ghi chú tiến trình cho Bác sĩ"
           >
-            Hủy
-          </Button>
-          <Button
-            type="button"
-            disabled={submitMutation.isPending}
-            onClick={handleSubmit}
-            className="rounded-xl bg-amber-500 text-xs font-bold text-white shadow-xs hover:bg-amber-600"
-          >
-            {submitMutation.isPending ? (
-              <Loader2 className="h-4 w-4 animate-spin" />
-            ) : (
-              "Gửi Check-in Tuần"
+            {(field) => (
+              <Textarea
+                {...field}
+                placeholder="Nhập ghi chú chi tiết cho tuần này..."
+                rows={3}
+                className="rounded-xl border-slate-200 text-xs focus-visible:ring-amber-500"
+              />
             )}
-          </Button>
-        </DialogFooter>
+          </FormController>
+
+          <DialogFooter className="gap-2 sm:gap-0">
+            <Button
+              type="button"
+              variant="outline"
+              onClick={onClose}
+              className="rounded-xl text-xs"
+            >
+              Hủy
+            </Button>
+            <Button
+              type="submit"
+              disabled={submitMutation.isPending}
+              className="rounded-xl bg-amber-500 text-xs font-bold text-white shadow-xs hover:bg-amber-600"
+            >
+              {submitMutation.isPending ? (
+                <Loader2 className="h-4 w-4 animate-spin" />
+              ) : (
+                "Gửi Check-in Tuần"
+              )}
+            </Button>
+          </DialogFooter>
+        </form>
       </DialogContent>
     </Dialog>
   );
