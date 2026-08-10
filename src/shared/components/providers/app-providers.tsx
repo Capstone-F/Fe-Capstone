@@ -10,13 +10,13 @@ import { configureApiAuth } from "@/core/api/auth-handlers";
 import { tokenStorage } from "@/features/auth/utils/token-storage";
 import { authApi } from "@/features/auth/api/auth.api";
 import { ApiError } from "@/core/api/errors";
-
 import { guestSurveyStorage } from "@/features/survey/lib/guest-survey-storage";
 
 // Register Core auth handlers once at client-side bootstrap
 if (typeof window !== "undefined") {
   configureApiAuth({
     getAccessToken: tokenStorage.getAccessToken,
+    getGuestToken: () => guestSurveyStorage.get()?.guestToken,
     refreshAccessToken: async () => {
       const refreshToken = tokenStorage.getRefreshToken();
       if (!refreshToken) {
@@ -36,6 +36,14 @@ if (typeof window !== "undefined") {
     onSessionExpired: () => {
       tokenStorage.clear();
       guestSurveyStorage.clear();
+      try {
+        localStorage.removeItem("glowscan_treatment_data_v2");
+      } catch {
+        // ignore
+      }
+      if (typeof window !== "undefined") {
+        window.dispatchEvent(new CustomEvent("glowscan-logout"));
+      }
       window.location.assign("/login");
     },
   });

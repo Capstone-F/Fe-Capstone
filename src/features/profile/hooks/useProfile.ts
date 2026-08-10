@@ -1,6 +1,9 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { ApiError } from "@/core/api/errors";
 import { queryKeys } from "@/lib/query/keys";
 import { appConfig } from "@/lib/env";
+import { tokenStorage } from "@/features/auth/utils/token-storage";
+import { guestSurveyStorage } from "@/features/treatment/lib/guest-survey-storage";
 import { profileApi } from "../api/profile.api";
 import { profileMock } from "../api/profile.mock";
 import { extractBaumannFromAnswers } from "../mapper/profile-mapper";
@@ -174,15 +177,36 @@ export function useSaveSurvey() {
   });
 }
 
-export function useAllergyOptions() {
+type UseAllergyOptionsOptions = {
+  allowUnauthorizedFallback?: boolean;
+};
+
+export function useAllergyOptions(options: UseAllergyOptionsOptions = {}) {
   return useQuery({
     queryKey: queryKeys.allergyOptions,
     queryFn: async (): Promise<AllergyLabelResponse[]> => {
       if (appConfig.useMockApi) {
         return profileMock.getAllergyOptions();
       }
-      const response = await profileApi.getAllergyOptions();
-      return response.data;
+
+      try {
+        const response = await profileApi.getAllergyOptions();
+        return response.data;
+      } catch (error: unknown) {
+        const hasApiAuth = Boolean(
+          tokenStorage.getAccessToken() || guestSurveyStorage.get()?.guestToken,
+        );
+        const shouldFallback =
+          error instanceof ApiError &&
+          error.status === 401 &&
+          (options.allowUnauthorizedFallback || !hasApiAuth);
+
+        if (shouldFallback) {
+          return profileMock.getAllergyOptions();
+        }
+
+        throw error;
+      }
     },
   });
 }

@@ -34,6 +34,14 @@ export interface LoginRequestDto {
   guestToken?: string;
 }
 
+export interface RegisterRequestDto {
+  username?: string;
+  email?: string;
+  password?: string;
+  name?: string;
+  guestToken?: string;
+}
+
 export type LoginResponse = MobileTokenResponse;
 
 export interface RefreshTokenRequestDto {

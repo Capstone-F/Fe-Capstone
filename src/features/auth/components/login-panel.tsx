@@ -1,7 +1,6 @@
 "use client";
 
 import {
-  Sparkles,
   ShieldCheck,
   ArrowRight,
   HeartPulse,
@@ -11,11 +10,12 @@ import {
 } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { useState, useEffect } from "react";
+import { useEffect, useState } from "react";
 import { toast } from "sonner";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm, useWatch } from "react-hook-form";
 
+import { BrandMark } from "@/shared/components/brand-mark";
 import { Button } from "@/shared/components/ui/button";
 import { Spinner } from "@/shared/components/ui/spinner";
 import { Input } from "@/shared/components/ui/input";
@@ -32,6 +32,7 @@ import {
 } from "../schemas/auth-form.schema";
 import { guestSurveyStorage } from "@/features/survey/lib/guest-survey-storage";
 import { treatmentApi } from "@/features/treatment/api/treatment.api";
+import { mapRecommendationProducts } from "@/features/treatment/lib/survey-flow";
 
 type LoginPanelProps = {
   redirectTo: string;
@@ -51,8 +52,12 @@ function getRoleBasedRedirectPath(roles: string[], fallback?: string): string {
   return fallback && fallback !== "/" ? fallback : "/";
 }
 
-export function LoginPanel({ redirectTo }: LoginPanelProps) {
+import { useQueryClient } from "@tanstack/react-query";
+import { queryKeys } from "@/lib/query/keys";
+
+export function LoginPanel({ redirectTo = "/dashboard" }: LoginPanelProps) {
   const router = useRouter();
+  const queryClient = useQueryClient();
   const session = useSession();
 
   useEffect(() => {
@@ -117,36 +122,44 @@ export function LoginPanel({ redirectTo }: LoginPanelProps) {
       }
 
       if (guestSurvey && !appConfig.useMockApi) {
+        // Note: Backend already claimed the guest survey during login/register
+        // (when guestToken was passed). We only need to fetch the latest
+        // recommendations and populate the authenticated user's cart.
         try {
-          if (guestSurvey.guestToken) {
-            await treatmentApi.claimSurveySession(guestSurvey.guestToken);
-          }
-          guestSurveyStorage.clear();
-          toast.success("Đã lưu kết quả khảo sát vào tài khoản.");
-        } catch (claimErr) {
-          console.warn(
-            "Claim survey error, attempting fallback recommendation check:",
-            claimErr,
-          );
-          try {
-            const recommendation =
-              await treatmentApi.fetchLatestRecommendations();
-            if (
-              recommendation.data?.customerSurveyId === guestSurvey.surveyId
-            ) {
-              guestSurveyStorage.clear();
-              toast.success("Đã lưu kết quả khảo sát vào tài khoản.");
-            } else {
-              toast.warning(
-                "Đăng nhập thành công nhưng chưa liên kết xong khảo sát guest. Dữ liệu guest vẫn được giữ để thử lại.",
-              );
+          const recRes = await treatmentApi.fetchLatestRecommendations();
+          if (recRes.data?.products?.length) {
+            for (const item of recRes.data.products) {
+              const variantId =
+                item.productVariantId || item.variants?.[0]?.productVariantId;
+              if (variantId) {
+                try {
+                  await treatmentApi.addRecommendationToCart(
+                    variantId,
+                    recRes.data.id,
+                  );
+                } catch (itemErr) {
+                  console.warn(
+                    `Failed to add variant ${variantId} to cart:`,
+                    itemErr,
+                  );
+                }
+              }
             }
-          } catch {
-            toast.warning(
-              "Đăng nhập thành công nhưng chưa liên kết xong khảo sát guest. Dữ liệu guest vẫn được giữ để thử lại.",
+            await queryClient.invalidateQueries({ queryKey: queryKeys.cart });
+            toast.success(
+              "Đã lưu phác đồ và tự động thêm sản phẩm vào giỏ hàng!",
             );
           }
+        } catch (recErr) {
+          console.warn(
+            "Failed to populate cart from guest recommendations:",
+            recErr,
+          );
+        } finally {
+          guestSurveyStorage.clear();
         }
+      } else {
+        guestSurveyStorage.clear();
       }
 
       // The cached session was resolved before the new token existed. Use the
@@ -176,15 +189,7 @@ export function LoginPanel({ redirectTo }: LoginPanelProps) {
 
       {/* Header / Brand Logo */}
       <header className="mx-auto flex max-w-6xl items-center justify-between px-6 py-6 sm:px-8">
-        <Link href="/" className="group flex items-center gap-2.5 select-none">
-          <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-[#2C3E35] text-white shadow-sm transition-transform duration-300 group-hover:scale-105">
-            <Sparkles className="h-4.5 w-4.5 text-[#E0F2E9]" />
-          </div>
-          <span className="font-serif text-xl font-bold tracking-tight text-[#2C3E35]">
-            Glow
-            <span className="font-sans font-light text-[#5C7468]">Scan</span>
-          </span>
-        </Link>
+        <BrandMark href="/" />
         <Link
           href="/"
           className="text-xs font-medium text-[#5C7468] underline-offset-4 hover:text-[#2C3E35] hover:underline"

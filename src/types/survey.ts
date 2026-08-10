@@ -49,6 +49,7 @@ export interface SurveyAnswerItemDto {
 
 export interface SurveyResponseDto {
   id: string;
+  guestToken?: string | null;
   isCompleted: boolean;
   completedAt: string | null;
   faceImageUrl: string | null;
@@ -56,7 +57,14 @@ export interface SurveyResponseDto {
   faceLabels: SurveyFaceLabelDto[];
   answers: SurveyAnswerItemDto[];
   createdAt: string;
-  guestToken?: string;
+}
+
+export interface CreateSurveyRequestDto {
+  name: string;
+  phone: string;
+  dateOfBirth: string;
+  gender: string;
+  allergyLabelCodes: string[];
 }
 
 export interface RankedVariantDto {
@@ -110,11 +118,22 @@ export interface RuleEngineProtocolDto {
   matchedLabelCodes: string[];
 }
 
+export interface RecommendationCustomerProfileDto {
+  skinTypeCode?: string | null;
+  skinTypeName?: string | null;
+  age?: number | null;
+  gender?: string | null;
+  oilyDryScore?: number | null;
+  sensitiveResistantScore?: number | null;
+  pigmentedNonPigmentedScore?: number | null;
+  wrinkledTightScore?: number | null;
+}
+
 export interface RecommendationResponseDto {
   id: string;
   customerSurveyId: string;
-  customerProfile?: unknown | null;
-  labels: unknown[];
+  customerProfile?: RecommendationCustomerProfileDto | null;
+  labels: { id?: string; code?: string; name: string }[];
   protocols: RuleEngineProtocolDto[];
   conflicts?: RecommendationConflictDto[];
   products: RecommendedProductDto[];

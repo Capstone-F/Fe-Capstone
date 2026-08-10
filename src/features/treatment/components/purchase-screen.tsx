@@ -3,16 +3,19 @@
 import { useState } from "react";
 import {
   ArrowLeft,
+  ArrowRight,
   ShoppingBag,
   CreditCard,
   ShieldCheck,
   Check,
   Loader2,
+  LogIn,
 } from "lucide-react";
 import { useRouter } from "next/navigation";
 
 import { Button } from "@/shared/components/ui/button";
 import { formatVnd } from "@/shared/utils/format";
+import { useSession } from "@/features/auth/hooks/useSession";
 import { useTreatment } from "@/features/treatment/components/treatment-context";
 import { validateSurveyRecommendation } from "@/features/treatment/lib/survey-flow";
 
@@ -29,6 +32,7 @@ export function PurchaseScreen() {
   const [paymentStep, setPaymentStep] = useState<"checkout" | "processing">(
     "checkout",
   );
+  const sessionQuery = useSession();
 
   const dynamicProducts = getRecommendedProducts();
   const recommendationStatus = validateSurveyRecommendation(
@@ -72,6 +76,10 @@ export function PurchaseScreen() {
 
   const handleAddToCart = async () => {
     if (selectedProductIds.length === 0) return;
+    if (!sessionQuery.data) {
+      router.push("/login?redirectTo=/checkout");
+      return;
+    }
     setIsAddingToCart(true);
     setCartMessage(null);
     try {
@@ -86,12 +94,17 @@ export function PurchaseScreen() {
   };
 
   const handleCheckout = async () => {
+    if (selectedProductIds.length === 0) return;
+
+    if (!sessionQuery.data) {
+      router.push("/login?redirectTo=/checkout");
+      return;
+    }
+
     setIsProcessing(true);
-    setPaymentStep("processing");
     try {
-      if (selectedProductIds.length > 0) {
-        await addRecommendationsToCart(selectedProductIds);
-      }
+      await addRecommendationsToCart(selectedProductIds);
+      setPaymentStep("processing");
       router.push("/checkout");
     } catch (error) {
       console.error("Lỗi khi thêm vào giỏ trước checkout:", error);
@@ -310,38 +323,66 @@ export function PurchaseScreen() {
           </div>
         )}
 
-        <div className="grid grid-cols-2 gap-2">
-          <Button
-            variant="outline"
-            onClick={handleAddToCart}
-            disabled={
-              isProcessing || isAddingToCart || selectedProductIds.length === 0
-            }
-            className="border-primary/40 hover:bg-primary/5 text-primary flex items-center justify-center gap-1.5 rounded-2xl py-6 text-xs font-bold transition-all duration-300"
-          >
-            {isAddingToCart ? (
-              <Loader2 className="h-4 w-4 animate-spin" />
-            ) : (
-              <ShoppingBag className="h-4.5 w-4.5" />
-            )}
-            <span>Thêm vào giỏ ({selectedProductIds.length})</span>
-          </Button>
+        {!sessionQuery.data ? (
+          <div className="space-y-3 rounded-2xl border border-indigo-100 bg-gradient-to-r from-indigo-50/80 to-purple-50/60 p-4 text-left shadow-sm">
+            <div className="flex items-center gap-2 text-[#6b5cf6]">
+              <LogIn className="h-4 w-4 shrink-0" />
+              <span className="text-xs font-bold tracking-wider uppercase">
+                Vui lòng Đăng Nhập để Thêm Sản Phẩm Vào Giỏ Hàng
+              </span>
+            </div>
+            <p className="text-[11px] leading-relaxed text-slate-600">
+              Bạn đang xem phác đồ kê đơn dưới dạng Khách. Đăng nhập hoặc đăng
+              ký tài khoản để tự động lưu kết quả khảo sát và đưa sản phẩm kê
+              đơn vào giỏ hàng.
+            </p>
+            <Button
+              onClick={() => router.push("/login?redirectTo=/checkout")}
+              className="h-12 w-full gap-2 rounded-2xl bg-[#6b5cf6] text-xs font-bold text-white shadow-md hover:bg-[#5a4ae5]"
+            >
+              <LogIn className="h-4 w-4" />
+              <span>Vui lòng Đăng Nhập / Đăng Ký để thêm vào giỏ</span>
+              <ArrowRight className="h-4 w-4" />
+            </Button>
+          </div>
+        ) : (
+          <div className="grid grid-cols-2 gap-2">
+            <Button
+              variant="outline"
+              onClick={handleAddToCart}
+              disabled={
+                isProcessing ||
+                isAddingToCart ||
+                selectedProductIds.length === 0
+              }
+              className="border-primary/40 hover:bg-primary/5 text-primary flex items-center justify-center gap-1.5 rounded-2xl py-6 text-xs font-bold transition-all duration-300"
+            >
+              {isAddingToCart ? (
+                <Loader2 className="h-4 w-4 animate-spin" />
+              ) : (
+                <ShoppingBag className="h-4.5 w-4.5" />
+              )}
+              <span>Thêm vào giỏ ({selectedProductIds.length})</span>
+            </Button>
 
-          <Button
-            onClick={handleCheckout}
-            disabled={
-              isProcessing || isAddingToCart || selectedProductIds.length === 0
-            }
-            className="shadow-primary/20 hover:shadow-primary/30 bg-primary hover:bg-primary/95 flex items-center justify-center gap-1.5 rounded-2xl py-6 text-xs font-bold text-white shadow-lg transition-all duration-300"
-          >
-            {isProcessing ? (
-              <Loader2 className="h-4 w-4 animate-spin" />
-            ) : (
-              <CreditCard className="h-4.5 w-4.5" />
-            )}
-            <span>Qua Checkout</span>
-          </Button>
-        </div>
+            <Button
+              onClick={handleCheckout}
+              disabled={
+                isProcessing ||
+                isAddingToCart ||
+                selectedProductIds.length === 0
+              }
+              className="shadow-primary/20 hover:shadow-primary/30 bg-primary hover:bg-primary/95 flex items-center justify-center gap-1.5 rounded-2xl py-6 text-xs font-bold text-white shadow-lg transition-all duration-300"
+            >
+              {isProcessing ? (
+                <Loader2 className="h-4 w-4 animate-spin" />
+              ) : (
+                <CreditCard className="h-4.5 w-4.5" />
+              )}
+              <span>Qua Checkout</span>
+            </Button>
+          </div>
+        )}
       </div>
     </div>
   );

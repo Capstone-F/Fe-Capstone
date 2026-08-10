@@ -94,103 +94,143 @@ function checkIs401Error(e: unknown): boolean {
 }
 
 export function TreatmentProvider({ children }: { children: React.ReactNode }) {
-  const [state, setState] = useState<TreatmentData>(() => {
-    const defaultState: TreatmentData = {
-      surveyAnswers: DEFAULT_ANSWERS,
-      surveyStep: 1,
-      flowState: "intro",
-      dashboardTab: "home",
-      morningRoutine: [],
-      eveningRoutine: [],
-      aiObservation: null,
-      surveyHistory: [],
-      surveySessionId: null,
-      dynamicQuestions: [],
-      dynamicAnswers: {},
-      dynamicTextAnswers: {},
-      faceImageUrl: null,
-      faceScannedAt: null,
-      faceLabels: [],
-      recommendations: null,
-      customerProfile: null,
-      isLoadingDynamic: false,
-      dynamicError: null,
-      surveyMode: "authenticated",
-    };
-    if (typeof window === "undefined") return defaultState;
+  const [state, setState] = useState<TreatmentData>(() => ({
+    surveyAnswers: DEFAULT_ANSWERS,
+    surveyStep: 1,
+    flowState: "intro",
+    dashboardTab: "home",
+    morningRoutine: [],
+    eveningRoutine: [],
+    aiObservation: null,
+    surveyHistory: [],
+    surveySessionId: null,
+    dynamicQuestions: [],
+    dynamicAnswers: {},
+    dynamicTextAnswers: {},
+    faceImageUrl: null,
+    faceScannedAt: null,
+    faceLabels: [],
+    recommendations: null,
+    customerProfile: null,
+    isLoadingDynamic: false,
+    dynamicError: null,
+    surveyMode: "authenticated",
+  }));
+
+  const isHydratedRef = React.useRef(false);
+
+  // Hydrate state from localStorage AFTER mount to avoid SSR hydration mismatch
+  useEffect(() => {
     try {
       const stored = localStorage.getItem(LOCAL_STORAGE_KEY);
       if (stored) {
         const parsed = JSON.parse(stored) as TreatmentData;
-        const validFlows = [
-          "intro",
-          "survey",
-          "analyzing",
-          "report",
-          "plan",
-          "purchase",
-          "success",
-        ];
-        const flowState = validFlows.includes(parsed.flowState)
-          ? parsed.flowState
-          : "intro";
-        return {
-          ...defaultState,
-          ...parsed,
-          surveyMode: tokenStorage.getAccessToken()
-            ? "authenticated"
-            : parsed.surveyMode || "authenticated",
-          flowState,
-          dynamicQuestions: parsed.dynamicQuestions || [],
-          dynamicAnswers: parsed.dynamicAnswers || {},
-          dynamicTextAnswers: parsed.dynamicTextAnswers || {},
-          faceImageUrl: parsed.faceImageUrl || null,
-          faceScannedAt: parsed.faceScannedAt || null,
-          faceLabels: parsed.faceLabels || [],
-        };
+        const hasToken = Boolean(tokenStorage.getAccessToken());
+
+        // If user logged out or storage belongs to old authenticated flow, purge it
+        if (!hasToken && parsed.surveyMode === "authenticated") {
+          localStorage.removeItem(LOCAL_STORAGE_KEY);
+          return;
+        }
+
+        // Only restore if flow is actively mid-survey
+        if (parsed.flowState === "survey") {
+          // eslint-disable-next-line react-hooks/set-state-in-effect
+          setState((prev) => ({
+            ...prev,
+            ...parsed,
+            surveyMode: hasToken ? "authenticated" : "guest",
+            flowState: "survey",
+            dynamicQuestions: parsed.dynamicQuestions || [],
+            dynamicAnswers: parsed.dynamicAnswers || {},
+            dynamicTextAnswers: parsed.dynamicTextAnswers || {},
+          }));
+        } else {
+          localStorage.removeItem(LOCAL_STORAGE_KEY);
+        }
       }
     } catch {
       // ignore malformed storage
+    } finally {
+      isHydratedRef.current = true;
     }
-    return defaultState;
-  });
+  }, []);
 
-  // Persist changes to localStorage
+  // Persist changes to localStorage ONLY while actively mid-survey
   useEffect(() => {
+    if (!isHydratedRef.current) return;
     try {
-      localStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify(state));
+      if (state.flowState === "survey") {
+        // Save draft answers only (do not store completed recommendations in localStorage)
+        const draftData = {
+          flowState: "survey",
+          surveyStep: state.surveyStep,
+          surveyMode: state.surveyMode,
+          dynamicQuestions: state.dynamicQuestions,
+          dynamicAnswers: state.dynamicAnswers,
+          dynamicTextAnswers: state.dynamicTextAnswers,
+        };
+        localStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify(draftData));
+      } else {
+        localStorage.removeItem(LOCAL_STORAGE_KEY);
+      }
     } catch (e) {
       console.error("Failed to save treatment data to localStorage", e);
     }
   }, [state]);
 
-  const setSurveyStep = (step: number) => {
+  const setSurveyStep = useCallback((step: number) => {
     setState((prev) => ({ ...prev, surveyStep: step }));
-  };
+  }, []);
 
-  const setFlowState = (flowState: FlowState) => {
-    setState((prev) => ({ ...prev, flowState }));
-  };
-
-  const setDashboardTab = (dashboardTab: DashboardTab) => {
-    setState((prev) => ({ ...prev, dashboardTab }));
-  };
-
-  const toggleRoutine = (id: string, type: "morning" | "evening") => {
+  const setFlowState = useCallback((flowState: FlowState) => {
     setState((prev) => {
-      const key = type === "morning" ? "morningRoutine" : "eveningRoutine";
-      const updated = prev[key].map((item) =>
-        item.id === id ? { ...item, completed: !item.completed } : item,
-      );
-      return { ...prev, [key]: updated };
+      if (flowState === "intro") {
+        return {
+          ...prev,
+          flowState,
+          surveySessionId: null,
+          dynamicQuestions: [],
+          dynamicAnswers: {},
+          dynamicTextAnswers: {},
+          faceImageUrl: null,
+          faceScannedAt: null,
+          faceLabels: [],
+          recommendations: null,
+          surveyStep: 1,
+          isLoadingDynamic: false,
+          dynamicError: null,
+        };
+      }
+      return { ...prev, flowState };
     });
-  };
+  }, []);
 
-  // Dynamic API methods
+  const setDashboardTab = useCallback((dashboardTab: DashboardTab) => {
+    setState((prev) => ({ ...prev, dashboardTab }));
+  }, []);
+
+  const toggleRoutine = useCallback(
+    (id: string, type: "morning" | "evening") => {
+      setState((prev) => {
+        const key = type === "morning" ? "morningRoutine" : "eveningRoutine";
+        const updated = prev[key].map((item) =>
+          item.id === id ? { ...item, completed: !item.completed } : item,
+        );
+        return { ...prev, [key]: updated };
+      });
+    },
+    [],
+  );
+
   const startDynamicSurvey = useCallback(
     async (profile?: GuestSurveyBaseProfile): Promise<boolean> => {
       setState((prev) => ({
         ...prev,
+        surveySessionId: null,
+        dynamicAnswers: {},
+        dynamicTextAnswers: {},
+        recommendations: null,
         isLoadingDynamic: true,
         dynamicError: null,
       }));
@@ -209,11 +249,7 @@ export function TreatmentProvider({ children }: { children: React.ReactNode }) {
           });
         }
 
-        // 1. Fetch CORE survey questions from BE
-        const questionsResponse = await treatmentApi.fetchQuestions();
-        const questions = questionsResponse.data || [];
-
-        // 2. Create Real Survey Session on BE
+        // 1. Create Real Survey Session on BE
         const sessionResponse = await treatmentApi.createSurveySession(
           mode,
           guestProfile,
@@ -235,6 +271,14 @@ export function TreatmentProvider({ children }: { children: React.ReactNode }) {
             createdAt: new Date().toISOString(),
           });
         }
+
+        // 2. Fetch CORE survey questions from BE with created session context
+        const questionsResponse = await treatmentApi.fetchQuestions(
+          session.id,
+          { guestToken: session.guestToken },
+          mode,
+        );
+        const questions = questionsResponse.data || [];
 
         setState((prev) => ({
           ...prev,
@@ -666,12 +710,17 @@ export function TreatmentProvider({ children }: { children: React.ReactNode }) {
   );
 
   // Helper to generate recommended products dynamically for the checkout cart
-  const getRecommendedProducts = (): SkincareProduct[] => {
+  const getRecommendedProducts = useCallback((): SkincareProduct[] => {
     return mapRecommendationProducts(state.recommendations);
-  };
+  }, [state.recommendations]);
 
-  const resetAll = () => {
+  const resetAll = useCallback(() => {
     guestSurveyStorage.clear();
+    try {
+      localStorage.removeItem(LOCAL_STORAGE_KEY);
+    } catch {
+      // ignore
+    }
     setState({
       surveyAnswers: DEFAULT_ANSWERS,
       surveyStep: 1,
@@ -694,7 +743,18 @@ export function TreatmentProvider({ children }: { children: React.ReactNode }) {
       dynamicError: null,
       surveyMode: "authenticated",
     });
-  };
+  }, []);
+
+  // Listen to logout event to wipe React state in memory immediately upon logout
+  useEffect(() => {
+    const handleLogout = () => {
+      resetAll();
+    };
+    window.addEventListener("glowscan-logout", handleLogout);
+    return () => {
+      window.removeEventListener("glowscan-logout", handleLogout);
+    };
+  }, [resetAll]);
 
   return (
     <TreatmentContext.Provider

@@ -135,7 +135,7 @@ export function GuestSurveyProfileForm({
               id={field.name}
               inputMode="tel"
               autoComplete="tel"
-              placeholder="0912345678"
+              placeholder="Số điện thoại"
               aria-invalid={Boolean(form.formState.errors.phone)}
             />
           )}

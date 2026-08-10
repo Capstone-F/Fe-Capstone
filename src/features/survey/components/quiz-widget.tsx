@@ -14,7 +14,6 @@ export function QuizWidget() {
     desc: "",
     actives: [] as string[],
   });
-
   const handleStart = () => {
     setAnswers([]);
     setStep(1);

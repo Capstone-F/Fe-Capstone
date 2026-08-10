@@ -5,8 +5,10 @@ import type {
   SessionUser,
   AuthStatus,
   MobileTokenResponse,
+  LoginRequestDto,
   RefreshTokenRequestDto,
   RefreshTokenResponse,
+  RegisterRequestDto,
 } from "../types/auth.types";
 import type { AxiosResponse } from "axios";
 
@@ -28,10 +30,9 @@ export const authApi = {
     });
   },
 
-  mobileLogin: (payload: {
-    username?: string;
-    password?: string;
-  }): Promise<AxiosResponse<MobileTokenResponse>> => {
+  mobileLogin: (
+    payload: LoginRequestDto,
+  ): Promise<AxiosResponse<MobileTokenResponse>> => {
     return publicApiClient.post<MobileTokenResponse>(
       API_ENDPOINTS.AUTH.MOBILE_LOGIN,
       payload,
@@ -49,11 +50,9 @@ export const authApi = {
     );
   },
 
-  mobileRegister: (payload: {
-    username?: string;
-    email?: string;
-    password?: string;
-  }): Promise<AxiosResponse<MobileTokenResponse>> => {
+  mobileRegister: (
+    payload: RegisterRequestDto,
+  ): Promise<AxiosResponse<MobileTokenResponse>> => {
     return publicApiClient.post<MobileTokenResponse>(
       API_ENDPOINTS.AUTH.MOBILE_REGISTER,
       payload,
@@ -100,6 +99,14 @@ export const authApi = {
     } finally {
       tokenStorage.clear();
       guestSurveyStorage.clear();
+      try {
+        localStorage.removeItem("glowscan_treatment_data_v2");
+      } catch {
+        // ignore
+      }
+      if (typeof window !== "undefined") {
+        window.dispatchEvent(new CustomEvent("glowscan-logout"));
+      }
     }
   },
 };

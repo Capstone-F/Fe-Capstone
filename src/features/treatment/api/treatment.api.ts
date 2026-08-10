@@ -25,28 +25,59 @@ export const treatmentApi = {
   fetchQuestions: (
     surveyId?: string,
     context: SurveyRequestContext = {},
+    mode?: "guest" | "authenticated",
   ): Promise<AxiosResponse<SurveyQuestionDto[]>> => {
     const url = surveyId
       ? `${API_ENDPOINTS.SURVEYS.QUESTIONS}?surveyId=${surveyId}`
       : API_ENDPOINTS.SURVEYS.QUESTIONS;
-    return surveyClient(context.guestToken).get<SurveyQuestionDto[]>(url, {
-      headers: guestHeaders(context.guestToken),
-    });
+
+    if (context.guestToken || mode === "guest") {
+      return publicApiClient.get<SurveyQuestionDto[]>(url, {
+        headers: guestHeaders(context.guestToken),
+      });
+    }
+
+    return apiClient.get<SurveyQuestionDto[]>(url);
   },
 
-  createSurveySession: (
+  createSurveySession: async (
     mode: "guest" | "authenticated",
     profile?: GuestSurveyBaseProfile,
   ): Promise<AxiosResponse<SurveyResponseDto>> => {
+    const client = mode === "guest" ? publicApiClient : apiClient;
     const body = profile
       ? {
-          dateOfBirth: profile.dateOfBirth,
-          gender: profile.gender,
-          allergyCodes: profile.allergyCodes,
+          ...(profile.phone ? { phone: profile.phone } : {}),
+          ...(profile.dateOfBirth ? { dateOfBirth: profile.dateOfBirth } : {}),
+          ...(profile.gender ? { gender: profile.gender } : {}),
+          ...(profile.allergyCodes && profile.allergyCodes.length > 0
+            ? { allergyCodes: profile.allergyCodes }
+            : {}),
         }
       : {};
-    const client = mode === "guest" ? publicApiClient : apiClient;
-    return client.post<SurveyResponseDto>(API_ENDPOINTS.SURVEYS.BASE, body);
+
+    try {
+      return await client.post<SurveyResponseDto>(
+        API_ENDPOINTS.SURVEYS.BASE,
+        body,
+      );
+    } catch (err: unknown) {
+      // If 400 Bad Request occurs due to invalid allergy label codes (e.g. mock fallback codes), retry without allergyCodes
+      const errObj = err as { status?: number; response?: { status?: number } };
+      if (
+        (errObj.status === 400 || errObj.response?.status === 400) &&
+        body.allergyCodes &&
+        body.allergyCodes.length > 0
+      ) {
+        const fallbackBody = { ...body };
+        delete fallbackBody.allergyCodes;
+        return client.post<SurveyResponseDto>(
+          API_ENDPOINTS.SURVEYS.BASE,
+          fallbackBody,
+        );
+      }
+      throw err;
+    }
   },
 
   claimSurveySession: (
@@ -66,6 +97,7 @@ export const treatmentApi = {
     return apiClient.post<SurveyResponseDto>(
       API_ENDPOINTS.SURVEYS.FACE_SCAN(sessionId),
       formData,
+      { preferGuestAuth: true },
     );
   },
 
@@ -94,6 +126,9 @@ export const treatmentApi = {
   > => {
     return apiClient.get<CustomerProfileResponseDto>(
       API_ENDPOINTS.CUSTOMERS.ME,
+      {
+        preferGuestAuth: true,
+      },
     );
   },
 

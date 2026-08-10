@@ -405,7 +405,7 @@ export function ProfilePage() {
                   <p className="text-xs">
                     Bạn chưa hoàn thành cuộc khảo sát nào.
                   </p>
-                  <a href="/login?redirectTo=/scan">
+                  <a href="/scan">
                     <Button
                       variant="outline"
                       size="sm"

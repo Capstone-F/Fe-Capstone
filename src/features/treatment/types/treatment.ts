@@ -46,6 +46,7 @@ export type RoutineItem = {
 
 export type FlowState =
   | "intro"
+  | "baumann"
   | "survey"
   | "analyzing"
   | "report"
@@ -62,6 +63,14 @@ export type AiObservation = {
   darkSpots: "Nhẹ" | "Trung bình" | "Nặng";
   poreSize: "Mịn" | "Trung bình" | "Rộng";
   wrinkleDepth: "Thấp" | "Trung bình" | "Cao";
+};
+
+export type SurveyBaseProfile = {
+  name: string;
+  phone: string;
+  dateOfBirth: string;
+  gender: "MALE" | "FEMALE" | "OTHER";
+  allergyLabelCodes: string[];
 };
 
 export type TreatmentData = {

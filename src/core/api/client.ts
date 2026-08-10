@@ -30,9 +30,22 @@ apiClient.interceptors.request.use((config) => {
     return config;
   }
 
-  const accessToken = getApiAuthHandlers()?.getAccessToken();
+  const authHandlers = getApiAuthHandlers();
+  const guestToken = authHandlers?.getGuestToken?.();
+
+  if (config.preferGuestAuth && guestToken) {
+    config.headers.set("Authorization", `Bearer ${guestToken}`);
+    return config;
+  }
+
+  const accessToken = authHandlers?.getAccessToken();
   if (accessToken) {
     config.headers.set("Authorization", `Bearer ${accessToken}`);
+    return config;
+  }
+
+  if (guestToken) {
+    config.headers.set("Authorization", `Bearer ${guestToken}`);
   }
 
   return config;
@@ -53,6 +66,7 @@ apiClient.interceptors.response.use(
       originalRequest !== undefined &&
       originalRequest._retry !== true &&
       originalRequest.skipAuthRefresh !== true &&
+      Boolean(authHandlers?.getAccessToken()) &&
       authHandlers !== null;
 
     if (!canRefresh) {
