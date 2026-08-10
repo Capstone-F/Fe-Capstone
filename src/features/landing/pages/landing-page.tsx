@@ -10,9 +10,7 @@ export function LandingPage() {
       <HeroSection />
       <HowItWorksSection />
       <SmartCatalogSection />
-      <section id="experts">
-        <ExpertNetworkSection />
-      </section>
+      <ExpertNetworkSection />
       <CtaSection />
     </>
   );

@@ -59,6 +59,20 @@ export function ReportScreen() {
   const parsedBaumann = parseBaumannCode(rawCode, scores);
   const labels = state.recommendations?.labels || [];
   const protocols = state.recommendations?.protocols || [];
+  const localizedLabelByCode = new Map(
+    state.dynamicQuestions.flatMap((question) =>
+      question.options.map((option) => [
+        option.labelCode,
+        option.vietnameseNormalized || option.name,
+      ]),
+    ),
+  );
+  state.faceLabels.forEach((label) => {
+    localizedLabelByCode.set(
+      label.code,
+      label.vietnameseNormalized || label.name,
+    );
+  });
 
   if (recommendationStatus !== "ok") {
     return (
@@ -270,7 +284,13 @@ export function ReportScreen() {
                       className="flex items-center gap-1.5 rounded-full border border-slate-200 bg-white px-3 py-1.5 text-xs font-bold text-[#131336] shadow-xs"
                     >
                       <Tag className="h-3.5 w-3.5 text-[#6b5cf6]" />
-                      <span>{lbl.name}</span>
+                      <span>
+                        {lbl.vietnameseNormalized ||
+                          (lbl.code
+                            ? localizedLabelByCode.get(lbl.code)
+                            : undefined) ||
+                          lbl.name}
+                      </span>
                     </div>
                   ))}
                 </div>

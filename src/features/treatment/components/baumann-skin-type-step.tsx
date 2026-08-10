@@ -155,7 +155,7 @@ export function BaumannSkinTypeStep() {
 
   return (
     <div className="mx-auto flex w-full max-w-4xl flex-1 flex-col justify-between px-4 py-6 duration-300">
-      <div className="space-y-6">
+      <div className="space-y-6 pb-8">
         {/* Top Navigation */}
         <div className="flex items-center justify-between">
           <Button
@@ -274,7 +274,7 @@ export function BaumannSkinTypeStep() {
       </div>
 
       {/* Bottom Sticky Action Footer */}
-      <div className="sticky bottom-0 left-0 z-10 w-full border-t border-slate-100 bg-white/80 py-4 backdrop-blur-md">
+      <div className="sticky bottom-0 left-0 z-10 mt-2 w-full border-t border-slate-100 bg-white/90 py-4 backdrop-blur-md">
         <div className="flex w-full items-center justify-between gap-4">
           <Button
             variant="outline"

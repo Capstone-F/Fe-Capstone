@@ -19,17 +19,40 @@ function Calendar({
     <DayPicker
       className={cn("bg-popover p-3", className)}
       classNames={{
-        root: cn("w-fit", defaults.root),
+        root: cn("relative w-fit", defaults.root),
         months: cn("flex flex-col", defaults.months),
         month: cn("space-y-3", defaults.month),
         month_caption: cn(
-          "flex h-8 items-center justify-center",
+          "flex h-8 items-center justify-center px-10",
           defaults.month_caption,
         ),
-        caption_label: cn("text-sm font-semibold", defaults.caption_label),
-        nav: cn("flex items-center justify-between", defaults.nav),
-        button_previous: cn("h-8 w-8", defaults.button_previous),
-        button_next: cn("h-8 w-8", defaults.button_next),
+        caption_label: cn(
+          "flex items-center gap-1 rounded-md px-2 py-1 text-sm font-semibold",
+          defaults.caption_label,
+        ),
+        dropdowns: cn(
+          "flex items-center justify-center gap-1",
+          defaults.dropdowns,
+        ),
+        dropdown_root: cn(
+          "border-input bg-background hover:bg-muted relative inline-flex h-8 items-center rounded-md border",
+          defaults.dropdown_root,
+        ),
+        dropdown: cn(
+          "absolute inset-0 z-10 cursor-pointer opacity-0",
+          defaults.dropdown,
+        ),
+        months_dropdown: cn("appearance-none", defaults.months_dropdown),
+        years_dropdown: cn("appearance-none", defaults.years_dropdown),
+        nav: cn(
+          "pointer-events-none absolute inset-x-3 top-3 flex items-center justify-between",
+          defaults.nav,
+        ),
+        button_previous: cn(
+          "pointer-events-auto h-8 w-8",
+          defaults.button_previous,
+        ),
+        button_next: cn("pointer-events-auto h-8 w-8", defaults.button_next),
         month_grid: cn("w-full border-collapse", defaults.month_grid),
         weekdays: cn("flex", defaults.weekdays),
         weekday: cn(
