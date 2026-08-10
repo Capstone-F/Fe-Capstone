@@ -122,6 +122,7 @@ export const API_ENDPOINTS = {
   },
   SURVEYS: {
     BASE: "/surveys",
+    CLAIM: "/surveys/claim",
     QUESTIONS: "/surveys/questions",
     FACE_SCAN: (id: string) => `/surveys/${id}/face-scan`,
   },

@@ -118,17 +118,34 @@ export function LoginPanel({ redirectTo }: LoginPanelProps) {
 
       if (guestSurvey && !appConfig.useMockApi) {
         try {
-          const recommendation =
-            await treatmentApi.fetchLatestRecommendations();
-          if (recommendation.data.customerSurveyId !== guestSurvey.surveyId) {
-            throw new Error("Survey claim chưa hoàn tất.");
+          if (guestSurvey.guestToken) {
+            await treatmentApi.claimSurveySession(guestSurvey.guestToken);
           }
           guestSurveyStorage.clear();
           toast.success("Đã lưu kết quả khảo sát vào tài khoản.");
-        } catch {
-          toast.warning(
-            "Đăng nhập thành công nhưng BE chưa xác nhận liên kết khảo sát guest. Dữ liệu guest vẫn được giữ để thử lại.",
+        } catch (claimErr) {
+          console.warn(
+            "Claim survey error, attempting fallback recommendation check:",
+            claimErr,
           );
+          try {
+            const recommendation =
+              await treatmentApi.fetchLatestRecommendations();
+            if (
+              recommendation.data?.customerSurveyId === guestSurvey.surveyId
+            ) {
+              guestSurveyStorage.clear();
+              toast.success("Đã lưu kết quả khảo sát vào tài khoản.");
+            } else {
+              toast.warning(
+                "Đăng nhập thành công nhưng chưa liên kết xong khảo sát guest. Dữ liệu guest vẫn được giữ để thử lại.",
+              );
+            }
+          } catch {
+            toast.warning(
+              "Đăng nhập thành công nhưng chưa liên kết xong khảo sát guest. Dữ liệu guest vẫn được giữ để thử lại.",
+            );
+          }
         }
       }
 

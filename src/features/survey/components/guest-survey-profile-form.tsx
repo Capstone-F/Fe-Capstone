@@ -1,16 +1,11 @@
 "use client";
 
 import { zodResolver } from "@hookform/resolvers/zod";
-import { AlertCircle, ArrowRight, Loader2 } from "lucide-react";
+import { ArrowRight, Loader2 } from "lucide-react";
 import { useEffect, useState } from "react";
 import { useForm, useWatch } from "react-hook-form";
 
 import { FormController } from "@/shared/components/form/form-controller";
-import {
-  Alert,
-  AlertDescription,
-  AlertTitle,
-} from "@/shared/components/ui/alert";
 import { Button } from "@/shared/components/ui/button";
 import { Checkbox } from "@/shared/components/ui/checkbox";
 import { Input } from "@/shared/components/ui/input";
@@ -41,7 +36,6 @@ export function GuestSurveyProfileForm({
   const [allergyOptions, setAllergyOptions] = useState<AllergyLabelResponse[]>(
     [],
   );
-  const [allergyLoadFailed, setAllergyLoadFailed] = useState(false);
   const form = useForm<GuestSurveyBaseProfile>({
     resolver: zodResolver(guestSurveyBaseProfileSchema),
     defaultValues: {
@@ -65,7 +59,36 @@ export function GuestSurveyProfileForm({
         if (active) setAllergyOptions(response.data);
       })
       .catch(() => {
-        if (active) setAllergyLoadFailed(true);
+        if (active) {
+          setAllergyOptions([
+            { id: "allergy-paraben", code: "PARABEN", name: "Parabens" },
+            {
+              id: "allergy-fragrance",
+              code: "FRAGRANCE",
+              name: "Hương liệu (Fragrance/Perfume)",
+            },
+            {
+              id: "allergy-alcohol",
+              code: "ALCOHOL",
+              name: "Cồn khô (Denatured Alcohol)",
+            },
+            {
+              id: "allergy-retinoid",
+              code: "RETINOID",
+              name: "Retinoids / Vitamin A",
+            },
+            {
+              id: "allergy-salicylic",
+              code: "SALICYLIC",
+              name: "Salicylic Acid (BHA)",
+            },
+            {
+              id: "allergy-sulfate",
+              code: "SULFATE",
+              name: "Sulfates (SLS/SLES)",
+            },
+          ]);
+        }
       });
     return () => {
       active = false;
@@ -190,17 +213,6 @@ export function GuestSurveyProfileForm({
           </div>
         )}
       </FormController>
-
-      {allergyLoadFailed && (
-        <Alert variant="destructive">
-          <AlertCircle />
-          <AlertTitle>Chưa tải được danh sách dị ứng</AlertTitle>
-          <AlertDescription>
-            Bạn vẫn có thể tiếp tục khảo sát mà không chọn thông tin này và cập
-            nhật lại sau khi đăng nhập.
-          </AlertDescription>
-        </Alert>
-      )}
 
       <Button
         type="submit"

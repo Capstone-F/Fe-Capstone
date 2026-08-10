@@ -49,6 +49,14 @@ export const treatmentApi = {
     return client.post<SurveyResponseDto>(API_ENDPOINTS.SURVEYS.BASE, body);
   },
 
+  claimSurveySession: (
+    guestToken: string,
+  ): Promise<AxiosResponse<SurveyResponseDto>> => {
+    return apiClient.post<SurveyResponseDto>(API_ENDPOINTS.SURVEYS.CLAIM, {
+      guestToken,
+    });
+  },
+
   scanSurveyFace: (
     sessionId: string,
     file: File,

@@ -10,6 +10,8 @@ import type {
 } from "../types/auth.types";
 import type { AxiosResponse } from "axios";
 
+import { guestSurveyStorage } from "@/features/survey/lib/guest-survey-storage";
+
 export const authApi = {
   getSession: (): Promise<AxiosResponse<SessionUser>> => {
     return apiClient.get<SessionUser>(API_ENDPOINTS.USERS.ME);
@@ -97,6 +99,7 @@ export const authApi = {
       // Ignore errors if session already destroyed
     } finally {
       tokenStorage.clear();
+      guestSurveyStorage.clear();
     }
   },
 };

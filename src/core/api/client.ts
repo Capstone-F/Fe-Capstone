@@ -18,6 +18,15 @@ export const externalApiClient = axios.create();
 
 apiClient.interceptors.request.use((config) => {
   if (config.skipAuth) {
+    config.headers.delete("Authorization");
+    return config;
+  }
+
+  if (
+    config.headers.has("X-Guest-Token") ||
+    config.headers.get("X-Guest-Token")
+  ) {
+    config.headers.delete("Authorization");
     return config;
   }
 

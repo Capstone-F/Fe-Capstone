@@ -11,6 +11,8 @@ import { tokenStorage } from "@/features/auth/utils/token-storage";
 import { authApi } from "@/features/auth/api/auth.api";
 import { ApiError } from "@/core/api/errors";
 
+import { guestSurveyStorage } from "@/features/survey/lib/guest-survey-storage";
+
 // Register Core auth handlers once at client-side bootstrap
 if (typeof window !== "undefined") {
   configureApiAuth({
@@ -33,6 +35,7 @@ if (typeof window !== "undefined") {
     },
     onSessionExpired: () => {
       tokenStorage.clear();
+      guestSurveyStorage.clear();
       window.location.assign("/login");
     },
   });
