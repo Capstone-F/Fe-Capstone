@@ -14,7 +14,7 @@ export function TreatmentPage() {
         <div className="bg-primary/5 pointer-events-none absolute top-10 left-1/2 -z-10 h-[500px] w-full max-w-7xl -translate-x-1/2 rounded-full opacity-40 blur-3xl filter" />
 
         {/* Header */}
-        <div className="mb-6 flex w-full max-w-md items-center justify-between px-2 sm:max-w-lg md:max-w-2xl">
+        <div className="mb-6 flex w-full max-w-md items-center justify-between px-2 sm:max-w-lg md:max-w-6xl">
           <Link
             href="/"
             className="group flex items-center gap-1.5 select-none"
@@ -31,7 +31,7 @@ export function TreatmentPage() {
           </span>
         </div>
         {/* Main frame */}
-        <main className="surface-glass relative flex min-h-[580px] w-full max-w-md flex-col overflow-hidden rounded-[32px] border border-white/70 bg-white/70 p-2 shadow-2xl backdrop-blur-md sm:max-w-lg md:max-w-5xl">
+        <main className="surface-glass relative flex min-h-[620px] w-full max-w-md flex-col overflow-hidden rounded-[32px] border border-white/70 bg-white/70 p-2 shadow-2xl backdrop-blur-md sm:max-w-lg md:min-h-[680px] md:max-w-6xl md:p-3">
           <Suspense
             fallback={
               <div className="text-muted-foreground flex flex-1 items-center justify-center text-sm">
@@ -44,7 +44,7 @@ export function TreatmentPage() {
         </main>
 
         {/* Disclaimer */}
-        <footer className="text-muted-foreground/80 mt-6 w-full max-w-xs px-4 text-center text-[10px] leading-relaxed">
+        <footer className="text-muted-foreground/80 mt-6 w-full max-w-md px-4 text-center text-[10px] leading-relaxed sm:max-w-lg md:max-w-6xl">
           * Khảo sát & quy trình chăm sóc da này được tự động hóa bởi thuật toán
           AI GlowScan dựa trên lý thuyết Baumann. Vui lòng tham khảo ý kiến
           chuyên gia da liễu trước khi bắt đầu bất kỳ quy trình chăm sóc da

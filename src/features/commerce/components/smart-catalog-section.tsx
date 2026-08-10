@@ -11,6 +11,7 @@ import { Button } from "@/shared/components/ui/button";
 import { Skeleton } from "@/shared/components/ui/skeleton";
 import { formatVnd } from "@/shared/utils/format";
 import { Product } from "@/types/domain";
+import { showAddToCartError } from "@/features/commerce/lib/cart-errors";
 
 const SMART_CATALOG_SPECS = [
   {
@@ -104,11 +105,7 @@ export function SmartCatalogSection() {
             description: "Xem giỏ hàng để hoàn tất đơn.",
           });
         },
-        onError: () => {
-          toast.error(
-            "Không thể thêm sản phẩm vào giỏ hàng. Vui lòng thử lại.",
-          );
-        },
+        onError: showAddToCartError,
       },
     );
   };
@@ -149,7 +146,13 @@ export function SmartCatalogSection() {
         </div>
 
         {/* Product grid */}
-        <div className="grid grid-cols-1 gap-8 md:grid-cols-3">
+        <div
+          className={`grid grid-cols-1 gap-8 ${
+            !isCatalogLoading && availableCards.length === 2
+              ? "md:grid-cols-2"
+              : "md:grid-cols-3"
+          }`}
+        >
           {isCatalogLoading &&
             Array.from({ length: 3 }).map((_, index) => (
               <div

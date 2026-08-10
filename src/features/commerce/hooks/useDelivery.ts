@@ -3,6 +3,7 @@
 import { useQuery } from "@tanstack/react-query";
 import { queryKeys } from "@/lib/query/keys";
 import { ApiError } from "@/core/api/errors";
+import { useSession } from "@/features/auth/hooks/useSession";
 import { deliveryApi } from "../api/delivery.api";
 import { toDelivery, toDistrict, toProvince, toWard } from "../mapper/delivery";
 import type {
@@ -20,36 +21,43 @@ const FEE_QUOTE_STALE_TIME = 5 * 60 * 1000;
 const DELIVERY_POLL_INTERVAL = 5000;
 
 export function useProvinces() {
+  const session = useSession();
+
   return useQuery({
     queryKey: queryKeys.provinces,
     queryFn: async (): Promise<Province[]> => {
       const response = await deliveryApi.getProvinces();
       return response.data.map(toProvince);
     },
+    enabled: !session.isLoading && Boolean(session.data),
     staleTime: MASTER_DATA_STALE_TIME,
   });
 }
 
 export function useDistricts(provinceId: number | null) {
+  const session = useSession();
+
   return useQuery({
     queryKey: queryKeys.districts(provinceId),
     queryFn: async (): Promise<District[]> => {
       const response = await deliveryApi.getDistricts(provinceId as number);
       return response.data.map(toDistrict);
     },
-    enabled: provinceId !== null,
+    enabled: !session.isLoading && Boolean(session.data) && provinceId !== null,
     staleTime: MASTER_DATA_STALE_TIME,
   });
 }
 
 export function useWards(districtId: number | null) {
+  const session = useSession();
+
   return useQuery({
     queryKey: queryKeys.wards(districtId),
     queryFn: async (): Promise<Ward[]> => {
       const response = await deliveryApi.getWards(districtId as number);
       return response.data.map(toWard);
     },
-    enabled: districtId !== null,
+    enabled: !session.isLoading && Boolean(session.data) && districtId !== null,
     staleTime: MASTER_DATA_STALE_TIME,
   });
 }

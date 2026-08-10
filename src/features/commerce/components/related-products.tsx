@@ -6,6 +6,7 @@ import { useProducts } from "../hooks/useProducts";
 import { useAddToCart } from "../hooks/useCart";
 import { primaryVariant } from "@/features/commerce/mapper/variant";
 import { ProductCard } from "./product-card";
+import { showAddToCartError } from "../lib/cart-errors";
 
 const d = {
   quantity: "Số lượng",
@@ -52,6 +53,7 @@ export function RelatedProducts({
       { productVariantId: variant.id },
       {
         onSuccess: () => toast.success(`${"Đã thêm vào giỏ"}: ${product.name}`),
+        onError: showAddToCartError,
       },
     );
   };

@@ -209,11 +209,11 @@ export function BaumannSkinTypeStep() {
                 key={axis.key}
                 className="space-y-4 rounded-[32px] border border-white/80 bg-white/95 p-5 text-left shadow-lg backdrop-blur-xl transition-all"
               >
-                <div className="flex items-center justify-between border-b border-slate-100 pb-2.5">
-                  <h4 className="text-xs font-extrabold text-[#131336]">
+                <div className="flex items-start gap-3 border-b border-slate-100 pb-2.5">
+                  <h4 className="min-w-0 flex-1 text-xs font-extrabold text-[#131336]">
                     {axis.title}
                   </h4>
-                  <span className="rounded-full bg-[#6b5cf6]/10 px-2.5 py-0.5 text-[11px] font-extrabold text-[#6b5cf6]">
+                  <span className="shrink-0 rounded-full bg-[#6b5cf6]/10 px-2.5 py-0.5 text-[11px] font-extrabold whitespace-nowrap text-[#6b5cf6]">
                     {axis.getEvaluation(currentScore)}
                   </span>
                 </div>

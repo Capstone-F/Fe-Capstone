@@ -37,6 +37,7 @@ import {
 } from "@/shared/components/ui/tabs";
 import { cn } from "@/lib/utils";
 import type { ProductVariant } from "@/types/domain";
+import { showAddToCartError } from "@/features/commerce/lib/cart-errors";
 
 const d = {
   quantity: "Số lượng",
@@ -102,8 +103,7 @@ export function ProductDetailPage({
       { productVariantId: selectedVariant.id, quantity },
       {
         onSuccess: () => toast.success(`${"Đã thêm vào giỏ"}: ${product.name}`),
-        onError: () =>
-          toast.error("Không thể thêm vào giỏ hàng. Vui lòng thử lại."),
+        onError: showAddToCartError,
       },
     );
   };

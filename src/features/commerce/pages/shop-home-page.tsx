@@ -33,6 +33,7 @@ import {
 } from "@/features/commerce/mapper/category-mapper";
 import { Button } from "@/shared/components/ui/button";
 import { Product } from "@/types/domain";
+import { showAddToCartError } from "@/features/commerce/lib/cart-errors";
 
 export function ShopHomePage() {
   const router = useRouter();
@@ -64,7 +65,7 @@ export function ShopHomePage() {
       { productVariantId: variant.id },
       {
         onSuccess: () => toast.success(`Đã thêm vào giỏ: ${product.name}`),
-        onError: () => toast.error("Không thể thêm sản phẩm vào giỏ hàng"),
+        onError: showAddToCartError,
       },
     );
   };

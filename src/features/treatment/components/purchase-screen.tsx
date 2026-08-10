@@ -176,74 +176,69 @@ export function PurchaseScreen() {
         </div>
       </div>
 
-      <div className="my-4 grid max-h-[min(48vh,420px)] flex-1 gap-2 overflow-y-auto py-1 pr-1">
+      <div className="my-4 flex min-h-0 flex-1 gap-3 overflow-x-auto overflow-y-hidden px-1 py-1 pb-3 [scrollbar-width:thin]">
         {dynamicProducts.map((product) => {
           const isSelected = selectedProductIds.includes(product.id);
           return (
-            <div
+            <button
+              type="button"
               key={product.id}
               onClick={() => toggleProduct(product.id)}
-              className={`border-border/50 shadow-inner-sm flex cursor-pointer flex-col gap-2 rounded-2xl border p-3 transition-all duration-200 select-none ${
+              aria-pressed={isSelected}
+              className={`border-border/50 shadow-inner-sm relative flex aspect-square w-52 shrink-0 cursor-pointer flex-col rounded-2xl border p-4 text-left transition-all duration-200 select-none sm:w-60 ${
                 isSelected
-                  ? "border-primary/40 ring-primary/10 bg-white/90 shadow-md ring-1"
-                  : "border-border/30 bg-white/30 opacity-70 hover:opacity-90"
+                  ? "border-primary/40 ring-primary/10 bg-white shadow-md ring-1"
+                  : "border-border/30 bg-white/30 opacity-70 hover:opacity-100"
               }`}
             >
-              <div className="flex items-start justify-between gap-3">
-                <div className="flex items-center gap-3">
-                  <div
-                    className={`flex h-4.5 w-4.5 shrink-0 items-center justify-center rounded-lg border transition-all ${
-                      isSelected
-                        ? "border-primary bg-primary text-white"
-                        : "border-muted-foreground/30 bg-transparent"
-                    }`}
-                  >
-                    {isSelected && <Check className="h-3 w-3 stroke-[3]" />}
-                  </div>
+              <div
+                className={`absolute top-3 right-3 flex h-6 w-6 items-center justify-center rounded-full border transition-all ${
+                  isSelected
+                    ? "border-primary bg-primary text-white"
+                    : "border-muted-foreground/30 bg-white/80 text-transparent"
+                }`}
+              >
+                <Check className="h-3.5 w-3.5 stroke-[3]" />
+              </div>
 
-                  <div
-                    className={`relative flex h-10 w-10 shrink-0 items-center justify-center rounded-xl border transition-all ${
-                      isSelected
-                        ? "bg-primary/5 border-primary/10 text-primary"
-                        : "bg-muted border-border/20 text-muted-foreground"
-                    }`}
-                  >
-                    <ShoppingBag className="h-4.5 w-4.5 opacity-70" />
-                  </div>
-                  <div className="flex max-w-[190px] flex-col gap-0.5">
-                    <span
-                      className={`text-xs leading-tight font-bold transition-all ${
-                        isSelected ? "text-foreground" : "text-muted-foreground"
-                      }`}
-                    >
-                      {product.name}
-                    </span>
-                    <span className="text-muted-foreground text-[9px] font-semibold">
-                      {product.category}
-                    </span>
-                  </div>
-                </div>
-                <div className="shrink-0 text-right">
-                  <span
-                    className={`text-xs font-extrabold transition-all ${
-                      isSelected ? "text-foreground" : "text-muted-foreground"
-                    }`}
-                  >
+              <div
+                className={`flex h-11 w-11 items-center justify-center rounded-xl border transition-all ${
+                  isSelected
+                    ? "border-primary/10 bg-primary/5 text-primary"
+                    : "border-border/20 bg-muted text-muted-foreground"
+                }`}
+              >
+                <ShoppingBag className="h-5 w-5 opacity-80" />
+              </div>
+
+              <div className="mt-3 min-w-0 space-y-1">
+                <p
+                  className={`line-clamp-2 text-sm leading-snug font-bold transition-all ${
+                    isSelected ? "text-foreground" : "text-muted-foreground"
+                  }`}
+                >
+                  {product.name}
+                </p>
+                <p className="text-muted-foreground truncate text-[10px] font-medium">
+                  {product.category}
+                </p>
+              </div>
+
+              <div className="mt-auto space-y-2 pt-3">
+                <p className="text-muted-foreground line-clamp-2 text-[10px] leading-relaxed">
+                  <span className="font-semibold">Phù hợp vì: </span>
+                  {product.reason}
+                </p>
+                <div className="border-border/50 flex items-center justify-between border-t pt-2.5">
+                  <span className="text-muted-foreground text-[10px] font-medium">
+                    {isSelected ? "Đã chọn" : "Chọn sản phẩm"}
+                  </span>
+                  <span className="text-foreground text-sm font-extrabold">
                     {formatVnd(product.price)}
                   </span>
                 </div>
               </div>
-
-              <div className="text-muted-foreground pl-7 text-[9px] leading-relaxed">
-                <strong>Phù hợp vì:</strong> {product.reason}
-              </div>
-
-              {product.conflict && product.conflictWarning && (
-                <div className="mt-1 ml-7 flex items-start gap-1.5 rounded-xl border border-amber-200 bg-amber-50 p-2 text-[9px] leading-relaxed text-amber-800">
-                  <span>{product.conflictWarning}</span>
-                </div>
-              )}
-            </div>
+            </button>
           );
         })}
       </div>

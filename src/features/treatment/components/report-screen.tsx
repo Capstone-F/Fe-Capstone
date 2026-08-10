@@ -26,6 +26,12 @@ import { parseBaumannCode } from "../lib/baumann";
 
 type TabType = "PROFILE" | "PRODUCTS";
 
+const PROFILE_LABELS_VI: Record<string, string> = {
+  FEMALE: "Nữ",
+  MALE: "Nam",
+  NOT_PREFER_TO_SAY: "Không muốn tiết lộ",
+};
+
 export function ReportScreen() {
   const router = useRouter();
   const sessionQuery = useSession();
@@ -288,6 +294,9 @@ export function ReportScreen() {
                         {lbl.vietnameseNormalized ||
                           (lbl.code
                             ? localizedLabelByCode.get(lbl.code)
+                            : undefined) ||
+                          (lbl.code
+                            ? PROFILE_LABELS_VI[lbl.code]
                             : undefined) ||
                           lbl.name}
                       </span>
