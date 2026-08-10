@@ -65,10 +65,18 @@ export function useWards(districtId: number | null) {
 /**
  * Preview of the GHN fee for the current cart. A display estimate only: POST /orders
  * re-quotes server-side, so a failure here must not block checkout.
+ *
+ * The whole address goes in the request body because that is what the endpoint accepts,
+ * but the quote only varies by district + ward (the backend prices from those plus the
+ * server-side cart weight). Keying on the full address would refetch an identical quote
+ * on every keystroke in the recipient and street inputs.
  */
 export function useShippingFeeQuote(address: ShippingAddressInput | null) {
   return useQuery({
-    queryKey: queryKeys.shippingFeeQuote(address),
+    queryKey: queryKeys.shippingFeeQuote(
+      address?.districtId ?? null,
+      address?.wardCode ?? null,
+    ),
     queryFn: async (): Promise<number> => {
       const response = await deliveryApi.quoteFee(
         address as ShippingAddressInput,
