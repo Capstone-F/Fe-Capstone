@@ -36,7 +36,7 @@ export function OrderSummary({
     remove: "Xóa",
     subtotal: "Tạm tính",
     shipping: "Phí vận chuyển",
-    freeShip: "Miễn phí",
+    shippingToBeQuoted: "Tính theo địa chỉ nhận",
     total: "Tổng cộng",
     checkout: "Tiến hành thanh toán",
     itemsCount: "sản phẩm",
@@ -58,7 +58,7 @@ export function OrderSummary({
             shippingPlaceholder !== undefined
               ? shippingPlaceholder
               : summary.shippingFee === 0
-                ? cc.freeShip
+                ? cc.shippingToBeQuoted
                 : formatVnd(summary.shippingFee)
           }
         />

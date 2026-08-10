@@ -35,6 +35,7 @@ import {
   SelectValue,
 } from "@/shared/components/ui/select";
 import { FormController } from "@/shared/components/form/form-controller";
+import { DatePicker } from "@/shared/components/form/date-picker";
 import {
   Card,
   CardContent,
@@ -125,9 +126,13 @@ function ProfileForm({ profile, updateProfileMutation }: ProfileFormProps) {
             <Input
               {...field}
               id={field.name}
-              inputMode="tel"
+              inputMode="numeric"
+              pattern="[0-9]*"
               className="rounded-xl border-slate-200 text-xs"
               placeholder="09xxxxxxxx"
+              onChange={(event) =>
+                field.onChange(event.target.value.replace(/\D/g, ""))
+              }
               aria-invalid={Boolean(form.formState.errors.phone)}
             />
           )}
@@ -136,7 +141,13 @@ function ProfileForm({ profile, updateProfileMutation }: ProfileFormProps) {
           {(field) => (
             <Select value={field.value} onValueChange={field.onChange}>
               <SelectTrigger id={field.name} className="w-full rounded-xl">
-                <SelectValue />
+                <SelectValue>
+                  {field.value === "FEMALE"
+                    ? "Nữ"
+                    : field.value === "MALE"
+                      ? "Nam"
+                      : "Khác"}
+                </SelectValue>
               </SelectTrigger>
               <SelectContent>
                 <SelectItem value="MALE">Nam</SelectItem>
@@ -155,13 +166,13 @@ function ProfileForm({ profile, updateProfileMutation }: ProfileFormProps) {
         className="max-w-sm"
       >
         {(field) => (
-          <Input
-            {...field}
+          <DatePicker
             id={field.name}
-            type="date"
-            max={new Date().toISOString().slice(0, 10)}
-            className="w-full rounded-xl border-slate-200 text-xs"
-            aria-invalid={Boolean(form.formState.errors.dateOfBirth)}
+            value={field.value}
+            onChange={field.onChange}
+            invalid={Boolean(form.formState.errors.dateOfBirth)}
+            placeholder="Chọn ngày sinh"
+            className="w-full text-xs"
           />
         )}
       </FormController>
