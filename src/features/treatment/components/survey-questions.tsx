@@ -1,18 +1,11 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import {
-  Loader2,
-  ShieldCheck,
-  Check,
-  ArrowLeft,
-  ArrowRight,
-} from "lucide-react";
+import { Loader2, Check, ArrowLeft, ArrowRight } from "lucide-react";
 import { Button } from "@/shared/components/ui/button";
 import { cn } from "@/lib/utils";
 
 import { useTreatment } from "@/features/treatment/components/treatment-context";
-import { tokenStorage } from "@/features/auth/utils/token-storage";
 import { SurveyFaceScan } from "./survey-face-scan";
 
 export function SurveyQuestions() {
