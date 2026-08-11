@@ -12,6 +12,21 @@ export interface Expert {
   avatar?: string;
   bio?: string;
   distance?: number; // in km
+  clinicLocation?: {
+    id: string;
+    name: string;
+    address: string;
+    latitude: number | null;
+    longitude: number | null;
+  } | null;
+}
+
+export interface BackendExpertClinic {
+  id: string;
+  name: string;
+  address: string;
+  latitude: number | null;
+  longitude: number | null;
 }
 
 export interface BackendExpert {
@@ -20,6 +35,7 @@ export interface BackendExpert {
   email: string | null;
   clinicId: string | null;
   clinicName: string | null;
+  clinic: BackendExpertClinic | null;
   specialization: string;
   licenseNumber: string | null;
   bio: string | null;

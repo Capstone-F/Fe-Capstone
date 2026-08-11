@@ -10,7 +10,6 @@ import {
   RefreshCw,
   UserCheck,
   Map,
-  User,
   LocateFixed,
 } from "lucide-react";
 import {
@@ -42,6 +41,7 @@ import {
 import { Label } from "@/shared/components/ui/label";
 import { EmptyState } from "@/shared/components/ui/empty-state";
 import { ExpertCardSkeleton } from "@/features/experts/components/expert-card-skeleton";
+import { ExpertClinicMap } from "@/features/experts/components/expert-clinic-map";
 import { formatVnd } from "@/shared/utils/format";
 import useDebounce from "@/shared/hooks/useDebounce";
 import {
@@ -50,13 +50,6 @@ import {
   hasExpertDiscoverySelection,
   type ExpertDiscoverySelection,
 } from "@/features/experts/lib/expert-discovery";
-
-const mapCoordinates: Record<string, { top: string; left: string }> = {
-  exp_1: { top: "35%", left: "30%" },
-  exp_2: { top: "65%", left: "45%" },
-  exp_3: { top: "25%", left: "65%" },
-  exp_4: { top: "50%", left: "75%" },
-};
 
 const EMPTY_DISCOVERY_SELECTION: ExpertDiscoverySelection = {
   provinceCode: null,
@@ -207,8 +200,6 @@ export function ExpertsPage() {
     emptyHint: "Thử nới lỏng các bộ lọc tìm kiếm của bạn.",
     emptyAction: "Xóa bộ lọc",
   };
-
-  const selectedExpert = experts?.find((e) => e.id === selectedExpertId);
 
   const handleReset = () => {
     setSearch("");
@@ -555,7 +546,8 @@ export function ExpertsPage() {
                       onMouseEnter={() => setHoveredExpertId(exp.id)}
                       onMouseLeave={() => setHoveredExpertId(null)}
                       className={`flex flex-col justify-between border-slate-200 shadow-xs transition-colors duration-200 hover:border-[#2C3E35]/40 ${
-                        hoveredExpertId === exp.id
+                        hoveredExpertId === exp.id ||
+                        selectedExpertId === exp.id
                           ? "border-[#2C3E35] ring-1 ring-[#2C3E35]/10"
                           : ""
                       }`}
@@ -625,7 +617,7 @@ export function ExpertsPage() {
                               setSelectedExpertId(exp.id);
                               setShowMobileMap(true);
                             }}
-                            className="rounded-lg text-xs font-semibold lg:hidden"
+                            className="rounded-lg text-xs font-semibold"
                           >
                             Định vị
                           </Button>
@@ -652,163 +644,24 @@ export function ExpertsPage() {
               )}
             </div>
 
-            {/* Right Column: Sticky Mock Map Panel */}
+            {/* Right Column: clinic locations */}
             <div
               className={`sticky top-6 w-full lg:col-span-5 lg:block ${showMobileMap ? "block" : "hidden"}`}
             >
-              <div className="relative h-[500px] w-full overflow-hidden rounded-2xl border border-slate-200 bg-[#FAF8F5] shadow-xs">
-                {/* SVG styled map network */}
-                <svg
-                  className="absolute inset-0 h-full w-full opacity-60"
-                  xmlns="http://www.w3.org/2000/svg"
-                >
-                  <defs>
-                    <pattern
-                      id="map-grid"
-                      width="40"
-                      height="40"
-                      patternUnits="userSpaceOnUse"
-                    >
-                      <path
-                        d="M 40 0 L 0 0 0 40"
-                        fill="none"
-                        stroke="#e2e8f0"
-                        strokeWidth="0.5"
-                      />
-                    </pattern>
-                  </defs>
-                  <rect width="100%" height="100%" fill="url(#map-grid)" />
-
-                  {/* River */}
-                  <path
-                    d="M-50,150 Q120,80 250,220 T550,180"
-                    fill="none"
-                    stroke="#D0E3FA"
-                    strokeWidth="24"
-                    strokeLinecap="round"
-                    className="opacity-70"
-                  />
-                  <path
-                    d="M-50,150 Q120,80 250,220 T550,180"
-                    fill="none"
-                    stroke="#E3F0FF"
-                    strokeWidth="16"
-                    strokeLinecap="round"
-                    className="opacity-80"
-                  />
-
-                  {/* Major Roads */}
-                  <path d="M0,80 L600,80" stroke="#f1f5f9" strokeWidth="6" />
-                  <path d="M0,80 L600,80" stroke="#cbd5e1" strokeWidth="1" />
-
-                  <path d="M180,0 L180,500" stroke="#f1f5f9" strokeWidth="8" />
-                  <path d="M180,0 L180,500" stroke="#cbd5e1" strokeWidth="1" />
-
-                  <path
-                    d="M350,-50 L200,550"
-                    stroke="#f1f5f9"
-                    strokeWidth="6"
-                  />
-                  <path
-                    d="M350,-50 L200,550"
-                    stroke="#cbd5e1"
-                    strokeWidth="1"
-                  />
-                </svg>
-
-                {/* Parks */}
-                <div className="pointer-events-none absolute top-[10%] left-[5%] flex h-[50px] w-[80px] items-center justify-center rounded-lg border border-emerald-100/50 bg-emerald-50/70">
-                  <span className="text-[9px] font-bold tracking-wider text-emerald-800/40 uppercase">
-                    Công viên
-                  </span>
-                </div>
-
-                <div className="pointer-events-none absolute right-[10%] bottom-[15%] flex h-[60px] w-[100px] items-center justify-center rounded-lg border border-emerald-100/50 bg-emerald-50/70">
-                  <span className="text-[9px] font-bold tracking-wider text-emerald-800/40 uppercase">
-                    Hồ sinh thái
-                  </span>
-                </div>
-
-                {/* Pin markers */}
-                {experts?.map((exp, idx) => {
-                  const coords = mapCoordinates[exp.id] || {
-                    top: "50%",
-                    left: "50%",
-                  };
-                  const isHovered = hoveredExpertId === exp.id;
-                  const isSelected = selectedExpertId === exp.id;
-                  return (
-                    <button
-                      key={exp.id}
-                      type="button"
-                      onClick={() => setSelectedExpertId(exp.id)}
-                      onMouseEnter={() => setHoveredExpertId(exp.id)}
-                      onMouseLeave={() => setHoveredExpertId(null)}
-                      style={{ top: coords.top, left: coords.left }}
-                      className={`absolute z-10 flex -translate-x-1/2 -translate-y-1/2 items-center justify-center transition-all duration-300 ${
-                        isHovered || isSelected ? "scale-125" : "scale-100"
-                      }`}
-                    >
-                      <div className="relative">
-                        <MapPin
-                          className={`h-8 w-8 transition-colors ${
-                            isHovered || isSelected
-                              ? "fill-[#E0F2E9] text-[#2C3E35]"
-                              : "fill-white text-rose-500"
-                          }`}
-                        />
-                        <span
-                          className={`absolute top-[5px] left-[11px] text-[9px] font-extrabold ${
-                            isHovered || isSelected
-                              ? "text-[#2C3E35]"
-                              : "text-rose-500"
-                          }`}
-                        >
-                          {idx + 1}
-                        </span>
-                      </div>
-                    </button>
-                  );
-                })}
-
-                {/* Info Popup Overlay on Map */}
-                {selectedExpert && (
-                  <div className="animate-in fade-in slide-in-from-bottom-2 absolute right-4 bottom-4 left-4 z-20 flex gap-3 rounded-xl border border-slate-200 bg-white p-3.5 shadow-md duration-300">
-                    <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-slate-100 text-slate-400">
-                      <User className="h-6 w-6" />
-                    </div>
-                    <div className="min-w-0 flex-1">
-                      <div className="flex items-center justify-between">
-                        <span className="rounded bg-slate-100 px-1.5 py-0.5 text-[8px] font-bold tracking-wider text-slate-600 uppercase">
-                          {selectedExpert.title}
-                        </span>
-                        <button
-                          onClick={() => setSelectedExpertId(null)}
-                          className="p-1 text-[10px] leading-none font-bold text-slate-400 hover:text-slate-600"
-                        >
-                          ✕
-                        </button>
-                      </div>
-                      <h5 className="mt-0.5 truncate text-xs font-bold text-slate-900">
-                        {selectedExpert.name}
-                      </h5>
-                      <p className="mt-0.5 truncate text-[10px] text-slate-500">
-                        {selectedExpert.clinic}
-                      </p>
-                      <div className="mt-2 flex items-center justify-between border-t border-slate-50 pt-2">
-                        <span className="text-[10px] font-extrabold text-slate-800">
-                          {formatVnd(selectedExpert.fee)}
-                        </span>
-                        <Link
-                          href={`/experts/${selectedExpert.id}`}
-                          className="flex items-center gap-0.5 text-[10px] font-bold text-[#2C3E35] hover:underline"
-                        >
-                          Chi tiết ➔
-                        </Link>
-                      </div>
-                    </div>
-                  </div>
-                )}
+              <div className="h-[500px] w-full overflow-hidden rounded-2xl border border-slate-200 bg-[#FAF8F5] shadow-xs">
+                <ExpertClinicMap
+                  experts={experts ?? []}
+                  userLocation={
+                    geolocation.status === "granted" &&
+                    geolocation.lat !== null &&
+                    geolocation.lng !== null
+                      ? { lat: geolocation.lat, lng: geolocation.lng }
+                      : null
+                  }
+                  selectedExpertId={selectedExpertId}
+                  hoveredExpertId={hoveredExpertId}
+                  onSelectExpert={setSelectedExpertId}
+                />
               </div>
             </div>
           </div>
