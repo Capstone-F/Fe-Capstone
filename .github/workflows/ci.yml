@@ -4,6 +4,8 @@ on:
   push:
     branches: [main]
   pull_request:
+    branches: [main]
+  workflow_dispatch:
 
 permissions:
   contents: read
@@ -14,16 +16,15 @@ concurrency:
 
 jobs:
   verify:
-    name: Verify (Node ${{ matrix.node }})
+    name: Verify
     runs-on: ubuntu-latest
-    strategy:
-      fail-fast: false
-      matrix:
-        node: [20, 22]
+    timeout-minutes: 20
 
     steps:
       - name: Checkout
         uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
 
       - name: Setup pnpm
         uses: pnpm/action-setup@v4
@@ -34,12 +35,45 @@ jobs:
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: ${{ matrix.node }}
+          node-version: 22
           cache: pnpm
           cache-dependency-path: pnpm-lock.yaml
 
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
+
+      - name: Resolve comparison base
+        id: comparison
+        shell: bash
+        run: |
+          if [[ "${{ github.event_name }}" == "pull_request" ]]; then
+            base_sha="${{ github.event.pull_request.base.sha }}"
+          elif [[ "${{ github.event_name }}" == "push" && "${{ github.event.before }}" != "0000000000000000000000000000000000000000" ]]; then
+            base_sha="${{ github.event.before }}"
+          else
+            git fetch origin main
+            base_sha="$(git merge-base origin/main HEAD)"
+          fi
+
+          echo "base_sha=$base_sha" >> "$GITHUB_OUTPUT"
+
+      - name: Check formatting of changed files
+        shell: bash
+        env:
+          BASE_SHA: ${{ steps.comparison.outputs.base_sha }}
+        run: |
+          mapfile -d '' files < <(
+            git diff --name-only --diff-filter=ACMRT -z "$BASE_SHA" "$GITHUB_SHA" -- \
+              '*.js' '*.jsx' '*.ts' '*.tsx' '*.mjs' '*.cjs' \
+              '*.json' '*.md' '*.css' '*.yml' '*.yaml'
+          )
+
+          if (( ${#files[@]} == 0 )); then
+            echo "No changed files require a formatting check."
+            exit 0
+          fi
+
+          pnpm exec prettier --check "${files[@]}"
 
       - name: Lint
         run: pnpm lint
@@ -49,3 +83,5 @@ jobs:
 
       - name: Build
         run: pnpm build
+        env:
+          BE_API_URL: http://127.0.0.1:3001

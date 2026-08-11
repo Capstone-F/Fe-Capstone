@@ -32,7 +32,6 @@ import {
 } from "../schemas/auth-form.schema";
 import { guestSurveyStorage } from "@/features/survey/lib/guest-survey-storage";
 import { treatmentApi } from "@/features/treatment/api/treatment.api";
-import { mapRecommendationProducts } from "@/features/treatment/lib/survey-flow";
 
 type LoginPanelProps = {
   redirectTo: string;
