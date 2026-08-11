@@ -42,7 +42,6 @@ import {
 import { Label } from "@/shared/components/ui/label";
 import { EmptyState } from "@/shared/components/ui/empty-state";
 import { ExpertCardSkeleton } from "@/features/experts/components/expert-card-skeleton";
-import { CurrencyInput } from "@/shared/components/form/currency-input";
 import { formatVnd } from "@/shared/utils/format";
 import useDebounce from "@/shared/hooks/useDebounce";
 import {
@@ -65,6 +64,14 @@ const EMPTY_DISCOVERY_SELECTION: ExpertDiscoverySelection = {
   wardCode: null,
   wardName: null,
 };
+
+const MAX_FEE_OPTIONS = [
+  { value: "300000", label: "Đến 300.000 đ" },
+  { value: "500000", label: "Đến 500.000 đ" },
+  { value: "750000", label: "Đến 750.000 đ" },
+  { value: "1000000", label: "Đến 1.000.000 đ" },
+  { value: "all", label: "Không giới hạn" },
+];
 
 type GeolocationState = {
   status: "idle" | "loading" | "granted" | "denied" | "unsupported";
@@ -172,8 +179,7 @@ export function ExpertsPage() {
     specialty: specialty !== "Tất cả" ? specialty : undefined,
     maxDistance: geolocation.status === "granted" ? maxDistance : undefined,
     minRating: minRating > 0 ? minRating : undefined,
-    maxFee:
-      maxFee !== "" && Number(maxFee) < 2000000 ? Number(maxFee) : undefined,
+    maxFee: maxFee !== "all" ? Number(maxFee) : undefined,
     lat: geolocation.lat ?? undefined,
     lng: geolocation.lng ?? undefined,
   };
@@ -209,7 +215,7 @@ export function ExpertsPage() {
     setSpecialty("Tất cả");
     setMaxDistance(15);
     setMinRating(0);
-    setMaxFee("2000000");
+    setMaxFee("all");
     setSelectedExpertId(null);
   };
 
@@ -329,8 +335,32 @@ export function ExpertsPage() {
                   placeholder={t.searchPlaceholder}
                   value={search}
                   onChange={(e) => setSearch(e.target.value)}
+                  className="w-full pl-9"
                 />
               </div>
+            </div>
+
+            {/* Specialty Dropdown */}
+            <div className="flex flex-col gap-1.5">
+              <Label className="text-xs font-semibold text-slate-700">
+                {t.specialtyLabel}
+              </Label>
+              <Select
+                value={specialty}
+                onValueChange={(val) => setSpecialty(val || "Tất cả")}
+              >
+                <SelectTrigger className="w-full text-sm">
+                  <SelectValue placeholder="Chọn chuyên khoa" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="Tất cả">{t.allSpecialties}</SelectItem>
+                  {specialties?.map((s) => (
+                    <SelectItem key={s} value={s}>
+                      {s}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
             </div>
 
             {/* Province Filter */}
@@ -348,8 +378,10 @@ export function ExpertsPage() {
                   handleProvinceChange(val === "all" ? null : val)
                 }
               >
-                <SelectTrigger className="text-sm">
-                  <SelectValue placeholder="Tất cả tỉnh thành" />
+                <SelectTrigger className="w-full text-sm">
+                  <SelectValue>
+                    {discoverySelection.provinceName ?? "Tất cả tỉnh thành"}
+                  </SelectValue>
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="all">Tất cả tỉnh thành</SelectItem>
@@ -381,8 +413,10 @@ export function ExpertsPage() {
                     handleWardChange(val === "all" ? null : val)
                   }
                 >
-                  <SelectTrigger className="text-sm">
-                    <SelectValue placeholder="Tất cả phường xã" />
+                  <SelectTrigger className="w-full text-sm">
+                    <SelectValue>
+                      {discoverySelection.wardName ?? "Tất cả phường xã"}
+                    </SelectValue>
                   </SelectTrigger>
                   <SelectContent>
                     <SelectItem value="all">Tất cả phường xã</SelectItem>
@@ -396,44 +430,29 @@ export function ExpertsPage() {
               </div>
             )}
 
-            {/* Specialty Dropdown */}
+            {/* Max Fee Filter */}
             <div className="flex flex-col gap-1.5">
               <Label className="text-xs font-semibold text-slate-700">
-                {t.specialtyLabel}
+                {t.maxFeeLabel}
               </Label>
               <Select
-                value={specialty}
-                onValueChange={(val) => setSpecialty(val || "Tất cả")}
+                value={maxFee}
+                onValueChange={(value) => setMaxFee(value ?? "all")}
               >
-                <SelectTrigger className="text-sm">
-                  <SelectValue placeholder="Chọn chuyên khoa" />
+                <SelectTrigger className="w-full text-sm">
+                  <SelectValue>
+                    {MAX_FEE_OPTIONS.find((option) => option.value === maxFee)
+                      ?.label ?? "Không giới hạn"}
+                  </SelectValue>
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="Tất cả">{t.allSpecialties}</SelectItem>
-                  {specialties?.map((s) => (
-                    <SelectItem key={s} value={s}>
-                      {s}
+                  {MAX_FEE_OPTIONS.map((option) => (
+                    <SelectItem key={option.value} value={option.value}>
+                      {option.label}
                     </SelectItem>
                   ))}
                 </SelectContent>
               </Select>
-            </div>
-
-            {/* Max Fee Input */}
-            <div className="flex flex-col gap-1.5">
-              <Label
-                htmlFor="maxFee"
-                className="text-xs font-semibold text-slate-700"
-              >
-                {t.maxFeeLabel}
-              </Label>
-              <CurrencyInput
-                id="maxFee"
-                value={maxFee}
-                onValueChange={setMaxFee}
-                maxLength={11}
-                className="text-sm"
-              />
             </div>
 
             {/* Max Distance Slider */}
@@ -452,25 +471,27 @@ export function ExpertsPage() {
               />
             </div>
 
-            {/* Min Rating Stars Filter */}
+            {/* Min Rating Filter */}
             <div className="flex flex-col gap-1.5">
               <Label className="text-xs font-semibold text-slate-700">
                 {t.minRatingLabel}
               </Label>
-              <div className="flex gap-1">
-                {[0, 3, 4, 5].map((star) => (
-                  <Button
-                    key={star}
-                    type="button"
-                    variant={minRating === star ? "default" : "outline"}
-                    size="sm"
-                    onClick={() => setMinRating(star)}
-                    className="h-8 flex-1 px-1 text-xs"
-                  >
-                    {star === 0 ? t.all : `${star}★`}
-                  </Button>
-                ))}
-              </div>
+              <Select
+                value={String(minRating)}
+                onValueChange={(value) => setMinRating(Number(value))}
+              >
+                <SelectTrigger className="w-full text-sm">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="0">Tất cả xếp hạng</SelectItem>
+                  {[1, 2, 3, 4, 5].map((star) => (
+                    <SelectItem key={star} value={String(star)}>
+                      Từ {star} sao
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
             </div>
           </CardContent>
         </Card>

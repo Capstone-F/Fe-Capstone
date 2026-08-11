@@ -62,14 +62,19 @@ import {
 } from "@/features/admin/schemas/admin-forms.schema";
 
 const EXPERT_SPECIALTIES = [
-  { value: "DERMATOLOGY", label: "Dermatology (Da Liễu Chung)" },
-  { value: "ACNE_TREATMENT", label: "Acne Treatment (Điều Trị Mụn)" },
-  { value: "LASER_THERAPY", label: "Laser Therapy (Trị Liệu Laser)" },
-  { value: "COSMETIC_DERMATOLOGY", label: "Cosmetic Dermatology (Thẩm Mỹ Da)" },
-  { value: "ANTI_AGING", label: "Anti-Aging (Chống Lão Hóa)" },
-  { value: "PIGMENTATION", label: "Pigmentation (Trị Nám / Tàn Nhanh)" },
+  { value: "DERMATOLOGY", label: "Da liễu tổng quát" },
+  { value: "ACNE_TREATMENT", label: "Điều trị mụn" },
+  { value: "LASER_THERAPY", label: "Trị liệu laser" },
+  { value: "COSMETIC_DERMATOLOGY", label: "Da liễu thẩm mỹ" },
+  { value: "ANTI_AGING", label: "Chống lão hóa" },
+  { value: "PIGMENTATION", label: "Điều trị nám và tàn nhang" },
 ];
 const DEFAULT_EXPERT_PASSWORD = "password123";
+
+type SessionExpertCredential = {
+  email: string;
+  password: string;
+};
 
 function defaultDateStr() {
   const tomorrow = new Date();
@@ -84,6 +89,9 @@ export function ExpertManagementView() {
 
   const [searchTerm, setSearchTerm] = useState("");
   const [copiedId, setCopiedId] = useState<string | null>(null);
+  const [sessionCredentials, setSessionCredentials] = useState<
+    Record<string, SessionExpertCredential>
+  >({});
 
   const createExpertForm = useForm<CreateExpertValues>({
     resolver: zodResolver(createExpertSchema),
@@ -176,6 +184,13 @@ export function ExpertManagementView() {
       },
       {
         onSuccess: (newUser) => {
+          setSessionCredentials((current) => ({
+            ...current,
+            [newUser.id]: {
+              email: fullEmail,
+              password: values.temporaryPassword,
+            },
+          }));
           toast.success(`Tạo tài khoản chuyên gia ${newUser.name} thành công!`);
           setIsCreateExpertOpen(false);
         },
@@ -226,12 +241,24 @@ export function ExpertManagementView() {
     );
   };
 
-  const handleCopyCredentials = (email: string, id: string) => {
-    const text = `Tài khoản chuyên gia:\nEmail: ${email}\nMật khẩu mặc định: ${DEFAULT_EXPERT_PASSWORD}`;
-    navigator.clipboard.writeText(text);
-    setCopiedId(id);
-    toast.success("Đã sao chép thông tin đăng nhập!");
-    setTimeout(() => setCopiedId(null), 2000);
+  const handleCopyAccount = async (email: string, id: string) => {
+    const credential = sessionCredentials[id];
+    const text = credential
+      ? `Email: ${credential.email}\nMật khẩu: ${credential.password}`
+      : email;
+
+    try {
+      await navigator.clipboard.writeText(text);
+      setCopiedId(id);
+      toast.success(
+        credential
+          ? "Đã sao chép email và mật khẩu vừa tạo."
+          : "Đã sao chép email. Mật khẩu của tài khoản cũ không thể truy xuất.",
+      );
+      window.setTimeout(() => setCopiedId(null), 2000);
+    } catch {
+      toast.error("Không thể sao chép. Vui lòng thử lại.");
+    }
   };
 
   // Filtered list
@@ -415,7 +442,7 @@ export function ExpertManagementView() {
                           size="sm"
                           variant="ghost"
                           onClick={() =>
-                            u.email && handleCopyCredentials(u.email, u.id)
+                            u.email && void handleCopyAccount(u.email, u.id)
                           }
                           disabled={!u.email}
                           className="rounded-lg text-xs text-slate-600 hover:bg-emerald-50 hover:text-emerald-700"
@@ -428,7 +455,9 @@ export function ExpertManagementView() {
                           ) : (
                             <>
                               <Copy className="mr-1 h-3.5 w-3.5" />
-                              Copy Acc
+                              {sessionCredentials[u.id]
+                                ? "Copy Acc"
+                                : "Copy Email"}
                             </>
                           )}
                         </Button>
@@ -568,7 +597,11 @@ export function ExpertManagementView() {
               {(field) => (
                 <Select value={field.value} onValueChange={field.onChange}>
                   <SelectTrigger id={field.name} className="w-full">
-                    <SelectValue />
+                    <SelectValue>
+                      {EXPERT_SPECIALTIES.find(
+                        (specialty) => specialty.value === field.value,
+                      )?.label ?? "Chọn chuyên khoa"}
+                    </SelectValue>
                   </SelectTrigger>
                   <SelectContent>
                     {EXPERT_SPECIALTIES.map((spec) => (
@@ -596,7 +629,10 @@ export function ExpertManagementView() {
                   {(field) => (
                     <Select value={field.value} onValueChange={field.onChange}>
                       <SelectTrigger id={field.name} className="w-full">
-                        <SelectValue placeholder="Chọn phòng khám" />
+                        <SelectValue>
+                          {clinics.find((clinic) => clinic.id === field.value)
+                            ?.name ?? "Chọn phòng khám"}
+                        </SelectValue>
                       </SelectTrigger>
                       <SelectContent>
                         {clinics.map((clinic) => (
@@ -695,7 +731,10 @@ export function ExpertManagementView() {
                       quickBookForm.formState.errors.expertId,
                     )}
                   >
-                    <SelectValue placeholder="Chọn chuyên gia" />
+                    <SelectValue>
+                      {doctorOptions.find((doc) => doc.id === field.value)
+                        ?.name ?? "Chọn chuyên gia"}
+                    </SelectValue>
                   </SelectTrigger>
                   <SelectContent>
                     {doctorOptions.map((doc) => (

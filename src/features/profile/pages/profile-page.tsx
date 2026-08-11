@@ -20,6 +20,7 @@ import {
   useAllergyOptions,
 } from "@/features/profile/hooks/useProfile";
 import { useRoutines } from "@/features/profile/hooks/useRoutines";
+import { getAllergyLabel } from "@/features/profile/lib/allergy-label";
 import { Button } from "@/shared/components/ui/button";
 import {
   Card,
@@ -213,7 +214,7 @@ export function ProfilePage() {
                             htmlFor={`allergy_${option.code}`}
                             className="cursor-pointer text-xs font-medium text-slate-700"
                           >
-                            {option.name}
+                            {getAllergyLabel(option)}
                           </Label>
                         </div>
                       );

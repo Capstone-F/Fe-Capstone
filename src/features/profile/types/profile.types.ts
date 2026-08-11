@@ -29,6 +29,7 @@ export interface AllergyLabelResponse {
   id: string;
   code: string;
   name: string;
+  vietnameseNormalized?: string | null;
 }
 
 export interface CustomerDetailsResponse {

@@ -32,6 +32,7 @@ import {
 } from "../schemas/auth-form.schema";
 import { guestSurveyStorage } from "@/features/survey/lib/guest-survey-storage";
 import { treatmentApi } from "@/features/treatment/api/treatment.api";
+import { getAuthErrorMessage } from "../lib/auth-error-message";
 
 type LoginPanelProps = {
   redirectTo: string;
@@ -170,10 +171,7 @@ export function LoginPanel({ redirectTo = "/dashboard" }: LoginPanelProps) {
       router.refresh();
     } catch (error: unknown) {
       console.error(error);
-      const e = error as Error;
-      const msg =
-        e?.message || "Đăng nhập thất bại. Vui lòng kiểm tra lại thông tin.";
-      toast.error(msg);
+      toast.error(getAuthErrorMessage(error, mode));
     }
   };
 

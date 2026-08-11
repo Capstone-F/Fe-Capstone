@@ -18,6 +18,7 @@ import {
   SelectValue,
 } from "@/shared/components/ui/select";
 import { treatmentApi } from "@/features/treatment/api/treatment.api";
+import { getAllergyLabel } from "@/features/profile/lib/allergy-label";
 import type { AllergyLabelResponse } from "@/features/profile/types/profile.types";
 
 import {
@@ -198,7 +199,7 @@ export function GuestSurveyProfileForm({
                         );
                       }}
                     />
-                    <span>{option.name}</span>
+                    <span>{getAllergyLabel(option)}</span>
                   </label>
                 );
               })
