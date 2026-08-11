@@ -38,11 +38,10 @@ type LoginPanelProps = {
 };
 
 function getRoleBasedRedirectPath(roles: string[], fallback?: string): string {
-  if (
-    roles.includes("app_admin") ||
-    roles.includes("staff") ||
-    roles.includes("clinic_manager")
-  ) {
+  if (roles.includes("staff")) {
+    return "/staff";
+  }
+  if (roles.includes("app_admin") || roles.includes("clinic_manager")) {
     return "/dashboard/experts";
   }
   if (roles.includes("expert")) {
@@ -83,16 +82,16 @@ export function LoginPanel({ redirectTo = "/dashboard" }: LoginPanelProps) {
     const guestSurvey = guestSurveyStorage.get();
     try {
       let tokenData;
-      if (appConfig.useMockApi) {
+      if (appConfig.useMockApi || appConfig.devBypassAuth) {
         if (mode === "login") {
           tokenData = await authMock.loginDirect(values.email);
-          toast.success("Đăng nhập thành công (Mock)!");
+          toast.success("Đăng nhập thành công!");
         } else {
           tokenData = await authMock.registerDirect(
             values.email,
             values.name.trim(),
           );
-          toast.success("Đăng ký thành công (Mock)!");
+          toast.success("Đăng ký thành công!");
         }
       } else {
         if (mode === "login") {
