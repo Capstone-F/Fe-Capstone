@@ -85,7 +85,6 @@ export function useShippingFeeQuote(address: ShippingAddressInput | null) {
     },
     enabled: address !== null,
     staleTime: FEE_QUOTE_STALE_TIME,
-    placeholderData: (previousData) => previousData,
     retry: false,
   });
 }
