@@ -46,6 +46,7 @@ export const API_ENDPOINTS = {
   },
   SUPPORT: {
     SESSIONS: "/support/sessions",
+    LIVE_SESSION: "/support/sessions/me",
     SESSION_DETAIL: (id: string) => `/support/sessions/${id}`,
     CLAIM_SESSION: (id: string) => `/support/sessions/${id}/claim`,
     SESSION_MESSAGES: (id: string) => `/support/sessions/${id}/messages`,

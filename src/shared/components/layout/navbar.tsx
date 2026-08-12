@@ -27,6 +27,7 @@ import {
   DropdownMenuTrigger,
 } from "@/shared/components/ui/dropdown-menu";
 import { Button } from "@/shared/components/ui/button";
+import { Skeleton } from "@/shared/components/ui/skeleton";
 import { BrandMark } from "@/shared/components/brand-mark";
 
 export function Navbar() {
@@ -259,7 +260,9 @@ export function Navbar() {
           </Link>
 
           {/* Account Menu / Login Button */}
-          {user ? (
+          {session.isLoading ? (
+            <Skeleton className="h-9 w-22 rounded-xl" />
+          ) : user ? (
             <DropdownMenu>
               <DropdownMenuTrigger
                 render={

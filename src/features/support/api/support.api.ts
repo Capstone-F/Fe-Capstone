@@ -2,6 +2,7 @@ import { apiClient } from "@/core/api/client";
 import { API_ENDPOINTS } from "@/core/api/endpoints";
 import {
   CloseSupportSessionDto,
+  CreateSupportSessionDto,
   ListSupportSessionsQueryDto,
   MarkSupportReadDto,
   PaginatedSupportSessionsDto,
@@ -12,6 +13,32 @@ import {
 } from "../types/support.types";
 
 export const supportApi = {
+  getMyLiveSession: async (): Promise<SupportSessionResponseDto | null> => {
+    try {
+      const response = await apiClient.get<SupportSessionResponseDto>(
+        API_ENDPOINTS.SUPPORT.LIVE_SESSION,
+      );
+      return response.data;
+    } catch (err: unknown) {
+      if (
+        (err as { response?: { status?: number } })?.response?.status === 404
+      ) {
+        return null;
+      }
+      throw err;
+    }
+  },
+
+  createSession: async (
+    dto: CreateSupportSessionDto,
+  ): Promise<SupportSessionResponseDto> => {
+    const response = await apiClient.post<SupportSessionResponseDto>(
+      API_ENDPOINTS.SUPPORT.SESSIONS,
+      dto,
+    );
+    return response.data;
+  },
+
   listSessions: async (params?: ListSupportSessionsQueryDto) => {
     const response = await apiClient.get<PaginatedSupportSessionsDto>(
       API_ENDPOINTS.SUPPORT.SESSIONS,

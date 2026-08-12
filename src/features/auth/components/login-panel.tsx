@@ -117,6 +117,16 @@ export function LoginPanel({ redirectTo = "/dashboard" }: LoginPanelProps) {
       if (tokenData && tokenData.accessToken) {
         tokenStorage.setAccessToken(tokenData.accessToken);
         tokenStorage.setRefreshToken(tokenData.refreshToken);
+
+        try {
+          const meRes = await authApi.getSession();
+          if (meRes?.data) {
+            queryClient.setQueryData(queryKeys.session, meRes.data);
+          }
+        } catch {
+          // Ignore if getSession fails immediately
+        }
+        await queryClient.invalidateQueries({ queryKey: queryKeys.session });
       }
 
       if (guestSurvey && !appConfig.useMockApi) {
@@ -166,8 +176,11 @@ export function LoginPanel({ redirectTo = "/dashboard" }: LoginPanelProps) {
         tokenData.user?.roles ?? session.data?.roles ?? [];
       const targetPath = getRoleBasedRedirectPath(roles, redirectTo);
 
-      router.replace(targetPath);
-      router.refresh();
+      if (typeof window !== "undefined") {
+        window.location.assign(targetPath);
+      } else {
+        router.replace(targetPath);
+      }
     } catch (error: unknown) {
       console.error(error);
       const e = error as Error;

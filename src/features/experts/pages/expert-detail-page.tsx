@@ -64,44 +64,38 @@ export function ExpertDetailPage() {
 
   if (session.isLoading || !session.data) {
     return (
-      <div className="text-muted-foreground mx-auto flex max-w-2xl flex-col items-center justify-center p-12 text-center">
-        <div className="border-primary mb-3 h-8 w-8 animate-spin rounded-full border-b-2"></div>
-        Đang xác thực phiên đăng nhập để mở hồ sơ chuyên gia...
+      <div className="container mx-auto flex max-w-4xl flex-col items-center justify-center px-4 py-16 text-center text-slate-500">
+        <div className="mb-3 h-8 w-8 animate-spin rounded-full border-2 border-[#2C3E35] border-t-transparent"></div>
+        <p className="text-xs font-medium">
+          Đang xác thực phiên đăng nhập để mở hồ sơ chuyên gia...
+        </p>
       </div>
     );
   }
 
   if (isLoading) {
     return (
-      <div className="mx-auto flex w-full max-w-2xl flex-col gap-4">
-        <Skeleton className="h-4 w-40 bg-slate-300" />
-        <Card className="overflow-hidden border-slate-200 shadow-sm">
-          <div className="from-primary/30 h-28 bg-gradient-to-r to-blue-500/10" />
-          <CardHeader className="relative border-b border-slate-100 p-6 pt-0">
-            <div className="-mt-10 mb-2 flex flex-col items-start gap-4 sm:flex-row sm:items-end">
-              <Skeleton className="h-20 w-20 shrink-0 rounded-2xl border-4 border-white" />
+      <div className="container mx-auto flex max-w-4xl flex-col gap-6 px-4 py-8 sm:px-6 md:py-12">
+        <Skeleton className="h-9 w-48 rounded-full bg-slate-200" />
+        <Card className="overflow-hidden rounded-3xl border border-slate-200/90 shadow-xl">
+          <div className="h-36 bg-gradient-to-r from-slate-200 to-slate-300 sm:h-44" />
+          <CardHeader className="relative border-b border-slate-100 p-6 pt-0 sm:p-8">
+            <div className="-mt-12 mb-2 flex flex-col items-start gap-4 sm:flex-row sm:items-end">
+              <Skeleton className="h-24 w-24 shrink-0 rounded-3xl border-4 border-white sm:h-28 sm:w-28" />
               <div className="flex flex-1 flex-col gap-2">
-                <Skeleton className="h-4 w-24 bg-slate-300" />
-                <Skeleton className="h-6 w-48 bg-slate-300" />
-                <Skeleton className="h-3.5 w-40 bg-slate-300" />
+                <Skeleton className="h-5 w-24 rounded-full bg-slate-200" />
+                <Skeleton className="h-8 w-64 rounded-xl bg-slate-200" />
+                <Skeleton className="h-4 w-44 rounded-md bg-slate-200" />
               </div>
             </div>
           </CardHeader>
-          <CardContent className="flex flex-col gap-6 p-6">
+          <CardContent className="flex flex-col gap-6 p-6 sm:p-8">
             <div className="flex flex-col gap-2">
-              <Skeleton className="h-4 w-32 bg-slate-300" />
-              <Skeleton className="h-3 w-full bg-slate-300" />
-              <Skeleton className="h-3 w-5/6 bg-slate-300" />
-            </div>
-            <div className="flex flex-wrap gap-1.5">
-              <Skeleton className="h-6 w-20 bg-slate-300" />
-              <Skeleton className="h-6 w-24 bg-slate-300" />
+              <Skeleton className="h-5 w-40 rounded-md bg-slate-200" />
+              <Skeleton className="h-4 w-full rounded-md bg-slate-200" />
+              <Skeleton className="h-4 w-5/6 rounded-md bg-slate-200" />
             </div>
           </CardContent>
-          <CardFooter className="flex flex-col items-center justify-between gap-4 border-t border-slate-100 bg-slate-50 p-6 sm:flex-row">
-            <Skeleton className="h-8 w-32 bg-slate-300" />
-            <Skeleton className="h-11 w-40 rounded-xl" />
-          </CardFooter>
         </Card>
       </div>
     );
@@ -109,58 +103,70 @@ export function ExpertDetailPage() {
 
   if (error || !expert) {
     return (
-      <div className="text-muted-foreground mx-auto max-w-2xl p-12 text-center">
-        <p className="font-bold text-red-500">{t.errorTitle}</p>
-        <p className="mt-1 text-sm">{t.errorHint}</p>
-        <Link href="/experts" className="mt-4 inline-block">
-          <Button variant="outline" size="sm">
-            {t.backToList}
-          </Button>
-        </Link>
+      <div className="container mx-auto max-w-4xl px-4 py-16 text-center">
+        <Card className="mx-auto max-w-md p-8 shadow-sm">
+          <p className="font-bold text-rose-600">{t.errorTitle}</p>
+          <p className="mt-2 text-xs text-slate-500">{t.errorHint}</p>
+          <div className="mt-6">
+            <Link href="/experts">
+              <Button
+                variant="outline"
+                size="sm"
+                className="rounded-xl text-xs"
+              >
+                {t.backToList}
+              </Button>
+            </Link>
+          </div>
+        </Card>
       </div>
     );
   }
 
   return (
-    <div className="mx-auto flex w-full max-w-2xl flex-col gap-4">
-      {/* Back button */}
+    <div className="container mx-auto flex max-w-4xl flex-col gap-6 px-4 py-8 sm:px-6 md:py-12">
+      {/* Back button link */}
       <div>
         <Link
           href="/experts"
-          className="text-muted-foreground hover:text-primary inline-flex items-center gap-1 text-xs transition-colors"
+          className="inline-flex items-center gap-2 rounded-full border border-slate-200/80 bg-white px-4 py-2 text-xs font-semibold text-slate-600 shadow-2xs transition-all hover:bg-slate-50 hover:text-[#2C3E35] dark:border-slate-800 dark:bg-slate-900 dark:text-slate-300"
         >
           <ArrowLeft className="h-4 w-4" />
-          {t.back}
+          <span>{t.back}</span>
         </Link>
       </div>
 
-      <Card className="overflow-hidden border-slate-200 shadow-sm">
-        {/* Header Cover Background */}
-        <div className="from-primary/30 h-28 bg-gradient-to-r to-blue-500/10" />
+      {/* Main Expert Detail Card */}
+      <Card className="overflow-hidden rounded-3xl border border-slate-200/90 bg-white shadow-xl shadow-slate-200/40 dark:border-slate-800 dark:bg-slate-900">
+        {/* Header Decorative Banner */}
+        <div className="relative h-36 w-full bg-gradient-to-r from-[#2C3E35] via-[#3A5246] to-teal-800 opacity-90 sm:h-44">
+          <div className="absolute inset-0 bg-[radial-gradient(circle_at_top_right,rgba(255,255,255,0.15),transparent_60%)]" />
+        </div>
 
-        <CardHeader className="relative border-b border-slate-100 p-6 pt-0">
-          {/* Mock Avatar placement */}
-          <div className="-mt-10 mb-2 flex flex-col items-start gap-4 sm:flex-row sm:items-end">
-            <div className="flex h-20 w-20 shrink-0 items-center justify-center rounded-2xl border-4 border-white bg-slate-100 text-slate-400 shadow-md">
-              <User className="h-10 w-10" />
+        {/* Card Header & Profile Info */}
+        <CardHeader className="relative border-b border-slate-100 p-6 pt-0 sm:p-8 dark:border-slate-800">
+          <div className="-mt-12 mb-2 flex flex-col items-start gap-5 sm:-mt-14 sm:flex-row sm:items-end">
+            <div className="flex h-24 w-24 shrink-0 items-center justify-center rounded-3xl border-4 border-white bg-slate-100 text-[#2C3E35] shadow-lg sm:h-28 sm:w-28 dark:border-slate-900 dark:bg-slate-800 dark:text-slate-300">
+              <User className="h-12 w-12 sm:h-14 sm:w-14" />
             </div>
+
             <div className="flex-1">
-              <span className="text-primary bg-primary/10 rounded-md px-2 py-0.5 text-[10px] font-bold tracking-wider uppercase">
+              <span className="inline-block rounded-full bg-[#E2EBE6] px-3 py-1 text-[11px] font-bold tracking-wider text-[#2C3E35] uppercase dark:bg-emerald-950 dark:text-emerald-300">
                 {expert.title}
               </span>
-              <h2 className="mt-1.5 text-xl font-bold text-slate-900">
+              <h1 className="mt-2 text-2xl font-bold tracking-tight text-slate-900 sm:text-3xl dark:text-white">
                 {expert.name}
-              </h2>
-              <div className="text-muted-foreground mt-1.5 flex flex-wrap items-center gap-3 text-xs">
-                <div className="flex items-center gap-0.5 font-semibold text-yellow-600">
-                  <Star className="h-3.5 w-3.5 fill-current" />
+              </h1>
+              <div className="mt-2.5 flex flex-wrap items-center gap-3 text-xs text-slate-500 dark:text-slate-400">
+                <div className="flex items-center gap-1 font-bold text-amber-600 dark:text-amber-400">
+                  <Star className="h-4 w-4 fill-amber-400 text-amber-400" />
                   <span>
                     {expert.rating} ({expert.reviews} đánh giá)
                   </span>
                 </div>
                 <span>•</span>
-                <span className="flex items-center gap-0.5">
-                  <MapPin className="h-3.5 w-3.5" />
+                <span className="flex items-center gap-1 font-medium">
+                  <MapPin className="h-4 w-4 text-emerald-600" />
                   {expert.distance} km
                 </span>
               </div>
@@ -168,29 +174,30 @@ export function ExpertDetailPage() {
           </div>
         </CardHeader>
 
-        <CardContent className="flex flex-col gap-6 p-6">
-          {/* Bio section */}
-          <div className="flex flex-col gap-2">
-            <h3 className="flex items-center gap-1.5 text-sm font-bold text-slate-800">
-              <Heart className="h-4 w-4 fill-current text-red-500" />
-              {t.introTitle}
+        {/* Card Content Details */}
+        <CardContent className="flex flex-col gap-8 p-6 sm:p-8">
+          {/* Bio Section */}
+          <div className="flex flex-col gap-2.5">
+            <h3 className="flex items-center gap-2 text-sm font-bold text-slate-900 dark:text-white">
+              <Heart className="h-4 w-4 fill-rose-500 text-rose-500" />
+              <span>{t.introTitle}</span>
             </h3>
-            <p className="text-muted-foreground text-xs leading-relaxed whitespace-pre-line">
+            <p className="text-xs leading-relaxed whitespace-pre-line text-slate-600 dark:text-slate-300">
               {expert.bio}
               {t.bioSuffix}
             </p>
           </div>
 
           {/* Specialties Section */}
-          <div className="flex flex-col gap-2">
-            <h3 className="text-sm font-bold text-slate-800">
+          <div className="flex flex-col gap-2.5">
+            <h3 className="text-sm font-bold text-slate-900 dark:text-white">
               {t.specialtiesTitle}
             </h3>
-            <div className="flex flex-wrap gap-1.5">
+            <div className="flex flex-wrap gap-2">
               {expert.specialties.map((s) => (
                 <span
                   key={s}
-                  className="rounded-lg bg-slate-100 px-3 py-1 text-xs font-semibold text-slate-700"
+                  className="rounded-xl border border-slate-200/80 bg-slate-50 px-3.5 py-1.5 text-xs font-semibold text-slate-700 dark:border-slate-800 dark:bg-slate-800 dark:text-slate-200"
                 >
                   {s}
                 </span>
@@ -199,24 +206,26 @@ export function ExpertDetailPage() {
           </div>
 
           {/* Clinic Section */}
-          <div className="flex flex-col gap-2">
-            <h3 className="text-sm font-bold text-slate-800">
+          <div className="flex flex-col gap-2.5">
+            <h3 className="text-sm font-bold text-slate-900 dark:text-white">
               {t.clinicTitle}
             </h3>
-            <p className="text-muted-foreground flex items-start gap-1.5 text-xs">
-              <MapPin className="text-primary mt-0.5 h-4 w-4 shrink-0" />
-              <span>
-                {expert.clinic}
+            <div className="flex items-start gap-2.5 rounded-2xl border border-slate-100 bg-slate-50/70 p-4 text-xs dark:border-slate-800 dark:bg-slate-800/50">
+              <MapPin className="mt-0.5 h-4 w-4 shrink-0 text-emerald-600" />
+              <span className="leading-relaxed text-slate-700 dark:text-slate-300">
+                <strong className="font-semibold text-slate-900 dark:text-white">
+                  {expert.clinic}
+                </strong>
                 {t.clinicSuffix}
               </span>
-            </p>
+            </div>
           </div>
 
-          {/* Flow note */}
-          <div className="flex gap-2.5 rounded-xl border border-blue-100 bg-blue-50/50 p-4">
-            <ShieldCheck className="text-primary h-5 w-5 shrink-0" />
-            <div className="text-[11px] leading-normal text-slate-700">
-              <span className="block font-bold text-blue-900">
+          {/* Quality Commitment Banner */}
+          <div className="flex items-start gap-3 rounded-2xl border border-emerald-200/80 bg-emerald-50/60 p-5 dark:border-emerald-900/50 dark:bg-emerald-950/30">
+            <ShieldCheck className="mt-0.5 h-5 w-5 shrink-0 text-emerald-700 dark:text-emerald-400" />
+            <div className="text-xs leading-relaxed text-slate-700 dark:text-slate-300">
+              <span className="mb-0.5 block font-bold text-emerald-900 dark:text-emerald-200">
                 {t.commitmentTitle}
               </span>
               {t.commitmentBody}
@@ -224,17 +233,19 @@ export function ExpertDetailPage() {
           </div>
         </CardContent>
 
-        <CardFooter className="flex flex-col items-center justify-between gap-4 border-t border-slate-100 bg-slate-50 p-6 sm:flex-row">
+        {/* Footer Action Bar */}
+        <CardFooter className="flex flex-col items-center justify-between gap-4 rounded-b-3xl border-t border-slate-100 bg-slate-50/80 p-6 sm:flex-row sm:p-8 dark:border-slate-800 dark:bg-slate-900/80">
           <div className="text-center sm:text-left">
-            <span className="text-muted-foreground block text-[10px] font-semibold uppercase">
+            <span className="block text-[11px] font-bold tracking-wider text-slate-400 uppercase">
               {t.feeLabel}
             </span>
-            <span className="text-primary text-xl font-bold">
+            <span className="text-2xl font-extrabold text-[#2C3E35] dark:text-emerald-400">
               {formatVnd(expert.fee)}
             </span>
           </div>
+
           <Link href={`/booking/${expert.id}`} className="w-full sm:w-auto">
-            <Button className="shadow-primary/20 w-full rounded-xl px-6 py-5 font-bold shadow-lg sm:w-auto">
+            <Button className="h-12 w-full rounded-2xl bg-[#2C3E35] px-8 text-sm font-bold text-white shadow-md transition-all hover:bg-[#3A5246] active:scale-95 sm:w-auto">
               <CalendarDays className="mr-2 h-4 w-4" />
               {t.book}
             </Button>

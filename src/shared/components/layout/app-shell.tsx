@@ -5,6 +5,7 @@ import { useRouter, usePathname } from "next/navigation";
 import { useMergeGuestCartOnLogin } from "@/features/commerce/hooks/useMergeGuestCartOnLogin";
 import { ProfileOnboardingGuard } from "@/features/profile/components/profile-onboarding-guard";
 import { useSession } from "@/features/auth/hooks/useSession";
+import { CustomerSupportWidget } from "@/features/support/components/customer-support-widget";
 import { Navbar } from "./navbar";
 import { Footer } from "./footer";
 import { BottomNav } from "./bottom-nav";
@@ -34,6 +35,11 @@ export function AppShell({ children, showFooter = true }: AppShellProps) {
     }
   }, [session, pathname, router]);
 
+  const roles = session?.roles || [];
+  const isStaffOrAdmin = roles.some((r) =>
+    ["app_admin", "staff", "clinic_manager", "expert"].includes(r),
+  );
+
   return (
     <div className="flex min-h-screen flex-col bg-[#FAF8F5] font-sans text-slate-800 antialiased selection:bg-[#E2EBE6]">
       <Navbar />
@@ -41,6 +47,7 @@ export function AppShell({ children, showFooter = true }: AppShellProps) {
       {showFooter && <Footer />}
       <BottomNav />
       <ProfileOnboardingGuard />
+      {!isStaffOrAdmin && <CustomerSupportWidget />}
     </div>
   );
 }

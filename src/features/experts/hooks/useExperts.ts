@@ -16,6 +16,7 @@ export function useExperts(
     maxDistance?: number;
     lat?: number;
     lng?: number;
+    provinceName?: string;
   },
   enabled: boolean = true,
 ) {
@@ -31,10 +32,10 @@ export function useExperts(
           const spec = mapSpecialtyToBackend(specialty);
           if (spec) params.specialization = spec;
         }
-        if (minRating) {
+        if (minRating && minRating > 0) {
           params.minRating = minRating.toString();
         }
-        if (maxFee) {
+        if (maxFee && maxFee > 0 && maxFee < 5000000) {
           params.maxFee = maxFee.toString();
         }
         if (maxDistance && lat !== undefined && lng !== undefined) {
@@ -55,6 +56,11 @@ export function useExperts(
             e.title.toLowerCase().includes(q) ||
             e.clinic.toLowerCase().includes(q),
         );
+      }
+
+      if (filters?.provinceName) {
+        const prov = filters.provinceName.toLowerCase();
+        experts = experts.filter((e) => e.clinic.toLowerCase().includes(prov));
       }
 
       return experts;
@@ -79,11 +85,12 @@ export function useSpecialties(enabled: boolean = true) {
     queryKey: queryKeys.specialties,
     queryFn: async () => {
       return [
+        "Da liễu tổng quát",
         "Trị mụn",
         "Phục hồi da",
-        "Sẹo rỗ",
         "Chống lão hóa",
         "Nám & Tàn nhang",
+        "Sẹo rỗ",
         "Peel da",
       ];
     },

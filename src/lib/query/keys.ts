@@ -53,6 +53,7 @@ export const queryKeys = {
     ["stock", "import-forms", query] as const,
   stockImportForm: (id: string) => ["stock", "import-form", id] as const,
   supportSessions: (query: unknown) => ["support", "sessions", query] as const,
+  supportLiveSession: () => ["support", "liveSession"] as const,
   supportSession: (id: string) => ["support", "session", id] as const,
   supportMessages: (sessionId: string, afterSeq?: number) =>
     ["support", "messages", sessionId, afterSeq ?? 0] as const,

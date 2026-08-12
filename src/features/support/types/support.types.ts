@@ -61,6 +61,10 @@ export interface SupportMessagesPageDto {
   hasMore: boolean;
 }
 
+export interface CreateSupportSessionDto {
+  subject?: string;
+}
+
 export interface SendSupportMessageDto {
   content: string;
 }

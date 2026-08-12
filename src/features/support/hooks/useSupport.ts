@@ -3,10 +3,31 @@ import { queryKeys } from "@/lib/query/keys";
 import { supportApi } from "../api/support.api";
 import {
   CloseSupportSessionDto,
+  CreateSupportSessionDto,
   ListSupportSessionsQueryDto,
   MarkSupportReadDto,
   SendSupportMessageDto,
 } from "../types/support.types";
+
+export function useMyLiveSupportSession(enabled = true) {
+  return useQuery({
+    queryKey: queryKeys.supportLiveSession(),
+    queryFn: () => supportApi.getMyLiveSession(),
+    enabled,
+    staleTime: 5000,
+  });
+}
+
+export function useCreateSupportSession() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (dto: CreateSupportSessionDto) => supportApi.createSession(dto),
+    onSuccess: (sessionData) => {
+      queryClient.setQueryData(queryKeys.supportLiveSession(), sessionData);
+      queryClient.invalidateQueries({ queryKey: ["support"] });
+    },
+  });
+}
 
 export function useSupportSessions(query?: ListSupportSessionsQueryDto) {
   return useQuery({
@@ -58,6 +79,9 @@ export function useSendSupportMessage() {
         queryKey: queryKeys.supportMessages(id, 0),
       });
       queryClient.invalidateQueries({ queryKey: queryKeys.supportSession(id) });
+      queryClient.invalidateQueries({
+        queryKey: queryKeys.supportLiveSession(),
+      });
       queryClient.invalidateQueries({ queryKey: ["support", "sessions"] });
     },
   });
@@ -82,7 +106,8 @@ export function useCloseSupportSession() {
       supportApi.closeSession(id, data),
     onSuccess: (updatedSession, { id }) => {
       queryClient.setQueryData(queryKeys.supportSession(id), updatedSession);
-      queryClient.invalidateQueries({ queryKey: ["support", "sessions"] });
+      queryClient.setQueryData(queryKeys.supportLiveSession(), null);
+      queryClient.invalidateQueries({ queryKey: ["support"] });
     },
   });
 }
