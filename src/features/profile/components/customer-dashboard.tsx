@@ -7,7 +7,6 @@ import { useRouter, useSearchParams } from "next/navigation";
 
 import {
   User,
-  Award,
   ShoppingBag,
   CalendarDays,
   Loader2,
@@ -23,7 +22,6 @@ import {
 
 import { FeedbackModal } from "@/features/booking/components/feedback-modal";
 import { WalletCard } from "@/features/wallet/components/wallet-card";
-import { BaumannSkinTypePanel } from "./baumann-skin-type-panel";
 import { Button } from "@/shared/components/ui/button";
 import { Input } from "@/shared/components/ui/input";
 import { Label } from "@/shared/components/ui/label";
@@ -190,14 +188,13 @@ function ProfileForm({ profile, updateProfileMutation }: ProfileFormProps) {
   );
 }
 
-type TabType = "profile" | "baumann" | "orders" | "appointments" | "wallet";
+type TabType = "profile" | "orders" | "appointments" | "wallet";
 
 export function CustomerDashboard() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const requestedTab = searchParams.get("tab");
   const activeTab: TabType =
-    requestedTab === "baumann" ||
     requestedTab === "orders" ||
     requestedTab === "appointments" ||
     requestedTab === "wallet"
@@ -289,8 +286,7 @@ export function CustomerDashboard() {
           Hồ Sơ Tài Khoản
         </h1>
         <p className="mt-1 text-sm text-slate-500">
-          Quản lý thông tin cá nhân, phác đồ điều trị Baumann và đơn hàng của
-          bạn.
+          Quản lý thông tin cá nhân, đơn hàng và lịch hẹn của bạn.
         </p>
       </div>
 
@@ -308,18 +304,6 @@ export function CustomerDashboard() {
           >
             <User className="h-4.5 w-4.5" />
             Thông Tin Cá Nhân
-          </button>
-          <button
-            type="button"
-            onClick={() => selectTab("baumann")}
-            className={`flex w-full items-center gap-3 rounded-xl px-4 py-3 text-xs font-bold transition-all ${
-              activeTab === "baumann"
-                ? "bg-[#2C3E35] text-white"
-                : "text-slate-600 hover:bg-slate-50 hover:text-slate-900"
-            }`}
-          >
-            <Award className="h-4.5 w-4.5" />
-            Hồ Sơ Da Baumann
           </button>
           <button
             type="button"
@@ -364,41 +348,6 @@ export function CustomerDashboard() {
           {/* Tab 1: Profile Information */}
           {activeTab === "profile" && (
             <div className="space-y-6">
-              {/* Baumann Skin Summary Hero Card */}
-              <Card className="border-emerald-100 bg-emerald-50/40 shadow-2xs">
-                <CardContent className="flex flex-col gap-4 p-5 sm:flex-row sm:items-center sm:justify-between">
-                  <div className="flex items-center gap-4">
-                    <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-emerald-600 text-white shadow-xs">
-                      <Award className="h-6 w-6" />
-                    </div>
-                    <div>
-                      <div className="flex items-center gap-2">
-                        <span className="text-xs font-bold text-slate-500">
-                          Hồ Sơ Da Baumann
-                        </span>
-                        <span className="rounded-md bg-emerald-100 px-2 py-0.5 text-xs font-black text-emerald-800">
-                          {profile?.baumannCode || "Chưa khảo sát"}
-                        </span>
-                      </div>
-                      <p className="mt-0.5 text-xs text-slate-600">
-                        {profile?.baumannCode
-                          ? `Loại da ${profile.baumannCode}: Routine được cá nhân hóa theo tình trạng tuyến nhờn & nhạy cảm.`
-                          : "Thực hiện bài test da AI để xác định chính xác loại da Baumann của bạn."}
-                      </p>
-                    </div>
-                  </div>
-                  <Button
-                    onClick={() => router.push("/survey")}
-                    size="sm"
-                    className="shrink-0 rounded-xl bg-[#2C3E35] text-xs font-bold text-white hover:bg-[#3A5246]"
-                  >
-                    {profile?.baumannCode
-                      ? "Làm Lại Bài Test Da AI"
-                      : "Bắt Đầu Bài Test Da AI"}
-                  </Button>
-                </CardContent>
-              </Card>
-
               <Card className="border-slate-200 shadow-2xs">
                 <CardHeader className="border-b border-slate-100 p-6">
                   <CardTitle className="text-lg font-bold text-slate-900">
@@ -417,88 +366,6 @@ export function CustomerDashboard() {
                 </CardContent>
               </Card>
             </div>
-          )}
-
-          {/* Tab 2: Baumann Skin Profile */}
-          {activeTab === "baumann" && (
-            <Card className="border-slate-200 shadow-2xs">
-              <CardHeader className="border-b border-slate-100 p-6">
-                <CardTitle className="text-lg font-bold text-slate-900">
-                  Hồ Sơ Loại Da Baumann
-                </CardTitle>
-                <CardDescription className="text-xs">
-                  Bốn trục đặc tính da của bạn. Bấm &quot;Chỉnh sửa&quot; nếu
-                  muốn cập nhật lại.
-                </CardDescription>
-              </CardHeader>
-              <CardContent className="space-y-6 p-6">
-                <BaumannSkinTypePanel profile={profile} />
-
-                {profile.baumannCode && (
-                  <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-                    <div className="space-y-2 rounded-xl border border-slate-200 bg-slate-50/50 p-4">
-                      <span className="block text-xs font-bold text-slate-700">
-                        Tuyến Bã Nhờn
-                      </span>
-                      <p className="text-xs leading-relaxed text-slate-600">
-                        {profile.baumannCode.includes("O")
-                          ? "Oily (Da Dầu): Tuyến bã nhờn hoạt động mạnh, có khuynh hướng bóng dầu vùng chữ T và dễ bít tắc tạo mụn đầu đen."
-                          : "Dry (Da Khô): Thiếu hụt lượng dầu tự nhiên bảo vệ da, dễ gây cảm giác khô căng sau khi rửa mặt."}
-                      </p>
-                    </div>
-
-                    <div className="space-y-2 rounded-xl border border-slate-200 bg-slate-50/50 p-4">
-                      <span className="block text-xs font-bold text-slate-700">
-                        Mức Độ Nhạy Cảm
-                      </span>
-                      <p className="text-xs leading-relaxed text-slate-600">
-                        {profile.baumannCode.includes("S")
-                          ? "Sensitive (Da Nhạy Cảm): Dễ đỏ, ngứa hoặc mẩn rát khi gặp thay đổi thời tiết hoặc các hoạt chất điều trị mạnh (Retinol, AHA)."
-                          : "Resistant (Da Khỏe): Hàng rào bảo vệ da vững chắc, ít khi kích ứng, thích hợp với nhiều nồng độ treatment cao."}
-                      </p>
-                    </div>
-
-                    <div className="space-y-2 rounded-xl border border-slate-200 bg-slate-50/50 p-4">
-                      <span className="block text-xs font-bold text-slate-700">
-                        Sắc Tố
-                      </span>
-                      <p className="text-xs leading-relaxed text-slate-600">
-                        {profile.baumannCode.includes("P")
-                          ? "Pigmented (Tăng Sắc Tố): Dễ bị thâm sau mụn, dễ hình thành tàn nhang và sạm nám khi tiếp xúc với tia cực tím."
-                          : "Non-pigmented (Không Sắc Tố): Ít bị thâm sạm, da có khuynh hướng đều màu và phục hồi sắc tố nhanh hơn."}
-                      </p>
-                    </div>
-
-                    <div className="space-y-2 rounded-xl border border-slate-200 bg-slate-50/50 p-4">
-                      <span className="block text-xs font-bold text-slate-700">
-                        Độ Đàn Hồi
-                      </span>
-                      <p className="text-xs leading-relaxed text-slate-600">
-                        {profile.baumannCode.includes("W")
-                          ? "Wrinkled (Nhăn): Cần bổ sung chất chống oxy hóa và collagen sớm để chống chảy sệ và nếp nhăn đuôi mắt."
-                          : "Tight (Căng): Độ đàn hồi tự nhiên rất tốt, hàng rào bảo vệ vững vàng trước các dấu hiệu tuổi tác."}
-                      </p>
-                    </div>
-                  </div>
-                )}
-
-                <div className="flex flex-wrap gap-3 border-t border-slate-100 pt-4">
-                  <Button
-                    onClick={() => router.push("/scan?view=plan")}
-                    className="rounded-xl bg-[#6b5cf6] px-6 text-xs font-bold text-white shadow-md hover:bg-[#5a4ae5]"
-                  >
-                    🎉 Xem Phác Đồ & Mua Combo (Giảm 10%)
-                  </Button>
-                  <Button
-                    variant="outline"
-                    onClick={() => router.push("/scan?mode=restart")}
-                    className="rounded-xl border-slate-300 px-6 text-xs font-bold text-slate-700 hover:bg-slate-50"
-                  >
-                    Bắt Đầu Khảo Sát / Quét Da Lại
-                  </Button>
-                </div>
-              </CardContent>
-            </Card>
           )}
 
           {/* Tab 3: Order History */}

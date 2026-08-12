@@ -6,7 +6,6 @@ import {
   User,
   Phone,
   Mail,
-  Award,
   History,
   HeartCrack,
   ClipboardList,
@@ -237,31 +236,8 @@ export function ProfilePage() {
           </form>
         </Card>
 
-        {/* Baumann, History & Routine sidebar */}
+        {/* History & Routine sidebar */}
         <div className="flex flex-col gap-4 md:col-span-5">
-          {/* Baumann type badge card */}
-          <Card className="border-slate-200 shadow-sm">
-            <CardContent className="flex items-center gap-4 p-4">
-              <div className="bg-primary/10 text-primary flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl">
-                <Award className="h-6 w-6" />
-              </div>
-              <div>
-                <span className="text-muted-foreground block text-[9px] font-semibold uppercase">
-                  Loại da Baumann hiện tại
-                </span>
-                <span className="block text-lg font-bold tracking-wide text-slate-900">
-                  {profile?.baumannCode ? (
-                    <span className="text-primary">{profile.baumannCode}</span>
-                  ) : (
-                    <span className="text-muted-foreground text-sm font-normal italic">
-                      Chưa xác định (Chưa soi da)
-                    </span>
-                  )}
-                </span>
-              </div>
-            </CardContent>
-          </Card>
-
           {/* Routine card */}
           <Card className="border-slate-200 shadow-sm">
             <CardHeader className="border-b border-slate-100 p-4">

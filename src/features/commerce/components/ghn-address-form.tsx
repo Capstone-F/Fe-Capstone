@@ -1,5 +1,12 @@
 "use client";
 
+import { memo } from "react";
+import {
+  Controller,
+  useWatch,
+  type Control,
+  type UseFormSetValue,
+} from "react-hook-form";
 import { Input } from "@/shared/components/ui/input";
 import { Label } from "@/shared/components/ui/label";
 import {
@@ -19,7 +26,7 @@ import {
   STREET_ADDRESS_MAX_LENGTH,
   isValidRecipientPhone,
 } from "@/features/commerce/lib/shipping-address";
-import type { ShippingAddressDraft } from "@/features/commerce/types/delivery";
+import type { ShippingAddressFormValues } from "@/features/commerce/schemas/commerce-forms.schema";
 import useDebounce from "@/shared/hooks/useDebounce";
 
 const t = {
@@ -44,138 +51,196 @@ const t = {
 };
 
 interface GhnAddressFormProps {
-  value: ShippingAddressDraft;
-  onChange: (next: ShippingAddressDraft) => void;
-  errors?: Partial<Record<keyof ShippingAddressDraft, string>>;
+  control: Control<ShippingAddressFormValues>;
+  setValue: UseFormSetValue<ShippingAddressFormValues>;
 }
 
 /**
  * Cascading GHN address picker. GHN needs its own province/district/ward identifiers —
  * free text cannot be turned into a valid shipping order — so all three come from the
  * master-data endpoints.
+ *
+ * Each field owns its own `Controller`, and the component is memoised on two stable
+ * props, so typing writes exactly one field and never re-renders the three Selects.
  */
-export function GhnAddressForm({
-  value,
-  onChange,
-  errors = {},
+export const GhnAddressForm = memo(function GhnAddressForm({
+  control,
+  setValue,
 }: GhnAddressFormProps) {
+  // Only the two parent ids are watched here: they decide which child lists to load.
+  // Watching the text fields would re-render the Selects on every keystroke.
+  const provinceId = useWatch({ control, name: "provinceId" });
+  const districtId = useWatch({ control, name: "districtId" });
+
   const provinces = useProvinces();
-  const districts = useDistricts(value.provinceId);
-  const wards = useWards(value.districtId);
-
-  // A 10-digit number is invalid for its first nine keystrokes, so the error is held
-  // back until typing settles — and dropped as soon as the number becomes valid.
-  const settledPhone = useDebounce(value.recipientPhone, 350);
-  const showPhoneError =
-    settledPhone.trim() !== "" &&
-    !isValidRecipientPhone(settledPhone) &&
-    !isValidRecipientPhone(value.recipientPhone);
-
-  // Selecting a parent invalidates its children, so they reset together.
-  const handleProvinceChange = (provinceId: number) => {
-    onChange({ ...value, provinceId, districtId: null, wardCode: null });
-  };
-
-  const handleDistrictChange = (districtId: number) => {
-    onChange({ ...value, districtId, wardCode: null });
-  };
+  const districts = useDistricts(provinceId);
+  const wards = useWards(districtId);
 
   return (
     <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
-      <Field label={t.recipientName} error={errors.recipientName}>
-        <Input
-          value={value.recipientName}
-          maxLength={RECIPIENT_NAME_MAX_LENGTH}
-          placeholder={t.namePlaceholder}
-          onChange={(e) =>
-            onChange({ ...value, recipientName: e.target.value })
-          }
-          className="text-sm"
-        />
-      </Field>
+      <Controller
+        control={control}
+        name="recipientName"
+        render={({ field, fieldState }) => (
+          <Field label={t.recipientName} error={fieldState.error?.message}>
+            <Input
+              {...field}
+              maxLength={RECIPIENT_NAME_MAX_LENGTH}
+              placeholder={t.namePlaceholder}
+              className="text-sm"
+            />
+          </Field>
+        )}
+      />
 
-      <Field
-        label={t.recipientPhone}
-        error={
-          errors.recipientPhone ?? (showPhoneError ? t.phoneInvalid : undefined)
-        }
-      >
-        <Input
-          value={value.recipientPhone}
-          inputMode="numeric"
-          placeholder={t.phonePlaceholder}
-          aria-invalid={showPhoneError}
-          onChange={(e) =>
-            onChange({ ...value, recipientPhone: e.target.value })
-          }
-          className="text-sm"
-        />
-      </Field>
+      <RecipientPhoneField control={control} />
 
-      <Field label={t.province} error={errors.provinceId}>
-        <LocationSelect
-          value={value.provinceId === null ? "" : `${value.provinceId}`}
-          placeholder={t.selectProvince}
-          isLoading={provinces.isLoading}
-          isError={provinces.isError}
-          options={(provinces.data ?? []).map((province) => ({
-            value: `${province.id}`,
-            label: province.name,
-          }))}
-          onValueChange={(next) => handleProvinceChange(Number(next))}
-        />
-      </Field>
+      <Controller
+        control={control}
+        name="provinceId"
+        render={({ field, fieldState }) => (
+          <Field label={t.province} error={fieldState.error?.message}>
+            <LocationSelect
+              value={field.value === null ? "" : `${field.value}`}
+              placeholder={t.selectProvince}
+              isLoading={provinces.isLoading}
+              isError={provinces.isError}
+              options={(provinces.data ?? []).map((province) => ({
+                value: `${province.id}`,
+                label: province.name,
+              }))}
+              onValueChange={(next) => {
+                // Selecting a parent invalidates its children, so they reset together.
+                field.onChange(Number(next));
+                setValue("districtId", null, { shouldDirty: true });
+                setValue("wardCode", null, { shouldDirty: true });
+              }}
+            />
+          </Field>
+        )}
+      />
 
-      <Field label={t.district} error={errors.districtId}>
-        <LocationSelect
-          value={value.districtId === null ? "" : `${value.districtId}`}
-          placeholder={
-            value.provinceId === null
-              ? t.districtNeedsProvince
-              : t.selectDistrict
-          }
-          disabled={value.provinceId === null}
-          isLoading={districts.isLoading && value.provinceId !== null}
-          isError={districts.isError}
-          options={(districts.data ?? []).map((district) => ({
-            value: `${district.id}`,
-            label: district.name,
-          }))}
-          onValueChange={(next) => handleDistrictChange(Number(next))}
-        />
-      </Field>
+      <Controller
+        control={control}
+        name="districtId"
+        render={({ field, fieldState }) => (
+          <Field label={t.district} error={fieldState.error?.message}>
+            <LocationSelect
+              value={field.value === null ? "" : `${field.value}`}
+              placeholder={
+                provinceId === null ? t.districtNeedsProvince : t.selectDistrict
+              }
+              disabled={provinceId === null}
+              isLoading={districts.isLoading && provinceId !== null}
+              isError={districts.isError}
+              options={(districts.data ?? []).map((district) => ({
+                value: `${district.id}`,
+                label: district.name,
+              }))}
+              onValueChange={(next) => {
+                field.onChange(Number(next));
+                setValue("wardCode", null, { shouldDirty: true });
+              }}
+            />
+          </Field>
+        )}
+      />
 
-      <Field label={t.ward} error={errors.wardCode}>
-        <LocationSelect
-          value={value.wardCode ?? ""}
-          placeholder={
-            value.districtId === null ? t.wardNeedsDistrict : t.selectWard
-          }
-          disabled={value.districtId === null}
-          isLoading={wards.isLoading && value.districtId !== null}
-          isError={wards.isError}
-          options={(wards.data ?? []).map((ward) => ({
-            value: ward.code,
-            label: ward.name,
-          }))}
-          onValueChange={(next) => onChange({ ...value, wardCode: next })}
-        />
-      </Field>
+      <Controller
+        control={control}
+        name="wardCode"
+        render={({ field, fieldState }) => (
+          <Field label={t.ward} error={fieldState.error?.message}>
+            <LocationSelect
+              value={field.value ?? ""}
+              placeholder={
+                districtId === null ? t.wardNeedsDistrict : t.selectWard
+              }
+              disabled={districtId === null}
+              isLoading={wards.isLoading && districtId !== null}
+              isError={wards.isError}
+              options={(wards.data ?? []).map((ward) => ({
+                value: ward.code,
+                label: ward.name,
+              }))}
+              onValueChange={field.onChange}
+            />
+          </Field>
+        )}
+      />
 
       <div className="sm:col-span-2">
-        <Field label={t.streetAddress} error={errors.streetAddress}>
-          <Input
-            value={value.streetAddress}
-            maxLength={STREET_ADDRESS_MAX_LENGTH}
-            placeholder={t.streetPlaceholder}
-            onChange={(e) =>
-              onChange({ ...value, streetAddress: e.target.value })
-            }
-            className="text-sm"
-          />
-        </Field>
+        <Controller
+          control={control}
+          name="streetAddress"
+          render={({ field, fieldState }) => (
+            <Field label={t.streetAddress} error={fieldState.error?.message}>
+              <Input
+                {...field}
+                maxLength={STREET_ADDRESS_MAX_LENGTH}
+                placeholder={t.streetPlaceholder}
+                className="text-sm"
+              />
+            </Field>
+          )}
+        />
       </div>
     </div>
+  );
+});
+
+/**
+ * Own component so the debounced validity check re-renders this field alone —
+ * a 10-digit number is invalid for its first nine keystrokes, so the error is held
+ * back until typing settles, and dropped as soon as the number becomes valid.
+ */
+function RecipientPhoneField({
+  control,
+}: {
+  control: Control<ShippingAddressFormValues>;
+}) {
+  return (
+    <Controller
+      control={control}
+      name="recipientPhone"
+      render={({ field, fieldState }) => (
+        <PhoneInput field={field} error={fieldState.error?.message} />
+      )}
+    />
+  );
+}
+
+interface PhoneInputProps {
+  field: {
+    value: string;
+    onChange: (event: React.ChangeEvent<HTMLInputElement>) => void;
+    onBlur: () => void;
+    name: string;
+    ref: React.Ref<HTMLInputElement>;
+  };
+  error?: string;
+}
+
+function PhoneInput({ field, error }: PhoneInputProps) {
+  const settledPhone = useDebounce(field.value, 350);
+  const showPhoneError =
+    settledPhone.trim() !== "" &&
+    !isValidRecipientPhone(settledPhone) &&
+    !isValidRecipientPhone(field.value);
+
+  return (
+    <Field
+      label={t.recipientPhone}
+      error={error ?? (showPhoneError ? t.phoneInvalid : undefined)}
+    >
+      <Input
+        {...field}
+        inputMode="numeric"
+        placeholder={t.phonePlaceholder}
+        aria-invalid={showPhoneError}
+        className="text-sm"
+      />
+    </Field>
   );
 }
 

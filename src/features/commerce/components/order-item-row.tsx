@@ -1,6 +1,7 @@
 import { HydratedOrderItem } from "../lib/order-hydration";
 import { formatVnd } from "@/shared/utils/format";
-import { CategoryPlaceholder } from "./category-placeholder";
+import { resolveLineImageUrl } from "../mapper/product-image";
+import { ProductImage } from "./product-image";
 
 /**
  * A single purchased line. `product` is null when the variant's product has
@@ -51,12 +52,13 @@ export function OrderItemRow({ item }: { item: HydratedOrderItem }) {
 
   return (
     <div className="flex items-center gap-3 py-3">
-      <div className="h-14 w-14 shrink-0 overflow-hidden rounded-lg border border-slate-200">
-        {item.product ? (
-          <CategoryPlaceholder categoryName={item.product.categoryName} />
-        ) : (
-          <div className="h-full w-full bg-slate-50" />
-        )}
+      <div className="relative h-14 w-14 shrink-0 overflow-hidden rounded-lg border border-slate-200">
+        <ProductImage
+          imageUrl={resolveLineImageUrl(item.variant, item.product)}
+          categoryName={item.product?.categoryName ?? null}
+          alt={name}
+          sizes="56px"
+        />
       </div>
 
       <div className="min-w-0 flex-1">

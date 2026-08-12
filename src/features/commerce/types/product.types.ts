@@ -5,6 +5,7 @@ export interface ProductVariant {
   packaging: string | null;
   priceVnd: number;
   isActive: boolean;
+  imageUrl: string | null;
 }
 
 export interface Product {
@@ -63,6 +64,7 @@ export interface ProductVariantResponse {
   packaging: string | null;
   priceVnd: number;
   isActive: boolean;
+  imageUrl: string | null;
 }
 
 export interface ProductResponse {
