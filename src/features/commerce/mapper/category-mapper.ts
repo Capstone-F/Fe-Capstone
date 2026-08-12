@@ -3,19 +3,30 @@ import {
   type CategoryDefinition,
 } from "../constants/product-categories";
 
-// Index the constant by normalized English name so a BE category `name` can be
-// matched in O(1). Normalization (trim + lowercase) guards against incidental
-// casing/whitespace differences from the API.
-const BY_NAME: ReadonlyMap<string, CategoryDefinition> = new Map(
-  PRODUCT_CATEGORIES.map((category) => [
-    category.name.trim().toLowerCase(),
-    category,
-  ]),
+// Index every string a category is known by — code, English name and Vietnamese
+// label — so the lookup survives the BE renaming its category `name`. It already
+// did once: four of the six seeds now come back Vietnamese ("Sữa rửa mặt" rather
+// than "Cleanser"), which silently cost those categories their icon. Products
+// only carry `categoryName`, never the stable code, so matching on one spelling
+// is not enough. Normalization (trim + lowercase) guards against casing and
+// whitespace differences.
+const BY_KEY: ReadonlyMap<string, CategoryDefinition> = new Map(
+  PRODUCT_CATEGORIES.flatMap((category) =>
+    [category.code, category.name, category.label].map(
+      (key): [string, CategoryDefinition] => [
+        key.trim().toLowerCase(),
+        category,
+      ],
+    ),
+  ),
 );
 
-/** Resolve the full definition for a BE category `name` (undefined if unknown). */
+/**
+ * Resolve the full definition from any of a category's known spellings — the BE
+ * `name` (English or Vietnamese), the enum `code`, or the Vietnamese label.
+ */
 export function findCategory(beName: string): CategoryDefinition | undefined {
-  return BY_NAME.get(beName.trim().toLowerCase());
+  return BY_KEY.get(beName.trim().toLowerCase());
 }
 
 /**
