@@ -6,7 +6,7 @@ import {
   AXIS_SCORE_MAX,
   AXIS_SCORE_MIN,
   AXIS_SCORE_STEP,
-} from "../lib/baumann";
+} from "../lib/baumann-axes";
 
 /** Position of a score on the track: 0 = far left pole, 100 = far right pole. */
 export function toTrackPercent(score: number): number {

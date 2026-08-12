@@ -151,7 +151,7 @@ export function Footer() {
             <ShieldAlert className="text-destructive h-5 w-5 shrink-0" />
             <div>
               <span className="text-destructive mb-1 block font-bold">
-                TUYÊN BỐ MIỄN TRỪ TRÁCH NHIỆM Y TẾ:
+                Lưu ý: GlowScan không thay thế tư vấn y khoa
               </span>
               Công nghệ phân tích da mặt bằng AI trên hệ thống GlowScan chỉ cung
               cấp các đánh giá ước lượng về mặt thẩm mỹ bề ngoài (như mức độ

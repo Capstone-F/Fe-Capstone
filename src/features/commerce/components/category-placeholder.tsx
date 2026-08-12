@@ -7,10 +7,11 @@ import {
 } from "@/features/commerce/mapper/category-mapper";
 
 /**
- * Be-Capstone has no product-image field — render the category's custom icon
- * (public/icons/categories/, resolved via the category mapper) instead of a
- * real photo. Falls back to a neutral glyph for categories that have no mapped
- * icon (e.g. a new BE category not yet added to the constant).
+ * Stand-in for a product photo: renders the category's custom icon
+ * (public/icons/categories/, resolved via the category mapper). Used when a
+ * product has no variant `imageUrl`, or when the stored URL fails to load.
+ * Falls back to a neutral glyph for categories that have no mapped icon
+ * (e.g. a new BE category not yet added to the constant).
  */
 export function CategoryPlaceholder({
   categoryName,

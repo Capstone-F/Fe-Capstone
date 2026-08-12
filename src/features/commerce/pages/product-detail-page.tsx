@@ -19,12 +19,13 @@ import { useAddToCart } from "@/features/commerce/hooks/useCart";
 import { useSession } from "@/features/auth/hooks/useSession";
 import { useProfile } from "@/features/profile/hooks/useProfile";
 import { primaryVariant } from "@/features/commerce/mapper/variant";
+import { resolveProductImageUrls } from "@/features/commerce/mapper/product-image";
 import { formatVnd } from "@/shared/utils/format";
 import {
   getCategoryIcon,
   getCategoryLabel,
 } from "@/features/commerce/mapper/category-mapper";
-import { CategoryPlaceholder } from "@/features/commerce/components/category-placeholder";
+import { ProductImageGallery } from "@/features/commerce/components/product-image-gallery";
 import { RelatedProducts } from "@/features/commerce/components/related-products";
 import { Button } from "@/shared/components/ui/button";
 import { Card } from "@/shared/components/ui/card";
@@ -96,6 +97,7 @@ export function ProductDetailPage({
     primaryVariant(product);
   const categoryIcon = getCategoryIcon(product.categoryName);
   const keyIngredients = ingredients.filter((i) => i.isKeyIngredient);
+  const productImages = resolveProductImageUrls(product.variants);
 
   const handleAdd = () => {
     if (!selectedVariant) return;
@@ -125,11 +127,12 @@ export function ProductDetailPage({
       </nav>
 
       <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
-        <Card className="overflow-hidden border-slate-200 py-0 shadow-sm">
-          <div className="relative aspect-square w-full bg-slate-50">
-            <CategoryPlaceholder categoryName={product.categoryName} />
-          </div>
-        </Card>
+        <ProductImageGallery
+          images={productImages}
+          categoryName={product.categoryName}
+          selectedImageUrl={selectedVariant?.imageUrl ?? null}
+          selectedVariantId={selectedVariantId}
+        />
 
         <div className="flex h-fit flex-col gap-4 md:sticky md:top-24">
           <div className="flex flex-col gap-2">

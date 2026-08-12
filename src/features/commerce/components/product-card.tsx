@@ -5,9 +5,10 @@ import { ShoppingCart } from "lucide-react";
 import { Product } from "@/types/domain";
 import { formatVnd } from "@/shared/utils/format";
 import { primaryVariant } from "@/features/commerce/mapper/variant";
+import { resolvePrimaryProductImageUrl } from "@/features/commerce/mapper/product-image";
 import { Button } from "@/shared/components/ui/button";
 import { Card, CardContent, CardFooter } from "@/shared/components/ui/card";
-import { CategoryPlaceholder } from "./category-placeholder";
+import { ProductImage } from "./product-image";
 
 interface ProductCardProps {
   product: Product;
@@ -26,7 +27,12 @@ export function ProductCard({
     <Card className="hover:border-primary/40 flex flex-col justify-between overflow-hidden border-slate-200 py-0 shadow-xs transition-colors">
       <Link href={`/products/${product.id}`} className="block">
         <div className="relative aspect-square w-full bg-slate-50">
-          <CategoryPlaceholder categoryName={product.categoryName} />
+          <ProductImage
+            imageUrl={resolvePrimaryProductImageUrl(product.variants)}
+            categoryName={product.categoryName}
+            alt={product.name}
+            sizes="(max-width: 768px) 50vw, 25vw"
+          />
         </div>
       </Link>
       <CardContent className="flex flex-1 flex-col gap-1.5 p-3">

@@ -188,21 +188,6 @@ export function CheckoutPage() {
     }
   };
 
-  const updateDraft = (next: ShippingAddressFormValues) => {
-    addressForm.setValue("recipientName", next.recipientName, {
-      shouldDirty: true,
-    });
-    addressForm.setValue("recipientPhone", next.recipientPhone, {
-      shouldDirty: true,
-    });
-    addressForm.setValue("provinceId", next.provinceId, { shouldDirty: true });
-    addressForm.setValue("districtId", next.districtId, { shouldDirty: true });
-    addressForm.setValue("wardCode", next.wardCode, { shouldDirty: true });
-    addressForm.setValue("streetAddress", next.streetAddress, {
-      shouldDirty: true,
-    });
-  };
-
   const continueCheckout = async () => {
     if (step === 1) {
       const valid = await addressForm.trigger(undefined, { shouldFocus: true });
@@ -267,21 +252,8 @@ export function CheckoutPage() {
                   {ck.shipping.carrierNote}
                 </p>
                 <GhnAddressForm
-                  value={draft}
-                  onChange={updateDraft}
-                  errors={{
-                    recipientName:
-                      addressForm.formState.errors.recipientName?.message,
-                    recipientPhone:
-                      addressForm.formState.errors.recipientPhone?.message,
-                    provinceId:
-                      addressForm.formState.errors.provinceId?.message,
-                    districtId:
-                      addressForm.formState.errors.districtId?.message,
-                    wardCode: addressForm.formState.errors.wardCode?.message,
-                    streetAddress:
-                      addressForm.formState.errors.streetAddress?.message,
-                  }}
+                  control={addressForm.control}
+                  setValue={addressForm.setValue}
                 />
                 {address && feeQuote.isFetching && (
                   <p className="text-muted-foreground min-h-4 text-xs">

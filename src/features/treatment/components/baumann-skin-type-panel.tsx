@@ -6,7 +6,9 @@ import { toast } from "sonner";
 
 import { ApiError } from "@/core/api/errors";
 import { Button } from "@/shared/components/ui/button";
-import { useUpdateSkinType } from "../hooks/useProfile";
+// The Baumann type is stored on /profile/me, so the write stays owned by the
+// profile feature even though the screen now lives under /care.
+import { useUpdateSkinType } from "@/features/profile/hooks/useProfile";
 import {
   BAUMANN_AXES,
   axisLetter,
@@ -16,8 +18,8 @@ import {
   toStrengthPercent,
   type BaumannAxis,
   type BaumannAxisScores,
-} from "../lib/baumann";
-import type { UserProfile } from "../types/profile.types";
+} from "../lib/baumann-axes";
+import type { UserProfile } from "@/features/profile/types/profile.types";
 import {
   BaumannAxisSlider,
   toCentreFill,

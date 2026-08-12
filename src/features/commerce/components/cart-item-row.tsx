@@ -5,7 +5,8 @@ import { Minus, Plus, Trash2 } from "lucide-react";
 import { CartLine } from "@/types/domain";
 import { formatVnd } from "@/shared/utils/format";
 import { cn } from "@/lib/utils";
-import { CategoryPlaceholder } from "./category-placeholder";
+import { resolveLineImageUrl } from "@/features/commerce/mapper/product-image";
+import { ProductImage } from "./product-image";
 import { Button } from "@/shared/components/ui/button";
 
 const cc = {
@@ -38,7 +39,12 @@ export function CartItemRow({
         href={`/products/${product.id}`}
         className="relative h-20 w-20 shrink-0 overflow-hidden rounded-lg bg-slate-50"
       >
-        <CategoryPlaceholder categoryName={product.categoryName} />
+        <ProductImage
+          imageUrl={resolveLineImageUrl(variant, product)}
+          categoryName={product.categoryName}
+          alt={product.name}
+          sizes="80px"
+        />
       </Link>
       <div className="flex flex-1 flex-col gap-1">
         <span className="text-muted-foreground text-[10px] font-semibold uppercase">

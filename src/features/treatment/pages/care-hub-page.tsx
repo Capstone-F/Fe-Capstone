@@ -33,6 +33,7 @@ import {
   TabsList,
   TabsTrigger,
 } from "@/shared/components/ui/tabs";
+import { BaumannSkinTypeCard } from "../components/baumann-skin-type-card";
 import { DailyCheckInDialog } from "../components/daily-check-in-dialog";
 import { LowStockBanner } from "../components/low-stock-banner";
 import { RestockDialog } from "../components/restock-dialog";
@@ -337,39 +338,45 @@ export function CareHubPage() {
 
   if (careHubState.status === "NO_ROUTINE") {
     return (
-      <div className="mx-auto flex w-full max-w-4xl flex-col items-center gap-6 py-12 text-center">
-        <div className="flex h-16 w-16 items-center justify-center rounded-2xl bg-[#EBF2EE] text-[#2C3E35] shadow-xs">
-          <Sun className="h-8 w-8 text-amber-600" />
+      <div className="mx-auto flex w-full max-w-4xl flex-col gap-8 px-4 py-12">
+        <div className="flex flex-col items-center gap-6 text-center">
+          <div className="flex h-16 w-16 items-center justify-center rounded-2xl bg-[#EBF2EE] text-[#2C3E35] shadow-xs">
+            <Sun className="h-8 w-8 text-amber-600" />
+          </div>
+          <div className="space-y-2">
+            <h1 className="text-3xl font-bold tracking-tight text-[#2C3E35]">
+              Chưa Có Lộ Trình Chăm Sóc
+            </h1>
+            <p className="max-w-md text-sm text-[#5C7468]">
+              Chào {profile?.name || "bạn"}, hoàn thành bài khảo sát 16 loại da
+              Baumann và mua gói sản phẩm tương ứng để AI tự động sinh Routine
+              cho bạn.
+            </p>
+          </div>
+          <div className="flex gap-3">
+            <Link href="/scan">
+              <Button
+                size="lg"
+                className="rounded-xl bg-[#6b5cf6] font-bold text-white hover:bg-[#5a4ae5]"
+              >
+                Bắt Đầu Khảo Sát Da
+              </Button>
+            </Link>
+            <Link href="/products">
+              <Button
+                variant="outline"
+                size="lg"
+                className="rounded-xl border-slate-300"
+              >
+                Xem Sản Phẩm Gợi Ý
+              </Button>
+            </Link>
+          </div>
         </div>
-        <div className="space-y-2">
-          <h1 className="text-3xl font-bold tracking-tight text-[#2C3E35]">
-            Chưa Có Lộ Trình Chăm Sóc
-          </h1>
-          <p className="max-w-md text-sm text-[#5C7468]">
-            Chào {profile?.name || "bạn"}, hoàn thành bài khảo sát 16 loại da
-            Baumann và mua gói sản phẩm tương ứng để AI tự động sinh Routine cho
-            bạn.
-          </p>
-        </div>
-        <div className="flex gap-3">
-          <Link href="/scan">
-            <Button
-              size="lg"
-              className="rounded-xl bg-[#6b5cf6] font-bold text-white hover:bg-[#5a4ae5]"
-            >
-              Bắt Đầu Khảo Sát Da
-            </Button>
-          </Link>
-          <Link href="/products">
-            <Button
-              variant="outline"
-              size="lg"
-              className="rounded-xl border-slate-300"
-            >
-              Xem Sản Phẩm Gợi Ý
-            </Button>
-          </Link>
-        </div>
+
+        {/* The tab strip below only renders once a routine exists, so the skin
+            profile is surfaced here too — /care is its only home now. */}
+        <BaumannSkinTypeCard profile={profile} />
       </div>
     );
   }
@@ -474,6 +481,12 @@ export function CareHubPage() {
             className="rounded-lg px-4 py-2 text-xs font-semibold"
           >
             Lịch Sử & Báo Cáo
+          </TabsTrigger>
+          <TabsTrigger
+            value="skin-type"
+            className="rounded-lg px-4 py-2 text-xs font-semibold"
+          >
+            Loại Da Baumann
           </TabsTrigger>
         </TabsList>
 
@@ -796,6 +809,12 @@ export function CareHubPage() {
         {/* Tab 2: Progress Photo Gallery */}
         <TabsContent value="progress" className="space-y-6 outline-none">
           <ProgressPhotoGallery />
+        </TabsContent>
+
+        {/* Tab 5: Baumann skin type — moved here from /profile so the skin picture
+            sits next to the routine it drives. */}
+        <TabsContent value="skin-type" className="space-y-6 outline-none">
+          <BaumannSkinTypeCard profile={profile} />
         </TabsContent>
       </Tabs>
 

@@ -16,10 +16,7 @@ import {
   useUpdateSkinType,
   useProfile,
 } from "@/features/profile/hooks/useProfile";
-import {
-  toSkinTypePayload,
-  type BaumannAxisScores,
-} from "@/features/profile/lib/baumann";
+import { toSkinTypePayload, type BaumannAxisScores } from "../lib/baumann-axes";
 import { cn } from "@/lib/utils";
 
 interface AxisConfig {
