@@ -36,7 +36,6 @@ import {
   CardTitle,
 } from "@/shared/components/ui/card";
 import { cn } from "@/lib/utils";
-import useDebounce from "@/shared/hooks/useDebounce";
 import {
   shippingAddressSchema,
   type ShippingAddressFormValues,
@@ -106,8 +105,10 @@ export function CheckoutPage() {
   // Null until every field is present and valid — this is what gates both the fee
   // preview and the place-order call.
   const address = useMemo(() => toShippingAddressInput(draft), [draft]);
-  const debouncedAddress = useDebounce(address, 500);
-  const feeQuote = useShippingFeeQuote(debouncedAddress);
+  // Deliberately not debounced: the quote is keyed on district + ward alone, so typing
+  // cannot refetch it. A debounce here only held the fee back behind the whole typing
+  // session and showed the previous destination's price meanwhile.
+  const feeQuote = useShippingFeeQuote(address);
 
   // Shared cache with GhnAddressForm; used only to render names on the confirm step.
   const provinces = useProvinces();
