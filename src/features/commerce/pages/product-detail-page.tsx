@@ -134,7 +134,7 @@ export function ProductDetailPage({
           selectedVariantId={selectedVariantId}
         />
 
-        <div className="flex h-fit flex-col gap-4 md:sticky md:top-24">
+        <div className="flex h-fit flex-col gap-4">
           <div className="flex flex-col gap-2">
             <div className="flex items-center gap-2">
               <span className="inline-flex items-center gap-1.5 rounded-full bg-slate-100 px-2.5 py-1 text-xs font-semibold text-slate-600">
