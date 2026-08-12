@@ -19,6 +19,11 @@ import {
   Zap,
   Calendar,
   MessageSquare,
+  UserCheck,
+  MoreHorizontal,
+  Pencil,
+  DollarSign,
+  Hospital,
 } from "lucide-react";
 import { toast } from "sonner";
 
@@ -40,6 +45,16 @@ import {
   DialogDescription,
   DialogFooter,
 } from "@/shared/components/ui/dialog";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuGroup,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/shared/components/ui/dropdown-menu";
+import { DataTablePagination } from "@/shared/components/ui/data-table-pagination";
 
 import {
   useClinics,
@@ -78,12 +93,33 @@ function defaultDateStr() {
   return tomorrow.toISOString().slice(0, 16);
 }
 
+interface ExpertUser {
+  id: string;
+  name?: string | null;
+  email?: string | null;
+  clinicId?: string | null;
+  isActive?: boolean;
+  roles?: string[];
+}
+
 export function ExpertManagementView() {
   const [isCreateExpertOpen, setIsCreateExpertOpen] = useState(false);
   const [isQuickBookOpen, setIsQuickBookOpen] = useState(false);
 
   const [searchTerm, setSearchTerm] = useState("");
   const [copiedId, setCopiedId] = useState<string | null>(null);
+
+  // Pagination
+  const [page, setPage] = useState(1);
+  const PAGE_SIZE = 10;
+
+  // Edit Modals State
+  const [editFeeExpert, setEditFeeExpert] = useState<ExpertUser | null>(null);
+  const [editFeeValue, setEditFeeValue] = useState("");
+  const [editClinicExpert, setEditClinicExpert] = useState<ExpertUser | null>(
+    null,
+  );
+  const [editClinicValue, setEditClinicValue] = useState("");
 
   const createExpertForm = useForm<CreateExpertValues>({
     resolver: zodResolver(createExpertSchema),
@@ -235,7 +271,7 @@ export function ExpertManagementView() {
   };
 
   // Filtered list
-  const filteredUsers = users.filter((u) => {
+  const filteredUsers = users.filter((u: ExpertUser) => {
     if (!searchTerm.trim()) return true;
     const q = searchTerm.toLowerCase();
     return (
@@ -244,18 +280,71 @@ export function ExpertManagementView() {
     );
   });
 
+  const totalPages = Math.max(1, Math.ceil(filteredUsers.length / PAGE_SIZE));
+  const paginatedUsers = filteredUsers.slice(
+    (page - 1) * PAGE_SIZE,
+    page * PAGE_SIZE,
+  );
+
+  // Handlers: edit fee
+  const handleOpenEditFee = (u: ExpertUser) => {
+    setEditFeeExpert(u);
+    setEditFeeValue("");
+  };
+
+  const handleSaveEditFee = () => {
+    if (!editFeeExpert) return;
+    import("@/core/api/client").then(({ apiClient }) => {
+      apiClient
+        .put(`/experts/${editFeeExpert.id}/consultation-fee`, {
+          consultationFee: Number(editFeeValue.replace(/[^0-9]/g, "")),
+        })
+        .then(() => {
+          toast.success("Đã cập nhật phí tư vấn!");
+          setEditFeeExpert(null);
+        })
+        .catch(() => toast.error("Không thể cập nhật phí tư vấn."));
+    });
+  };
+
+  // Handlers: edit clinic
+  const handleOpenEditClinic = (u: ExpertUser) => {
+    setEditClinicExpert(u);
+    setEditClinicValue(u.clinicId ?? "");
+  };
+
+  const handleSaveEditClinic = () => {
+    if (!editClinicExpert) return;
+    import("@/core/api/client").then(({ apiClient }) => {
+      apiClient
+        .patch(`/experts/${editClinicExpert.id}`, { clinicId: editClinicValue })
+        .then(() => {
+          toast.success("Đã cập nhật phòng khám!");
+          setEditClinicExpert(null);
+        })
+        .catch(() => toast.error("Không thể cập nhật phòng khám."));
+    });
+  };
+
   return (
-    <div className="space-y-6">
+    <div className="space-y-6 p-4 sm:p-6">
       {/* ── Header Welcome ── */}
-      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-        <div>
-          <h2 className="text-2xl font-bold text-slate-900">
-            Quản lý tài khoản chuyên gia
-          </h2>
-          <p className="text-sm text-slate-500">
-            Tạo tài khoản chuyên gia và quản lý các công cụ hỗ trợ đặt lịch.
-          </p>
+      <div className="flex flex-col gap-4 rounded-3xl border border-slate-200/90 bg-white p-5 shadow-sm sm:flex-row sm:items-center sm:justify-between dark:border-slate-800 dark:bg-slate-900">
+        <div className="flex items-center gap-3">
+          <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-[#E2EBE6] text-[#2C3E35] dark:bg-emerald-950 dark:text-emerald-400">
+            <UserCheck className="h-6 w-6" />
+          </div>
+          <div>
+            <h2 className="text-lg font-bold text-slate-900 dark:text-white">
+              Onboard & Quản Lý Tài Khoản Chuyên Gia
+            </h2>
+            <p className="text-xs text-slate-500">
+              Tạo tài khoản chuyên gia da liễu, liên kết phòng khám và thiết lập
+              khung giờ tư vấn.
+            </p>
+          </div>
         </div>
+
         <div className="flex flex-wrap items-center gap-2">
           {/* Quick booking helper */}
           <Button
@@ -277,7 +366,7 @@ export function ExpertManagementView() {
 
           <Button
             onClick={handleOpenCreateExpertModal}
-            className="rounded-xl bg-emerald-600 text-xs font-bold text-white shadow-xs hover:bg-emerald-700"
+            className="rounded-xl bg-[#2C3E35] text-xs font-bold text-white shadow-xs hover:bg-[#3A5246]"
           >
             <UserPlus className="mr-1.5 h-4 w-4" /> Tạo chuyên gia mới
           </Button>
@@ -313,25 +402,25 @@ export function ExpertManagementView() {
         </div>
 
         <div className="flex items-center gap-4 rounded-2xl border border-slate-200/80 bg-white p-4 shadow-sm">
-          <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-amber-50 text-amber-600">
-            <Zap className="h-6 w-6" />
+          <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-emerald-50 text-emerald-600">
+            <UserCheck className="h-6 w-6" />
           </div>
           <div>
             <p className="text-xs font-semibold text-slate-500">
-              Công cụ đặt lịch
+              Chuyên gia kích hoạt
             </p>
-            <p className="text-sm font-bold text-amber-600">Tạo ca hẹn nhanh</p>
+            <p className="text-2xl font-bold text-slate-900">
+              {users.filter((u) => u.isActive !== false).length}
+            </p>
           </div>
         </div>
       </div>
 
-      {/* ── Main Area ── */}
-      <div className="space-y-4 rounded-2xl border border-slate-200/80 bg-white p-6 shadow-sm">
-        <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-          <h3 className="font-heading text-base font-bold text-slate-900">
-            Danh sách tài khoản chuyên gia
-          </h3>
-          <div className="relative w-full sm:w-64">
+      {/* ── Main Area: Table inside Card (standard pattern) ── */}
+      <div className="overflow-hidden rounded-3xl border border-slate-200/90 bg-white shadow-sm dark:border-slate-800 dark:bg-slate-900">
+        {/* Embedded Search bar */}
+        <div className="border-b border-slate-100 bg-slate-50/50 px-4 py-3 dark:border-slate-800 dark:bg-slate-800/40">
+          <div className="relative w-full sm:w-72">
             <Search className="absolute top-1/2 left-3 h-4 w-4 -translate-y-1/2 text-slate-400" />
             <Input
               type="text"
@@ -365,21 +454,31 @@ export function ExpertManagementView() {
             </Button>
           </div>
         ) : (
-          <div className="overflow-x-auto rounded-xl border border-slate-200/80">
-            <table className="w-full text-left text-xs">
-              <thead className="bg-slate-50 font-bold text-slate-700">
-                <tr>
-                  <th className="px-4 py-3">Họ và tên chuyên gia</th>
-                  <th className="px-4 py-3">Email Đăng Nhập</th>
-                  <th className="px-4 py-3">Vai Trò</th>
-                  <th className="px-4 py-3">Phòng Khám Phân Công</th>
-                  <th className="px-4 py-3 text-right">Thao Tác</th>
+          <div className="overflow-x-auto">
+            <table className="w-full border-collapse text-left text-xs">
+              <thead className="bg-slate-50">
+                <tr className="border-b border-slate-200">
+                  <th className="px-4 py-3 font-bold text-slate-700">
+                    Họ và tên chuyên gia
+                  </th>
+                  <th className="px-4 py-3 font-bold text-slate-700">
+                    Email Đăng Nhập
+                  </th>
+                  <th className="px-4 py-3 font-bold text-slate-700">
+                    Vai Trò
+                  </th>
+                  <th className="px-4 py-3 font-bold text-slate-700">
+                    Phòng Khám Phân Công
+                  </th>
+                  <th className="px-4 py-3 text-right font-bold text-slate-700">
+                    Thao Tác
+                  </th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-100 text-slate-600">
-                {filteredUsers.map((u) => {
+                {paginatedUsers.map((u: ExpertUser) => {
                   const assignedClinic = clinics.find(
-                    (c) => c.id === u.clinicId,
+                    (c: { id: string; name: string }) => c.id === u.clinicId,
                   );
 
                   return (
@@ -387,8 +486,10 @@ export function ExpertManagementView() {
                       key={u.id}
                       className="transition-colors hover:bg-slate-50/60"
                     >
-                      <td className="px-4 py-3 font-semibold text-slate-900">
-                        {u.name || "Chưa cập nhật tên"}
+                      <td className="px-4 py-3">
+                        <span className="font-semibold text-slate-900">
+                          {u.name || "Chưa cập nhật tên"}
+                        </span>
                       </td>
                       <td className="px-4 py-3 font-mono text-slate-700">
                         {u.email || "Chưa cập nhật email"}
@@ -404,40 +505,91 @@ export function ExpertManagementView() {
                       <td className="px-4 py-3">
                         {assignedClinic ? (
                           <span className="font-medium text-slate-800">
-                            {assignedClinic.name}
+                            {(assignedClinic as { name: string }).name}
                           </span>
                         ) : (
-                          <span className="text-slate-400">Chưa gán</span>
+                          <span className="text-slate-400 italic">
+                            Chưa gán
+                          </span>
                         )}
                       </td>
                       <td className="px-4 py-3 text-right">
-                        <Button
-                          size="sm"
-                          variant="ghost"
-                          onClick={() =>
-                            u.email && handleCopyCredentials(u.email, u.id)
-                          }
-                          disabled={!u.email}
-                          className="rounded-lg text-xs text-slate-600 hover:bg-emerald-50 hover:text-emerald-700"
-                        >
-                          {copiedId === u.id ? (
-                            <>
-                              <Check className="mr-1 h-3.5 w-3.5 text-emerald-600" />
-                              Đã Copy
-                            </>
-                          ) : (
-                            <>
-                              <Copy className="mr-1 h-3.5 w-3.5" />
-                              Copy Acc
-                            </>
-                          )}
-                        </Button>
+                        <DropdownMenu>
+                          <DropdownMenuTrigger
+                            render={
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                className="h-7 w-7 rounded-lg p-0 text-slate-500 hover:bg-slate-100"
+                              >
+                                <MoreHorizontal className="h-4 w-4" />
+                              </Button>
+                            }
+                          />
+                          <DropdownMenuContent
+                            align="end"
+                            className="w-52 rounded-xl text-xs"
+                          >
+                            <DropdownMenuGroup>
+                              <DropdownMenuLabel className="text-[11px] text-slate-400">
+                                Thao tác chuyên gia
+                              </DropdownMenuLabel>
+                            </DropdownMenuGroup>
+                            <DropdownMenuSeparator />
+                            <DropdownMenuItem
+                              className="cursor-pointer gap-2 rounded-lg text-xs"
+                              onClick={() =>
+                                u.email && handleCopyCredentials(u.email, u.id)
+                              }
+                              disabled={!u.email}
+                            >
+                              {copiedId === u.id ? (
+                                <Check className="h-3.5 w-3.5 text-emerald-600" />
+                              ) : (
+                                <Copy className="h-3.5 w-3.5" />
+                              )}
+                              {copiedId === u.id
+                                ? "Đã sao chép"
+                                : "Sao chép thông tin đăng nhập"}
+                            </DropdownMenuItem>
+                            <DropdownMenuItem
+                              className="cursor-pointer gap-2 rounded-lg text-xs"
+                              onClick={() => handleOpenEditFee(u)}
+                            >
+                              <DollarSign className="h-3.5 w-3.5 text-amber-500" />
+                              Sửa phí tư vấn
+                            </DropdownMenuItem>
+                            <DropdownMenuItem
+                              className="cursor-pointer gap-2 rounded-lg text-xs"
+                              onClick={() => handleOpenEditClinic(u)}
+                            >
+                              <Hospital className="h-3.5 w-3.5 text-teal-500" />
+                              Đổi phòng khám
+                            </DropdownMenuItem>
+                            <DropdownMenuSeparator />
+                            <DropdownMenuItem
+                              className="cursor-pointer gap-2 rounded-lg text-xs text-slate-500"
+                              onClick={() => window.open("/expert", "_blank")}
+                            >
+                              <Pencil className="h-3.5 w-3.5" />
+                              Xem tại cổng chuyên gia
+                            </DropdownMenuItem>
+                          </DropdownMenuContent>
+                        </DropdownMenu>
                       </td>
                     </tr>
                   );
                 })}
               </tbody>
             </table>
+            {/* Pagination */}
+            <DataTablePagination
+              page={page}
+              totalPages={totalPages}
+              totalItems={filteredUsers.length}
+              pageSize={PAGE_SIZE}
+              onPageChange={(p) => setPage(p)}
+            />
           </div>
         )}
       </div>
@@ -778,6 +930,108 @@ export function ExpertManagementView() {
               </Button>
             </DialogFooter>
           </form>
+        </DialogContent>
+      </Dialog>
+
+      {/* ── Edit Fee Dialog ── */}
+      <Dialog
+        open={!!editFeeExpert}
+        onOpenChange={(open) => !open && setEditFeeExpert(null)}
+      >
+        <DialogContent className="sm:max-w-sm">
+          <DialogHeader>
+            <DialogTitle className="text-base font-bold text-slate-900">
+              Cập nhật phí tư vấn
+            </DialogTitle>
+            <DialogDescription className="text-xs text-slate-500">
+              Chuyên gia: <strong>{editFeeExpert?.name}</strong>
+            </DialogDescription>
+          </DialogHeader>
+          <div className="flex flex-col gap-3 py-2">
+            <label className="text-xs font-bold text-slate-700">
+              Phí tư vấn mới (VND)
+            </label>
+            <div className="relative">
+              <DollarSign className="absolute top-1/2 left-3 h-4 w-4 -translate-y-1/2 text-slate-400" />
+              <Input
+                placeholder="VD: 300000"
+                value={editFeeValue}
+                onChange={(e) => setEditFeeValue(e.target.value)}
+                className="rounded-xl border-slate-200 pl-9 text-xs"
+              />
+            </div>
+          </div>
+          <DialogFooter className="gap-2">
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => setEditFeeExpert(null)}
+              className="rounded-xl text-xs"
+            >
+              Hủy
+            </Button>
+            <Button
+              size="sm"
+              onClick={handleSaveEditFee}
+              className="rounded-xl bg-[#2C3E35] text-xs font-bold text-white hover:bg-[#3A5246]"
+            >
+              Lưu phí tư vấn
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* ── Edit Clinic Dialog ── */}
+      <Dialog
+        open={!!editClinicExpert}
+        onOpenChange={(open) => !open && setEditClinicExpert(null)}
+      >
+        <DialogContent className="sm:max-w-sm">
+          <DialogHeader>
+            <DialogTitle className="text-base font-bold text-slate-900">
+              Đổi phòng khám
+            </DialogTitle>
+            <DialogDescription className="text-xs text-slate-500">
+              Chuyên gia: <strong>{editClinicExpert?.name}</strong>
+            </DialogDescription>
+          </DialogHeader>
+          <div className="flex flex-col gap-3 py-2">
+            <label className="text-xs font-bold text-slate-700">
+              Phòng khám phụ trách
+            </label>
+            <Select
+              value={editClinicValue}
+              onValueChange={(v) => setEditClinicValue(v ?? "")}
+            >
+              <SelectTrigger className="rounded-xl text-xs">
+                <SelectValue placeholder="Chọn phòng khám" />
+              </SelectTrigger>
+              <SelectContent>
+                {clinics.map((c: { id: string; name: string }) => (
+                  <SelectItem key={c.id} value={c.id} className="text-xs">
+                    {c.name}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+          <DialogFooter className="gap-2">
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => setEditClinicExpert(null)}
+              className="rounded-xl text-xs"
+            >
+              Hủy
+            </Button>
+            <Button
+              size="sm"
+              onClick={handleSaveEditClinic}
+              className="rounded-xl bg-[#2C3E35] text-xs font-bold text-white hover:bg-[#3A5246]"
+            >
+              Lưu phòng khám
+            </Button>
+          </DialogFooter>
         </DialogContent>
       </Dialog>
     </div>

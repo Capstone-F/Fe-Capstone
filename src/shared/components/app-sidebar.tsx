@@ -36,6 +36,7 @@ import {
   Boxes,
   MessageSquare,
   PackagePlus,
+  UserCheck,
 } from "lucide-react";
 import { useProfile } from "@/features/profile/hooks/useProfile";
 import { useSession } from "@/features/auth/hooks/useSession";
@@ -48,6 +49,7 @@ const IconMap: Record<string, LucideIcon> = {
   ChartBar: ChartBarIcon,
   Folder: FolderIcon,
   Users: UsersIcon,
+  UserCheck: UserCheck,
   Settings2: Settings2Icon,
   CircleHelp: CircleHelpIcon,
   Search: SearchIcon,

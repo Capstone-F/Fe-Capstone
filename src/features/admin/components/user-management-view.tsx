@@ -44,14 +44,6 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/shared/components/ui/select";
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@/shared/components/ui/table";
 import { Textarea } from "@/shared/components/ui/textarea";
 import {
   Tooltip,
@@ -70,6 +62,7 @@ import {
   adminWalletTopUpSchema,
   type AdminWalletTopUpValues,
 } from "@/features/admin/schemas/admin-forms.schema";
+import { DataTablePagination } from "@/shared/components/ui/data-table-pagination";
 
 const roleOptions = [
   { value: "customer", label: "Khách hàng" },
@@ -89,6 +82,11 @@ export function UserManagementView() {
   const debouncedSearch = useDebounce(search.trim(), 350);
   const [role, setRole] = useState("all");
   const [selectedUserId, setSelectedUserId] = useState("");
+
+  // Pagination state
+  const [page, setPage] = useState(1);
+  const PAGE_SIZE = 15;
+
   const directory = useAdminUserDirectory({
     q: debouncedSearch || undefined,
     role: role === "all" ? undefined : role,
@@ -96,25 +94,35 @@ export function UserManagementView() {
     limit: 100,
   });
 
-  const users = directory.data?.items ?? [];
-  const activeCount = users.filter((user) => user.isActive).length;
-  const customerCount = users.filter((user) =>
+  const allUsers = directory.data?.items ?? [];
+  const activeCount = allUsers.filter((user) => user.isActive).length;
+  const customerCount = allUsers.filter((user) =>
     user.roles.includes("customer"),
   ).length;
+  const totalPages = Math.max(1, Math.ceil(allUsers.length / PAGE_SIZE));
+  const users = allUsers.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE);
 
   return (
     <TooltipProvider>
       <div className="space-y-6 p-4 sm:p-6">
-        <header>
-          <h1 className="text-xl font-semibold text-slate-950">
-            Quản lý người dùng
-          </h1>
-          <p className="mt-1 text-sm text-slate-500">
-            Tra cứu tài khoản, phân quyền, khóa truy cập và hỗ trợ số dư ví.
-          </p>
-        </header>
+        <div className="flex flex-col gap-4 rounded-3xl border border-slate-200/90 bg-white p-5 shadow-sm sm:flex-row sm:items-center sm:justify-between dark:border-slate-800 dark:bg-slate-900">
+          <div className="flex items-center gap-3">
+            <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-[#E2EBE6] text-[#2C3E35] dark:bg-emerald-950 dark:text-emerald-400">
+              <Users className="h-6 w-6" />
+            </div>
+            <div>
+              <h2 className="text-lg font-bold text-slate-900 dark:text-white">
+                Quản Lý Người Dùng & Phân Quyền
+              </h2>
+              <p className="text-xs text-slate-500">
+                Tra cứu tài khoản, phân quyền vai trò, khóa truy cập và hỗ trợ
+                số dư ví khách hàng.
+              </p>
+            </div>
+          </div>
+        </div>
 
-        <section className="grid gap-3 sm:grid-cols-3">
+        <section className="grid gap-4 sm:grid-cols-3">
           <Metric
             icon={<Users className="h-5 w-5" />}
             label="Tổng người dùng"
@@ -132,7 +140,7 @@ export function UserManagementView() {
           />
         </section>
 
-        <section className="border bg-white">
+        <section className="overflow-hidden rounded-3xl border border-slate-200/90 bg-white shadow-sm dark:border-slate-800 dark:bg-slate-900">
           <div className="flex flex-col gap-3 border-b p-4 sm:flex-row sm:items-center sm:justify-between">
             <div className="relative w-full sm:max-w-sm">
               <Search className="absolute top-1/2 left-3 h-4 w-4 -translate-y-1/2 text-slate-400" />
@@ -183,67 +191,97 @@ export function UserManagementView() {
               Không tìm thấy người dùng phù hợp.
             </div>
           ) : (
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>Người dùng</TableHead>
-                  <TableHead>Vai trò</TableHead>
-                  <TableHead>Trạng thái</TableHead>
-                  <TableHead>Ngày tạo</TableHead>
-                  <TableHead className="w-16 text-right">Chi tiết</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {users.map((user) => (
-                  <TableRow key={user.id}>
-                    <TableCell>
-                      <p className="font-medium text-slate-950">
-                        {user.name || "Chưa cập nhật tên"}
-                      </p>
-                      <p className="text-xs text-slate-500">
-                        {user.email || "Chưa cập nhật email"}
-                      </p>
-                    </TableCell>
-                    <TableCell>
-                      <div className="flex max-w-72 flex-wrap gap-1">
-                        {user.roles.map((item) => (
-                          <Badge key={item} variant="outline">
-                            {roleLabel.get(item) || item}
-                          </Badge>
-                        ))}
-                      </div>
-                    </TableCell>
-                    <TableCell>
-                      <Badge
-                        variant={user.isActive ? "secondary" : "destructive"}
-                      >
-                        {user.isActive ? "Hoạt động" : "Đã khóa"}
-                      </Badge>
-                    </TableCell>
-                    <TableCell className="text-slate-600">
-                      {new Date(user.createdAt).toLocaleDateString("vi-VN")}
-                    </TableCell>
-                    <TableCell className="text-right">
-                      <Tooltip>
-                        <TooltipTrigger
-                          render={
-                            <Button
-                              size="icon-sm"
-                              variant="ghost"
-                              aria-label={`Xem chi tiết ${user.name || user.email || "người dùng"}`}
-                              onClick={() => setSelectedUserId(user.id)}
-                            />
-                          }
+            <div className="overflow-x-auto">
+              <table className="w-full text-left text-xs">
+                <thead className="bg-slate-50">
+                  <tr className="border-b border-slate-200">
+                    <th className="px-4 py-3 font-bold text-slate-700">
+                      Người dùng
+                    </th>
+                    <th className="px-4 py-3 font-bold text-slate-700">
+                      Vai trò
+                    </th>
+                    <th className="px-4 py-3 font-bold text-slate-700">
+                      Trạng thái
+                    </th>
+                    <th className="px-4 py-3 font-bold text-slate-700">
+                      Ngày tạo
+                    </th>
+                    <th className="w-16 px-4 py-3 text-right font-bold text-slate-700">
+                      Chi tiết
+                    </th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-slate-100 text-slate-600">
+                  {users.map((user) => (
+                    <tr
+                      key={user.id}
+                      className="transition-colors hover:bg-slate-50/60"
+                    >
+                      <td className="px-4 py-3">
+                        <p className="font-semibold text-slate-900">
+                          {user.name || "Chưa cập nhật tên"}
+                        </p>
+                        <p className="text-[11px] text-slate-500">
+                          {user.email || "Chưa cập nhật email"}
+                        </p>
+                      </td>
+                      <td className="px-4 py-3">
+                        <div className="flex max-w-72 flex-wrap gap-1">
+                          {user.roles.map((item) => (
+                            <Badge
+                              key={item}
+                              variant="outline"
+                              className="text-[10px] font-semibold"
+                            >
+                              {roleLabel.get(item) || item}
+                            </Badge>
+                          ))}
+                        </div>
+                      </td>
+                      <td className="px-4 py-3">
+                        <Badge
+                          variant={user.isActive ? "secondary" : "destructive"}
+                          className="text-[10px] font-semibold"
                         >
-                          <Info />
-                        </TooltipTrigger>
-                        <TooltipContent>Xem chi tiết</TooltipContent>
-                      </Tooltip>
-                    </TableCell>
-                  </TableRow>
-                ))}
-              </TableBody>
-            </Table>
+                          {user.isActive ? "Hoạt động" : "Đã khóa"}
+                        </Badge>
+                      </td>
+                      <td className="px-4 py-3 text-slate-600">
+                        {new Date(user.createdAt).toLocaleDateString("vi-VN")}
+                      </td>
+                      <td className="px-4 py-3 text-right">
+                        <Tooltip>
+                          <TooltipTrigger
+                            render={
+                              <Button
+                                size="icon-sm"
+                                variant="ghost"
+                                aria-label={`Xem chi tiết ${user.name || user.email || "người dùng"}`}
+                                onClick={() => setSelectedUserId(user.id)}
+                              />
+                            }
+                          >
+                            <Info />
+                          </TooltipTrigger>
+                          <TooltipContent>Xem chi tiết</TooltipContent>
+                        </Tooltip>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+              {/* Pagination */}
+              <DataTablePagination
+                page={page}
+                totalPages={totalPages}
+                totalItems={allUsers.length}
+                pageSize={PAGE_SIZE}
+                onPageChange={(p) => {
+                  setPage(p);
+                }}
+              />
+            </div>
           )}
         </section>
 
@@ -268,11 +306,13 @@ function Metric({
   value: number;
 }) {
   return (
-    <div className="flex items-center gap-3 border bg-white p-4">
-      <span className="text-emerald-700">{icon}</span>
+    <div className="flex items-center gap-4 rounded-2xl border border-slate-200/80 bg-white p-4 shadow-sm">
+      <span className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-emerald-50 text-emerald-600">
+        {icon}
+      </span>
       <div>
-        <p className="text-xs text-slate-500">{label}</p>
-        <p className="text-xl font-semibold text-slate-950">{value}</p>
+        <p className="text-xs font-semibold text-slate-500">{label}</p>
+        <p className="text-2xl font-bold text-slate-900">{value}</p>
       </div>
     </div>
   );

@@ -12,19 +12,39 @@ export const siteConfig = {
     title: "GlowScan Admin",
     navMain: [
       {
-        title: "Quản lý người dùng",
+        title: "Quản lý người dùng & Phân quyền",
         url: "/dashboard",
         icon: "Users",
       },
       {
-        title: "Quản lý chuyên gia",
-        url: "/dashboard/experts",
-        icon: "Users",
+        title: "Quản lý phòng khám đối tác",
+        url: "/dashboard/clinics",
+        icon: "Folder",
       },
       {
-        title: "Cổng chuyên gia",
-        url: "/expert",
-        icon: "Stethoscope",
+        title: "Onboard & Quản lý chuyên gia",
+        url: "/dashboard/experts",
+        icon: "UserCheck",
+      },
+      {
+        title: "Bàn Hủy đơn & Kho trả (Restock)",
+        url: "/dashboard/cancellations",
+        icon: "Boxes",
+      },
+      {
+        title: "Ngân hàng câu hỏi khảo sát",
+        url: "/dashboard/surveys",
+        icon: "FileText",
+      },
+      {
+        title: "Cấu hình thương mại & Ví",
+        url: "/dashboard/commerce",
+        icon: "ShoppingBag",
+      },
+      {
+        title: "Bảng công cụ QA Cheats",
+        url: "/dashboard/qa-cheats",
+        icon: "Settings2",
       },
     ],
     navSecondary: [],
