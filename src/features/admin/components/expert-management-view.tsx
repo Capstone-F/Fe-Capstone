@@ -191,6 +191,23 @@ export function ExpertManagementView() {
           };
         });
 
+  // Base UI prints the raw value in a closed trigger unless the root gets this
+  // value→label map — without it these three show a bare UUID.
+  const doctorItems = doctorOptions.map((doc) => ({
+    value: doc.id,
+    label: `${doc.name} - ${doc.subtitle}`,
+  }));
+  const clinicItems = clinics.map((clinic: { id: string; name: string }) => ({
+    value: clinic.id,
+    label: clinic.name,
+  }));
+  const clinicItemsWithAddress = clinics.map(
+    (clinic: { id: string; name: string; address: string }) => ({
+      value: clinic.id,
+      label: `${clinic.name} (${clinic.address})`,
+    }),
+  );
+
   // Handlers: Create Expert
   const handleOpenCreateExpertModal = () => {
     setIsCreateExpertOpen(true);
@@ -751,7 +768,11 @@ export function ExpertManagementView() {
               label="Chuyên khoa da liễu"
             >
               {(field) => (
-                <Select value={field.value} onValueChange={field.onChange}>
+                <Select
+                  value={field.value}
+                  onValueChange={field.onChange}
+                  items={EXPERT_SPECIALTIES}
+                >
                   <SelectTrigger id={field.name} className="w-full">
                     <SelectValue />
                   </SelectTrigger>
@@ -779,7 +800,11 @@ export function ExpertManagementView() {
                   name="clinicId"
                 >
                   {(field) => (
-                    <Select value={field.value} onValueChange={field.onChange}>
+                    <Select
+                      value={field.value}
+                      onValueChange={field.onChange}
+                      items={clinicItemsWithAddress}
+                    >
                       <SelectTrigger id={field.name} className="w-full">
                         <SelectValue placeholder="Chọn phòng khám" />
                       </SelectTrigger>
@@ -872,7 +897,11 @@ export function ExpertManagementView() {
               label="Chọn chuyên gia phụ trách"
             >
               {(field) => (
-                <Select value={field.value} onValueChange={field.onChange}>
+                <Select
+                  value={field.value}
+                  onValueChange={field.onChange}
+                  items={doctorItems}
+                >
                   <SelectTrigger
                     id={field.name}
                     className="w-full"
@@ -1046,6 +1075,7 @@ export function ExpertManagementView() {
             <Select
               value={editClinicValue}
               onValueChange={(v) => setEditClinicValue(v ?? "")}
+              items={clinicItems}
             >
               <SelectTrigger className="rounded-xl text-xs">
                 <SelectValue placeholder="Chọn phòng khám" />

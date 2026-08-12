@@ -16,6 +16,8 @@ import { API_ENDPOINTS } from "@/core/api/endpoints";
 import { Button } from "@/shared/components/ui/button";
 import { Input } from "@/shared/components/ui/input";
 import { Label } from "@/shared/components/ui/label";
+import useDebounce from "@/shared/hooks/useDebounce";
+import { useAdminUserDirectory } from "@/features/admin/hooks/useAdminUsers";
 import {
   Card,
   CardHeader,
@@ -71,10 +73,26 @@ export function CommerceWalletView() {
   });
 
   // Wallet Top-up & Inspector State
-  const [userIdInput, setUserIdInput] = useState("");
-  const [searchUserId, setSearchUserId] = useState("");
+  const [customerQuery, setCustomerQuery] = useState("");
+  const [selectedCustomer, setSelectedCustomer] = useState<{
+    id: string;
+    name: string;
+    email: string;
+  } | null>(null);
   const [topUpAmount, setTopUpAmount] = useState<number>(50000);
   const [topUpReason, setTopUpReason] = useState("");
+
+  const searchUserId = selectedCustomer?.id ?? "";
+  const debouncedCustomerQuery = useDebounce(customerQuery.trim(), 350);
+
+  // Admins know customers by name or email, never by UUID — so look the id up for them.
+  const customerDirectory = useAdminUserDirectory({
+    q: debouncedCustomerQuery || undefined,
+    role: "customer",
+    page: 1,
+    limit: 8,
+  });
+  const customerResults = customerDirectory.data?.items ?? [];
 
   const {
     data: wallet,
@@ -123,19 +141,10 @@ export function CommerceWalletView() {
     },
   });
 
-  const handleSearchWallet = (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!userIdInput.trim()) {
-      toast.error("Vui lòng nhập User ID khách hàng.");
-      return;
-    }
-    setSearchUserId(userIdInput.trim());
-  };
-
   const handleTopUpSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (!searchUserId) {
-      toast.error("Vui lòng tra cứu ví người dùng trước khi nạp.");
+      toast.error("Vui lòng chọn khách hàng trước khi nạp.");
       return;
     }
     if (topUpAmount < 1000) {
@@ -278,22 +287,79 @@ export function CommerceWalletView() {
             </CardTitle>
           </CardHeader>
           <CardContent className="flex flex-col gap-5 pt-6">
-            {/* Search User Wallet */}
-            <form onSubmit={handleSearchWallet} className="flex gap-2">
-              <Input
-                placeholder="Nhập User ID khách hàng (UUID)..."
-                value={userIdInput}
-                onChange={(e) => setUserIdInput(e.target.value)}
-                className="flex-1 rounded-xl border-slate-200 text-xs"
-              />
-              <Button
-                type="submit"
-                size="sm"
-                className="rounded-xl bg-[#2C3E35] px-4 text-xs font-bold text-white hover:bg-[#3A5246]"
-              >
-                <Search className="mr-1 h-3.5 w-3.5" /> Tra cứu
-              </Button>
-            </form>
+            {/* Customer picker */}
+            {selectedCustomer ? (
+              <div className="flex items-center justify-between gap-2 rounded-xl border border-slate-200 bg-slate-50 p-3 dark:border-slate-800 dark:bg-slate-800/50">
+                <div className="min-w-0">
+                  <p className="truncate text-xs font-bold text-slate-900 dark:text-slate-100">
+                    {selectedCustomer.name || "Chưa cập nhật tên"}
+                  </p>
+                  <p className="truncate text-[11px] text-slate-500">
+                    {selectedCustomer.email || "Chưa cập nhật email"}
+                  </p>
+                </div>
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  onClick={() => {
+                    setSelectedCustomer(null);
+                    setCustomerQuery("");
+                  }}
+                  className="shrink-0 rounded-xl text-xs font-semibold"
+                >
+                  Đổi khách hàng
+                </Button>
+              </div>
+            ) : (
+              <div className="flex flex-col gap-2">
+                <div className="relative">
+                  <Search className="absolute top-1/2 left-3 h-3.5 w-3.5 -translate-y-1/2 text-slate-400" />
+                  <Input
+                    placeholder="Tìm khách hàng theo tên hoặc email..."
+                    value={customerQuery}
+                    onChange={(e) => setCustomerQuery(e.target.value)}
+                    className="rounded-xl border-slate-200 pl-8 text-xs"
+                  />
+                </div>
+
+                {customerDirectory.isLoading ? (
+                  <div className="flex items-center justify-center p-4 text-xs text-slate-500">
+                    <Loader2 className="mr-2 h-4 w-4 animate-spin text-[#2C3E35]" />
+                    Đang tìm khách hàng...
+                  </div>
+                ) : customerResults.length === 0 ? (
+                  <p className="rounded-xl border border-dashed border-slate-200 p-4 text-center text-xs text-slate-400">
+                    Không tìm thấy khách hàng phù hợp.
+                  </p>
+                ) : (
+                  <ul className="max-h-56 divide-y divide-slate-100 overflow-y-auto rounded-xl border border-slate-200 dark:divide-slate-800 dark:border-slate-800">
+                    {customerResults.map((customer) => (
+                      <li key={customer.id}>
+                        <button
+                          type="button"
+                          onClick={() =>
+                            setSelectedCustomer({
+                              id: customer.id,
+                              name: customer.name ?? "",
+                              email: customer.email ?? "",
+                            })
+                          }
+                          className="w-full px-3 py-2 text-left transition-colors hover:bg-slate-50 dark:hover:bg-slate-800/60"
+                        >
+                          <p className="truncate text-xs font-semibold text-slate-900 dark:text-slate-100">
+                            {customer.name || "Chưa cập nhật tên"}
+                          </p>
+                          <p className="truncate text-[11px] text-slate-500">
+                            {customer.email || "Chưa cập nhật email"}
+                          </p>
+                        </button>
+                      </li>
+                    ))}
+                  </ul>
+                )}
+              </div>
+            )}
 
             {/* Wallet Info Result */}
             {isWalletLoading ? (
@@ -375,7 +441,7 @@ export function CommerceWalletView() {
               </div>
             ) : (
               <div className="rounded-2xl border border-dashed border-slate-200 p-6 text-center text-xs text-slate-400">
-                Nhập User ID của khách hàng để tra cứu ví và nạp tiền trực tiếp.
+                Chọn một khách hàng ở trên để tra cứu ví và nạp tiền trực tiếp.
               </div>
             )}
           </CardContent>

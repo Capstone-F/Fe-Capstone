@@ -5,30 +5,28 @@ import {
   AvatarFallback,
   AvatarImage,
 } from "@/shared/components/ui/avatar";
+import { Button } from "@/shared/components/ui/button";
 import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuGroup,
-  DropdownMenuItem,
-  DropdownMenuLabel,
-  DropdownMenuSeparator,
-  DropdownMenuTrigger,
-} from "@/shared/components/ui/dropdown-menu";
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/shared/components/ui/dialog";
 import {
   SidebarMenu,
   SidebarMenuButton,
   SidebarMenuItem,
-  useSidebar,
 } from "@/shared/components/ui/sidebar";
 import {
-  EllipsisVerticalIcon,
-  CircleUserRoundIcon,
-  CreditCardIcon,
-  BellIcon,
-  LogOutIcon,
-} from "lucide-react";
+  Tooltip,
+  TooltipContent,
+  TooltipTrigger,
+} from "@/shared/components/ui/tooltip";
+import { LogOutIcon } from "lucide-react";
 import { useRouter } from "next/navigation";
-import { useTransition } from "react";
+import { useState, useTransition } from "react";
 import { useQueryClient } from "@tanstack/react-query";
 
 import { authApi } from "@/features/auth/api/auth.api";
@@ -50,10 +48,10 @@ export function NavUser({
     avatar: string;
   };
 }) {
-  const { isMobile } = useSidebar();
   const router = useRouter();
   const queryClient = useQueryClient();
   const [isPending, startTransition] = useTransition();
+  const [isConfirmOpen, setIsConfirmOpen] = useState(false);
 
   function handleLogout() {
     startTransition(async () => {
@@ -64,6 +62,7 @@ export function NavUser({
       } finally {
         queryClient.setQueryData(queryKeys.session, null);
         queryClient.removeQueries({ queryKey: queryKeys.profile });
+        setIsConfirmOpen(false);
         router.replace("/");
       }
     });
@@ -72,77 +71,79 @@ export function NavUser({
   const initials = getInitials(user.name);
 
   return (
-    <SidebarMenu>
-      <SidebarMenuItem>
-        <DropdownMenu>
-          <DropdownMenuTrigger
-            render={
-              <SidebarMenuButton size="lg" className="aria-expanded:bg-muted" />
-            }
-          >
-            <Avatar className="size-8 rounded-lg">
+    <>
+      <SidebarMenu>
+        <SidebarMenuItem>
+          <div className="flex items-center gap-2 rounded-md p-2 group-data-[collapsible=icon]:justify-center group-data-[collapsible=icon]:p-0">
+            <Avatar className="size-8 shrink-0 rounded-lg">
               <AvatarImage src={user.avatar} alt={user.name} />
               <AvatarFallback className="rounded-lg">{initials}</AvatarFallback>
             </Avatar>
-            <div className="grid flex-1 text-left text-sm leading-tight">
+            <div className="grid min-w-0 flex-1 text-left text-sm leading-tight group-data-[collapsible=icon]:hidden">
               <span className="truncate font-medium">{user.name}</span>
               <span className="text-foreground/70 truncate text-xs">
                 {user.email}
               </span>
             </div>
-            <EllipsisVerticalIcon className="ml-auto size-4" />
-          </DropdownMenuTrigger>
-          <DropdownMenuContent
-            className="min-w-56"
-            side={isMobile ? "bottom" : "right"}
-            align="end"
-            sideOffset={4}
+            <Tooltip>
+              <TooltipTrigger
+                render={
+                  <Button
+                    variant="ghost"
+                    size="icon-sm"
+                    aria-label="Đăng xuất"
+                    onClick={() => setIsConfirmOpen(true)}
+                    className="text-destructive hover:text-destructive shrink-0 group-data-[collapsible=icon]:hidden"
+                  />
+                }
+              >
+                <LogOutIcon />
+              </TooltipTrigger>
+              <TooltipContent>Đăng xuất</TooltipContent>
+            </Tooltip>
+          </div>
+        </SidebarMenuItem>
+
+        {/* Collapsed rail has no room beside the avatar, so logout gets its own row there. */}
+        <SidebarMenuItem className="hidden group-data-[collapsible=icon]:block">
+          <SidebarMenuButton
+            tooltip="Đăng xuất"
+            aria-label="Đăng xuất"
+            onClick={() => setIsConfirmOpen(true)}
+            className="text-destructive hover:text-destructive"
           >
-            <DropdownMenuGroup>
-              <DropdownMenuLabel className="p-0 font-normal">
-                <div className="flex items-center gap-2 px-1 py-1.5 text-left text-sm">
-                  <Avatar className="size-8">
-                    <AvatarImage src={user.avatar} alt={user.name} />
-                    <AvatarFallback className="rounded-lg">
-                      {initials}
-                    </AvatarFallback>
-                  </Avatar>
-                  <div className="grid flex-1 text-left text-sm leading-tight">
-                    <span className="truncate font-medium">{user.name}</span>
-                    <span className="text-muted-foreground truncate text-xs">
-                      {user.email}
-                    </span>
-                  </div>
-                </div>
-              </DropdownMenuLabel>
-            </DropdownMenuGroup>
-            <DropdownMenuSeparator />
-            <DropdownMenuGroup>
-              <DropdownMenuItem>
-                <CircleUserRoundIcon />
-                Account
-              </DropdownMenuItem>
-              <DropdownMenuItem>
-                <CreditCardIcon />
-                Billing
-              </DropdownMenuItem>
-              <DropdownMenuItem>
-                <BellIcon />
-                Notifications
-              </DropdownMenuItem>
-            </DropdownMenuGroup>
-            <DropdownMenuSeparator />
-            <DropdownMenuItem
+            <LogOutIcon />
+            <span>Đăng xuất</span>
+          </SidebarMenuButton>
+        </SidebarMenuItem>
+      </SidebarMenu>
+
+      <Dialog open={isConfirmOpen} onOpenChange={setIsConfirmOpen}>
+        <DialogContent className="sm:max-w-sm">
+          <DialogHeader>
+            <DialogTitle>Đăng xuất</DialogTitle>
+            <DialogDescription>
+              Bạn có chắc muốn đăng xuất khỏi tài khoản {user.email}?
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter className="gap-2">
+            <Button
+              variant="ghost"
+              onClick={() => setIsConfirmOpen(false)}
+              disabled={isPending}
+            >
+              Hủy
+            </Button>
+            <Button
+              variant="destructive"
               onClick={handleLogout}
               disabled={isPending}
-              className="text-destructive focus:text-destructive cursor-pointer"
             >
-              <LogOutIcon className="mr-2 size-4" />
-              <span>{isPending ? "Đang đăng xuất..." : "Log out"}</span>
-            </DropdownMenuItem>
-          </DropdownMenuContent>
-        </DropdownMenu>
-      </SidebarMenuItem>
-    </SidebarMenu>
+              {isPending ? "Đang đăng xuất..." : "Đăng xuất"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+    </>
   );
 }

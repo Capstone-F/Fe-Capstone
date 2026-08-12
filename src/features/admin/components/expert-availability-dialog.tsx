@@ -42,6 +42,24 @@ function formatHour(hour: number): string {
   return `${String(hour).padStart(2, "0")}:00`;
 }
 
+/**
+ * Base UI renders the raw value in a closed trigger unless the root is given the
+ * value→label map, so every Select below passes its own `items`.
+ */
+function hourItems(hours: readonly number[]) {
+  return hours.map((hour) => ({
+    value: String(hour),
+    label: formatHour(hour),
+  }));
+}
+
+const DAY_ITEMS = DAY_OF_WEEK_LABELS.map((label, index) => ({
+  value: String(index),
+  label,
+}));
+const START_HOUR_ITEMS = hourItems(START_HOURS);
+const END_HOUR_ITEMS = hourItems(START_HOURS.map((hour) => hour + 1));
+
 interface ExpertAvailabilityDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
@@ -172,6 +190,7 @@ export function ExpertAvailabilityDialog({
                         onValueChange={(value) =>
                           handleUpdateEndHour(block.id, value)
                         }
+                        items={END_HOUR_ITEMS}
                       >
                         <SelectTrigger
                           className="h-8 w-24"
@@ -208,6 +227,7 @@ export function ExpertAvailabilityDialog({
               <Select
                 value={dayOfWeek}
                 onValueChange={(value) => setDayOfWeek(value ?? "1")}
+                items={DAY_ITEMS}
               >
                 <SelectTrigger>
                   <SelectValue />
@@ -224,6 +244,7 @@ export function ExpertAvailabilityDialog({
               <Select
                 value={startHour}
                 onValueChange={(value) => setStartHour(value ?? "9")}
+                items={START_HOUR_ITEMS}
               >
                 <SelectTrigger>
                   <SelectValue />
@@ -240,6 +261,7 @@ export function ExpertAvailabilityDialog({
               <Select
                 value={endHour}
                 onValueChange={(value) => setEndHour(value ?? "12")}
+                items={END_HOUR_ITEMS}
               >
                 <SelectTrigger>
                   <SelectValue />
