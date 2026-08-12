@@ -63,6 +63,12 @@ import {
   useAdminQuickBook,
 } from "@/features/admin/hooks/useAdminUsers";
 import { useExperts } from "@/features/experts/hooks/useExperts";
+import {
+  useExpertProfilesByEmail,
+  useUpdateConsultationFee,
+  useUpdateExpertClinic,
+} from "@/features/admin/hooks/useAdminExperts";
+import { ExpertAvailabilityDialog } from "@/features/admin/components/expert-availability-dialog";
 import { FormController } from "@/shared/components/form/form-controller";
 import {
   CurrencyInput,
@@ -120,6 +126,7 @@ export function ExpertManagementView() {
     null,
   );
   const [editClinicValue, setEditClinicValue] = useState("");
+  const [scheduleExpert, setScheduleExpert] = useState<ExpertUser | null>(null);
 
   const createExpertForm = useForm<CreateExpertValues>({
     resolver: zodResolver(createExpertSchema),
@@ -160,9 +167,12 @@ export function ExpertManagementView() {
     role: "expert",
   });
   const { data: expertsList = [] } = useExperts();
+  const { data: expertProfilesByEmail } = useExpertProfilesByEmail();
 
   const createExpertMutation = useCreateExpert();
   const quickBookMutation = useAdminQuickBook();
+  const updateFeeMutation = useUpdateConsultationFee();
+  const updateClinicMutation = useUpdateExpertClinic();
 
   // Doctor options for Quick Booking dropdown
   const doctorOptions =
@@ -286,6 +296,19 @@ export function ExpertManagementView() {
     page * PAGE_SIZE,
   );
 
+  /**
+   * The table lists user accounts, but the fee/availability endpoints are keyed by the expert
+   * PROFILE id. `ExpertResponseDto` exposes no `userId`, so email is the only available link.
+   */
+  const resolveExpertProfileId = (u: ExpertUser | null): string | null => {
+    if (!u?.email) return null;
+    return expertProfilesByEmail?.get(u.email.toLowerCase())?.id ?? null;
+  };
+
+  const editFeeProfileId = resolveExpertProfileId(editFeeExpert);
+  const editClinicProfileId = resolveExpertProfileId(editClinicExpert);
+  const scheduleProfileId = resolveExpertProfileId(scheduleExpert);
+
   // Handlers: edit fee
   const handleOpenEditFee = (u: ExpertUser) => {
     setEditFeeExpert(u);
@@ -293,18 +316,20 @@ export function ExpertManagementView() {
   };
 
   const handleSaveEditFee = () => {
-    if (!editFeeExpert) return;
-    import("@/core/api/client").then(({ apiClient }) => {
-      apiClient
-        .put(`/experts/${editFeeExpert.id}/consultation-fee`, {
-          consultationFee: Number(editFeeValue.replace(/[^0-9]/g, "")),
-        })
-        .then(() => {
+    if (!editFeeProfileId) return;
+    updateFeeMutation.mutate(
+      {
+        expertProfileId: editFeeProfileId,
+        consultationFee: parseVndInput(editFeeValue),
+      },
+      {
+        onSuccess: () => {
           toast.success("Đã cập nhật phí tư vấn!");
           setEditFeeExpert(null);
-        })
-        .catch(() => toast.error("Không thể cập nhật phí tư vấn."));
-    });
+        },
+        onError: () => toast.error("Không thể cập nhật phí tư vấn."),
+      },
+    );
   };
 
   // Handlers: edit clinic
@@ -314,16 +339,17 @@ export function ExpertManagementView() {
   };
 
   const handleSaveEditClinic = () => {
-    if (!editClinicExpert) return;
-    import("@/core/api/client").then(({ apiClient }) => {
-      apiClient
-        .patch(`/experts/${editClinicExpert.id}`, { clinicId: editClinicValue })
-        .then(() => {
+    if (!editClinicProfileId) return;
+    updateClinicMutation.mutate(
+      { expertProfileId: editClinicProfileId, clinicId: editClinicValue },
+      {
+        onSuccess: () => {
           toast.success("Đã cập nhật phòng khám!");
           setEditClinicExpert(null);
-        })
-        .catch(() => toast.error("Không thể cập nhật phòng khám."));
-    });
+        },
+        onError: () => toast.error("Không thể cập nhật phòng khám."),
+      },
+    );
   };
 
   return (
@@ -565,6 +591,13 @@ export function ExpertManagementView() {
                             >
                               <Hospital className="h-3.5 w-3.5 text-teal-500" />
                               Đổi phòng khám
+                            </DropdownMenuItem>
+                            <DropdownMenuItem
+                              className="cursor-pointer gap-2 rounded-lg text-xs"
+                              onClick={() => setScheduleExpert(u)}
+                            >
+                              <Calendar className="h-3.5 w-3.5 text-indigo-500" />
+                              Khung giờ tư vấn
                             </DropdownMenuItem>
                             <DropdownMenuSeparator />
                             <DropdownMenuItem
@@ -960,6 +993,12 @@ export function ExpertManagementView() {
                 className="rounded-xl border-slate-200 pl-9 text-xs"
               />
             </div>
+            {editFeeExpert && !editFeeProfileId && (
+              <p className="text-xs text-amber-600">
+                Chưa tìm thấy hồ sơ chuyên gia cho tài khoản này — hãy tạo hồ sơ
+                trước khi đặt phí.
+              </p>
+            )}
           </div>
           <DialogFooter className="gap-2">
             <Button
@@ -973,9 +1012,14 @@ export function ExpertManagementView() {
             <Button
               size="sm"
               onClick={handleSaveEditFee}
+              disabled={!editFeeProfileId || updateFeeMutation.isPending}
               className="rounded-xl bg-[#2C3E35] text-xs font-bold text-white hover:bg-[#3A5246]"
             >
-              Lưu phí tư vấn
+              {updateFeeMutation.isPending ? (
+                <Loader2 className="h-4 w-4 animate-spin" />
+              ) : (
+                "Lưu phí tư vấn"
+              )}
             </Button>
           </DialogFooter>
         </DialogContent>
@@ -1027,13 +1071,26 @@ export function ExpertManagementView() {
             <Button
               size="sm"
               onClick={handleSaveEditClinic}
+              disabled={!editClinicProfileId || updateClinicMutation.isPending}
               className="rounded-xl bg-[#2C3E35] text-xs font-bold text-white hover:bg-[#3A5246]"
             >
-              Lưu phòng khám
+              {updateClinicMutation.isPending ? (
+                <Loader2 className="h-4 w-4 animate-spin" />
+              ) : (
+                "Lưu phòng khám"
+              )}
             </Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      {/* ── Weekly Availability Dialog ── */}
+      <ExpertAvailabilityDialog
+        open={!!scheduleExpert}
+        onOpenChange={(open) => !open && setScheduleExpert(null)}
+        expertName={scheduleExpert?.name ?? ""}
+        expertProfileId={scheduleProfileId}
+      />
     </div>
   );
 }
