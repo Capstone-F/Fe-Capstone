@@ -47,7 +47,10 @@ async function proxyRequest(
   }
 
   const upstreamUrl = buildUpstreamUrl(path ?? [], request.nextUrl.search);
-  if (upstreamUrl.hostname.endsWith(".ngrok-free.app")) {
+  // Without this header ngrok answers with its HTML interstitial instead of the API
+  // response. Match any ngrok host — the free tier alone hands out both .ngrok-free.app
+  // and .ngrok-free.dev, and an exact suffix check silently misses the other one.
+  if (upstreamUrl.hostname.includes("ngrok")) {
     headers.set("ngrok-skip-browser-warning", "true");
   }
 

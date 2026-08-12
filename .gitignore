@@ -47,6 +47,12 @@ next-env.d.ts
 # others
 /docs-local/
 
+# playwright
+/test-results/
+/playwright-report/
+/blob-report/
+/playwright/.cache/
+
 # AI coding tool files
 .claude
 .superpowers
