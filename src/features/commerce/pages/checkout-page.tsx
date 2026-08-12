@@ -36,6 +36,7 @@ import {
   CardTitle,
 } from "@/shared/components/ui/card";
 import { cn } from "@/lib/utils";
+import useDebounce from "@/shared/hooks/useDebounce";
 import {
   shippingAddressSchema,
   type ShippingAddressFormValues,
@@ -105,7 +106,8 @@ export function CheckoutPage() {
   // Null until every field is present and valid — this is what gates both the fee
   // preview and the place-order call.
   const address = useMemo(() => toShippingAddressInput(draft), [draft]);
-  const feeQuote = useShippingFeeQuote(address);
+  const debouncedAddress = useDebounce(address, 500);
+  const feeQuote = useShippingFeeQuote(debouncedAddress);
 
   // Shared cache with GhnAddressForm; used only to render names on the confirm step.
   const provinces = useProvinces();
@@ -118,7 +120,7 @@ export function CheckoutPage() {
     ? { ...cart, shippingFee, total: cart.subtotal + shippingFee }
     : cart;
   // A zero fee is not free shipping — GHN has simply not priced the address yet.
-  const shippingPlaceholder = feeQuote.isLoading
+  const shippingPlaceholder = feeQuote.isFetching
     ? ck.summary.feeCalculating
     : ck.summary.feeNeedsAddress;
 
@@ -280,8 +282,8 @@ export function CheckoutPage() {
                       addressForm.formState.errors.streetAddress?.message,
                   }}
                 />
-                {address && feeQuote.isLoading && (
-                  <p className="text-muted-foreground text-xs">
+                {address && feeQuote.isFetching && (
+                  <p className="text-muted-foreground min-h-4 text-xs">
                     {ck.shipping.feeLoading}
                   </p>
                 )}

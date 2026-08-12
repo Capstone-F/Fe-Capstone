@@ -8,8 +8,10 @@ import { useAddToCart } from "../hooks/useCart";
 import { useProducts } from "../hooks/useProducts";
 import { primaryVariant } from "../mapper/variant";
 import { Button } from "@/shared/components/ui/button";
+import { Skeleton } from "@/shared/components/ui/skeleton";
 import { formatVnd } from "@/shared/utils/format";
 import { Product } from "@/types/domain";
+import { showAddToCartError } from "@/features/commerce/lib/cart-errors";
 
 const SMART_CATALOG_SPECS = [
   {
@@ -19,10 +21,7 @@ const SMART_CATALOG_SPECS = [
     labelColor: "bg-green-500/10 text-green-600",
     caution: "Lựa chọn an toàn",
     cautionColor: "text-muted-foreground",
-    name: "Kem dưỡng làm dịu rau má GlowScan",
-    desc: "Chứa 5% Centella và 2% Niacinamide giúp phục hồi nhanh chóng làn da đang bị kích ứng, nhạy cảm.",
     tags: ["Rau má", "B5"],
-    price: "320.000 đ",
   },
   {
     id: "bha",
@@ -31,10 +30,7 @@ const SMART_CATALOG_SPECS = [
     labelColor: "bg-red-500/10 text-red-600",
     caution: "Hoạt chất mạnh",
     cautionColor: "text-red-500",
-    name: "Dung dịch tẩy da chết hóa học BHA 2%",
-    desc: "Thấm sâu làm sạch bã nhờn, loại bỏ tế bào sừng gây bít tắc cồi mụn ẩn.",
     tags: ["Salicylic Acid 2%"],
-    price: "390.000 đ",
   },
   {
     id: "retinol",
@@ -43,10 +39,7 @@ const SMART_CATALOG_SPECS = [
     labelColor: "bg-blue-500/10 text-blue-600",
     caution: "Hoạt chất mạnh",
     cautionColor: "text-red-500",
-    name: "Tinh chất Retinol tinh khiết 1%",
-    desc: "Kích thích sản sinh collagen thế hệ mới, mờ nếp nhăn mảnh và giúp căng bóng da.",
     tags: ["Retinol 1%"],
-    price: "550.000 đ",
   },
 ] as const;
 
@@ -87,6 +80,13 @@ export function SmartCatalogSection() {
       retinolQuery.data?.products[0] ?? null,
     ),
   ];
+  const availableCards = catalogCards.filter(
+    (card): card is SmartCatalogCard & { product: Product } =>
+      Boolean(card.product && primaryVariant(card.product)),
+  );
+  const isCatalogLoading = [centellaQuery, bhaQuery, retinolQuery].some(
+    (query) => query.isLoading,
+  );
 
   const handleAddToCart = (card: SmartCatalogCard) => {
     const variant = card.product ? primaryVariant(card.product) : undefined;
@@ -101,15 +101,11 @@ export function SmartCatalogSection() {
       {
         onSuccess: () => {
           handleProductSelect(card.id);
-          toast.success(`Đã thêm vào giỏ: ${card.product?.name ?? card.name}`, {
+          toast.success(`Đã thêm vào giỏ: ${card.product?.name}`, {
             description: "Xem giỏ hàng để hoàn tất đơn.",
           });
         },
-        onError: () => {
-          toast.error(
-            "Không thể thêm sản phẩm vào giỏ hàng. Vui lòng thử lại.",
-          );
-        },
+        onError: showAddToCartError,
       },
     );
   };
@@ -150,81 +146,107 @@ export function SmartCatalogSection() {
         </div>
 
         {/* Product grid */}
-        <div className="grid grid-cols-1 gap-8 md:grid-cols-3">
-          {catalogCards.map((product) => {
-            const isSelected = selectedProduct.includes(product.id);
-            const variant = product.product
-              ? primaryVariant(product.product)
-              : undefined;
-            return (
+        <div
+          className={`grid grid-cols-1 gap-8 ${
+            !isCatalogLoading && availableCards.length === 2
+              ? "md:grid-cols-2"
+              : "md:grid-cols-3"
+          }`}
+        >
+          {isCatalogLoading &&
+            Array.from({ length: 3 }).map((_, index) => (
               <div
-                key={product.id}
-                className={`flex flex-col justify-between rounded-2xl border bg-white p-6 shadow-sm transition-all duration-300 ${
-                  isSelected
-                    ? "border-primary ring-primary/20 scale-[1.02] ring-2"
-                    : "border-border/60 hover:border-primary/40"
-                }`}
+                key={index}
+                className="border-border/60 space-y-5 rounded-2xl border bg-white p-6"
               >
-                <div className="space-y-3">
-                  <div className="flex items-start justify-between">
-                    <span
-                      className={`rounded-full px-2 py-0.5 text-[10px] font-bold ${product.labelColor}`}
-                    >
-                      {product.label}
-                    </span>
-                    <span
-                      className={`text-xs font-medium ${product.cautionColor}`}
-                    >
-                      {product.caution}
-                    </span>
-                  </div>
-                  <h3 className="font-heading text-foreground text-base font-bold">
-                    {product.product?.name ?? product.name}
-                  </h3>
-                  <p className="text-muted-foreground text-xs leading-normal">
-                    {product.product?.description ?? product.desc}
-                  </p>
-                  <div className="flex flex-wrap gap-1">
-                    {product.tags.map((tag) => (
-                      <span
-                        key={tag}
-                        className="bg-secondary/80 text-muted-foreground rounded px-1.5 py-0.5 text-[9px] font-medium"
-                      >
-                        {tag}
-                      </span>
-                    ))}
-                  </div>
-                </div>
-
-                <div className="border-border/40 mt-6 flex items-center justify-between border-t pt-6">
-                  <span className="text-foreground font-bold">
-                    {variant ? formatVnd(variant.priceVnd) : product.price}
-                  </span>
-                  <button
-                    onClick={() => handleAddToCart(product)}
-                    disabled={!variant || addToCart.isPending}
-                    className={`flex items-center gap-1 rounded-lg px-3 py-1.5 text-xs font-semibold transition-all duration-200 ${
-                      isSelected
-                        ? "bg-primary/10 text-primary"
-                        : "text-muted-foreground hover:text-primary hover:bg-primary/5"
-                    } ${!variant ? "cursor-not-allowed opacity-60" : ""}`}
-                  >
-                    {isSelected ? (
-                      <>
-                        <Check className="h-3.5 w-3.5" />
-                        Đã thêm
-                      </>
-                    ) : (
-                      <>
-                        <Plus className="h-3.5 w-3.5" />
-                        Thêm vào giỏ
-                      </>
-                    )}
-                  </button>
-                </div>
+                <Skeleton className="h-5 w-28" />
+                <Skeleton className="h-6 w-4/5" />
+                <Skeleton className="h-16 w-full" />
+                <Skeleton className="h-10 w-full" />
               </div>
-            );
-          })}
+            ))}
+
+          {!isCatalogLoading && availableCards.length === 0 && (
+            <div className="border-border/60 text-muted-foreground col-span-full rounded-2xl border bg-white p-8 text-center text-sm">
+              Chưa có sản phẩm phù hợp để minh họa tính năng này.
+            </div>
+          )}
+
+          {!isCatalogLoading &&
+            availableCards.map((product) => {
+              const isSelected = selectedProduct.includes(product.id);
+              const variant = primaryVariant(product.product);
+              if (!variant) return null;
+              return (
+                <div
+                  key={product.id}
+                  className={`flex flex-col justify-between rounded-2xl border bg-white p-6 shadow-sm transition-all duration-300 ${
+                    isSelected
+                      ? "border-primary ring-primary/20 scale-[1.02] ring-2"
+                      : "border-border/60 hover:border-primary/40"
+                  }`}
+                >
+                  <div className="space-y-3">
+                    <div className="flex items-start justify-between">
+                      <span
+                        className={`rounded-full px-2 py-0.5 text-[10px] font-bold ${product.labelColor}`}
+                      >
+                        {product.label}
+                      </span>
+                      <span
+                        className={`text-xs font-medium ${product.cautionColor}`}
+                      >
+                        {product.caution}
+                      </span>
+                    </div>
+                    <h3 className="font-heading text-foreground text-base font-bold">
+                      {product.product.name}
+                    </h3>
+                    <p className="text-muted-foreground text-xs leading-normal">
+                      {product.product.description ||
+                        "Xem chi tiết sản phẩm để biết thành phần và hướng dẫn sử dụng."}
+                    </p>
+                    <div className="flex flex-wrap gap-1">
+                      {product.tags.map((tag) => (
+                        <span
+                          key={tag}
+                          className="bg-secondary/80 text-muted-foreground rounded px-1.5 py-0.5 text-[9px] font-medium"
+                        >
+                          {tag}
+                        </span>
+                      ))}
+                    </div>
+                  </div>
+
+                  <div className="border-border/40 mt-6 flex items-center justify-between border-t pt-6">
+                    <span className="text-foreground font-bold">
+                      {formatVnd(variant.priceVnd)}
+                    </span>
+                    <button
+                      onClick={() => handleAddToCart(product)}
+                      disabled={!variant || addToCart.isPending}
+                      className={`flex items-center gap-1 rounded-lg px-3 py-1.5 text-xs font-semibold transition-all duration-200 ${
+                        isSelected
+                          ? "bg-primary/10 text-primary"
+                          : "text-muted-foreground hover:text-primary hover:bg-primary/5"
+                      } ${!variant ? "cursor-not-allowed opacity-60" : ""}`}
+                    >
+                      {isSelected ? (
+                        <>
+                          <Check className="h-3.5 w-3.5" />
+                          Đã thêm
+                        </>
+                      ) : (
+                        <>
+                          <Plus className="h-3.5 w-3.5" />
+                          Thêm vào giỏ
+                        </>
+                      )}
+                    </button>
+                  </div>
+                </div>
+              );
+            })}
         </div>
 
         {/* Conflict Warning banner demo */}

@@ -140,7 +140,7 @@ export function SurveyFaceScan({
   if (!isAuthenticated) {
     return (
       <div className="mx-auto flex w-full max-w-3xl flex-1 flex-col justify-between px-4 py-6 duration-300">
-        <div className="space-y-6">
+        <div className="space-y-6 pb-8">
           <div className="space-y-2 text-center">
             <span className="inline-flex items-center gap-1.5 rounded-full bg-amber-500/10 px-3.5 py-1 text-xs font-bold text-amber-700 uppercase">
               <Lock className="h-3.5 w-3.5" />
@@ -173,30 +173,21 @@ export function SurveyFaceScan({
               </p>
             </div>
 
-            <div className="flex flex-col gap-3 pt-2 sm:flex-row sm:items-center sm:justify-center">
+            <div className="flex justify-center pt-2">
               <Button
                 type="button"
-                onClick={() => router.push("/login?redirectTo=/survey")}
+                onClick={() => router.push("/login?redirectTo=/scan")}
                 className="h-12 gap-2 rounded-2xl bg-[#6b5cf6] px-6 text-xs font-bold text-white shadow-md hover:bg-[#5a4ae5]"
               >
                 <LogIn className="h-4 w-4" />
                 Đăng Nhập / Đăng Ký Để Quét Da AI
-              </Button>
-
-              <Button
-                type="button"
-                variant="outline"
-                onClick={onComplete}
-                className="h-12 rounded-2xl border-slate-200 bg-white px-6 text-xs font-bold text-slate-700 hover:bg-slate-50"
-              >
-                Bỏ qua bước này & Xem Kết Quả →
               </Button>
             </div>
           </div>
         </div>
 
         {/* Footer */}
-        <div className="sticky bottom-0 left-0 z-10 w-full border-t border-slate-100 bg-white/80 py-4 backdrop-blur-md">
+        <div className="sticky bottom-0 left-0 z-10 mt-2 w-full border-t border-slate-100 bg-white/90 py-4 backdrop-blur-md">
           <div className="flex w-full items-center justify-between gap-4">
             <Button
               type="button"
@@ -212,7 +203,7 @@ export function SurveyFaceScan({
               onClick={onComplete}
               className="h-12 flex-[2] rounded-2xl bg-[#6b5cf6] text-xs font-bold text-white shadow-lg hover:bg-[#5a4ae5]"
             >
-              <span>Xem Kết Quả Khảo Sát</span>
+              <span>Bỏ qua bước này & Xem kết quả</span>
               <ArrowRight className="ml-1.5 h-4 w-4" />
             </Button>
           </div>
@@ -223,7 +214,7 @@ export function SurveyFaceScan({
 
   return (
     <div className="mx-auto flex w-full max-w-3xl flex-1 flex-col justify-between px-4 py-6 duration-300">
-      <div className="space-y-6">
+      <div className="space-y-6 pb-8">
         <div className="space-y-2 text-center">
           <span className="rounded-full bg-[#6b5cf6]/10 px-3.5 py-1 text-xs font-bold text-[#6b5cf6] uppercase">
             Bước bổ sung (Tùy chọn)
@@ -365,7 +356,7 @@ export function SurveyFaceScan({
       </div>
 
       {/* Bottom Footer Actions */}
-      <div className="sticky bottom-0 left-0 z-10 w-full border-t border-slate-100 bg-white/80 py-4 backdrop-blur-md">
+      <div className="sticky bottom-0 left-0 z-10 mt-2 w-full border-t border-slate-100 bg-white/90 py-4 backdrop-blur-md">
         <div className="flex w-full items-center justify-between gap-4">
           <Button
             type="button"

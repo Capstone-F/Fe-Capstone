@@ -49,4 +49,11 @@ export const queryKeys = {
   ordersAll: ["orders"] as const,
   order: (id: string) => ["order", id] as const,
   payment: (id: string) => ["payment", id] as const,
+  stockImportForms: (query: unknown) =>
+    ["stock", "import-forms", query] as const,
+  stockImportForm: (id: string) => ["stock", "import-form", id] as const,
+  supportSessions: (query: unknown) => ["support", "sessions", query] as const,
+  supportSession: (id: string) => ["support", "session", id] as const,
+  supportMessages: (sessionId: string, afterSeq?: number) =>
+    ["support", "messages", sessionId, afterSeq ?? 0] as const,
 };

@@ -35,6 +35,7 @@ import {
 import { EmptyState } from "@/shared/components/ui/empty-state";
 import { cn } from "@/lib/utils";
 import useDebounce from "@/shared/hooks/useDebounce";
+import { showAddToCartError } from "@/features/commerce/lib/cart-errors";
 
 const c = {
   title: "Cửa hàng sản phẩm",
@@ -173,7 +174,7 @@ export function ProductsPage() {
       { productVariantId: variant.id },
       {
         onSuccess: () => toast.success(`${c.added}: ${product.name}`),
-        onError: () => toast.error(c.addError),
+        onError: showAddToCartError,
       },
     );
   };

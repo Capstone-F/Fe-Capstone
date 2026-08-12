@@ -24,7 +24,7 @@ export function CtaSection() {
           <Link href="/login">
             <Button
               variant="outline"
-              className="w-full rounded-xl border-white/40 px-8 py-6 text-base font-semibold text-white hover:bg-white/10"
+              className="hover:text-primary w-full rounded-xl border-white bg-transparent px-8 py-6 text-base font-semibold text-white hover:bg-white"
             >
               Đăng nhập tài khoản
             </Button>

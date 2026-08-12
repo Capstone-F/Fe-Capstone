@@ -4,6 +4,31 @@
 
 @custom-variant dark (&:is(.dark *));
 
+@keyframes toast-progress {
+  from {
+    transform: scaleX(1);
+  }
+  to {
+    transform: scaleX(0);
+  }
+}
+
+.toast-with-progress {
+  position: relative;
+  overflow: hidden;
+}
+
+.toast-with-progress:not([data-type="loading"])::before {
+  position: absolute;
+  inset: 0 0 auto;
+  height: 3px;
+  content: "";
+  background: currentColor;
+  opacity: 0.5;
+  transform-origin: left;
+  animation: toast-progress 3s linear forwards;
+}
+
 @theme inline {
   --color-background: var(--background);
   --color-foreground: var(--foreground);

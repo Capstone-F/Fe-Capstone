@@ -133,7 +133,12 @@ export interface RecommendationResponseDto {
   id: string;
   customerSurveyId: string;
   customerProfile?: RecommendationCustomerProfileDto | null;
-  labels: { id?: string; code?: string; name: string }[];
+  labels: {
+    id?: string;
+    code?: string;
+    name: string;
+    vietnameseNormalized?: string | null;
+  }[];
   protocols: RuleEngineProtocolDto[];
   conflicts?: RecommendationConflictDto[];
   products: RecommendedProductDto[];

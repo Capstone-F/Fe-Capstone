@@ -312,15 +312,6 @@ export function CareHubPage() {
               Khám Phá Chuyên Gia
             </Button>
           </Link>
-          <Link href="/login?redirectTo=/care">
-            <Button
-              variant="ghost"
-              size="lg"
-              className="font-semibold text-[#2C3E35]"
-            >
-              Đăng nhập
-            </Button>
-          </Link>
         </div>
       </div>
     );

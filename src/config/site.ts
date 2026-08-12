@@ -85,6 +85,36 @@ export const siteConfig = {
     navSecondary: [],
     documents: [],
   },
+
+  // Config for staff portal
+  staffPortal: {
+    portal: "staff" as const,
+    title: "GlowScan Staff",
+    navMain: [
+      {
+        title: "Tổng quan",
+        url: "/staff",
+        icon: "LayoutDashboard",
+      },
+      {
+        title: "Phiếu nhập kho",
+        url: "/staff/stock-imports",
+        icon: "Boxes",
+      },
+      {
+        title: "Hỗ trợ khách hàng",
+        url: "/staff/support-chat",
+        icon: "MessageSquare",
+      },
+      {
+        title: "Onboard sản phẩm",
+        url: "/staff/catalog",
+        icon: "PackagePlus",
+      },
+    ],
+    navSecondary: [],
+    documents: [],
+  },
 };
 
 export type SiteConfig = typeof siteConfig;

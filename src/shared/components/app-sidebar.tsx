@@ -33,6 +33,9 @@ import {
   CalendarIcon,
   Stethoscope,
   FileText,
+  Boxes,
+  MessageSquare,
+  PackagePlus,
 } from "lucide-react";
 import { useProfile } from "@/features/profile/hooks/useProfile";
 import { useSession } from "@/features/auth/hooks/useSession";
@@ -55,15 +58,18 @@ const IconMap: Record<string, LucideIcon> = {
   Calendar: CalendarIcon,
   Stethoscope: Stethoscope,
   FileText: FileText,
+  Boxes: Boxes,
+  MessageSquare: MessageSquare,
+  PackagePlus: PackagePlus,
 };
 
 interface AppSidebarProps extends React.ComponentProps<typeof Sidebar> {
   config: {
-    portal: "admin" | "expert" | "customer";
+    portal: "admin" | "expert" | "customer" | "staff";
     title: string;
     navMain: { title: string; url: string; icon: string }[];
-    navSecondary: { title: string; url: string; icon: string }[];
-    documents: { name: string; url: string; icon: string }[];
+    navSecondary?: { title: string; url: string; icon: string }[];
+    documents?: { name: string; url: string; icon: string }[];
   };
 }
 
@@ -74,6 +80,7 @@ export function AppSidebar({ config, ...props }: AppSidebarProps) {
   const currentUser = session.data || profile || null;
   const isExpertPortal = config.portal === "expert";
   const isAdminPortal = config.portal === "admin";
+  const isStaffPortal = config.portal === "staff";
 
   // Dynamic User Profile
   const user = {
@@ -81,9 +88,11 @@ export function AppSidebar({ config, ...props }: AppSidebarProps) {
       currentUser?.name ||
       (isExpertPortal
         ? "Chuyên Gia Da Liễu"
-        : isAdminPortal
-          ? "GlowScan Admin"
-          : "Khách Hàng"),
+        : isStaffPortal
+          ? "GlowScan Staff"
+          : isAdminPortal
+            ? "GlowScan Admin"
+            : "Khách Hàng"),
     email: currentUser?.email || "user@glowscan.local",
     avatar: "",
   };
@@ -94,12 +103,12 @@ export function AppSidebar({ config, ...props }: AppSidebarProps) {
     return { ...item, icon: Icon ? <Icon /> : undefined };
   });
 
-  const mappedNavSecondary = config.navSecondary.map((item) => {
+  const mappedNavSecondary = (config.navSecondary || []).map((item) => {
     const Icon = IconMap[item.icon];
     return { ...item, icon: Icon ? <Icon /> : undefined };
   });
 
-  const mappedDocuments = config.documents.map((item) => {
+  const mappedDocuments = (config.documents || []).map((item) => {
     const Icon = IconMap[item.icon];
     return { ...item, icon: Icon ? <Icon /> : undefined };
   });

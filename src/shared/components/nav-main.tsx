@@ -26,11 +26,14 @@ export function NavMain({
       <SidebarGroupContent className="flex flex-col gap-1">
         <SidebarMenu>
           {items.map((item) => {
-            // Highlight chính xác: /expert active khi đúng path, /expert/treatments active với prefix
-            const isActive =
-              item.url === "/expert"
-                ? pathname === "/expert"
-                : pathname.startsWith(item.url);
+            // Highlight chính xác: các trang tổng quan gốc (/staff, /expert, /dashboard) chỉ active khi khớp 100% path
+            const isRootRoute =
+              item.url === "/staff" ||
+              item.url === "/expert" ||
+              item.url === "/dashboard";
+            const isActive = isRootRoute
+              ? pathname === item.url
+              : pathname === item.url || pathname.startsWith(item.url + "/");
 
             return (
               <SidebarMenuItem key={item.title}>

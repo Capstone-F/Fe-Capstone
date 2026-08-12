@@ -11,21 +11,26 @@ import {
   Clock,
   FlaskConical,
   ShoppingBag,
-  SlidersHorizontal,
 } from "lucide-react";
 
 import { useRouter } from "next/navigation";
 import { Button } from "@/shared/components/ui/button";
 import { useTreatment } from "@/features/treatment/components/treatment-context";
 import { useSession } from "@/features/auth/hooks/useSession";
+import { formatVnd } from "@/shared/utils/format";
 import {
   getSurveyReviewStep,
   validateSurveyRecommendation,
 } from "@/features/treatment/lib/survey-flow";
 import { parseBaumannCode } from "../lib/baumann";
-import { BaumannModal } from "./baumann-modal";
 
 type TabType = "PROFILE" | "PRODUCTS";
+
+const PROFILE_LABELS_VI: Record<string, string> = {
+  FEMALE: "Nữ",
+  MALE: "Nam",
+  NOT_PREFER_TO_SAY: "Không muốn tiết lộ",
+};
 
 export function ReportScreen() {
   const router = useRouter();
@@ -34,10 +39,6 @@ export function ReportScreen() {
   const { state, setFlowState, setSurveyStep, getRecommendedProducts } =
     useTreatment();
   const [activeTab, setActiveTab] = useState<TabType>("PROFILE");
-  const [isModalOpen, setIsModalOpen] = useState(false);
-  const [customBaumannCode, setCustomBaumannCode] = useState<string | null>(
-    null,
-  );
 
   const recommendedProducts = getRecommendedProducts();
   const recommendationStatus = validateSurveyRecommendation(
@@ -50,10 +51,7 @@ export function ReportScreen() {
   const custProfile = state.customerProfile?.customer;
 
   const rawCode =
-    customBaumannCode ||
-    recProfile?.skinTypeCode ||
-    custProfile?.skinType?.code ||
-    "ORNT";
+    recProfile?.skinTypeCode || custProfile?.skinType?.code || "ORNT";
 
   const scores = recProfile
     ? {
@@ -67,6 +65,20 @@ export function ReportScreen() {
   const parsedBaumann = parseBaumannCode(rawCode, scores);
   const labels = state.recommendations?.labels || [];
   const protocols = state.recommendations?.protocols || [];
+  const localizedLabelByCode = new Map(
+    state.dynamicQuestions.flatMap((question) =>
+      question.options.map((option) => [
+        option.labelCode,
+        option.vietnameseNormalized || option.name,
+      ]),
+    ),
+  );
+  state.faceLabels.forEach((label) => {
+    localizedLabelByCode.set(
+      label.code,
+      label.vietnameseNormalized || label.name,
+    );
+  });
 
   if (recommendationStatus !== "ok") {
     return (
@@ -75,8 +87,8 @@ export function ReportScreen() {
           Chưa thể dựng báo cáo khảo sát
         </h3>
         <p className="text-sm text-[#131336]/70">
-          Backend chưa trả về bộ khuyến nghị hợp lệ cho phiên khảo sát này. Vui
-          lòng quay lại và thử hoàn tất khảo sát thêm một lần nữa.
+          Chưa có đủ dữ liệu để hiển thị kết quả khảo sát này. Vui lòng quay lại
+          và hoàn tất khảo sát thêm một lần nữa.
         </p>
         <div className="flex justify-center">
           <Button
@@ -109,7 +121,7 @@ export function ReportScreen() {
             <ArrowLeft className="h-4.5 w-4.5" />
           </Button>
           <span className="text-primary bg-primary/10 rounded-full px-3 py-1 text-[10px] font-bold tracking-wider uppercase">
-            GlowScan AI Report
+            Kết quả khảo sát da
           </span>
           <div className="h-8 w-8 shrink-0" />
         </div>
@@ -151,7 +163,7 @@ export function ReportScreen() {
               }`}
             >
               <Dna className="h-4 w-4" />
-              <span>Phác đồ & Hồ sơ Da</span>
+              <span>Hồ sơ da</span>
             </button>
 
             <button
@@ -164,7 +176,7 @@ export function ReportScreen() {
               }`}
             >
               <ShoppingBag className="h-4 w-4" />
-              <span>Sản phẩm Kê Đơn</span>
+              <span>Sản phẩm gợi ý</span>
               <span className="rounded-full bg-[#6b5cf6] px-2 py-0.5 text-[10px] font-extrabold text-white">
                 {recommendedProducts.length}
               </span>
@@ -182,13 +194,13 @@ export function ReportScreen() {
                   <Sparkles className="h-4 w-4" />
                 </div>
                 <span className="text-xs font-bold tracking-wider uppercase">
-                  Phân Tích Thuật Toán AI GlowScan
+                  Phân tích chăm sóc da GlowScan
                 </span>
               </div>
               <p className="mt-2 text-xs leading-relaxed text-slate-700">
                 Dựa trên câu trả lời khảo sát và phân tích tình trạng da hiện
-                tại, hệ thống đã chấm điểm 4 trục Baumann và xuất phác đồ hoạt
-                chất tối ưu giúp cải thiện làn da của bạn.
+                tại, hệ thống tổng hợp hồ sơ Baumann và gợi ý hoạt chất chăm sóc
+                phù hợp cho bạn.
               </p>
             </div>
 
@@ -213,22 +225,14 @@ export function ReportScreen() {
                     {parsedBaumann.description}
                   </p>
                 </div>
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={() => setIsModalOpen(true)}
-                  className="shrink-0 rounded-2xl border-[#6b5cf6]/30 text-xs font-bold text-[#6b5cf6] hover:bg-[#6b5cf6]/5"
-                >
-                  <SlidersHorizontal className="mr-1.5 h-3.5 w-3.5" />
-                  Hiệu chỉnh
-                </Button>
               </div>
 
               {/* 4 Baumann Axes Gauges / Sliders */}
               <div className="grid gap-3 pt-4 sm:grid-cols-2">
                 {Object.values(parsedBaumann.axes).map((axis) => {
                   // Normalize score to 0 - 100% for slider visual
-                  const clampedScore = Math.max(-50, Math.min(50, axis.score));
+                  const score = Object.is(axis.score, -0) ? 0 : axis.score;
+                  const clampedScore = Math.max(-50, Math.min(50, score));
                   const percentage = ((clampedScore + 50) / 100) * 100;
 
                   return (
@@ -239,7 +243,7 @@ export function ReportScreen() {
                       <div className="flex items-center justify-between text-xs font-bold text-slate-800">
                         <span>{axis.label}</span>
                         <span className="text-[#6b5cf6]">
-                          {axis.score > 0 ? `+${axis.score}` : axis.score}
+                          {score > 0 ? `+${score}` : score}
                         </span>
                       </div>
 
@@ -254,14 +258,14 @@ export function ReportScreen() {
                       <div className="mt-1.5 flex justify-between text-[10px] font-semibold text-slate-500">
                         <span
                           className={
-                            axis.score <= 0 ? "font-bold text-[#6b5cf6]" : ""
+                            score <= 0 ? "font-bold text-[#6b5cf6]" : ""
                           }
                         >
                           {axis.negativeLabel}
                         </span>
                         <span
                           className={
-                            axis.score > 0 ? "font-bold text-[#6b5cf6]" : ""
+                            score > 0 ? "font-bold text-[#6b5cf6]" : ""
                           }
                         >
                           {axis.positiveLabel}
@@ -286,7 +290,16 @@ export function ReportScreen() {
                       className="flex items-center gap-1.5 rounded-full border border-slate-200 bg-white px-3 py-1.5 text-xs font-bold text-[#131336] shadow-xs"
                     >
                       <Tag className="h-3.5 w-3.5 text-[#6b5cf6]" />
-                      <span>{lbl.name}</span>
+                      <span>
+                        {lbl.vietnameseNormalized ||
+                          (lbl.code
+                            ? localizedLabelByCode.get(lbl.code)
+                            : undefined) ||
+                          (lbl.code
+                            ? PROFILE_LABELS_VI[lbl.code]
+                            : undefined) ||
+                          lbl.name}
+                      </span>
                     </div>
                   ))}
                 </div>
@@ -297,7 +310,7 @@ export function ReportScreen() {
             {protocols.length > 0 && (
               <div className="space-y-3 text-left">
                 <h4 className="text-xs font-bold tracking-wider text-slate-400 uppercase">
-                  Phác đồ điều trị khuyến nghị ({protocols.length} bước)
+                  Hoạt chất và cách chăm sóc gợi ý ({protocols.length} bước)
                 </h4>
 
                 <div className="space-y-3">
@@ -330,7 +343,7 @@ export function ReportScreen() {
                         {proto.timeOfUse && (
                           <span className="flex items-center gap-1 rounded-full border border-slate-200 bg-slate-50 px-2.5 py-1 text-[10px] font-bold text-slate-600 uppercase">
                             <Clock className="h-3 w-3 text-slate-400" />
-                            {proto.timeOfUse}
+                            {translateTimeOfUse(proto.timeOfUse)}
                           </span>
                         )}
                       </div>
@@ -348,19 +361,19 @@ export function ReportScreen() {
           </div>
         )}
 
-        {/* Tab 2: Products Prescription */}
+        {/* Tab 2: Suggested products */}
         {activeTab === "PRODUCTS" && (
           <div className="mx-auto w-full max-w-2xl space-y-4">
             <div className="rounded-3xl border border-emerald-200 bg-emerald-50/80 p-4 text-left shadow-xs">
               <div className="flex items-center gap-2 text-emerald-800">
                 <ShieldCheck className="h-5 w-5 text-emerald-600" />
                 <span className="text-xs font-bold tracking-wider uppercase">
-                  Sản Phẩm Kê Đơn Tối Ưu Theo Phác Đồ
+                  Sản phẩm gợi ý phù hợp với hồ sơ da
                 </span>
               </div>
               <p className="mt-1 text-xs text-emerald-700">
-                Toàn bộ các sản phẩm dưới đây đều đã qua kiểm duyệt nồng độ hoạt
-                chất và độ an toàn cho làn da của bạn.
+                Đây là các sản phẩm phù hợp với hoạt chất và cách chăm sóc được
+                gợi ý cho bạn.
               </p>
             </div>
 
@@ -371,19 +384,16 @@ export function ReportScreen() {
                   className="flex items-center justify-between rounded-3xl border border-slate-200 bg-white p-4 text-left shadow-xs"
                 >
                   <div className="space-y-1">
-                    <span className="text-xs font-bold text-[#6b5cf6]">
-                      {product.brand}
-                    </span>
                     <h5 className="font-heading text-sm font-bold text-[#131336]">
                       {product.name}
                     </h5>
                     <p className="text-xs text-slate-500">
-                      Chuyên khoa: {product.category}
+                      Hoạt chất / thông tin sản phẩm: {product.category}
                     </p>
                   </div>
                   <div className="text-right">
                     <span className="text-sm font-black text-[#131336]">
-                      {product.price.toLocaleString("vi-VN")} đ
+                      {formatVnd(product.price)}
                     </span>
                   </div>
                 </div>
@@ -412,22 +422,24 @@ export function ReportScreen() {
           <span>
             {activeTab === "PROFILE"
               ? isAuthenticated
-                ? "Xem Sản Phẩm Kê Đơn & Đặt Đơn"
-                : "Xem Sản Phẩm Kê Đơn & Đăng Nhập Mua Hàng"
-              : "Quay Lại Phác Đồ AI"}
+                ? "Xem sản phẩm gợi ý & đặt hàng"
+                : "Xem sản phẩm gợi ý & đăng nhập"
+              : "Quay lại hồ sơ da"}
           </span>
           <ArrowRight className="h-5 w-5" />
         </Button>
       </div>
-
-      {/* Interactive Baumann Modal */}
-      <BaumannModal
-        isOpen={isModalOpen}
-        onClose={() => setIsModalOpen(false)}
-        currentCode={parsedBaumann.code}
-        scores={scores}
-        onSave={(newCode) => setCustomBaumannCode(newCode)}
-      />
     </div>
   );
+}
+
+function translateTimeOfUse(value: string): string {
+  const labels: Record<string, string> = {
+    AM: "Buổi sáng",
+    PM: "Buổi tối",
+    MORNING: "Buổi sáng",
+    EVENING: "Buổi tối",
+    AM_PM: "Sáng và tối",
+  };
+  return labels[value] ?? value;
 }
