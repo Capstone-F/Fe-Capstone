@@ -21,9 +21,8 @@ export default function StaffPortalLayout({
       <AppSidebar variant="inset" config={siteConfig.staffPortal} />
       <SidebarInset>
         <SiteHeader />
-        <div className="flex flex-1 flex-col bg-slate-50/50 p-6 dark:bg-slate-950/20">
-          {children}
-        </div>
+        {/* Padding lives in each page, matching the admin portal layout. */}
+        <div className="flex flex-1 flex-col">{children}</div>
       </SidebarInset>
     </SidebarProvider>
   );

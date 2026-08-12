@@ -4,8 +4,7 @@ import { RestockQueueTable } from "@/features/admin/cancellations/components/res
 
 export default function StaffRestockDeskPage() {
   return (
-    <div className="page-shell">
-      <RestockQueueTable isAdmin={false} />
-    </div>
+    // The view owns its own page padding, matching the admin route.
+    <RestockQueueTable isAdmin={false} />
   );
 }

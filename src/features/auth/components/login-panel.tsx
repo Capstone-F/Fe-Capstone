@@ -72,11 +72,21 @@ export function LoginPanel({ redirectTo = "/dashboard" }: LoginPanelProps) {
       mode: "login",
       email: "",
       password: "",
+      confirmPassword: "",
       name: "",
     },
   });
   const mode = useWatch({ control: form.control, name: "mode" });
   const [showPassword, setShowPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
+
+  // Switching tabs drops the confirmation so a stale mismatch error can't stick.
+  const switchMode = (nextMode: AuthFormValues["mode"]) => {
+    form.setValue("mode", nextMode);
+    form.setValue("confirmPassword", "");
+    form.clearErrors("confirmPassword");
+    setShowConfirmPassword(false);
+  };
 
   const handleSubmit = async (values: AuthFormValues) => {
     const guestSurvey = guestSurveyStorage.get();
@@ -215,7 +225,7 @@ export function LoginPanel({ redirectTo = "/dashboard" }: LoginPanelProps) {
         <div className="space-y-8 md:col-span-7 lg:col-span-6">
           <div className="inline-flex items-center gap-2 rounded-full border border-[#D5E2DC] bg-white/80 px-3.5 py-1.5 text-xs font-medium text-[#3A5246] shadow-2xs backdrop-blur-xs">
             <HeartPulse className="h-3.5 w-3.5 text-[#2C3E35]" />
-            <span>Chăm sóc da cá nhân hóa chuẩn y khoa</span>
+            <span>Chăm sóc da cá nhân hóa.</span>
           </div>
 
           <div className="space-y-4">
@@ -249,7 +259,7 @@ export function LoginPanel({ redirectTo = "/dashboard" }: LoginPanelProps) {
               <div className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-[#E2EBE6] text-[#2C3E35]">
                 <CheckCircle2 className="h-3.5 w-3.5" />
               </div>
-              <span>Bảo mật dữ liệu tuyệt đối theo tiêu chuẩn y khoa</span>
+              <span>Bảo mật dữ liệu theo tiêu chuẩn.</span>
             </div>
           </div>
         </div>
@@ -271,7 +281,7 @@ export function LoginPanel({ redirectTo = "/dashboard" }: LoginPanelProps) {
             <div className="mb-5 flex border-b border-[#E0E8E4]">
               <button
                 type="button"
-                onClick={() => form.setValue("mode", "login")}
+                onClick={() => switchMode("login")}
                 className={`flex-1 border-b-2 pb-2.5 text-sm font-bold transition-colors ${
                   mode === "login"
                     ? "border-[#2C3E35] text-[#2C3E35]"
@@ -283,7 +293,7 @@ export function LoginPanel({ redirectTo = "/dashboard" }: LoginPanelProps) {
               <button
                 type="button"
                 onClick={() => {
-                  form.setValue("mode", "register");
+                  switchMode("register");
                   const storedName = guestSurveyStorage.get()?.baseProfile.name;
                   if (storedName && !form.getValues("name")) {
                     form.setValue("name", storedName);
@@ -378,6 +388,47 @@ export function LoginPanel({ redirectTo = "/dashboard" }: LoginPanelProps) {
                 )}
               </FormController>
 
+              {mode === "register" && (
+                <FormController
+                  control={form.control}
+                  name="confirmPassword"
+                  label="Xác nhận mật khẩu"
+                >
+                  {(field) => (
+                    <div className="relative">
+                      <Input
+                        {...field}
+                        id={field.name}
+                        type={showConfirmPassword ? "text" : "password"}
+                        placeholder="••••••••"
+                        autoComplete="new-password"
+                        className="h-11 rounded-xl border-[#E0E8E4] pr-10 text-sm focus-visible:ring-[#2C3E35]"
+                        aria-invalid={Boolean(
+                          form.formState.errors.confirmPassword,
+                        )}
+                      />
+                      <button
+                        type="button"
+                        onClick={() =>
+                          setShowConfirmPassword(!showConfirmPassword)
+                        }
+                        className="absolute top-1/2 right-3 -translate-y-1/2 text-[#6A8275] transition-colors hover:text-[#2C3E35] focus:outline-hidden"
+                        tabIndex={-1}
+                        aria-label={
+                          showConfirmPassword ? "Ẩn mật khẩu" : "Hiện mật khẩu"
+                        }
+                      >
+                        {showConfirmPassword ? (
+                          <EyeOff className="h-4.5 w-4.5" />
+                        ) : (
+                          <Eye className="h-4.5 w-4.5" />
+                        )}
+                      </button>
+                    </div>
+                  )}
+                </FormController>
+              )}
+
               <Button
                 type="submit"
                 disabled={form.formState.isSubmitting}
@@ -418,7 +469,7 @@ export function LoginPanel({ redirectTo = "/dashboard" }: LoginPanelProps) {
           {/* Security badge below card */}
           <div className="mt-4 flex items-center justify-center gap-2 text-xs text-[#6A8275]">
             <ShieldCheck className="h-4 w-4 text-[#4E7D63]" />
-            <span>Mã hóa bảo mật 256-bit • Tiêu chuẩn y khoa</span>
+            <span>Mã hóa bảo mật 256-bit • Cá nhân hóa cho bạn</span>
           </div>
         </div>
       </main>

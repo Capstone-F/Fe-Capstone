@@ -30,6 +30,7 @@ import {
   DialogFooter,
 } from "@/shared/components/ui/dialog";
 import { formatVnd } from "@/shared/utils/format";
+import { StaffPageHeader } from "@/features/staff/components/staff-page-header";
 
 export type StockImportStatus =
   | "DRAFT"
@@ -213,45 +214,34 @@ export function StockImportView() {
   const forms = data?.items || [];
 
   return (
-    <div className="flex flex-col gap-6 p-6">
-      {/* Header Banner */}
-      <div className="flex flex-col gap-4 rounded-3xl border border-slate-200/90 bg-white p-5 shadow-sm sm:flex-row sm:items-center sm:justify-between dark:border-slate-800 dark:bg-slate-900">
-        <div className="flex items-center gap-3">
-          <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-[#E2EBE6] text-[#2C3E35] dark:bg-emerald-950 dark:text-emerald-400">
-            <Boxes className="h-6 w-6" />
-          </div>
-          <div>
-            <h2 className="text-lg font-bold text-slate-900 dark:text-white">
-              Quản Lý Phiếu Nhập Kho Sản Phẩm (Stock Imports)
-            </h2>
-            <p className="text-xs text-slate-500">
-              Tạo bản nháp phiếu nhập, trình duyệt, xác nhận cộng kho thực tế và
-              quản lý các lô hàng.
-            </p>
-          </div>
-        </div>
+    <div className="flex flex-col gap-6 p-4 sm:p-6">
+      <StaffPageHeader
+        icon={Boxes}
+        title="Quản Lý Phiếu Nhập Kho Sản Phẩm (Stock Imports)"
+        description="Tạo bản nháp phiếu nhập, trình duyệt, xác nhận cộng kho thực tế và quản lý các lô hàng."
+        actions={
+          <>
+            <Button
+              onClick={() => setCreateModalOpen(true)}
+              className="rounded-xl bg-[#2C3E35] px-4 text-xs font-bold text-white shadow-xs hover:bg-[#3A5246]"
+            >
+              <Plus className="mr-1.5 h-4 w-4" /> Tạo Phiếu Nhập Nháp
+            </Button>
 
-        <div className="flex items-center gap-2">
-          <Button
-            onClick={() => setCreateModalOpen(true)}
-            className="rounded-xl bg-[#2C3E35] px-4 text-xs font-bold text-white shadow-xs hover:bg-[#3A5246]"
-          >
-            <Plus className="mr-1.5 h-4 w-4" /> Tạo Phiếu Nhập Nháp
-          </Button>
-
-          <Button
-            variant="ghost"
-            size="sm"
-            onClick={() => refetch()}
-            disabled={isRefetching}
-            className="rounded-xl text-xs font-semibold text-slate-600 hover:bg-slate-100"
-          >
-            <RefreshCw
-              className={`h-3.5 w-3.5 ${isRefetching ? "animate-spin" : ""}`}
-            />
-          </Button>
-        </div>
-      </div>
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => refetch()}
+              disabled={isRefetching}
+              className="rounded-xl text-xs font-semibold text-slate-600 hover:bg-slate-100"
+            >
+              <RefreshCw
+                className={`h-3.5 w-3.5 ${isRefetching ? "animate-spin" : ""}`}
+              />
+            </Button>
+          </>
+        }
+      />
 
       {/* Filter Tabs */}
       <div className="flex items-center gap-2 overflow-x-auto border-b border-slate-200 pb-2">
