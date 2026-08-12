@@ -17,6 +17,7 @@ import { API_ENDPOINTS } from "@/core/api/endpoints";
 import { Button } from "@/shared/components/ui/button";
 import { Input } from "@/shared/components/ui/input";
 import { Card, CardContent } from "@/shared/components/ui/card";
+import { StaffPageHeader } from "@/features/staff/components/staff-page-header";
 
 export interface SupportSession {
   id: string;
@@ -205,33 +206,23 @@ export function SupportChatView() {
   const sessions = queueData?.items || [];
 
   return (
-    <div className="flex h-[calc(100vh-80px)] flex-col gap-6 p-6">
-      {/* Header Banner */}
-      <div className="flex shrink-0 items-center justify-between rounded-3xl border border-slate-200/90 bg-white p-5 shadow-sm dark:border-slate-800 dark:bg-slate-900">
-        <div className="flex items-center gap-3">
-          <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-[#E2EBE6] text-[#2C3E35] dark:bg-emerald-950 dark:text-emerald-400">
-            <MessageSquare className="h-6 w-6" />
-          </div>
-          <div>
-            <h2 className="text-lg font-bold text-slate-900 dark:text-white">
-              Tổng Đài Chat Hỗ Trợ Khách Hàng 1-1 (Support Center)
-            </h2>
-            <p className="text-xs text-slate-500">
-              Tiếp nhận phiên chat hỗ trợ tư vấn đơn hàng, sản phẩm và tư vấn
-              trực tiếp cho khách hàng.
-            </p>
-          </div>
-        </div>
-
-        <Button
-          variant="ghost"
-          size="sm"
-          onClick={() => refetchQueue()}
-          className="rounded-xl text-xs font-semibold text-slate-600 hover:bg-slate-100"
-        >
-          <RefreshCw className="mr-1.5 h-3.5 w-3.5" /> Làm mới hàng đợi
-        </Button>
-      </div>
+    <div className="flex h-[calc(100vh-80px)] flex-col gap-6 p-4 sm:p-6">
+      <StaffPageHeader
+        className="shrink-0"
+        icon={MessageSquare}
+        title="Tổng Đài Chat Hỗ Trợ Khách Hàng 1-1 (Support Center)"
+        description="Tiếp nhận phiên chat hỗ trợ tư vấn đơn hàng, sản phẩm và tư vấn trực tiếp cho khách hàng."
+        actions={
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={() => refetchQueue()}
+            className="rounded-xl text-xs font-semibold text-slate-600 hover:bg-slate-100"
+          >
+            <RefreshCw className="mr-1.5 h-3.5 w-3.5" /> Làm mới hàng đợi
+          </Button>
+        }
+      />
 
       {/* 2-Column Chat Desk Layout */}
       <div className="grid min-h-0 flex-1 grid-cols-1 gap-6 overflow-hidden lg:grid-cols-12">

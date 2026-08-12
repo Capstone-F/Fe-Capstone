@@ -123,6 +123,11 @@ export const siteConfig = {
         icon: "Boxes",
       },
       {
+        title: "Bàn kiểm hàng trả",
+        url: "/staff/restock-desk",
+        icon: "PackageCheck",
+      },
+      {
         title: "Hỗ trợ khách hàng",
         url: "/staff/support-chat",
         icon: "MessageSquare",

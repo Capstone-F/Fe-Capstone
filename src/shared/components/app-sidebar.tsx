@@ -35,6 +35,7 @@ import {
   FileText,
   Boxes,
   MessageSquare,
+  PackageCheck,
   PackagePlus,
   UserCheck,
 } from "lucide-react";
@@ -62,6 +63,7 @@ const IconMap: Record<string, LucideIcon> = {
   FileText: FileText,
   Boxes: Boxes,
   MessageSquare: MessageSquare,
+  PackageCheck: PackageCheck,
   PackagePlus: PackagePlus,
 };
 
