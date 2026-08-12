@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import {
   Search,
@@ -50,6 +50,7 @@ import {
   hasExpertDiscoverySelection,
   type ExpertDiscoverySelection,
 } from "@/features/experts/lib/expert-discovery";
+import { calculateHaversineDistanceKm } from "@/features/experts/lib/geo";
 
 const EMPTY_DISCOVERY_SELECTION: ExpertDiscoverySelection = {
   provinceCode: null,
@@ -170,15 +171,50 @@ export function ExpertsPage() {
   const filters = {
     search: debouncedSearch || undefined,
     specialty: specialty !== "Tất cả" ? specialty : undefined,
-    maxDistance: geolocation.status === "granted" ? maxDistance : undefined,
     minRating: minRating > 0 ? minRating : undefined,
     maxFee: maxFee !== "all" ? Number(maxFee) : undefined,
-    lat: geolocation.lat ?? undefined,
-    lng: geolocation.lng ?? undefined,
   };
 
   const { data: experts, isLoading } = useExperts(filters, !session.isLoading);
   const { data: specialties } = useSpecialties(!session.isLoading);
+  const displayedExperts = useMemo(() => {
+    if (!experts) return [];
+    if (
+      geolocation.status !== "granted" ||
+      geolocation.lat === null ||
+      geolocation.lng === null
+    ) {
+      return experts;
+    }
+
+    const origin = { lat: geolocation.lat, lng: geolocation.lng };
+
+    return experts
+      .map((expert) => {
+        const clinic = expert.clinicLocation;
+        if (
+          !clinic ||
+          clinic.latitude === null ||
+          clinic.longitude === null ||
+          !Number.isFinite(clinic.latitude) ||
+          !Number.isFinite(clinic.longitude)
+        ) {
+          return { ...expert, distance: undefined };
+        }
+
+        return {
+          ...expert,
+          distance: calculateHaversineDistanceKm(origin, {
+            lat: clinic.latitude,
+            lng: clinic.longitude,
+          }),
+        };
+      })
+      .filter(
+        (expert) =>
+          expert.distance !== undefined && expert.distance <= maxDistance,
+      );
+  }, [experts, geolocation, maxDistance]);
   const t = {
     title: "Mạng lưới Chuyên gia da liễu",
     subtitle:
@@ -264,14 +300,14 @@ export function ExpertsPage() {
 
   const formatDistance = (distance?: number) => {
     if (geolocation.status === "granted" && distance !== undefined) {
-      return `${distance} km`;
+      return `${distance.toFixed(1)} km`;
     }
 
     if (geolocation.status === "loading" || geolocation.status === "idle") {
-      return "Dang cap nhat GPS";
+      return "Đang cập nhật GPS";
     }
 
-    return "Khong dung GPS";
+    return "Không dùng GPS";
   };
 
   if (session.isLoading) {
@@ -284,7 +320,7 @@ export function ExpertsPage() {
   }
 
   return (
-    <div className="mx-auto flex w-full max-w-5xl flex-col gap-6">
+    <div className="mx-auto flex w-full max-w-5xl min-w-0 flex-col gap-6 px-4 sm:px-0">
       <div className="flex flex-col gap-1">
         <h2 className="text-2xl font-bold tracking-tight text-slate-900">
           {t.title}
@@ -505,7 +541,7 @@ export function ExpertsPage() {
                 </span>
               </div>
             </div>
-            <div className="flex items-center gap-2 self-end sm:self-auto">
+            <div className="flex w-full flex-wrap items-center gap-2 sm:w-auto sm:flex-nowrap">
               <Button
                 variant="outline"
                 size="sm"
@@ -538,14 +574,14 @@ export function ExpertsPage() {
                     <ExpertCardSkeleton key={index} />
                   ))}
                 </div>
-              ) : experts && experts.length > 0 ? (
+              ) : displayedExperts.length > 0 ? (
                 <div className="flex flex-col gap-4">
-                  {experts.map((exp, idx) => (
+                  {displayedExperts.map((exp, idx) => (
                     <Card
                       key={exp.id}
                       onMouseEnter={() => setHoveredExpertId(exp.id)}
                       onMouseLeave={() => setHoveredExpertId(null)}
-                      className={`flex flex-col justify-between border-slate-200 shadow-xs transition-colors duration-200 hover:border-[#2C3E35]/40 ${
+                      className={`flex min-w-0 flex-col justify-between overflow-hidden border-slate-200 shadow-xs transition-colors duration-200 hover:border-[#2C3E35]/40 ${
                         hoveredExpertId === exp.id ||
                         selectedExpertId === exp.id
                           ? "border-[#2C3E35] ring-1 ring-[#2C3E35]/10"
@@ -591,16 +627,16 @@ export function ExpertsPage() {
                             </span>
                           ))}
                         </div>
-                        <div className="mt-3 flex items-center justify-between border-t border-slate-100 pt-3 text-xs">
+                        <div className="mt-3 flex flex-col gap-1 border-t border-slate-100 pt-3 text-xs sm:flex-row sm:items-center sm:justify-between">
                           <span className="text-muted-foreground">
                             {t.distanceLabel}
                           </span>
-                          <span className="font-semibold text-slate-700">
+                          <span className="font-semibold text-slate-700 sm:text-right">
                             {formatDistance(exp.distance)}
                           </span>
                         </div>
                       </CardContent>
-                      <CardFooter className="flex items-center justify-between rounded-b-xl border-t border-slate-100 bg-slate-50/50 p-4 pt-2">
+                      <CardFooter className="flex flex-col items-stretch gap-3 rounded-b-xl border-t border-slate-100 bg-slate-50/50 p-4 pt-2 sm:flex-row sm:items-center sm:justify-between">
                         <div>
                           <span className="text-muted-foreground block text-[10px] font-semibold uppercase">
                             {t.feeLabel}
@@ -609,7 +645,7 @@ export function ExpertsPage() {
                             {formatVnd(exp.fee)}
                           </span>
                         </div>
-                        <div className="flex items-center gap-2">
+                        <div className="flex w-full items-center gap-2 sm:w-auto">
                           <Button
                             variant="ghost"
                             size="sm"
@@ -617,14 +653,17 @@ export function ExpertsPage() {
                               setSelectedExpertId(exp.id);
                               setShowMobileMap(true);
                             }}
-                            className="rounded-lg text-xs font-semibold"
+                            className="flex-1 rounded-lg text-xs font-semibold sm:flex-none"
                           >
                             Định vị
                           </Button>
-                          <Link href={`/experts/${exp.id}`}>
+                          <Link
+                            href={`/experts/${exp.id}`}
+                            className="flex-1 sm:flex-none"
+                          >
                             <Button
                               size="sm"
-                              className="rounded-lg bg-[#2C3E35] text-xs font-semibold text-white hover:bg-[#3d574a]"
+                              className="w-full rounded-lg bg-[#2C3E35] text-xs font-semibold text-white hover:bg-[#3d574a] sm:w-auto"
                             >
                               {t.book}
                             </Button>
@@ -650,7 +689,7 @@ export function ExpertsPage() {
             >
               <div className="h-[500px] w-full overflow-hidden rounded-2xl border border-slate-200 bg-[#FAF8F5] shadow-xs">
                 <ExpertClinicMap
-                  experts={experts ?? []}
+                  experts={displayedExperts}
                   userLocation={
                     geolocation.status === "granted" &&
                     geolocation.lat !== null &&

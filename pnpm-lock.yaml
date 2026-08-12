@@ -34,9 +34,6 @@ importers:
       "@tanstack/react-table":
         specifier: ^8.21.3
         version: 8.21.3(react-dom@19.2.4(react@19.2.4))(react@19.2.4)
-      "@vis.gl/react-google-maps":
-        specifier: ^1.9.0
-        version: 1.9.0(react-dom@19.2.4(react@19.2.4))(react@19.2.4)
       "@zegocloud/zego-uikit-prebuilt":
         specifier: ^2.18.1
         version: 2.18.1
@@ -52,6 +49,9 @@ importers:
       date-fns:
         specifier: ^4.4.0
         version: 4.4.0
+      leaflet:
+        specifier: ^1.9.4
+        version: 1.9.4
       lucide-react:
         specifier: ^1.8.0
         version: 1.8.0(react@19.2.4)
@@ -73,6 +73,9 @@ importers:
       react-hook-form:
         specifier: ^7.85.0
         version: 7.85.0(react@19.2.4)
+      react-leaflet:
+        specifier: ^5.0.0
+        version: 5.0.0(leaflet@1.9.4)(react-dom@19.2.4(react@19.2.4))(react@19.2.4)
       recharts:
         specifier: 3.8.0
         version: 3.8.0(@types/react@19.2.14)(react-dom@19.2.4(react@19.2.4))(react-is@16.13.1)(react@19.2.4)(redux@5.0.1)
@@ -110,6 +113,9 @@ importers:
       "@tailwindcss/postcss":
         specifier: ^4
         version: 4.2.4
+      "@types/leaflet":
+        specifier: ^1.9.22
+        version: 1.9.22
       "@types/node":
         specifier: ^20
         version: 20.19.39
@@ -713,12 +719,6 @@ packages:
     resolution:
       {
         integrity: sha512-RiB/yIh78pcIxl6lLMG0CgBXAZ2Y0eVHqMPYugu+9U0AeT6YBeiJpf7lbdJNIugFP5SIjwNRgo4DhR1Qxi26Gg==,
-      }
-
-  "@googlemaps/js-api-loader@2.1.1":
-    resolution:
-      {
-        integrity: sha512-yUpAwksbHrlZIWD49JmveNSfBG4oAK0AwMknfSaPMnP5N7UT8oFRVCqwjGb1XQovi//7KLbPQKZpbofiLGzpDw==,
       }
 
   "@hono/node-server@1.19.14":
@@ -1612,6 +1612,16 @@ packages:
       "@types/react":
         optional: true
 
+  "@react-leaflet/core@3.0.0":
+    resolution:
+      {
+        integrity: sha512-3EWmekh4Nz+pGcr+xjf0KNyYfC3U2JjnkWsh0zcqaexYqmmB5ZhH37kz41JXGmKzpaMZCnPofBBm64i+YrEvGQ==,
+      }
+    peerDependencies:
+      leaflet: ^1.9.0
+      react: ^19.0.0
+      react-dom: ^19.0.0
+
   "@reduxjs/toolkit@2.11.2":
     resolution:
       {
@@ -1928,10 +1938,10 @@ packages:
         integrity: sha512-dWHzHa2WqEXI/O1E9OjrocMTKJl2mSrEolh1Iomrv6U+JuNwaHXsXx9bLu5gG7BUWFIN0skIQJQ/L1rIex4X6w==,
       }
 
-  "@types/google.maps@3.65.5":
+  "@types/geojson@7946.0.16":
     resolution:
       {
-        integrity: sha512-oR9Hq/WaKGzIguZEwoCuyQ0ofDhCbefmS9RrjLUZ5scMziwTE6xA90drJYt2ZsyUCYmCqnxQcDpfGqeRE/Zgog==,
+        integrity: sha512-6C8nqWur3j98U6+lXDfTUWIfgvZU+EumvpHKcYjujKH7woYyLj2sUmff0tRhrqM7BohUw7Pz3ZB1jj2gW9Fvmg==,
       }
 
   "@types/json-schema@7.0.15":
@@ -1944,6 +1954,12 @@ packages:
     resolution:
       {
         integrity: sha512-dRLjCWHYg4oaA77cxO64oO+7JwCwnIzkZPdrrC71jQmQtlhM556pwKo5bUzqvZndkVbeFLIIi+9TC40JNF5hNQ==,
+      }
+
+  "@types/leaflet@1.9.22":
+    resolution:
+      {
+        integrity: sha512-h3lhECYEKDasG7LFHu+GiHqAvsgLuQvlJvVZzJDGONo3sEL+wUOqSFLnwkZlK0qVxnxbuGFW8iBlJNYs5wgndA==,
       }
 
   "@types/long@4.0.2":
@@ -2236,15 +2252,6 @@ packages:
       }
     cpu: [x64]
     os: [win32]
-
-  "@vis.gl/react-google-maps@1.9.0":
-    resolution:
-      {
-        integrity: sha512-ELL/zo8mRMPGDQZwHRClf2tE1/PMYYKjg+C/dUn8rmlQ0e+s7rkcNmCgaeBAV48GJzEcrBsr+vjDv4AvzJrlUA==,
-      }
-    peerDependencies:
-      react: ">=16.8.0 || ^19.0 || ^19.0.0-rc"
-      react-dom: ">=16.8.0 || ^19.0 || ^19.0.0-rc"
 
   "@zegocloud/zego-uikit-prebuilt@2.18.1":
     resolution:
@@ -3503,13 +3510,6 @@ packages:
         integrity: sha512-f3qQ9oQy9j2AhBe/H9VC91wLmKBCCU/gDOnKNAYG5hswO7BLKj09Hc5HYNz9cGI++xlpDCIgDaitVs03ATR84Q==,
       }
 
-  fast-equals@6.0.2:
-    resolution:
-      {
-        integrity: sha512-sAjhj9ZhOxYCGiNMnZLaucOqf5ZeFnHNoKoAZiD9thhJ0N8RP85qJK759/97C/3L7NzzmGVB5uiX9AUpySZmUQ==,
-      }
-    engines: { node: ">=6.0.0" }
-
   fast-glob@3.3.1:
     resolution:
       {
@@ -4577,6 +4577,12 @@ packages:
       }
     engines: { node: ">=0.10" }
 
+  leaflet@1.9.4:
+    resolution:
+      {
+        integrity: sha512-nxS1ynzJOmOlHp+iL3FyWqK89GtNL8U8rvlMOsQdTTssxZwCXh8N2NB3GDQOL+YR3XnWyZAxwQixURb+FA74PA==,
+      }
+
   levn@0.4.1:
     resolution:
       {
@@ -5536,6 +5542,16 @@ packages:
       {
         integrity: sha512-24e6ynE2H+OKt4kqsOvNd8kBpV65zoxbA4BVsEOB3ARVWQki/DHzaUoC5KuON/BiccDaCCTZBuOcfZs70kR8bQ==,
       }
+
+  react-leaflet@5.0.0:
+    resolution:
+      {
+        integrity: sha512-CWbTpr5vcHw5bt9i4zSlPEVQdTVcML390TjeDG0cK59z1ylexpqC6M1PJFjV8jD7CF+ACBFsLIDs6DRMoLEofw==,
+      }
+    peerDependencies:
+      leaflet: ^1.9.0
+      react: ^19.0.0
+      react-dom: ^19.0.0
 
   react-redux@9.2.0:
     resolution:
@@ -7111,10 +7127,6 @@ snapshots:
 
   "@floating-ui/utils@0.2.11": {}
 
-  "@googlemaps/js-api-loader@2.1.1":
-    dependencies:
-      "@types/google.maps": 3.65.5
-
   "@hono/node-server@1.19.14(hono@4.12.14)":
     dependencies:
       hono: 4.12.14
@@ -7557,6 +7569,12 @@ snapshots:
     optionalDependencies:
       "@types/react": 19.2.14
 
+  "@react-leaflet/core@3.0.0(leaflet@1.9.4)(react-dom@19.2.4(react@19.2.4))(react@19.2.4)":
+    dependencies:
+      leaflet: 1.9.4
+      react: 19.2.4
+      react-dom: 19.2.4(react@19.2.4)
+
   "@reduxjs/toolkit@2.11.2(react-redux@9.2.0(@types/react@19.2.14)(react@19.2.4)(redux@5.0.1))(react@19.2.4)":
     dependencies:
       "@standard-schema/spec": 1.1.0
@@ -7718,11 +7736,15 @@ snapshots:
 
   "@types/estree@1.0.8": {}
 
-  "@types/google.maps@3.65.5": {}
+  "@types/geojson@7946.0.16": {}
 
   "@types/json-schema@7.0.15": {}
 
   "@types/json5@0.0.29": {}
+
+  "@types/leaflet@1.9.22":
+    dependencies:
+      "@types/geojson": 7946.0.16
 
   "@types/long@4.0.2": {}
 
@@ -7897,14 +7919,6 @@ snapshots:
 
   "@unrs/resolver-binding-win32-x64-msvc@1.11.1":
     optional: true
-
-  "@vis.gl/react-google-maps@1.9.0(react-dom@19.2.4(react@19.2.4))(react@19.2.4)":
-    dependencies:
-      "@googlemaps/js-api-loader": 2.1.1
-      "@types/google.maps": 3.65.5
-      fast-equals: 6.0.2
-      react: 19.2.4
-      react-dom: 19.2.4(react@19.2.4)
 
   "@zegocloud/zego-uikit-prebuilt@2.18.1": {}
 
@@ -8801,8 +8815,6 @@ snapshots:
 
   fast-deep-equal@3.1.3: {}
 
-  fast-equals@6.0.2: {}
-
   fast-glob@3.3.1:
     dependencies:
       "@nodelib/fs.stat": 2.0.5
@@ -9354,6 +9366,8 @@ snapshots:
     dependencies:
       language-subtag-registry: 0.3.23
 
+  leaflet@1.9.4: {}
+
   levn@0.4.1:
     dependencies:
       prelude-ls: 1.2.1
@@ -9874,6 +9888,13 @@ snapshots:
       react: 19.2.4
 
   react-is@16.13.1: {}
+
+  react-leaflet@5.0.0(leaflet@1.9.4)(react-dom@19.2.4(react@19.2.4))(react@19.2.4):
+    dependencies:
+      "@react-leaflet/core": 3.0.0(leaflet@1.9.4)(react-dom@19.2.4(react@19.2.4))(react@19.2.4)
+      leaflet: 1.9.4
+      react: 19.2.4
+      react-dom: 19.2.4(react@19.2.4)
 
   react-redux@9.2.0(@types/react@19.2.14)(react@19.2.4)(redux@5.0.1):
     dependencies:
