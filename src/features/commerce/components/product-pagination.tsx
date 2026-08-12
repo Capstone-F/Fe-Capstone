@@ -55,20 +55,28 @@ export function ProductPagination({
     pageLabel: "Trang",
   };
   const unitLabel = perPageLabel ?? c.perPage;
+  const sizeItems = pageSizeOptions.map((size) => ({
+    value: `${size}`,
+    label: `${size} ${unitLabel}`,
+  }));
 
   return (
     <div className="flex items-center justify-between border-t border-slate-100 pt-4">
       <Select
+        // Base UI's SelectValue renders the raw value — the bare page size —
+        // unless the root is given the value -> label pairs to look the full
+        // "8 sản phẩm/trang" wording up from.
+        items={sizeItems}
         value={`${pageSize}`}
         onValueChange={(value) => onPageSizeChange(Number(value))}
       >
-        <SelectTrigger size="sm" className="w-28 text-xs">
+        <SelectTrigger size="sm" className="w-40 text-xs">
           <SelectValue />
         </SelectTrigger>
         <SelectContent>
-          {pageSizeOptions.map((size) => (
-            <SelectItem key={size} value={`${size}`}>
-              {size} {unitLabel}
+          {sizeItems.map((item) => (
+            <SelectItem key={item.value} value={item.value}>
+              {item.label}
             </SelectItem>
           ))}
         </SelectContent>
