@@ -10,39 +10,40 @@ export const siteConfig = {
   dashboard: {
     portal: "admin" as const,
     title: "GlowScan Admin",
+    // Labels stay short so they survive the sidebar's single-line truncation.
     navMain: [
       {
-        title: "Quản lý người dùng & Phân quyền",
+        title: "Người dùng",
         url: "/dashboard",
         icon: "Users",
       },
       {
-        title: "Quản lý phòng khám đối tác",
+        title: "Phòng khám",
         url: "/dashboard/clinics",
         icon: "Folder",
       },
       {
-        title: "Onboard & Quản lý chuyên gia",
+        title: "Chuyên gia",
         url: "/dashboard/experts",
         icon: "UserCheck",
       },
       {
-        title: "Bàn Hủy đơn & Kho trả (Restock)",
+        title: "Hủy đơn & Kho trả",
         url: "/dashboard/cancellations",
         icon: "Boxes",
       },
       {
-        title: "Ngân hàng câu hỏi khảo sát",
+        title: "Ngân hàng câu hỏi",
         url: "/dashboard/surveys",
         icon: "FileText",
       },
       {
-        title: "Cấu hình thương mại & Ví",
+        title: "Thương mại & Ví",
         url: "/dashboard/commerce",
         icon: "ShoppingBag",
       },
       {
-        title: "Bảng công cụ QA Cheats",
+        title: "QA Cheats",
         url: "/dashboard/qa-cheats",
         icon: "Settings2",
       },

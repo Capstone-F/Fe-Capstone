@@ -76,6 +76,12 @@ const roleLabel = new Map<string, string>(
   roleOptions.map((role) => [role.value, role.label]),
 );
 
+/** Base UI shows the raw value ("all") in a closed trigger without this value→label map. */
+const roleFilterItems: Record<string, string> = {
+  all: "Tất cả vai trò",
+  ...Object.fromEntries(roleOptions.map((role) => [role.value, role.label])),
+};
+
 export function UserManagementView() {
   const session = useSession();
   const [search, setSearch] = useState("");
@@ -154,6 +160,7 @@ export function UserManagementView() {
             <Select
               value={role}
               onValueChange={(value) => setRole(value ?? "all")}
+              items={roleFilterItems}
             >
               <SelectTrigger className="w-full sm:w-52">
                 <SelectValue placeholder="Tất cả vai trò" />

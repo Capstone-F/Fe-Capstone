@@ -45,8 +45,28 @@ export function useExpertAvailability(expertProfileId: string | null) {
   });
 }
 
-export function useUpdateConsultationFee() {
+/**
+ * Writing an expert profile changes what several unrelated caches show.
+ * `PATCH /experts/:id` also mirrors the clinic onto the user row, and the admin
+ * expert table reads the clinic from `admin-users`, not from `experts` — so
+ * invalidating only `experts` leaves the table showing the previous clinic.
+ */
+function useExpertRosterInvalidator() {
   const queryClient = useQueryClient();
+  return () => {
+    for (const key of [
+      ["experts"],
+      ["admin-users"],
+      ["admin-user-directory"],
+      ["admin-expert-profiles"],
+    ]) {
+      void queryClient.invalidateQueries({ queryKey: key });
+    }
+  };
+}
+
+export function useUpdateConsultationFee() {
+  const invalidateRoster = useExpertRosterInvalidator();
   return useMutation({
     mutationFn: async ({
       expertProfileId,
@@ -61,14 +81,12 @@ export function useUpdateConsultationFee() {
           consultationFee,
         )
       ).data,
-    onSuccess: () => {
-      void queryClient.invalidateQueries({ queryKey: ["experts"] });
-    },
+    onSuccess: invalidateRoster,
   });
 }
 
 export function useUpdateExpertClinic() {
-  const queryClient = useQueryClient();
+  const invalidateRoster = useExpertRosterInvalidator();
   return useMutation({
     mutationFn: async ({
       expertProfileId,
@@ -78,9 +96,7 @@ export function useUpdateExpertClinic() {
       clinicId: string;
     }) =>
       (await adminExpertsApi.updateExpert(expertProfileId, { clinicId })).data,
-    onSuccess: () => {
-      void queryClient.invalidateQueries({ queryKey: ["experts"] });
-    },
+    onSuccess: invalidateRoster,
   });
 }
 
