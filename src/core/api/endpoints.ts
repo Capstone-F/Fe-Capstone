@@ -17,6 +17,28 @@ export const API_ENDPOINTS = {
     DETAIL: (userId: string) => `/admin/wallets/${userId}`,
     TOP_UP: (userId: string) => `/admin/wallets/${userId}/top-up`,
   },
+  ADMIN_CLINICS: {
+    LIST: "/admin/clinics",
+    DETAIL: (id: string) => `/admin/clinics/${id}`,
+    CREATE: "/admin/clinics",
+    UPDATE: (id: string) => `/admin/clinics/${id}`,
+    DEACTIVATE: (id: string) => `/admin/clinics/${id}`,
+  },
+  ADMIN_SURVEY_QUESTIONS: {
+    LIST: "/admin/survey-questions",
+    DETAIL: (id: string) => `/admin/survey-questions/${id}`,
+    CREATE: "/admin/survey-questions",
+    UPDATE: (id: string) => `/admin/survey-questions/${id}`,
+    DELETE: (id: string) => `/admin/survey-questions/${id}`,
+    OPTIONS: (id: string) => `/admin/survey-questions/${id}/options`,
+  },
+  ADMIN_COMMERCE: {
+    COMBO_DISCOUNT: "/admin/commerce-settings/survey-combo-discount",
+  },
+  ADMIN_QA_CHEATS: {
+    CUSTOMER_PROFILE: (id: string) => `/admin/customers/${id}/profile`,
+    CUSTOMER_SURVEY: (id: string) => `/admin/customers/${id}/survey`,
+  },
   CLINICS: {
     LIST: "/clinics",
   },
@@ -162,5 +184,14 @@ export const API_ENDPOINTS = {
     HISTORY: (routineId: string) => `/routines/${routineId}/history`,
     HISTORY_DAY: (routineId: string, date: string) =>
       `/routines/${routineId}/history/${date}`,
+  },
+  ADMIN_ORDER_CANCELLATIONS: {
+    LIST: "/admin/order-cancellations",
+    DETAIL: (id: string) => `/admin/order-cancellations/${id}`,
+    CONFIRM_RETURN: (id: string) =>
+      `/admin/order-cancellations/${id}/confirm-return`,
+    CANCEL: "/admin/order-cancellations",
+    ADVANCE: (id: string) => `/admin/order-cancellations/${id}/advance`,
+    TICK: "/admin/order-cancellations/tick",
   },
 } as const;

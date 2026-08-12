@@ -118,7 +118,31 @@ export default function StaffDashboardPage() {
       </div>
 
       {/* Shortcuts */}
-      <div className="grid grid-cols-1 gap-6 md:grid-cols-3">
+      <div className="grid grid-cols-1 gap-6 md:grid-cols-4">
+        <Card className="flex flex-col justify-between border-t-4 border-slate-200/80 border-t-orange-500 shadow-sm dark:border-slate-800">
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2 text-base font-bold">
+              <Boxes className="h-5 w-5 text-orange-600" />
+              Bàn Kiểm Hàng Trả
+            </CardTitle>
+            <p className="text-muted-foreground text-xs">
+              Kiểm kê sản phẩm từ đơn hủy, phân loại hàng tốt/hỏng và xác nhận
+              nhập lại kho.
+            </p>
+          </CardHeader>
+          <CardContent className="pt-0">
+            <Link
+              href="/staff/restock-desk"
+              className={buttonVariants({
+                className:
+                  "w-full gap-2 bg-[#2C3E35] text-white hover:bg-[#3A5246]",
+              })}
+            >
+              Bàn kiểm kho <ArrowRight className="h-4 w-4" />
+            </Link>
+          </CardContent>
+        </Card>
+
         <Card className="flex flex-col justify-between border-slate-200/80 shadow-sm dark:border-slate-800">
           <CardHeader>
             <CardTitle className="flex items-center gap-2 text-base font-bold">

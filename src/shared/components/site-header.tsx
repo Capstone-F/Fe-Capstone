@@ -18,9 +18,21 @@ export function SiteHeader() {
   } else if (pathname === "/expert/schedule") {
     pageTitle = "Lịch Khám & Slots Ca Tư Vấn";
   } else if (pathname === "/dashboard") {
-    pageTitle = "Quản Lý Người Dùng";
+    pageTitle = "Quản Lý Người Dùng & Phân Quyền";
   } else if (pathname === "/dashboard/experts") {
-    pageTitle = "Quản Lý Chuyên Gia";
+    pageTitle = "Onboard & Quản Lý Chuyên Gia";
+  } else if (pathname === "/dashboard/clinics") {
+    pageTitle = "Quản Lý Phòng Khám Đối Tác";
+  } else if (pathname === "/dashboard/cancellations") {
+    pageTitle = "Bàn Hủy Đơn & Kho Trả (Restock)";
+  } else if (pathname === "/dashboard/surveys") {
+    pageTitle = "Ngân Hàng Câu Hỏi Khảo Sát";
+  } else if (pathname === "/dashboard/commerce") {
+    pageTitle = "Cấu Hình Thương Mại & Ví";
+  } else if (pathname === "/dashboard/qa-cheats") {
+    pageTitle = "Bảng Công Cụ QA Cheats";
+  } else if (pathname === "/dashboard/products") {
+    pageTitle = "Quản Lý Sản Phẩm & Stock";
   }
 
   return (
