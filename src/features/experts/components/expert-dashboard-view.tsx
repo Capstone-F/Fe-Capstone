@@ -460,7 +460,9 @@ export function ExpertDashboardView() {
                       </>
                     )}
 
-                    {statusNorm !== "CANCELLED" && (
+                    {/* Action: Confirmed or In Progress -> Video Room */}
+                    {(statusNorm === "CONFIRMED" ||
+                      statusNorm === "IN_PROGRESS") && (
                       <Button
                         size="sm"
                         onClick={() =>
@@ -473,9 +475,8 @@ export function ExpertDashboardView() {
                       </Button>
                     )}
 
-                    {/* Action: In Progress -> Complete or Create Treatment Plan */}
-                    {(statusNorm === "IN_PROGRESS" ||
-                      statusNorm === "COMPLETED") && (
+                    {/* Action: In Progress -> Create/Update Treatment Plan */}
+                    {statusNorm === "IN_PROGRESS" && (
                       <Button
                         size="sm"
                         variant="outline"
@@ -496,6 +497,7 @@ export function ExpertDashboardView() {
                       </Button>
                     )}
 
+                    {/* Action: In Progress -> Complete Consultation */}
                     {statusNorm === "IN_PROGRESS" && (
                       <Button
                         size="sm"

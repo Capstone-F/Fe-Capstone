@@ -119,6 +119,7 @@ export interface UpdateExpertRoutinePayload {
   title?: string;
   description?: string | null;
   steps?: Array<{
+    id?: string;
     name?: string;
     period?: RoutinePeriod;
     stepOrder?: number;

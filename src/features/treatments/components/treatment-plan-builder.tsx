@@ -131,7 +131,10 @@ export function TreatmentPlanBuilder() {
     { enabled: !treatmentId && Boolean(customerId) },
   );
   const existingPlan = existingPlans.data?.find(
-    (plan) => plan.customerId === customerId,
+    (plan) =>
+      plan.customerId === customerId &&
+      plan.status !== "CANCELLED" &&
+      plan.status !== "COMPLETED",
   );
 
   useEffect(() => {
@@ -1445,15 +1448,6 @@ function PhaseConfiguration({
 
   async function saveRoutine() {
     if (!routine) return;
-    const persistedStepCount = persistedRoutine?.steps?.length ?? 0;
-    const requestedStepCount = routine.steps?.length ?? 0;
-    if (persistedRoutine && requestedStepCount !== persistedStepCount) {
-      setRoutine(persistedRoutine);
-      toast.error(
-        "BE hiện chưa hỗ trợ thêm hoặc xóa bước routine. Dữ liệu đã được khôi phục từ server.",
-      );
-      return;
-    }
     const parsed = routineSchema.safeParse({
       title: routine.title,
       description: routine.description ?? "",
@@ -1479,31 +1473,24 @@ function PhaseConfiguration({
           payload: {
             title: routine.title.trim(),
             description: routine.description?.trim() || null,
-            steps: requestedSteps.map((step) => ({
+            steps: requestedSteps.map((step, index) => ({
+              id: isUuid(step.id) ? step.id : undefined,
               name: step.name.trim(),
               period: step.period,
-              stepOrder: step.stepOrder,
-              instructions: null,
+              stepOrder: index,
+              instructions: step.instructions?.trim() || null,
               waitMinutes: step.waitMinutes,
               dosageText: step.dosageText?.trim() || null,
             })),
           },
         });
-      if ((updatedRoutine.steps ?? []).length !== requestedSteps.length) {
-        setRoutine(updatedRoutine);
-        setPersistedRoutine(updatedRoutine);
-        toast.error(
-          "BE chưa trả về đủ thay đổi thêm/xóa bước. Dữ liệu hiển thị đã được đồng bộ lại từ server.",
-        );
-        return;
-      }
       await saveRoutineMutation.mutateAsync({
         routineId: routine.id,
         treatmentId: phase.treatmentId,
       });
       setRoutine(updatedRoutine);
       setPersistedRoutine(updatedRoutine);
-      toast.success("Đã lưu routine.");
+      toast.success("Đã lưu routine thành công!");
       onRefresh();
     } catch (reason) {
       setRoutine(persistedRoutine);
