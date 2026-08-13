@@ -194,15 +194,15 @@ export function LoginPanel({ redirectTo = "/dashboard" }: LoginPanelProps) {
       }
     } catch (error: unknown) {
       console.error(error);
-      
+
       let msg = "Đăng nhập thất bại. Vui lòng kiểm tra lại thông tin.";
       if (isAxiosError(error) && error.response?.data) {
         const dataMsg = error.response.data.message;
-        msg = Array.isArray(dataMsg) ? dataMsg[0] : (dataMsg || msg);
+        msg = Array.isArray(dataMsg) ? dataMsg[0] : dataMsg || msg;
       } else if (error instanceof Error && error.message) {
         msg = error.message;
       }
-      
+
       toast.error(msg);
     }
   };

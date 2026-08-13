@@ -30,8 +30,8 @@ export function ProductAttachmentPopover({
       const searchLower = search.toLowerCase();
       const matchName = item.productName.toLowerCase().includes(searchLower);
       const matchSku = item.sku.toLowerCase().includes(searchLower);
-      const matchIngredient = item.activeIngredients?.some((ing: string) => 
-        ing.toLowerCase().includes(searchLower)
+      const matchIngredient = item.activeIngredients?.some((ing: string) =>
+        ing.toLowerCase().includes(searchLower),
       );
       return matchName || matchSku || matchIngredient;
     });
@@ -47,7 +47,7 @@ export function ProductAttachmentPopover({
       <PopoverTrigger
         type="button"
         disabled={disabled}
-        className="shrink-0 rounded-xl h-10 w-10 border border-slate-200 text-slate-500 hover:text-emerald-700 hover:bg-emerald-50 inline-flex items-center justify-center"
+        className="inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-xl border border-slate-200 text-slate-500 hover:bg-emerald-50 hover:text-emerald-700"
         title="Gắn sản phẩm"
       >
         <PackageSearch className="h-4 w-4" />
@@ -55,48 +55,75 @@ export function ProductAttachmentPopover({
       <PopoverContent
         side="top"
         align="start"
-        className="w-[450px] p-0 rounded-2xl shadow-lg border-slate-200"
+        className="w-[450px] rounded-2xl border-slate-200 p-0 shadow-lg"
       >
         <div className="flex items-center gap-2 border-b border-slate-100 p-2">
-          <Search className="h-4 w-4 shrink-0 text-slate-400 ml-1" />
+          <Search className="ml-1 h-4 w-4 shrink-0 text-slate-400" />
           <Input
             placeholder="Tìm theo Tên, SKU hoặc Hoạt chất..."
             value={search}
             onChange={(e) => setSearch(e.target.value)}
-            className="h-8 border-0 bg-transparent text-xs focus-visible:ring-0 px-0 shadow-none"
+            className="h-8 border-0 bg-transparent px-0 text-xs shadow-none focus-visible:ring-0"
           />
         </div>
-        <div className="flex flex-row gap-2 max-w-full overflow-x-auto p-3 snap-x pb-4">
+        <div className="flex max-w-full snap-x flex-row gap-2 overflow-x-auto p-3 pb-4">
           {isLoading ? (
-            <div className="w-full text-center text-xs text-slate-400 p-4">Đang tải...</div>
+            <div className="w-full p-4 text-center text-xs text-slate-400">
+              Đang tải...
+            </div>
           ) : filteredItems.length === 0 ? (
-            <div className="w-full text-center text-xs text-slate-400 p-4">Không tìm thấy sản phẩm</div>
+            <div className="w-full p-4 text-center text-xs text-slate-400">
+              Không tìm thấy sản phẩm
+            </div>
           ) : (
             filteredItems.map((item) => (
               <button
                 key={item.productVariantId}
                 onClick={() => handleSelect(item)}
-                className="flex flex-col items-center text-center gap-2 rounded-xl p-2 hover:bg-slate-50 transition-colors w-[120px] shrink-0 border border-slate-100 shadow-sm snap-start"
+                className="flex w-[120px] shrink-0 snap-start flex-col items-center gap-2 rounded-xl border border-slate-100 p-2 text-center shadow-sm transition-colors hover:bg-slate-50"
               >
                 {item.imageUrl ? (
-                  <img src={item.imageUrl} alt="" className="h-16 w-16 rounded-lg object-cover bg-white border border-slate-100" />
+                  <img
+                    src={item.imageUrl}
+                    alt=""
+                    className="h-16 w-16 rounded-lg border border-slate-100 bg-white object-cover"
+                  />
                 ) : (
-                  <div className="h-16 w-16 rounded-lg bg-slate-100 border border-slate-200 shrink-0" />
+                  <div className="h-16 w-16 shrink-0 rounded-lg border border-slate-200 bg-slate-100" />
                 )}
                 <div className="w-full">
-                  <div className="text-xs font-semibold text-slate-700 truncate w-full" title={item.productName}>
+                  <div
+                    className="w-full truncate text-xs font-semibold text-slate-700"
+                    title={item.productName}
+                  >
                     {item.productName}
                   </div>
-                  <div className="text-[10px] text-slate-500 mt-1 truncate w-full" title={item.sku}>
+                  <div
+                    className="mt-1 w-full truncate text-[10px] text-slate-500"
+                    title={item.sku}
+                  >
                     {item.sku}
                   </div>
-                  {item.activeIngredients && item.activeIngredients.length > 0 && (
-                    <div className="text-[9px] text-emerald-600 truncate w-full mt-0.5" title={item.activeIngredients.join(", ")}>
-                      {item.activeIngredients[0]}
-                    </div>
-                  )}
-                  <div className="text-[10px] mt-1">
-                    Tồn: <span className={item.stockQuantity > 0 ? "text-emerald-600 font-bold" : "text-rose-500 font-bold"}>{item.stockQuantity}</span>
+                  {item.activeIngredients &&
+                    item.activeIngredients.length > 0 && (
+                      <div
+                        className="mt-0.5 w-full truncate text-[9px] text-emerald-600"
+                        title={item.activeIngredients.join(", ")}
+                      >
+                        {item.activeIngredients[0]}
+                      </div>
+                    )}
+                  <div className="mt-1 text-[10px]">
+                    Tồn:{" "}
+                    <span
+                      className={
+                        item.stockQuantity > 0
+                          ? "font-bold text-emerald-600"
+                          : "font-bold text-rose-500"
+                      }
+                    >
+                      {item.stockQuantity}
+                    </span>
                   </div>
                 </div>
               </button>

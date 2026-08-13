@@ -32,7 +32,7 @@ export function SupportMessageBubble({
       {
         onSuccess: () => toast.success("Đã thêm vào giỏ hàng"),
         onError: () => toast.error("Có lỗi xảy ra khi thêm vào giỏ hàng"),
-      }
+      },
     );
   };
 
@@ -80,37 +80,48 @@ export function SupportMessageBubble({
         }`}
       >
         {message.metadata?.type === "product" ? (
-          <div className="group relative flex items-center gap-3 bg-white dark:bg-slate-800 rounded-xl p-2 pr-4 border border-slate-100 dark:border-slate-700 shadow-sm overflow-hidden w-[260px]">
+          <div className="group relative flex w-[260px] items-center gap-3 overflow-hidden rounded-xl border border-slate-100 bg-white p-2 pr-4 shadow-sm dark:border-slate-700 dark:bg-slate-800">
             {message.metadata.imageUrl ? (
-              <img src={message.metadata.imageUrl} alt="" className="h-14 w-14 rounded-lg object-cover bg-white" />
+              <img
+                src={message.metadata.imageUrl}
+                alt=""
+                className="h-14 w-14 rounded-lg bg-white object-cover"
+              />
             ) : (
               <div className="h-14 w-14 rounded-lg bg-slate-100" />
             )}
-            <div className="flex-1 min-w-0">
-              <p className="font-semibold text-sm truncate text-slate-800 dark:text-slate-100">{message.metadata.productName}</p>
-              <p className="text-xs text-emerald-600 font-bold mt-1">
-                {new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(message.metadata.priceVnd)}
+            <div className="min-w-0 flex-1">
+              <p className="truncate text-sm font-semibold text-slate-800 dark:text-slate-100">
+                {message.metadata.productName}
+              </p>
+              <p className="mt-1 text-xs font-bold text-emerald-600">
+                {new Intl.NumberFormat("vi-VN", {
+                  style: "currency",
+                  currency: "VND",
+                }).format(message.metadata.priceVnd)}
               </p>
             </div>
-            
+
             {/* Hover Overlay */}
-            <div className="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 transition-opacity duration-200 flex items-center justify-center gap-3 backdrop-blur-[2px]">
+            <div className="absolute inset-0 flex items-center justify-center gap-3 bg-black/60 opacity-0 backdrop-blur-[2px] transition-opacity duration-200 group-hover:opacity-100">
               <Link
                 href={`/products/${message.metadata.productId}`}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="inline-flex items-center h-8 px-3 rounded-full bg-white text-slate-700 hover:bg-slate-100 hover:text-slate-900 border-0 text-sm font-medium transition-colors"
+                className="inline-flex h-8 items-center rounded-full border-0 bg-white px-3 text-sm font-medium text-slate-700 transition-colors hover:bg-slate-100 hover:text-slate-900"
               >
-                <ExternalLink className="h-3.5 w-3.5 mr-1.5" />
+                <ExternalLink className="mr-1.5 h-3.5 w-3.5" />
                 Chi tiết
               </Link>
               <Button
                 size="sm"
-                className="h-8 rounded-full bg-emerald-600 text-white hover:bg-emerald-700 border-0"
-                onClick={() => handleAddToCart(message.metadata!.productVariantId)}
+                className="h-8 rounded-full border-0 bg-emerald-600 text-white hover:bg-emerald-700"
+                onClick={() =>
+                  handleAddToCart(message.metadata!.productVariantId)
+                }
                 disabled={addToCartMutation.isPending}
               >
-                <ShoppingCart className="h-3.5 w-3.5 mr-1.5" />
+                <ShoppingCart className="mr-1.5 h-3.5 w-3.5" />
                 Vào giỏ
               </Button>
             </div>
