@@ -28,6 +28,11 @@ export const siteConfig = {
         icon: "UserCheck",
       },
       {
+        title: "Duyệt phiếu nhập kho",
+        url: "/dashboard/stock-imports",
+        icon: "PackagePlus",
+      },
+      {
         title: "Hủy đơn & Kho trả",
         url: "/dashboard/cancellations",
         icon: "Boxes",
