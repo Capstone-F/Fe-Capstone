@@ -13,8 +13,13 @@ export const siteConfig = {
     // Labels stay short so they survive the sidebar's single-line truncation.
     navMain: [
       {
-        title: "Người dùng",
+        title: "Tổng quan",
         url: "/dashboard",
+        icon: "LayoutDashboard",
+      },
+      {
+        title: "Người dùng",
+        url: "/dashboard/users",
         icon: "Users",
       },
       {
@@ -93,8 +98,13 @@ export const siteConfig = {
     title: "GlowScan Expert",
     navMain: [
       {
-        title: "Ca Tư Vấn Bệnh Nhân",
+        title: "Tổng quan",
         url: "/expert",
+        icon: "LayoutDashboard",
+      },
+      {
+        title: "Ca Tư Vấn Bệnh Nhân",
+        url: "/expert/consultations",
         icon: "Stethoscope",
       },
       {

@@ -1,6 +1,5 @@
-import React from "react";
-import { ExpertDashboardView } from "@/features/experts/components/expert-dashboard-view";
+import { ExpertOverviewView } from "@/features/dashboard/components/expert-overview-view";
 
 export default function ExpertDashboardPage() {
-  return <ExpertDashboardView />;
+  return <ExpertOverviewView />;
 }
