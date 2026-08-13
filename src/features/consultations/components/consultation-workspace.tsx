@@ -36,8 +36,11 @@ import {
   TabsTrigger,
 } from "@/shared/components/ui/tabs";
 import { useCustomerConsultationContext } from "../hooks/useConsultation";
+import { Suspense } from "react";
 import { ZegoChatPanel } from "./zego-chat-panel";
 import { ZegoVideoRoom } from "./zego-video-room";
+import { TreatmentPlanBuilder } from "@/features/treatments/components/treatment-plan-builder";
+import { cn } from "@/lib/utils";
 
 interface ConsultationWorkspaceProps {
   bookingId: string;
@@ -57,6 +60,7 @@ export function ConsultationWorkspace({
   perspective,
 }: ConsultationWorkspaceProps) {
   const router = useRouter();
+  const [activeTab, setActiveTab] = useState("record");
   const {
     data: booking,
     isLoading,
@@ -117,15 +121,17 @@ export function ConsultationWorkspace({
   );
 
   function openTreatmentBuilder() {
-    const query = new URLSearchParams({
-      customerId,
-      customerName,
-      sourceConsultationId: consultationId,
-    });
+    const query = new URLSearchParams(window.location.search);
+    query.set("customerId", customerId);
+    query.set("customerName", customerName);
+    query.set("sourceConsultationId", consultationId);
     if (existingTreatment) {
       query.set("treatmentId", existingTreatment.id);
     }
-    router.push(`/expert/treatments/builder?${query.toString()}`);
+    // Switch to the treatment tab
+    setActiveTab("treatment");
+    // Update the URL so the embedded TreatmentPlanBuilder picks it up, without reloading the page
+    router.push(`?${query.toString()}`);
   }
 
   async function startConsultation() {
@@ -225,27 +231,85 @@ export function ConsultationWorkspace({
         </div>
       </header>
 
-      <main className="mx-auto max-w-7xl p-4 sm:p-6">
+      <main
+        className={cn(
+          "mx-auto w-full p-4 sm:p-6",
+          perspective === "expert" ? "max-w-none flex-1" : "max-w-7xl",
+        )}
+      >
         {!canCommunicate ? (
           <div className="border bg-white p-8 text-center text-sm text-slate-600">
             Ca tư vấn đã bị hủy nên phòng liên lạc không còn khả dụng.
+          </div>
+        ) : perspective === "expert" ? (
+          <div className="flex h-[calc(100vh-140px)] w-full flex-col gap-4 lg:flex-row">
+            <div className="flex min-w-[320px] flex-col gap-4 lg:w-[400px]">
+              <div className="relative min-h-[300px] flex-1 overflow-hidden rounded-xl border bg-black shadow-sm">
+                <ZegoVideoRoom bookingId={bookingId} />
+              </div>
+              <div className="min-h-[300px] flex-1 overflow-hidden rounded-xl border bg-white shadow-sm">
+                <ZegoChatPanel bookingId={bookingId} />
+              </div>
+            </div>
+            <div className="flex flex-1 flex-col overflow-hidden rounded-xl border bg-white shadow-sm">
+              <Tabs
+                value={activeTab}
+                onValueChange={setActiveTab}
+                className="flex h-full flex-col"
+              >
+                <TabsList className="w-full justify-start rounded-none border-b p-0">
+                  <TabsTrigger
+                    value="record"
+                    className="flex-1 rounded-none py-3 data-[state=active]:border-b-2 data-[state=active]:border-emerald-600"
+                  >
+                    <FileClock className="mr-2 h-4 w-4" /> Hồ sơ & Khảo sát
+                  </TabsTrigger>
+                  <TabsTrigger
+                    value="treatment"
+                    className="flex-1 rounded-none py-3 data-[state=active]:border-b-2 data-[state=active]:border-emerald-600"
+                  >
+                    <ClipboardPlus className="mr-2 h-4 w-4" /> Phác đồ điều trị
+                  </TabsTrigger>
+                </TabsList>
+                <TabsContent
+                  value="record"
+                  className="m-0 flex-1 overflow-y-auto p-0"
+                >
+                  <CustomerRecordPanel
+                    isLoading={context.isLoading}
+                    isError={context.isError}
+                    onRetry={() => void context.refetch()}
+                    data={context.data}
+                  />
+                </TabsContent>
+                <TabsContent
+                  value="treatment"
+                  className="relative m-0 flex-1 overflow-y-auto p-0"
+                >
+                  <Suspense
+                    fallback={
+                      <div className="flex h-full items-center justify-center p-6 text-sm text-slate-500">
+                        <Loader2 className="mr-2 h-4 w-4 animate-spin" /> Đang
+                        tải...
+                      </div>
+                    }
+                  >
+                    <TreatmentPlanBuilder />
+                  </Suspense>
+                </TabsContent>
+              </Tabs>
+            </div>
           </div>
         ) : (
           <Tabs defaultValue="video">
             <TabsList variant="line" className="mb-3">
               <TabsTrigger value="video">
-                <Video className="h-4 w-4" /> Video
+                <Video className="mr-2 h-4 w-4" /> Video
               </TabsTrigger>
               <TabsTrigger value="chat">
-                <MessageSquare className="h-4 w-4" /> Tin nhắn
+                <MessageSquare className="mr-2 h-4 w-4" /> Tin nhắn
               </TabsTrigger>
-              {perspective === "expert" && (
-                <TabsTrigger value="record">
-                  <FileClock className="h-4 w-4" /> Hồ sơ khách hàng
-                </TabsTrigger>
-              )}
             </TabsList>
-
             <TabsContent
               value="video"
               keepMounted
@@ -260,16 +324,6 @@ export function ConsultationWorkspace({
             >
               <ZegoChatPanel bookingId={bookingId} />
             </TabsContent>
-            {perspective === "expert" && (
-              <TabsContent value="record" className="border bg-white">
-                <CustomerRecordPanel
-                  isLoading={context.isLoading}
-                  isError={context.isError}
-                  onRetry={() => void context.refetch()}
-                  data={context.data}
-                />
-              </TabsContent>
-            )}
           </Tabs>
         )}
       </main>

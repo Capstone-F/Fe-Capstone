@@ -4,7 +4,7 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm, useWatch } from "react-hook-form";
 import Image from "next/image";
-import { useRouter, useSearchParams } from "next/navigation";
+import { useRouter, useSearchParams, usePathname } from "next/navigation";
 import {
   Activity,
   ArrowLeft,
@@ -119,6 +119,7 @@ function toLocalDateInput(date: Date): string {
 export function TreatmentPlanBuilder() {
   const router = useRouter();
   const searchParams = useSearchParams();
+  const pathname = usePathname();
   const treatmentId = searchParams.get("treatmentId") ?? "";
   const customerId = searchParams.get("customerId");
   const customerName = searchParams.get("customerName") || "Khách hàng";
@@ -150,8 +151,15 @@ export function TreatmentPlanBuilder() {
         existingPlan.sourceConsultationId || sourceConsultationId || "",
       );
     }
-    router.replace(`/expert/treatments/builder?${query.toString()}`);
-  }, [customerName, existingPlan, router, sourceConsultationId, treatmentId]);
+    router.replace(`${pathname}?${query.toString()}`);
+  }, [
+    customerName,
+    existingPlan,
+    router,
+    pathname,
+    sourceConsultationId,
+    treatmentId,
+  ]);
 
   if (!treatmentId) {
     if (customerId && (existingPlans.isLoading || existingPlan)) {
@@ -197,7 +205,7 @@ export function TreatmentPlanBuilder() {
           if (plan.sourceConsultationId) {
             query.set("sourceConsultationId", plan.sourceConsultationId);
           }
-          router.replace(`/expert/treatments/builder?${query.toString()}`);
+          router.replace(`${pathname}?${query.toString()}`);
         }}
       />
     );
@@ -230,14 +238,16 @@ export function TreatmentPlanBuilder() {
       <header className="border-b bg-white px-4 py-4 sm:px-6">
         <div className="mx-auto flex max-w-6xl flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
           <div className="flex items-start gap-3">
-            <Button
-              size="icon"
-              variant="ghost"
-              onClick={() => router.push("/expert/treatments")}
-              aria-label="Quay lại"
-            >
-              <ArrowLeft className="h-4 w-4" />
-            </Button>
+            {!pathname.includes("/consultations") && (
+              <Button
+                size="icon"
+                variant="ghost"
+                onClick={() => router.push("/expert/treatments")}
+                aria-label="Quay lại"
+              >
+                <ArrowLeft className="h-4 w-4" />
+              </Button>
+            )}
             <div>
               <div className="flex flex-wrap items-center gap-2">
                 <h1 className="text-lg font-semibold text-slate-950">
@@ -251,18 +261,19 @@ export function TreatmentPlanBuilder() {
               </p>
             </div>
           </div>
-          {plan.sourceConsultationId && (
-            <Button
-              variant="outline"
-              onClick={() =>
-                router.push(
-                  `/expert/consultations/${plan.sourceConsultationId}`,
-                )
-              }
-            >
-              Quay lại ca tư vấn
-            </Button>
-          )}
+          {plan.sourceConsultationId &&
+            !pathname.includes("/consultations") && (
+              <Button
+                variant="outline"
+                onClick={() =>
+                  router.push(
+                    `/expert/consultations/${plan.sourceConsultationId}`,
+                  )
+                }
+              >
+                Quay lại ca tư vấn
+              </Button>
+            )}
         </div>
       </header>
 
