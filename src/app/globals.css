@@ -1,6 +1,37 @@
 @import "tailwindcss";
 @import "tw-animate-css";
 @import "shadcn/tailwind.css";
+@import "leaflet/dist/leaflet.css";
+
+.expert-map-marker {
+  background: transparent;
+  border: 0;
+}
+
+.expert-map-marker__badge {
+  display: flex;
+  width: 36px;
+  height: 36px;
+  align-items: center;
+  justify-content: center;
+  border: 2px solid #fff;
+  border-radius: 9999px;
+  background: #f43f5e;
+  color: #fff;
+  font-size: 12px;
+  font-weight: 700;
+  box-shadow: 0 4px 12px rgb(15 23 42 / 25%);
+  transition:
+    transform 150ms ease,
+    background-color 150ms ease;
+}
+
+.expert-map-marker__badge:hover,
+.expert-map-marker__badge--active {
+  z-index: 1;
+  background: #2c3e35;
+  transform: scale(1.22);
+}
 
 @custom-variant dark (&:is(.dark *));
 

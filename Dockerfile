@@ -24,7 +24,7 @@ WORKDIR /app
 ENV NODE_ENV=production
 ENV PORT=3000
 ENV HOSTNAME=0.0.0.0
-ENV BE_API_URL=http://localhost:3000
+ENV BE_API_URL=https://api.medion.asia/api/
 
 COPY --from=builder /app/public ./public
 COPY --from=builder /app/.next/standalone ./

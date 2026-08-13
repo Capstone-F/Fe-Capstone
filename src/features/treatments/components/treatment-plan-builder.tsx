@@ -20,7 +20,6 @@ import {
   Plus,
   RefreshCw,
   Save,
-  Sparkles,
   Sun,
   Moon,
   Trash2,
@@ -1055,7 +1054,9 @@ function PhaseForm({
                   dirtyFields.phaseType && "border-amber-400 bg-amber-50/60",
                 )}
               >
-                <SelectValue />
+                <SelectValue>
+                  {treatmentPhaseTypeLabel[field.value]}
+                </SelectValue>
               </SelectTrigger>
               <SelectContent>
                 {Object.entries(treatmentPhaseTypeLabel).map(
@@ -1298,6 +1299,8 @@ function PhaseConfiguration({
     phase.products.map((item) => item.productVariantId),
   );
   const [routine, setRoutine] = useState<ExpertRoutine | null>(null);
+  const [persistedRoutine, setPersistedRoutine] =
+    useState<ExpertRoutine | null>(null);
 
   const busy =
     setIngredientsMutation.isPending ||
@@ -1310,6 +1313,9 @@ function PhaseConfiguration({
   const hasSavedRoutine =
     routine?.status === "ACTIVE" ||
     phase.routines.some((item) => item.status === "ACTIVE");
+  const savedRoutineSummary = phase.routines.find(
+    (item) => item.status === "ACTIVE",
+  );
   const hasDraftRoutine =
     routine?.status === "DRAFT" ||
     phase.routines.some((item) => item.status === "DRAFT");
@@ -1349,11 +1355,32 @@ function PhaseConfiguration({
     try {
       const generatedRoutine = await generateMutation.mutateAsync(phase.id);
       setRoutine(generatedRoutine);
+      setPersistedRoutine(generatedRoutine);
       toast.success("Đã tạo bản nháp routine.");
       onRefresh();
     } catch (reason) {
       toast.error(
         reason instanceof Error ? reason.message : "Không thể tạo routine.",
+      );
+    }
+  }
+
+  async function loadSavedRoutine() {
+    if (!savedRoutineSummary) return;
+    try {
+      const { routine: serverRoutine } =
+        await updateRoutineMutation.mutateAsync({
+          routineId: savedRoutineSummary.id,
+          treatmentId: phase.treatmentId,
+          payload: {},
+        });
+      setRoutine(serverRoutine);
+      setPersistedRoutine(serverRoutine);
+    } catch (reason) {
+      toast.error(
+        reason instanceof Error
+          ? reason.message
+          : "Không thể tải routine đã lưu.",
       );
     }
   }
@@ -1374,8 +1401,59 @@ function PhaseConfiguration({
     );
   }
 
+  function addRoutineStep(period: RoutinePeriod) {
+    setRoutine((current) => {
+      if (!current) return current;
+      const steps = current.steps ?? [];
+      const stepOrder =
+        steps
+          .filter((step) => step.period === period)
+          .reduce((maximum, step) => Math.max(maximum, step.stepOrder), -1) + 1;
+      const now = new Date().toISOString();
+      return {
+        ...current,
+        steps: [
+          ...steps,
+          {
+            id: `new-${crypto.randomUUID()}`,
+            routineId: current.id,
+            name: "",
+            period,
+            stepOrder,
+            instructions: null,
+            waitMinutes: null,
+            dosageText: null,
+            details: [],
+            createdAt: now,
+            updatedAt: now,
+          },
+        ],
+      };
+    });
+  }
+
+  function deleteRoutineStep(stepId: string) {
+    setRoutine((current) =>
+      current
+        ? {
+            ...current,
+            steps: (current.steps ?? []).filter((step) => step.id !== stepId),
+          }
+        : current,
+    );
+  }
+
   async function saveRoutine() {
     if (!routine) return;
+    const persistedStepCount = persistedRoutine?.steps?.length ?? 0;
+    const requestedStepCount = routine.steps?.length ?? 0;
+    if (persistedRoutine && requestedStepCount !== persistedStepCount) {
+      setRoutine(persistedRoutine);
+      toast.error(
+        "BE hiện chưa hỗ trợ thêm hoặc xóa bước routine. Dữ liệu đã được khôi phục từ server.",
+      );
+      return;
+    }
     const parsed = routineSchema.safeParse({
       title: routine.title,
       description: routine.description ?? "",
@@ -1393,6 +1471,7 @@ function PhaseConfiguration({
     }
 
     try {
+      const requestedSteps = routine.steps ?? [];
       const { routine: updatedRoutine } =
         await updateRoutineMutation.mutateAsync({
           routineId: routine.id,
@@ -1400,24 +1479,34 @@ function PhaseConfiguration({
           payload: {
             title: routine.title.trim(),
             description: routine.description?.trim() || null,
-            steps: (routine.steps ?? []).map((step) => ({
+            steps: requestedSteps.map((step) => ({
               name: step.name.trim(),
               period: step.period,
               stepOrder: step.stepOrder,
-              instructions: step.instructions?.trim() || null,
+              instructions: null,
               waitMinutes: step.waitMinutes,
               dosageText: step.dosageText?.trim() || null,
             })),
           },
         });
+      if ((updatedRoutine.steps ?? []).length !== requestedSteps.length) {
+        setRoutine(updatedRoutine);
+        setPersistedRoutine(updatedRoutine);
+        toast.error(
+          "BE chưa trả về đủ thay đổi thêm/xóa bước. Dữ liệu hiển thị đã được đồng bộ lại từ server.",
+        );
+        return;
+      }
       await saveRoutineMutation.mutateAsync({
         routineId: routine.id,
         treatmentId: phase.treatmentId,
       });
       setRoutine(updatedRoutine);
+      setPersistedRoutine(updatedRoutine);
       toast.success("Đã lưu routine.");
       onRefresh();
     } catch (reason) {
+      setRoutine(persistedRoutine);
       toast.error(
         reason instanceof Error ? reason.message : "Không thể lưu routine.",
       );
@@ -1508,8 +1597,7 @@ function PhaseConfiguration({
                     {product.productName}
                   </span>
                   <span className="text-xs text-slate-500">
-                    {product.sku} · match {product.matchScore} · tồn{" "}
-                    {product.stockQuantity}
+                    {product.sku} · tồn {product.stockQuantity}
                   </span>
                 </span>
               </label>
@@ -1534,9 +1622,11 @@ function PhaseConfiguration({
         <RoutineEditor
           key={routine.id}
           routine={routine}
-          disabled={busy || routine.status !== "DRAFT"}
+          disabled={busy}
           onRoutineChange={setRoutine}
           onStepChange={updateRoutineStep}
+          onAddStep={addRoutineStep}
+          onDeleteStep={deleteRoutineStep}
           onSave={() => void saveRoutine()}
         />
       )}
@@ -1548,14 +1638,20 @@ function PhaseConfiguration({
             disabled={busy || productIds.length === 0}
             onClick={() => void generateRoutine()}
           >
-            <Sparkles className="mr-2 h-4 w-4" />
+            <Plus className="mr-2 h-4 w-4" />
             {hasDraftRoutine ? "Tạo lại bản nháp" : "Tạo routine"}
           </Button>
         )}
         {hasSavedRoutine && !routine && (
-          <Badge variant="outline" className="h-9 px-3">
-            <Check className="mr-2 h-4 w-4 text-emerald-700" /> Routine đã lưu
-          </Badge>
+          <Button
+            type="button"
+            variant="outline"
+            disabled={busy}
+            onClick={() => void loadSavedRoutine()}
+          >
+            <Check className="mr-2 h-4 w-4 text-emerald-700" /> Mở routine đã
+            lưu
+          </Button>
         )}
         <Button
           disabled={busy || phase.status === "ACTIVE" || hasDraftRoutine}
@@ -1573,12 +1669,16 @@ function RoutineEditor({
   disabled,
   onRoutineChange,
   onStepChange,
+  onAddStep,
+  onDeleteStep,
   onSave,
 }: {
   routine: ExpertRoutine;
   disabled: boolean;
   onRoutineChange: (routine: ExpertRoutine) => void;
   onStepChange: (stepId: string, patch: Partial<ExpertRoutineStep>) => void;
+  onAddStep: (period: RoutinePeriod) => void;
+  onDeleteStep: (stepId: string) => void;
   onSave: () => void;
 }) {
   const steps = routine.steps ?? [];
@@ -1654,6 +1754,18 @@ function RoutineEditor({
 
           return (
             <TabsContent key={period} value={period} className="space-y-3">
+              <div className="flex justify-end">
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  disabled={disabled}
+                  onClick={() => onAddStep(period)}
+                >
+                  <Plus className="mr-2 h-4 w-4" /> Thêm bước
+                  {period === "MORNING" ? " buổi sáng" : " buổi tối"}
+                </Button>
+              </div>
               {periodSteps.length ? (
                 periodSteps.map((step, index) => (
                   <RoutineStepEditor
@@ -1662,6 +1774,7 @@ function RoutineEditor({
                     displayOrder={index + 1}
                     disabled={disabled}
                     onChange={(patch) => onStepChange(step.id, patch)}
+                    onDelete={() => onDeleteStep(step.id)}
                   />
                 ))
               ) : (
@@ -1682,11 +1795,13 @@ function RoutineStepEditor({
   displayOrder,
   disabled,
   onChange,
+  onDelete,
 }: {
   step: ExpertRoutineStep;
   displayOrder: number;
   disabled: boolean;
   onChange: (patch: Partial<ExpertRoutineStep>) => void;
+  onDelete: () => void;
 }) {
   const sku = step.details?.[0]?.productVariant?.sku;
 
@@ -1695,6 +1810,16 @@ function RoutineStepEditor({
       <div className="mb-4 flex flex-wrap items-center gap-2">
         <Badge variant="secondary">Bước {displayOrder}</Badge>
         {sku && <span className="text-xs text-slate-500">{sku}</span>}
+        <Button
+          type="button"
+          variant="ghost"
+          size="sm"
+          disabled={disabled}
+          onClick={onDelete}
+          className="ml-auto text-red-700 hover:bg-red-50 hover:text-red-800"
+        >
+          <Trash2 className="mr-1.5 h-3.5 w-3.5" /> Xóa bước
+        </Button>
       </div>
       <div className="grid gap-4 md:grid-cols-6">
         <div className="space-y-2 md:col-span-4">
@@ -1716,7 +1841,9 @@ function RoutineStepEditor({
             }}
           >
             <SelectTrigger>
-              <SelectValue />
+              <SelectValue>
+                {step.period === "MORNING" ? "Buổi sáng" : "Buổi tối"}
+              </SelectValue>
             </SelectTrigger>
             <SelectContent>
               <SelectItem value="MORNING">Buổi sáng</SelectItem>
@@ -1751,20 +1878,6 @@ function RoutineStepEditor({
                 waitMinutes:
                   event.target.value === "" ? null : Number(event.target.value),
               })
-            }
-          />
-        </div>
-        <div className="space-y-2 md:col-span-6">
-          <Label htmlFor={`routine-step-instructions-${step.id}`}>
-            Hướng dẫn sử dụng
-          </Label>
-          <Textarea
-            id={`routine-step-instructions-${step.id}`}
-            value={step.instructions ?? ""}
-            disabled={disabled}
-            rows={2}
-            onChange={(event) =>
-              onChange({ instructions: event.target.value || null })
             }
           />
         </div>

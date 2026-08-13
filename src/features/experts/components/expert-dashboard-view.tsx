@@ -15,7 +15,7 @@ import {
   Stethoscope,
   MessageSquare,
   Star,
-  Sparkles,
+  FilePenLine,
   Video,
   Info,
 } from "lucide-react";
@@ -489,8 +489,10 @@ export function ExpertDashboardView() {
                         }}
                         className="rounded-xl border-amber-300 bg-amber-50 text-xs font-bold text-amber-900 hover:bg-amber-100"
                       >
-                        <Sparkles className="mr-1.5 h-3.5 w-3.5 text-amber-600" />
-                        Lập Phác Đồ Điều Trị
+                        <FilePenLine className="mr-1.5 h-3.5 w-3.5 text-amber-700" />
+                        {booking.isFollowUp
+                          ? "Xem và cập nhật phác đồ"
+                          : "Lập phác đồ điều trị"}
                       </Button>
                     )}
 
@@ -556,10 +558,12 @@ export function ExpertDashboardView() {
                 )}
               />
               <DetailItem
-                label="Thanh toán"
+                label={
+                  detailBooking.data.isFollowUp ? "Loại lịch" : "Thanh toán"
+                }
                 value={
                   detailBooking.data.isFollowUp
-                    ? "Tái khám miễn phí"
+                    ? "Tái khám"
                     : detailBooking.data.isPaid
                       ? "Đã thanh toán"
                       : "Chưa thanh toán"
@@ -679,7 +683,7 @@ function renderStatusBadge(booking: ConsultationBooking) {
         variant="outline"
         className="border-emerald-300 bg-emerald-100 text-[10px] font-extrabold text-emerald-900"
       >
-        Tái khám miễn phí
+        Tái khám
       </Badge>
     );
   }
