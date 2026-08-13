@@ -1,4 +1,6 @@
 export const queryKeys = {
+  dashboard: (role: "admin" | "expert" | "staff", range: string) =>
+    ["dashboard", role, range] as const,
   session: ["session"] as const,
   experts: (filters: unknown) => ["experts", filters] as const,
   expert: (id: string) => ["expert", id] as const,
