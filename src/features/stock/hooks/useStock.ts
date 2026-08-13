@@ -134,3 +134,10 @@ export function useAdjustStockBatch() {
     },
   });
 }
+
+export function useStockInventory() {
+  return useQuery({
+    queryKey: ["stock", "inventory"],
+    queryFn: () => stockApi.listInventory(),
+  });
+}

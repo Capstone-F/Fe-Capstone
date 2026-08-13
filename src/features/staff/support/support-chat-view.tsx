@@ -1,28 +1,30 @@
 "use client";
 
-import React, { useState, useEffect, useRef } from "react";
-import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { toast } from "sonner";
-import {
-  MessageSquare,
-  Send,
-  UserCheck,
-  XCircle,
-  RefreshCw,
-  Loader2,
-  User,
-} from "lucide-react";
 import { apiClient } from "@/core/api/client";
 import { API_ENDPOINTS } from "@/core/api/endpoints";
-import { Button } from "@/shared/components/ui/button";
-import { Input } from "@/shared/components/ui/input";
-import { Card, CardContent } from "@/shared/components/ui/card";
 import { StaffPageHeader } from "@/features/staff/components/staff-page-header";
+import { Button } from "@/shared/components/ui/button";
+import { Card, CardContent } from "@/shared/components/ui/card";
+import { Input } from "@/shared/components/ui/input";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import {
+  Loader2,
+  MessageSquare,
+  RefreshCw,
+  Send,
+  User,
+  UserCheck,
+  XCircle,
+} from "lucide-react";
+import React, { useEffect, useRef, useState } from "react";
+import { toast } from "sonner";
+import { ProductAttachmentPopover } from "./components/product-attachment-popover";
 
 export interface SupportSession {
   id: string;
   status: "OPEN" | "ACTIVE" | "CLOSED";
   customerUserId: string;
+  customerName?: string | null;
   assignedStaffUserId?: string | null;
   lastMessageText?: string;
   messageCount: number;
@@ -35,8 +37,9 @@ export interface ChatMessage {
   id: string;
   sessionId: string;
   senderUserId: string;
-  senderRole: "customer" | "staff" | "system";
+  senderRole: "CUSTOMER" | "STAFF" | "SYSTEM";
   content: string;
+  metadata?: Record<string, any> | null;
   seq: number;
   createdAt: string;
 }
@@ -88,6 +91,7 @@ export function SupportChatView() {
       toast.success("Tiếp nhận phiên hỗ trợ thành công!");
       queryClient.invalidateQueries({ queryKey: ["support-sessions-queue"] });
       setActiveSession(res.data);
+      setFilterTab("ACTIVE");
     },
     onError: (err: unknown) => {
       const status = (err as { response?: { status?: number } })?.response
@@ -130,10 +134,10 @@ export function SupportChatView() {
 
   // Send Message Mutation
   const sendMessageMutation = useMutation({
-    mutationFn: ({ id, content }: { id: string; content: string }) =>
+    mutationFn: ({ id, content, metadata }: { id: string; content: string; metadata?: Record<string, any> }) =>
       apiClient.post<ChatMessage>(
         `${API_ENDPOINTS.SUPPORT.SESSIONS}/${id}/messages`,
-        { content },
+        { content, metadata },
       ),
     onSuccess: (res) => {
       setMessageInput("");
@@ -203,6 +207,22 @@ export function SupportChatView() {
     });
   };
 
+  const handleAttachProduct = (product: any) => {
+    if (!activeSession) return;
+    sendMessageMutation.mutate({
+      id: activeSession.id,
+      content: `[Sản phẩm đính kèm] ${product.productName}`,
+      metadata: {
+        type: "product",
+        productId: product.productId,
+        productVariantId: product.productVariantId,
+        productName: product.productName,
+        priceVnd: product.priceVnd,
+        imageUrl: product.imageUrl,
+      },
+    });
+  };
+
   const sessions = queueData?.items || [];
 
   return (
@@ -228,33 +248,32 @@ export function SupportChatView() {
       <div className="grid min-h-0 flex-1 grid-cols-1 gap-6 overflow-hidden lg:grid-cols-12">
         {/* Left Column: Queue List (4 cols) */}
         <Card className="flex min-h-0 flex-col overflow-hidden rounded-3xl border border-slate-200/90 bg-white shadow-sm lg:col-span-4">
-          {/* Tabs */}
-          <div className="flex gap-1 border-b border-slate-100 bg-slate-50/50 p-2">
+          <div className="scrollbar-hide flex w-full gap-1 overflow-x-auto border-b border-slate-100 bg-slate-50/50 p-2">
             <Button
               type="button"
               variant="ghost"
               size="sm"
               onClick={() => setFilterTab("OPEN")}
-              className={`flex-1 rounded-2xl text-xs font-bold transition-all ${
+              className={`min-w-0 flex-1 shrink-0 rounded-2xl px-2 text-[11px] font-bold whitespace-nowrap transition-all xl:text-xs ${
                 filterTab === "OPEN"
                   ? "bg-[#2C3E35] text-white hover:bg-[#3A5246]"
                   : "text-slate-600 hover:bg-slate-200"
               }`}
             >
-              Chờ Tiếp Nhận (OPEN)
+              <span className="truncate">Chờ Tiếp Nhận</span>
             </Button>
             <Button
               type="button"
               variant="ghost"
               size="sm"
               onClick={() => setFilterTab("ACTIVE")}
-              className={`flex-1 rounded-2xl text-xs font-bold transition-all ${
+              className={`min-w-0 flex-1 shrink-0 rounded-2xl px-2 text-[11px] font-bold whitespace-nowrap transition-all xl:text-xs ${
                 filterTab === "ACTIVE"
                   ? "bg-[#2C3E35] text-white hover:bg-[#3A5246]"
                   : "text-slate-600 hover:bg-slate-200"
               }`}
             >
-              Đang Chat Của Tôi (ACTIVE)
+              <span className="truncate">Phiên Chat Đang Mở</span>
             </Button>
           </div>
 
@@ -291,8 +310,8 @@ export function SupportChatView() {
                     <div className="flex items-center justify-between">
                       <span className="flex items-center gap-1.5 text-xs font-bold text-slate-900">
                         <User className="h-3.5 w-3.5 text-slate-400" />
-                        Khách #
-                        {session.customerUserId.slice(0, 8).toUpperCase()}
+                        {session.customerName ||
+                          `Khách #${session.customerUserId.slice(0, 8).toUpperCase()}`}
                       </span>
                       <span className="text-[10px] text-slate-400">
                         {new Date(session.createdAt).toLocaleTimeString(
@@ -343,7 +362,9 @@ export function SupportChatView() {
                       Phiên hỗ trợ #{activeSession.id.slice(0, 8).toUpperCase()}
                     </h3>
                     <p className="text-[11px] text-slate-500">
-                      User ID Khách hàng: {activeSession.customerUserId}
+                      Khách hàng:{" "}
+                      {activeSession.customerName ||
+                        `#${activeSession.customerUserId.slice(0, 8).toUpperCase()}`}
                     </p>
                   </div>
                 </div>
@@ -362,8 +383,8 @@ export function SupportChatView() {
               {/* Messages Area */}
               <div className="flex min-h-0 flex-1 flex-col gap-3 overflow-y-auto p-4">
                 {messagesList.map((msg) => {
-                  const isStaff = msg.senderRole === "staff";
-                  const isSystem = msg.senderRole === "system";
+                  const isStaff = msg.senderRole === "STAFF";
+                  const isSystem = msg.senderRole === "SYSTEM";
 
                   if (isSystem) {
                     return (
@@ -388,7 +409,21 @@ export function SupportChatView() {
                             : "rounded-bl-none bg-slate-100 text-slate-800"
                         }`}
                       >
-                        {msg.content}
+                        {msg.metadata?.type === "product" ? (
+                          <div className="flex items-center gap-3">
+                            {msg.metadata.imageUrl ? (
+                              <img src={msg.metadata.imageUrl} alt="" className="h-10 w-10 rounded object-cover bg-white" />
+                            ) : (
+                              <div className="h-10 w-10 rounded bg-slate-200" />
+                            )}
+                            <div className="flex-1">
+                              <p className="font-semibold">{msg.metadata.productName}</p>
+                              <p className="text-[10px] opacity-80">{new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(msg.metadata.priceVnd)}</p>
+                            </div>
+                          </div>
+                        ) : (
+                          msg.content
+                        )}
                       </div>
                       <span className="mt-1 px-1 text-[9px] text-slate-400">
                         {new Date(msg.createdAt).toLocaleTimeString("vi-VN", {
@@ -407,6 +442,10 @@ export function SupportChatView() {
                 onSubmit={handleSendMessage}
                 className="flex shrink-0 items-center gap-2 border-t border-slate-100 bg-slate-50/50 p-3"
               >
+                <ProductAttachmentPopover
+                  onAttach={handleAttachProduct}
+                  disabled={sendMessageMutation.isPending}
+                />
                 <Input
                   placeholder="Nhập tin nhắn phản hồi khách hàng..."
                   value={messageInput}
