@@ -110,7 +110,10 @@ export function ConsultationWorkspace({
   const customerName = booking.customerName || "Khách hàng";
   const consultationId = booking.id;
   const existingTreatment = expertTreatments.data?.find(
-    (plan) => plan.customerId === customerId,
+    (plan) =>
+      plan.customerId === customerId &&
+      plan.status !== "CANCELLED" &&
+      plan.status !== "COMPLETED",
   );
 
   function openTreatmentBuilder() {
