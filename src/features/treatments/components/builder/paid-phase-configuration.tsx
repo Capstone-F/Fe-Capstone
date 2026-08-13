@@ -1,27 +1,11 @@
 "use client";
 
 import { useMemo, useState } from "react";
-import { zodResolver } from "@hookform/resolvers/zod";
-import { useWatch } from "react-hook-form";
-import Image from "next/image";
-import { useSearchParams } from "next/navigation";
-import { Check, Loader2, Plus, Save } from "lucide-react";
+import { Loader2, Plus, Save, Check } from "lucide-react";
 import { toast } from "sonner";
 
-import { Badge } from "@/shared/components/ui/badge";
 import { Button } from "@/shared/components/ui/button";
-import {} from "@/shared/components/ui/accordion";
-import {} from "@/shared/components/ui/alert";
 import { Checkbox } from "@/shared/components/ui/checkbox";
-import { Input } from "@/shared/components/ui/input";
-import { Label } from "@/shared/components/ui/label";
-import {} from "@/shared/components/ui/select";
-import { Textarea } from "@/shared/components/ui/textarea";
-import {} from "@/shared/components/ui/tabs";
-import { formatVnd } from "@/shared/utils/format";
-import { FormController } from "@/shared/components/form/form-controller";
-import { CurrencyInput } from "@/shared/components/form/currency-input";
-import { cn } from "@/lib/utils";
 import {
   useActivatePhase,
   useGenerateRoutine,
@@ -38,12 +22,7 @@ import type {
   RoutinePeriod,
   TreatmentPhase,
 } from "../../types/treatment.types";
-import {} from "../../lib/treatment-labels";
-import {
-  routineSchema,
-  type CreateTreatmentPlanValues,
-  type TreatmentPhaseFormValues,
-} from "../../schemas/treatment-forms.schema";
+import { routineSchema } from "../../schemas/treatment-forms.schema";
 
 const isUuid = (value: string | null) =>
   Boolean(
@@ -52,13 +31,6 @@ const isUuid = (value: string | null) =>
       value,
     ),
   );
-
-function toLocalDateInput(date: Date): string {
-  const year = date.getFullYear();
-  const month = String(date.getMonth() + 1).padStart(2, "0");
-  const day = String(date.getDate()).padStart(2, "0");
-  return `${year}-${month}-${day}`;
-}
 
 import { RoutineEditor } from "./routine-editor";
 

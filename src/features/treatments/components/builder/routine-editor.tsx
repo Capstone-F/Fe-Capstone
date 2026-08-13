@@ -1,18 +1,9 @@
 "use client";
 
-import { useState } from "react";
-import { zodResolver } from "@hookform/resolvers/zod";
-import { useWatch } from "react-hook-form";
-import Image from "next/image";
-import { useSearchParams } from "next/navigation";
 import { Plus, Save, Sun, Moon, Trash2 } from "lucide-react";
-import { toast } from "sonner";
 
 import { Badge } from "@/shared/components/ui/badge";
 import { Button } from "@/shared/components/ui/button";
-import {} from "@/shared/components/ui/accordion";
-import {} from "@/shared/components/ui/alert";
-import { Checkbox } from "@/shared/components/ui/checkbox";
 import { Input } from "@/shared/components/ui/input";
 import { Label } from "@/shared/components/ui/label";
 import {
@@ -29,36 +20,11 @@ import {
   TabsList,
   TabsTrigger,
 } from "@/shared/components/ui/tabs";
-import { formatVnd } from "@/shared/utils/format";
-import { FormController } from "@/shared/components/form/form-controller";
-import { CurrencyInput } from "@/shared/components/form/currency-input";
-import { cn } from "@/lib/utils";
-import {} from "../../hooks/useTreatments";
 import type {
   ExpertRoutine,
   ExpertRoutineStep,
   RoutinePeriod,
 } from "../../types/treatment.types";
-import {} from "../../lib/treatment-labels";
-import {
-  type CreateTreatmentPlanValues,
-  type TreatmentPhaseFormValues,
-} from "../../schemas/treatment-forms.schema";
-
-const isUuid = (value: string | null) =>
-  Boolean(
-    value &&
-    /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(
-      value,
-    ),
-  );
-
-function toLocalDateInput(date: Date): string {
-  const year = date.getFullYear();
-  const month = String(date.getMonth() + 1).padStart(2, "0");
-  const day = String(date.getDate()).padStart(2, "0");
-  return `${year}-${month}-${day}`;
-}
 
 export function RoutineEditor({
   routine,
