@@ -1,7 +1,7 @@
 "use client";
 
 import Image from "next/image";
-import { use, useState } from "react";
+import { use, useEffect, useState } from "react";
 import Link from "next/link";
 import {
   ArrowLeft,
@@ -39,6 +39,7 @@ import {
 import { cn } from "@/lib/utils";
 import type { ProductVariant } from "@/types/domain";
 import { showAddToCartError } from "@/features/commerce/lib/cart-errors";
+import { trackCommerceEvent } from "@/features/commerce/lib/commerce-analytics";
 
 const d = {
   quantity: "Số lượng",
@@ -82,11 +83,21 @@ export function ProductDetailPage({
   const session = useSession();
   const { data: profile } = useProfile();
 
+  useEffect(() => {
+    if (!detail) return;
+    trackCommerceEvent({
+      eventType: "PRODUCT_VIEWED",
+      productId: detail.product.id,
+      productVariantId: primaryVariant(detail.product)?.id,
+    });
+  }, [detail]);
+
   if (isLoading || !detail) {
     return <DetailSkeleton />;
   }
 
   const { product, ingredients } = detail;
+
   const userAllergies = profile?.allergies ?? [];
   const allergicIngredients = ingredients.filter((ing) =>
     userAllergies.some((a) => ing.name.toLowerCase().includes(a.toLowerCase())),
@@ -104,7 +115,14 @@ export function ProductDetailPage({
     addToCart.mutate(
       { productVariantId: selectedVariant.id, quantity },
       {
-        onSuccess: () => toast.success(`${"Đã thêm vào giỏ"}: ${product.name}`),
+        onSuccess: () => {
+          trackCommerceEvent({
+            eventType: "ADDED_TO_CART",
+            productId: product.id,
+            productVariantId: selectedVariant.id,
+          });
+          toast.success(`${"Đã thêm vào giỏ"}: ${product.name}`);
+        },
         onError: showAddToCartError,
       },
     );

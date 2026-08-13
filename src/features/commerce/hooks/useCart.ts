@@ -57,6 +57,7 @@ async function getAllProducts() {
 
 export function useCart(): {
   data: CartSummary | undefined;
+  source: "CATALOG" | "SURVEY";
   /** Soft ingredient conflicts from the BE — informational, never blocking. */
   conflicts: CartConflict[];
   isLoading: boolean;
@@ -70,6 +71,7 @@ export function useCart(): {
     queryFn: async (): Promise<{
       items: CartItem[];
       conflicts: CartConflict[];
+      source: "CATALOG" | "SURVEY";
     }> => {
       if (isAuthed) {
         await ensureProvisionedOnce();
@@ -77,10 +79,11 @@ export function useCart(): {
         return {
           items: response.data.items,
           conflicts: response.data.conflicts ?? [],
+          source: response.data.source ?? "CATALOG",
         };
       }
       // Guest carts live in localStorage — the BE never sees them, so no conflicts.
-      return { items: readGuestCart(), conflicts: [] };
+      return { items: readGuestCart(), conflicts: [], source: "CATALOG" };
     },
     enabled: !session.isLoading,
   });
@@ -98,6 +101,7 @@ export function useCart(): {
 
   return {
     data,
+    source: itemsQuery.data?.source ?? "CATALOG",
     conflicts: itemsQuery.data?.conflicts ?? [],
     isLoading: session.isLoading || itemsQuery.isLoading || poolQuery.isLoading,
     error: itemsQuery.error ?? poolQuery.error,

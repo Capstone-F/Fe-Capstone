@@ -1,5 +1,8 @@
 import { defineConfig, devices } from "@playwright/test";
 
+const e2ePort = process.env.E2E_PORT ?? "3000";
+const e2eBaseUrl = process.env.E2E_BASE_URL ?? `http://localhost:${e2ePort}`;
+
 /**
  * E2E config. `reuseExistingServer` is on because the local workflow keeps `pnpm dev`
  * running in its own terminal; Playwright only starts one when port 3000 is free.
@@ -18,13 +21,13 @@ export default defineConfig({
   retries: process.env.CI ? 2 : 0,
   reporter: process.env.CI ? "html" : "list",
   use: {
-    baseURL: process.env.E2E_BASE_URL ?? "http://localhost:3000",
+    baseURL: e2eBaseUrl,
     trace: "on-first-retry",
   },
   projects: [{ name: "chromium", use: { ...devices["Desktop Chrome"] } }],
   webServer: {
-    command: "pnpm dev",
-    url: "http://localhost:3000",
+    command: `pnpm exec next dev --turbopack --port ${e2ePort}`,
+    url: e2eBaseUrl,
     reuseExistingServer: true,
     timeout: 120_000,
   },

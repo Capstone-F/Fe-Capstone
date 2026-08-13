@@ -3,6 +3,7 @@ import { queryKeys } from "@/lib/query/keys";
 import { ordersApi, type OrderResponse } from "../api/orders.api";
 import type { ShippingAddressInput } from "../types/delivery";
 import type { Order } from "@/types/domain";
+import { getCommerceAnalyticsSessionId } from "../lib/commerce-analytics";
 
 function toOrder(response: OrderResponse): Order {
   return {
@@ -31,7 +32,10 @@ export function useCreateOrder() {
     // The address is required: it is what locks shippingFeeVnd onto the order and
     // creates the Delivery row the payment step needs.
     mutationFn: async (shippingAddress: ShippingAddressInput) => {
-      const response = await ordersApi.createOrder(shippingAddress);
+      const response = await ordersApi.createOrder(
+        shippingAddress,
+        getCommerceAnalyticsSessionId(),
+      );
       return toOrder(response.data);
     },
     onSuccess: () => {

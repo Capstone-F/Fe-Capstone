@@ -10,6 +10,7 @@ import { toast } from "sonner";
 import { PaymentMethod } from "@/types/domain";
 import { useCart } from "@/features/commerce/hooks/useCart";
 import { useCreateOrder } from "@/features/commerce/hooks/useCheckout";
+import { trackCommerceEvent } from "@/features/commerce/lib/commerce-analytics";
 import {
   useDistricts,
   useProvinces,
@@ -87,7 +88,7 @@ const LAST_STEP = 3;
 
 export function CheckoutPage() {
   const router = useRouter();
-  const { data: cart, conflicts } = useCart();
+  const { data: cart, conflicts, source: cartSource } = useCart();
   const createOrder = useCreateOrder();
   const session = useSession();
 
@@ -178,6 +179,10 @@ export function CheckoutPage() {
 
     setIsPlacing(true);
     try {
+      trackCommerceEvent({
+        eventType: "CHECKOUT_STARTED",
+        source: cartSource,
+      });
       // POST /orders locks the GHN fee and creates the Delivery the payment needs.
       const order = await createOrder.mutateAsync(address);
       const checkoutResponse = await paymentsApi.startCheckout(order.id);
