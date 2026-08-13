@@ -410,6 +410,12 @@ export function ExpertsPage() {
                     ? String(discoverySelection.provinceCode)
                     : "all"
                 }
+                items={{
+                  all: "Tất cả tỉnh thành",
+                  ...Object.fromEntries(
+                    (provinces ?? []).map((p) => [String(p.code), p.name]),
+                  ),
+                }}
                 onValueChange={(val) =>
                   handleProvinceChange(val === "all" ? null : val)
                 }
@@ -443,6 +449,12 @@ export function ExpertsPage() {
                       ? String(discoverySelection.wardCode)
                       : "all"
                   }
+                  items={{
+                    all: "Tất cả phường xã",
+                    ...Object.fromEntries(
+                      (wards ?? []).map((w) => [String(w.code), w.name]),
+                    ),
+                  }}
                   onValueChange={(val) =>
                     handleWardChange(val === "all" ? null : val)
                   }

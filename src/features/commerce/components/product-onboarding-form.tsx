@@ -3,9 +3,16 @@
 import React, { useState } from "react";
 import { useForm, useFieldArray, Controller } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
+import { useQuery } from "@tanstack/react-query";
 import { toast } from "sonner";
 import { AxiosError } from "axios";
-import { Plus, Trash2, PackageCheck } from "lucide-react";
+import {
+  Plus,
+  Trash2,
+  PackageCheck,
+  Image as ImageIcon,
+  Loader2,
+} from "lucide-react";
 import { Button } from "@/shared/components/ui/button";
 import {
   Card,
@@ -26,12 +33,46 @@ import {
 
 export function ProductOnboardingForm() {
   const [loading, setLoading] = useState(false);
+  const [patchVariantId, setPatchVariantId] = useState("");
+  const [patchImageUrl, setPatchImageUrl] = useState("");
+  const [patching, setPatching] = useState(false);
+
+  // Fetch Categories helper (TC-STF-03)
+  const { data: categories = [] } = useQuery({
+    queryKey: ["products-categories"],
+    queryFn: async () => {
+      try {
+        const res = await apiClient.get<Array<{ code: string; name: string }>>(
+          API_ENDPOINTS.PRODUCTS.CATEGORIES,
+        );
+        return res.data;
+      } catch {
+        return [];
+      }
+    },
+  });
+
+  // Fetch Ingredients helper (TC-STF-03)
+  const { data: availableIngredients = [] } = useQuery({
+    queryKey: ["ingredients-list"],
+    queryFn: async () => {
+      try {
+        const res = await apiClient.get<Array<{ id: string; name: string }>>(
+          API_ENDPOINTS.INGREDIENTS.LIST,
+        );
+        return res.data;
+      } catch {
+        return [];
+      }
+    },
+  });
 
   const {
     register,
     handleSubmit,
     control,
     reset,
+    setValue,
     formState: { errors },
   } = useForm<ProductOnboardingValues>({
     resolver: zodResolver(productOnboardingSchema),
@@ -57,6 +98,16 @@ export function ProductOnboardingForm() {
     name: "ingredients",
   });
 
+  const handleCategorySelect = (code: string) => {
+    const selected = categories.find((c) => c.code === code);
+    if (selected) {
+      setValue("categoryCode", selected.code);
+      setValue("categoryName", selected.name);
+    } else {
+      setValue("categoryCode", code);
+    }
+  };
+
   const onSubmit = async (values: ProductOnboardingValues) => {
     try {
       setLoading(true);
@@ -78,6 +129,7 @@ export function ProductOnboardingForm() {
         ),
       };
 
+      // Step 1: POST /products
       const response = await apiClient.post<{
         id?: string;
         variants?: { id: string }[];
@@ -85,9 +137,27 @@ export function ProductOnboardingForm() {
 
       const variantId = response.data?.variants?.[0]?.id || response.data?.id;
 
+      // Step 2 (TC-STF-03 Step 4): PATCH /products/variants/:variantId if imageUrl is set
+      if (variantId && values.imageUrl.trim()) {
+        try {
+          await apiClient.patch(
+            API_ENDPOINTS.PRODUCTS.VARIANT_UPDATE(variantId),
+            { imageUrl: values.imageUrl.trim() },
+          );
+        } catch {
+          // Ignore if backend already assigned imageUrl during create
+        }
+      }
+
       toast.success(
-        `Onboard sản phẩm thành công! (Mã biến thể: ${variantId || "Mới"})`,
+        `Onboard sản phẩm thành công! (Mã biến thể variantId: ${variantId || "N/A"})`,
       );
+
+      if (variantId) {
+        setPatchVariantId(variantId);
+        setPatchImageUrl(values.imageUrl.trim());
+      }
+
       reset({
         name: "",
         brand: "",
@@ -114,315 +184,437 @@ export function ProductOnboardingForm() {
     }
   };
 
+  const handlePatchVariantImage = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!patchVariantId.trim() || !patchImageUrl.trim()) {
+      toast.error("Vui lòng nhập Variant ID và URL hình ảnh.");
+      return;
+    }
+
+    try {
+      setPatching(true);
+      await apiClient.patch(
+        API_ENDPOINTS.PRODUCTS.VARIANT_UPDATE(patchVariantId.trim()),
+        { imageUrl: patchImageUrl.trim() },
+      );
+      toast.success(`Cập nhật ảnh cho biến thể ${patchVariantId} thành công!`);
+    } catch (err: unknown) {
+      const msg =
+        (err as AxiosError<{ message?: string }>)?.response?.data?.message ||
+        "Không thể cập nhật ảnh cho biến thể";
+      toast.error(msg);
+    } finally {
+      setPatching(false);
+    }
+  };
+
   return (
-    <Card className="mx-auto max-w-4xl border-slate-200/80 shadow-sm dark:border-slate-800">
-      <CardHeader>
-        <CardTitle className="flex items-center gap-2 text-lg font-bold">
-          <PackageCheck className="h-5 w-5 text-emerald-600" />
-          Khai Báo Sản Phẩm Mới
-        </CardTitle>
-        <p className="text-muted-foreground mt-1 text-xs">
-          Khai báo sản phẩm thương mại mới, liên kết thành phần mỹ phẩm và thiết
-          lập biến thể sẵn sàng nhập kho/bán hàng.
-        </p>
-      </CardHeader>
+    <div className="space-y-6">
+      <Card className="mx-auto max-w-4xl border-slate-200/80 shadow-sm dark:border-slate-800 dark:bg-slate-900">
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2 text-lg font-bold text-[#2C3E35] dark:text-emerald-400">
+            <PackageCheck className="h-5 w-5 text-emerald-600" />
+            Khai Báo Sản Phẩm Mới (Catalog Onboarding)
+          </CardTitle>
+          <p className="mt-1 text-xs text-slate-500">
+            Khai báo sản phẩm thương mại mới, liên kết thành phần mỹ phẩm và
+            thiết lập biến thể sẵn sàng nhập kho/bán hàng.
+          </p>
+        </CardHeader>
 
-      <CardContent>
-        <form
-          onSubmit={handleSubmit(onSubmit)}
-          className="space-y-6"
-          noValidate
-        >
-          {/* Thông tin cơ bản */}
-          <div className="space-y-4">
-            <h4 className="border-b pb-2 text-sm font-semibold text-slate-800 dark:text-slate-200">
-              1. Thông tin sản phẩm
-            </h4>
-
-            <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
-              <div className="grid gap-2">
-                <Label htmlFor="p-name">Tên sản phẩm *</Label>
-                <Input
-                  id="p-name"
-                  placeholder="VD: La Roche-Posay Effaclar Serum..."
-                  {...register("name")}
-                />
-                {errors.name && (
-                  <p className="text-xs font-medium text-rose-500">
-                    {errors.name.message}
-                  </p>
-                )}
-              </div>
-
-              <div className="grid gap-2">
-                <Label htmlFor="p-brand">Thương hiệu *</Label>
-                <Input
-                  id="p-brand"
-                  placeholder="VD: La Roche-Posay..."
-                  {...register("brand")}
-                />
-                {errors.brand && (
-                  <p className="text-xs font-medium text-rose-500">
-                    {errors.brand.message}
-                  </p>
-                )}
-              </div>
-            </div>
-
-            <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
-              <div className="grid gap-2">
-                <Label htmlFor="p-sku">Mã SKU *</Label>
-                <Input
-                  id="p-sku"
-                  placeholder="VD: LRP-EFFAC-SERUM-30ML..."
-                  {...register("sku")}
-                />
-                {errors.sku && (
-                  <p className="text-xs font-medium text-rose-500">
-                    {errors.sku.message}
-                  </p>
-                )}
-              </div>
-
-              <div className="grid gap-2">
-                <Label htmlFor="p-catcode">Mã danh mục *</Label>
-                <Input
-                  id="p-catcode"
-                  placeholder="VD: SERUM, CLEANSER..."
-                  {...register("categoryCode")}
-                />
-                {errors.categoryCode && (
-                  <p className="text-xs font-medium text-rose-500">
-                    {errors.categoryCode.message}
-                  </p>
-                )}
-              </div>
-
-              <div className="grid gap-2">
-                <Label htmlFor="p-catname">Tên danh mục *</Label>
-                <Input
-                  id="p-catname"
-                  placeholder="VD: Tinh chất dưỡng da..."
-                  {...register("categoryName")}
-                />
-                {errors.categoryName && (
-                  <p className="text-xs font-medium text-rose-500">
-                    {errors.categoryName.message}
-                  </p>
-                )}
-              </div>
-            </div>
-
-            <div className="grid gap-2">
-              <Label htmlFor="p-desc">Mô tả sản phẩm</Label>
-              <Textarea
-                id="p-desc"
-                placeholder="Mô tả công dụng, loại da phù hợp..."
-                {...register("description")}
-                rows={3}
-              />
-              {errors.description && (
-                <p className="text-xs font-medium text-rose-500">
-                  {errors.description.message}
-                </p>
-              )}
-            </div>
-          </div>
-
-          {/* Biến thể & Giá */}
-          <div className="space-y-4">
-            <h4 className="border-b pb-2 text-sm font-semibold text-slate-800 dark:text-slate-200">
-              2. Biến thể, Giá & Hạn sử dụng
-            </h4>
-
-            <div className="grid grid-cols-1 gap-4 md:grid-cols-4">
-              <div className="grid gap-2">
-                <Label htmlFor="p-price">Giá niêm yết (VND) *</Label>
-                <Input
-                  id="p-price"
-                  type="number"
-                  placeholder="VD: 500000"
-                  {...register("priceVnd", { valueAsNumber: true })}
-                />
-                {errors.priceVnd && (
-                  <p className="text-xs font-medium text-rose-500">
-                    {errors.priceVnd.message}
-                  </p>
-                )}
-              </div>
-
-              <div className="grid gap-2">
-                <Label htmlFor="p-vol">Dung tích / Thể tích</Label>
-                <Input
-                  id="p-vol"
-                  placeholder="VD: 30ml, 100g..."
-                  {...register("volume")}
-                />
-                {errors.volume && (
-                  <p className="text-xs font-medium text-rose-500">
-                    {errors.volume.message}
-                  </p>
-                )}
-              </div>
-
-              <div className="grid gap-2">
-                <Label htmlFor="p-pack">Bao bì / Đóng gói</Label>
-                <Input
-                  id="p-pack"
-                  placeholder="VD: Chai, Tuýp..."
-                  {...register("packaging")}
-                />
-                {errors.packaging && (
-                  <p className="text-xs font-medium text-rose-500">
-                    {errors.packaging.message}
-                  </p>
-                )}
-              </div>
-
-              <div className="grid gap-2">
-                <Label htmlFor="p-shelflife">Hạn lưu kho *</Label>
-                <div className="flex gap-2">
-                  <Input
-                    id="p-shelflife"
-                    type="number"
-                    placeholder="VD: 365"
-                    {...register("shelfLifeValue", { valueAsNumber: true })}
-                    className="w-24"
-                  />
-                  <select
-                    {...register("shelfLifeUnit")}
-                    className="flex h-10 w-full items-center justify-between rounded-md border border-slate-200 bg-white px-3 py-2 text-sm focus:ring-2 focus:ring-slate-950 focus:outline-none dark:border-slate-800 dark:bg-slate-950"
-                  >
-                    <option value="DAY">Ngày</option>
-                    <option value="MONTH">Tháng</option>
-                    <option value="YEAR">Năm</option>
-                  </select>
-                </div>
-                {errors.shelfLifeValue && (
-                  <p className="text-xs font-medium text-rose-500">
-                    {errors.shelfLifeValue.message}
-                  </p>
-                )}
-              </div>
-            </div>
-
-            <div className="grid gap-2">
-              <Label>Hình ảnh sản phẩm *</Label>
-              <Controller
-                name="imageUrl"
-                control={control}
-                render={({ field }) => (
-                  <ImageUploader
-                    value={field.value}
-                    onChange={field.onChange}
-                    disabled={loading}
-                  />
-                )}
-              />
-              {errors.imageUrl && (
-                <p className="text-xs font-medium text-rose-500">
-                  {errors.imageUrl.message}
-                </p>
-              )}
-            </div>
-          </div>
-
-          {/* Thành phần mỹ phẩm */}
-          <div className="space-y-4">
-            <div className="flex items-center justify-between border-b pb-2">
-              <h4 className="text-sm font-semibold text-slate-800 dark:text-slate-200">
-                3. Thành phần mỹ phẩm
+        <CardContent>
+          <form
+            onSubmit={handleSubmit(onSubmit)}
+            className="space-y-6"
+            noValidate
+          >
+            {/* Thông tin cơ bản */}
+            <div className="space-y-4">
+              <h4 className="border-b pb-2 text-sm font-semibold text-slate-800 dark:border-slate-800 dark:text-slate-200">
+                1. Thông tin sản phẩm
               </h4>
+
+              <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+                <div className="grid gap-2">
+                  <Label htmlFor="p-name">Tên sản phẩm *</Label>
+                  <Input
+                    id="p-name"
+                    placeholder="VD: La Roche-Posay Effaclar Serum..."
+                    {...register("name")}
+                  />
+                  {errors.name && (
+                    <p className="text-xs font-medium text-rose-500">
+                      {errors.name.message}
+                    </p>
+                  )}
+                </div>
+
+                <div className="grid gap-2">
+                  <Label htmlFor="p-brand">Thương hiệu *</Label>
+                  <Input
+                    id="p-brand"
+                    placeholder="VD: La Roche-Posay..."
+                    {...register("brand")}
+                  />
+                  {errors.brand && (
+                    <p className="text-xs font-medium text-rose-500">
+                      {errors.brand.message}
+                    </p>
+                  )}
+                </div>
+              </div>
+
+              <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
+                <div className="grid gap-2">
+                  <Label htmlFor="p-sku">Mã SKU *</Label>
+                  <Input
+                    id="p-sku"
+                    placeholder="VD: QA-STAFF-SERUM-01..."
+                    {...register("sku")}
+                  />
+                  {errors.sku && (
+                    <p className="text-xs font-medium text-rose-500">
+                      {errors.sku.message}
+                    </p>
+                  )}
+                </div>
+
+                <div className="grid gap-2">
+                  <Label htmlFor="p-catcode">
+                    Danh mục sản phẩm (GET /products/categories) *
+                  </Label>
+                  {categories.length > 0 ? (
+                    <select
+                      id="p-catcode"
+                      onChange={(e) => handleCategorySelect(e.target.value)}
+                      className="flex h-10 w-full items-center justify-between rounded-md border border-slate-200 bg-white px-3 py-2 text-xs focus:outline-none dark:border-slate-800 dark:bg-slate-950"
+                    >
+                      <option value="">-- Chọn danh mục --</option>
+                      {categories.map((cat) => (
+                        <option key={cat.code} value={cat.code}>
+                          {cat.name} ({cat.code})
+                        </option>
+                      ))}
+                    </select>
+                  ) : (
+                    <Input
+                      id="p-catcode"
+                      placeholder="VD: SERUM, CLEANSER..."
+                      {...register("categoryCode")}
+                    />
+                  )}
+                  {errors.categoryCode && (
+                    <p className="text-xs font-medium text-rose-500">
+                      {errors.categoryCode.message}
+                    </p>
+                  )}
+                </div>
+
+                <div className="grid gap-2">
+                  <Label htmlFor="p-catname">Tên danh mục *</Label>
+                  <Input
+                    id="p-catname"
+                    placeholder="VD: Tinh chất dưỡng da..."
+                    {...register("categoryName")}
+                  />
+                  {errors.categoryName && (
+                    <p className="text-xs font-medium text-rose-500">
+                      {errors.categoryName.message}
+                    </p>
+                  )}
+                </div>
+              </div>
+
+              <div className="grid gap-2">
+                <Label htmlFor="p-desc">Mô tả sản phẩm</Label>
+                <Textarea
+                  id="p-desc"
+                  placeholder="Mô tả công dụng, loại da phù hợp..."
+                  {...register("description")}
+                  rows={3}
+                />
+                {errors.description && (
+                  <p className="text-xs font-medium text-rose-500">
+                    {errors.description.message}
+                  </p>
+                )}
+              </div>
+            </div>
+
+            {/* Biến thể & Giá */}
+            <div className="space-y-4">
+              <h4 className="border-b pb-2 text-sm font-semibold text-slate-800 dark:border-slate-800 dark:text-slate-200">
+                2. Biến thể, Giá & Hạn sử dụng
+              </h4>
+
+              <div className="grid grid-cols-1 gap-4 md:grid-cols-4">
+                <div className="grid gap-2">
+                  <Label htmlFor="p-price">Giá niêm yết (VND) *</Label>
+                  <Input
+                    id="p-price"
+                    type="number"
+                    placeholder="VD: 500000"
+                    {...register("priceVnd", { valueAsNumber: true })}
+                  />
+                  {errors.priceVnd && (
+                    <p className="text-xs font-medium text-rose-500">
+                      {errors.priceVnd.message}
+                    </p>
+                  )}
+                </div>
+
+                <div className="grid gap-2">
+                  <Label htmlFor="p-vol">Dung tích / Thể tích</Label>
+                  <Input
+                    id="p-vol"
+                    placeholder="VD: 30ml, 100g..."
+                    {...register("volume")}
+                  />
+                  {errors.volume && (
+                    <p className="text-xs font-medium text-rose-500">
+                      {errors.volume.message}
+                    </p>
+                  )}
+                </div>
+
+                <div className="grid gap-2">
+                  <Label htmlFor="p-pack">Bao bì / Đóng gói</Label>
+                  <Input
+                    id="p-pack"
+                    placeholder="VD: Chai, Tuýp..."
+                    {...register("packaging")}
+                  />
+                  {errors.packaging && (
+                    <p className="text-xs font-medium text-rose-500">
+                      {errors.packaging.message}
+                    </p>
+                  )}
+                </div>
+
+                <div className="grid gap-2">
+                  <Label htmlFor="p-shelflife">Hạn lưu kho *</Label>
+                  <div className="flex gap-2">
+                    <Input
+                      id="p-shelflife"
+                      type="number"
+                      placeholder="VD: 365"
+                      {...register("shelfLifeValue", { valueAsNumber: true })}
+                      className="w-24"
+                    />
+                    <select
+                      {...register("shelfLifeUnit")}
+                      className="flex h-10 w-full items-center justify-between rounded-md border border-slate-200 bg-white px-3 py-2 text-xs focus:outline-none dark:border-slate-800 dark:bg-slate-950"
+                    >
+                      <option value="DAY">Ngày</option>
+                      <option value="MONTH">Tháng</option>
+                      <option value="YEAR">Năm</option>
+                    </select>
+                  </div>
+                  {errors.shelfLifeValue && (
+                    <p className="text-xs font-medium text-rose-500">
+                      {errors.shelfLifeValue.message}
+                    </p>
+                  )}
+                </div>
+              </div>
+
+              <div className="grid gap-2">
+                <Label>Hình ảnh sản phẩm (POST /uploads/images) *</Label>
+                <Controller
+                  name="imageUrl"
+                  control={control}
+                  render={({ field }) => (
+                    <ImageUploader
+                      value={field.value}
+                      onChange={field.onChange}
+                      disabled={loading}
+                    />
+                  )}
+                />
+                {errors.imageUrl && (
+                  <p className="text-xs font-medium text-rose-500">
+                    {errors.imageUrl.message}
+                  </p>
+                )}
+              </div>
+            </div>
+
+            {/* Thành phần mỹ phẩm */}
+            <div className="space-y-4">
+              <div className="flex items-center justify-between border-b pb-2 dark:border-slate-800">
+                <h4 className="text-sm font-semibold text-slate-800 dark:text-slate-200">
+                  3. Thành phần mỹ phẩm (GET /ingredients)
+                </h4>
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  onClick={() =>
+                    append({
+                      name: "",
+                      concentrationPct: undefined,
+                      isKeyIngredient: false,
+                    })
+                  }
+                  className="h-8 gap-1 text-xs"
+                >
+                  <Plus className="h-3.5 w-3.5" /> Thêm thành phần
+                </Button>
+              </div>
+
+              {fields.length === 0 ? (
+                <p className="rounded-lg border border-dashed py-2 text-center text-xs text-slate-400 italic">
+                  Chưa có thành phần nào. Bấm &quot;Thêm thành phần&quot; để
+                  khai báo nếu cần.
+                </p>
+              ) : (
+                fields.map((field, index) => (
+                  <div
+                    key={field.id}
+                    className="flex items-center gap-3 rounded-lg border border-slate-200/60 bg-slate-50 p-3 dark:border-slate-800 dark:bg-slate-900/40"
+                  >
+                    <div className="flex-1">
+                      {availableIngredients.length > 0 ? (
+                        <select
+                          className="h-9 w-full rounded-md border border-slate-200 bg-white px-3 text-xs dark:border-slate-800 dark:bg-slate-950"
+                          {...register(`ingredients.${index}.name`)}
+                        >
+                          <option value="">-- Chọn thành phần có sẵn --</option>
+                          {availableIngredients.map((ing) => (
+                            <option key={ing.id} value={ing.name}>
+                              {ing.name}
+                            </option>
+                          ))}
+                        </select>
+                      ) : (
+                        <Input
+                          placeholder="Tên thành phần (VD: Salicylic Acid, Niacinamide)..."
+                          {...register(`ingredients.${index}.name`)}
+                          className="h-9 text-xs"
+                        />
+                      )}
+                    </div>
+
+                    <div className="w-28">
+                      <Input
+                        type="number"
+                        step={0.1}
+                        placeholder="Nồng độ %"
+                        {...register(`ingredients.${index}.concentrationPct`, {
+                          valueAsNumber: true,
+                        })}
+                        className="h-9 text-xs"
+                      />
+                    </div>
+
+                    <div className="flex items-center gap-1.5 text-xs text-slate-700 dark:text-slate-300">
+                      <input
+                        type="checkbox"
+                        id={`key-${index}`}
+                        {...register(`ingredients.${index}.isKeyIngredient`)}
+                        className="h-4 w-4 rounded text-emerald-600 focus:ring-emerald-500"
+                      />
+                      <label
+                        htmlFor={`key-${index}`}
+                        className="cursor-pointer select-none"
+                      >
+                        Chính
+                      </label>
+                    </div>
+
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="icon"
+                      className="h-8 w-8 text-rose-500 hover:bg-rose-50"
+                      onClick={() => remove(index)}
+                    >
+                      <Trash2 className="h-4 w-4" />
+                    </Button>
+                  </div>
+                ))
+              )}
+            </div>
+
+            <div className="flex justify-end gap-3 border-t pt-4 dark:border-slate-800">
               <Button
-                type="button"
-                variant="outline"
-                size="sm"
-                onClick={() =>
-                  append({
-                    name: "",
-                    concentrationPct: undefined,
-                    isKeyIngredient: false,
-                  })
-                }
-                className="h-8 gap-1 text-xs"
+                type="submit"
+                size="lg"
+                disabled={loading}
+                className="gap-2 bg-emerald-600 font-semibold text-white hover:bg-emerald-700"
               >
-                <Plus className="h-3.5 w-3.5" /> Thêm thành phần
+                <PackageCheck className="h-5 w-5" />
+                {loading ? "Đang lưu sản phẩm..." : "Xác nhận Onboard Sản phẩm"}
               </Button>
             </div>
+          </form>
+        </CardContent>
+      </Card>
 
-            {fields.length === 0 ? (
-              <p className="rounded-lg border border-dashed py-2 text-center text-xs text-slate-400 italic">
-                Chưa có thành phần nào. Bấm &quot;Thêm thành phần&quot; để khai
-                báo nếu cần.
-              </p>
-            ) : (
-              fields.map((field, index) => (
-                <div
-                  key={field.id}
-                  className="flex items-center gap-3 rounded-lg border border-slate-200/60 bg-slate-50 p-3 dark:border-slate-800 dark:bg-slate-900/40"
-                >
-                  <div className="flex-1">
-                    <Input
-                      placeholder="Tên thành phần (VD: Salicylic Acid, Niacinamide)..."
-                      {...register(`ingredients.${index}.name`)}
-                      className="h-9 text-xs"
-                    />
-                  </div>
+      {/* Quick Variant Image Update Card (PATCH /products/variants/:variantId) */}
+      <Card className="mx-auto max-w-4xl border-slate-200/80 shadow-sm dark:border-slate-800 dark:bg-slate-900">
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2 text-base font-bold text-[#2C3E35] dark:text-emerald-400">
+            <ImageIcon className="h-5 w-5 text-blue-600" />
+            Cập Nhật Ảnh Cho Biến Thể Variant (PATCH
+            /products/variants/:variantId)
+          </CardTitle>
+          <p className="text-xs text-slate-500">
+            Gán trực tiếp URL hình ảnh đã tải lên cho một biến thể sản phẩm cụ
+            thể.
+          </p>
+        </CardHeader>
 
-                  <div className="w-28">
-                    <Input
-                      type="number"
-                      step={0.1}
-                      placeholder="Nồng độ %"
-                      {...register(`ingredients.${index}.concentrationPct`, {
-                        valueAsNumber: true,
-                      })}
-                      className="h-9 text-xs"
-                    />
-                  </div>
+        <CardContent>
+          <form
+            onSubmit={handlePatchVariantImage}
+            className="flex flex-col gap-4 sm:flex-row sm:items-end"
+          >
+            <div className="flex-1 space-y-1.5">
+              <Label
+                htmlFor="patch-vid"
+                className="text-xs font-bold text-slate-700 dark:text-slate-300"
+              >
+                Variant ID (UUID) *:
+              </Label>
+              <Input
+                id="patch-vid"
+                placeholder="Nhập UUID của variant..."
+                value={patchVariantId}
+                onChange={(e) => setPatchVariantId(e.target.value)}
+                className="font-mono text-xs"
+              />
+            </div>
 
-                  <div className="flex items-center gap-1.5 text-xs text-slate-700 dark:text-slate-300">
-                    <input
-                      type="checkbox"
-                      id={`key-${index}`}
-                      {...register(`ingredients.${index}.isKeyIngredient`)}
-                      className="h-4 w-4 rounded text-emerald-600 focus:ring-emerald-500"
-                    />
-                    <label
-                      htmlFor={`key-${index}`}
-                      className="cursor-pointer select-none"
-                    >
-                      Chính
-                    </label>
-                  </div>
+            <div className="flex-1 space-y-1.5">
+              <Label
+                htmlFor="patch-img"
+                className="text-xs font-bold text-slate-700 dark:text-slate-300"
+              >
+                Image URL (Cloud Storage) *:
+              </Label>
+              <Input
+                id="patch-img"
+                placeholder="https://..."
+                value={patchImageUrl}
+                onChange={(e) => setPatchImageUrl(e.target.value)}
+                className="text-xs"
+              />
+            </div>
 
-                  <Button
-                    type="button"
-                    variant="ghost"
-                    size="icon"
-                    className="h-8 w-8 text-rose-500 hover:bg-rose-50"
-                    onClick={() => remove(index)}
-                  >
-                    <Trash2 className="h-4 w-4" />
-                  </Button>
-                </div>
-              ))
-            )}
-          </div>
-
-          <div className="flex justify-end gap-3 border-t pt-4">
             <Button
               type="submit"
-              size="lg"
-              disabled={loading}
-              className="gap-2 bg-emerald-600 font-semibold text-white hover:bg-emerald-700"
+              disabled={patching || !patchVariantId || !patchImageUrl}
+              className="rounded-xl bg-blue-600 text-xs font-bold text-white hover:bg-blue-700"
             >
-              <PackageCheck className="h-5 w-5" />
-              {loading ? "Đang lưu sản phẩm..." : "Xác nhận Onboard Sản phẩm"}
+              {patching ? (
+                <Loader2 className="mr-1.5 h-3.5 w-3.5 animate-spin" />
+              ) : null}
+              Cập Nhật Ảnh Variant
             </Button>
-          </div>
-        </form>
-      </CardContent>
-    </Card>
+          </form>
+        </CardContent>
+      </Card>
+    </div>
   );
 }

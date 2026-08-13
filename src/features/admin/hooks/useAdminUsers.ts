@@ -1,4 +1,9 @@
-import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import {
+  useQuery,
+  useMutation,
+  useQueryClient,
+  keepPreviousData,
+} from "@tanstack/react-query";
 import { bookingApi } from "@/features/booking/api/booking.api";
 import {
   adminUsersApi,
@@ -22,6 +27,7 @@ export function useAdminUsers(params?: { role?: string; clinicId?: string }) {
       const response = await adminUsersApi.getUsers(params);
       return response.data.items || [];
     },
+    placeholderData: keepPreviousData,
   });
 }
 
@@ -34,6 +40,7 @@ export function useAdminUserDirectory(params: {
   return useQuery({
     queryKey: ["admin-user-directory", params],
     queryFn: async () => (await adminUsersApi.getUsers(params)).data,
+    placeholderData: keepPreviousData,
   });
 }
 
