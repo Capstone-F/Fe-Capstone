@@ -16,13 +16,30 @@ export const authFormSchema = z
       .string()
       .min(8, "Mật khẩu phải có ít nhất 8 ký tự.")
       .max(128, "Mật khẩu không được vượt quá 128 ký tự."),
+    confirmPassword: z.string(),
   })
   .superRefine((value, context) => {
-    if (value.mode === "register" && value.name.length < 2) {
+    if (value.mode !== "register") return;
+
+    if (value.name.length < 2) {
       context.addIssue({
         code: "custom",
         path: ["name"],
         message: "Họ và tên phải có ít nhất 2 ký tự.",
+      });
+    }
+
+    if (value.confirmPassword.length === 0) {
+      context.addIssue({
+        code: "custom",
+        path: ["confirmPassword"],
+        message: "Vui lòng nhập lại mật khẩu.",
+      });
+    } else if (value.confirmPassword !== value.password) {
+      context.addIssue({
+        code: "custom",
+        path: ["confirmPassword"],
+        message: "Mật khẩu xác nhận không khớp.",
       });
     }
   });

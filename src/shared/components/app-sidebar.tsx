@@ -35,6 +35,7 @@ import {
   FileText,
   Boxes,
   MessageSquare,
+  PackageCheck,
   PackagePlus,
   UserCheck,
 } from "lucide-react";
@@ -62,6 +63,7 @@ const IconMap: Record<string, LucideIcon> = {
   FileText: FileText,
   Boxes: Boxes,
   MessageSquare: MessageSquare,
+  PackageCheck: PackageCheck,
   PackagePlus: PackagePlus,
 };
 
@@ -121,11 +123,19 @@ export function AppSidebar({ config, ...props }: AppSidebarProps) {
         <SidebarMenu>
           <SidebarMenuItem>
             <SidebarMenuButton
-              className="data-[slot=sidebar-menu-button]:p-1.5!"
+              className="group-data-[collapsible=icon]:justify-center group-data-[collapsible=icon]:p-1! data-[slot=sidebar-menu-button]:p-1.5!"
               render={<Link href="/" />}
             >
-              <BrandMark asLink={false} showLabel={false} className="gap-0" />
-              <span className="text-base font-semibold">{config.title}</span>
+              {/* Collapsed to the icon rail only the logo survives — the wordmark is
+                  hidden and the mark shrinks to fit the narrower button. */}
+              <BrandMark
+                asLink={false}
+                showLabel={false}
+                className="gap-0 [&_img]:h-9 group-data-[collapsible=icon]:[&_img]:h-6"
+              />
+              <span className="text-base font-semibold group-data-[collapsible=icon]:hidden">
+                {config.title}
+              </span>
             </SidebarMenuButton>
           </SidebarMenuItem>
         </SidebarMenu>

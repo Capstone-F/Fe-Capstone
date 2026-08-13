@@ -80,6 +80,11 @@ export const API_ENDPOINTS = {
     CREATE: "/experts",
     ME: "/experts/me",
     DETAIL: (id: string | number) => `/experts/${id}`,
+    // These take the expert PROFILE id (from GET /experts), not the user id.
+    CONSULTATION_FEE: (id: string) => `/experts/${id}/consultation-fee`,
+    AVAILABILITY: (expertId: string) => `/experts/${expertId}/availability`,
+    AVAILABILITY_DETAIL: (expertId: string, id: string) =>
+      `/experts/${expertId}/availability/${id}`,
   },
   BOOKINGS: {
     CREATE: "/bookings",

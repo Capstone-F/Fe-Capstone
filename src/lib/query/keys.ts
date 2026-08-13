@@ -57,4 +57,7 @@ export const queryKeys = {
   supportSession: (id: string) => ["support", "session", id] as const,
   supportMessages: (sessionId: string, afterSeq?: number) =>
     ["support", "messages", sessionId, afterSeq ?? 0] as const,
+  // Keyed by the expert PROFILE id, which is not the same value as the account user id.
+  expertAvailability: (expertProfileId: string) =>
+    ["experts", expertProfileId, "availability"] as const,
 };

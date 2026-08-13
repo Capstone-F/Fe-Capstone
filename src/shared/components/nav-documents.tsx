@@ -33,6 +33,13 @@ export function NavDocuments({
   }[];
 }) {
   const { isMobile } = useSidebar();
+
+  // Every portal ships an empty documents list today; rendering the group anyway
+  // left a "Tài liệu / Thêm" heading with nothing behind it.
+  if (items.length === 0) {
+    return null;
+  }
+
   return (
     <SidebarGroup className="group-data-[collapsible=icon]:hidden">
       <SidebarGroupLabel>{"Tài liệu"}</SidebarGroupLabel>
