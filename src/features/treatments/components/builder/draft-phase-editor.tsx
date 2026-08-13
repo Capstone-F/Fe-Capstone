@@ -1,27 +1,18 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm, useWatch } from "react-hook-form";
 import Image from "next/image";
-import { useRouter, useSearchParams } from "next/navigation";
+import { useSearchParams } from "next/navigation";
 import {
-  Activity,
-  ArrowLeft,
-  CalendarCheck,
-  Camera,
-  Check,
   CheckCircle2,
   ClipboardCheck,
   Circle,
   CircleAlert,
   Loader2,
-  PackageCheck,
   Plus,
-  RefreshCw,
   Save,
-  Sun,
-  Moon,
   Trash2,
   TriangleAlert,
 } from "lucide-react";
@@ -51,51 +42,27 @@ import {
   SelectValue,
 } from "@/shared/components/ui/select";
 import { Textarea } from "@/shared/components/ui/textarea";
-import {
-  Tabs,
-  TabsContent,
-  TabsList,
-  TabsTrigger,
-} from "@/shared/components/ui/tabs";
+import {} from "@/shared/components/ui/tabs";
 import { formatVnd } from "@/shared/utils/format";
 import { FormController } from "@/shared/components/form/form-controller";
 import { CurrencyInput } from "@/shared/components/form/currency-input";
 import { cn } from "@/lib/utils";
 import {
-  useActivatePhase,
   useAddPhase,
-  useCreateTreatmentPlan,
   useDeletePhase,
-  useGenerateRoutine,
-  useIngredients,
-  useProductCandidates,
-  useSaveRoutine,
-  useSetPhaseIngredients,
-  useSetPhaseProducts,
   useSubmitPlan,
-  useTreatmentChart,
-  useTreatmentPlanDetail,
-  useTreatmentPlans,
   useUpdatePhase,
-  useUpdateRoutine,
 } from "../../hooks/useTreatments";
 import type {
-  ExpertRoutine,
-  ExpertRoutineStep,
-  RoutinePeriod,
-  TreatmentChart,
   TreatmentPhase,
   TreatmentPhasePayload,
   TreatmentPlan,
 } from "../../types/treatment.types";
 import {
-  getTreatmentStatusLabel,
   treatmentPhaseStatusLabel,
   treatmentPhaseTypeLabel,
 } from "../../lib/treatment-labels";
 import {
-  createTreatmentPlanSchema,
-  routineSchema,
   treatmentPhaseFormSchema,
   type CreateTreatmentPlanValues,
   type TreatmentPhaseFormValues,

@@ -1,102 +1,46 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useMemo, useState } from "react";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { useForm, useWatch } from "react-hook-form";
+import { useWatch } from "react-hook-form";
 import Image from "next/image";
-import { useRouter, useSearchParams } from "next/navigation";
-import {
-  Activity,
-  ArrowLeft,
-  CalendarCheck,
-  Camera,
-  Check,
-  CheckCircle2,
-  ClipboardCheck,
-  Circle,
-  CircleAlert,
-  Loader2,
-  PackageCheck,
-  Plus,
-  RefreshCw,
-  Save,
-  Sun,
-  Moon,
-  Trash2,
-  TriangleAlert,
-} from "lucide-react";
+import { useSearchParams } from "next/navigation";
+import { Check, Loader2, Plus, Save } from "lucide-react";
 import { toast } from "sonner";
 
 import { Badge } from "@/shared/components/ui/badge";
 import { Button } from "@/shared/components/ui/button";
-import {
-  Accordion,
-  AccordionContent,
-  AccordionItem,
-  AccordionTrigger,
-} from "@/shared/components/ui/accordion";
-import {
-  Alert,
-  AlertDescription,
-  AlertTitle,
-} from "@/shared/components/ui/alert";
+import {} from "@/shared/components/ui/accordion";
+import {} from "@/shared/components/ui/alert";
 import { Checkbox } from "@/shared/components/ui/checkbox";
 import { Input } from "@/shared/components/ui/input";
 import { Label } from "@/shared/components/ui/label";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/shared/components/ui/select";
+import {} from "@/shared/components/ui/select";
 import { Textarea } from "@/shared/components/ui/textarea";
-import {
-  Tabs,
-  TabsContent,
-  TabsList,
-  TabsTrigger,
-} from "@/shared/components/ui/tabs";
+import {} from "@/shared/components/ui/tabs";
 import { formatVnd } from "@/shared/utils/format";
 import { FormController } from "@/shared/components/form/form-controller";
 import { CurrencyInput } from "@/shared/components/form/currency-input";
 import { cn } from "@/lib/utils";
 import {
   useActivatePhase,
-  useAddPhase,
-  useCreateTreatmentPlan,
-  useDeletePhase,
   useGenerateRoutine,
   useIngredients,
   useProductCandidates,
   useSaveRoutine,
   useSetPhaseIngredients,
   useSetPhaseProducts,
-  useSubmitPlan,
-  useTreatmentChart,
-  useTreatmentPlanDetail,
-  useTreatmentPlans,
-  useUpdatePhase,
   useUpdateRoutine,
 } from "../../hooks/useTreatments";
 import type {
   ExpertRoutine,
   ExpertRoutineStep,
   RoutinePeriod,
-  TreatmentChart,
   TreatmentPhase,
-  TreatmentPhasePayload,
-  TreatmentPlan,
 } from "../../types/treatment.types";
+import {} from "../../lib/treatment-labels";
 import {
-  getTreatmentStatusLabel,
-  treatmentPhaseStatusLabel,
-  treatmentPhaseTypeLabel,
-} from "../../lib/treatment-labels";
-import {
-  createTreatmentPlanSchema,
   routineSchema,
-  treatmentPhaseFormSchema,
   type CreateTreatmentPlanValues,
   type TreatmentPhaseFormValues,
 } from "../../schemas/treatment-forms.schema";
