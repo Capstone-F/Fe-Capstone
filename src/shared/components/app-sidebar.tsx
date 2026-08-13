@@ -38,6 +38,11 @@ import {
   PackageCheck,
   PackagePlus,
   UserCheck,
+  Truck,
+  Banknote,
+  Wallet,
+  ReceiptText,
+  Percent,
 } from "lucide-react";
 import { useProfile } from "@/features/profile/hooks/useProfile";
 import { useSession } from "@/features/auth/hooks/useSession";
@@ -65,11 +70,16 @@ const IconMap: Record<string, LucideIcon> = {
   MessageSquare: MessageSquare,
   PackageCheck: PackageCheck,
   PackagePlus: PackagePlus,
+  Truck: Truck,
+  Banknote: Banknote,
+  Wallet: Wallet,
+  ReceiptText: ReceiptText,
+  Percent: Percent,
 };
 
 interface AppSidebarProps extends React.ComponentProps<typeof Sidebar> {
   config: {
-    portal: "admin" | "expert" | "customer" | "staff";
+    portal: "admin" | "expert" | "customer" | "staff" | "clinic";
     title: string;
     navMain: { title: string; url: string; icon: string }[];
     navSecondary?: { title: string; url: string; icon: string }[];

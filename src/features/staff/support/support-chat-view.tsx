@@ -10,7 +10,16 @@ import { ProductMessageMetadata } from "@/features/support/types/support.types";
 import { InventoryItemDto } from "@/features/stock/types/stock.types";
 import { Button } from "@/shared/components/ui/button";
 import { Card, CardContent } from "@/shared/components/ui/card";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/shared/components/ui/dialog";
 import { Input } from "@/shared/components/ui/input";
+import { Label } from "@/shared/components/ui/label";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import {
   Loader2,
@@ -70,6 +79,10 @@ export function SupportChatView() {
   const currentSession = sessionDetail || activeSession;
   const isClosed = currentSession?.status === "CLOSED";
 
+  // Close reason modal state
+  const [closeModalOpen, setCloseModalOpen] = useState(false);
+  const [closeReason, setCloseReason] = useState("Đã giải quyết");
+
   // Queue query: OPEN (unassigned) vs ACTIVE (me)
   const {
     data: queueData,
@@ -122,15 +135,26 @@ export function SupportChatView() {
     },
   });
 
-  // Close Session Mutation
+  // Read Receipt Mutation (TC-STF-08 Step 6: POST /support/sessions/:id/read { lastReadSeq })
+  const readReceiptMutation = useMutation({
+    mutationFn: ({ id, lastReadSeq }: { id: string; lastReadSeq: number }) =>
+      apiClient.post(`${API_ENDPOINTS.SUPPORT.SESSIONS}/${id}/read`, {
+        lastReadSeq,
+      }),
+  });
+
+  // Close Session Mutation (TC-STF-08 Step 7: POST /support/sessions/:id/close { reason })
   const closeMutation = useMutation({
-    mutationFn: (id: string) =>
-      apiClient.post(`${API_ENDPOINTS.SUPPORT.SESSIONS}/${id}/close`),
+    mutationFn: ({ id, reason }: { id: string; reason: string }) =>
+      apiClient.post(`${API_ENDPOINTS.SUPPORT.SESSIONS}/${id}/close`, {
+        reason,
+      }),
     onSuccess: () => {
       toast.success("Đã đóng phiên hỗ trợ khách hàng!");
       queryClient.invalidateQueries({ queryKey: ["support-sessions-queue"] });
       setActiveSession(null);
       setMessagesList([]);
+      setCloseModalOpen(false);
     },
     onError: (err: unknown) => {
       const msg =
@@ -146,7 +170,7 @@ export function SupportChatView() {
     }, 100);
   }, []);
 
-  // Send Message Mutation
+  // Send Message Mutation (TC-STF-08 Step 5: POST /support/sessions/:id/messages { content })
   const sendMessageMutation = useMutation({
     mutationFn: ({
       id,
@@ -166,6 +190,13 @@ export function SupportChatView() {
       setMessagesList((prev) => [...prev, res.data]);
       if (res.data.seq > lastSeqRef.current) {
         lastSeqRef.current = res.data.seq;
+        // Emit read receipt after sending
+        if (activeSession?.id) {
+          readReceiptMutation.mutate({
+            id: activeSession.id,
+            lastReadSeq: res.data.seq,
+          });
+        }
       }
       scrollToBottom();
     },
@@ -200,6 +231,15 @@ export function SupportChatView() {
             const updated = [...prev, ...newMsgs];
             const maxSeq = Math.max(...updated.map((m) => m.seq || 0));
             lastSeqRef.current = maxSeq;
+
+            // Emit read receipt for new incoming messages (TC-STF-08 Step 6)
+            void apiClient
+              .post(
+                `${API_ENDPOINTS.SUPPORT.SESSIONS}/${activeSessionId}/read`,
+                { lastReadSeq: maxSeq },
+              )
+              .catch(() => undefined);
+
             return updated;
           });
           scrollToBottom();
@@ -224,6 +264,15 @@ export function SupportChatView() {
     sendMessageMutation.mutate({
       id: activeSession.id,
       content: messageInput.trim(),
+    });
+  };
+
+  const handleConfirmClose = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!activeSession) return;
+    closeMutation.mutate({
+      id: activeSession.id,
+      reason: closeReason.trim() || "Đã giải quyết",
     });
   };
 
@@ -277,7 +326,7 @@ export function SupportChatView() {
               className={`min-w-0 flex-1 shrink-0 rounded-2xl px-2 text-[11px] font-bold whitespace-nowrap transition-all xl:text-xs ${
                 filterTab === "OPEN"
                   ? "bg-[#2C3E35] text-white hover:bg-[#3A5246]"
-                  : "text-slate-600 hover:bg-slate-200"
+                  : "text-slate-600 hover:bg-slate-200 dark:text-slate-300"
               }`}
             >
               <span className="truncate">Chờ Tiếp Nhận</span>
@@ -290,7 +339,7 @@ export function SupportChatView() {
               className={`min-w-0 flex-1 shrink-0 rounded-2xl px-2 text-[11px] font-bold whitespace-nowrap transition-all xl:text-xs ${
                 filterTab === "ACTIVE"
                   ? "bg-[#2C3E35] text-white hover:bg-[#3A5246]"
-                  : "text-slate-600 hover:bg-slate-200"
+                  : "text-slate-600 hover:bg-slate-200 dark:text-slate-300"
               }`}
             >
               <span className="truncate">Phiên Chat Đang Mở</span>
@@ -298,7 +347,7 @@ export function SupportChatView() {
           </div>
 
           {/* List Content */}
-          <CardContent className="min-h-0 flex-1 divide-y divide-slate-100 overflow-y-auto p-2">
+          <CardContent className="min-h-0 flex-1 divide-y divide-slate-100 overflow-y-auto p-2 dark:divide-slate-800">
             {isQueueLoading ? (
               <div className="flex items-center justify-center p-8 text-xs text-slate-500">
                 <Loader2 className="mr-2 h-4 w-4 animate-spin text-[#2C3E35]" />{" "}
@@ -323,12 +372,12 @@ export function SupportChatView() {
                     }}
                     className={`flex cursor-pointer flex-col gap-2 rounded-2xl p-3 transition-all ${
                       isSelected
-                        ? "border border-[#2C3E35]/20 bg-[#E2EBE6]/60"
-                        : "hover:bg-slate-50"
+                        ? "border border-[#2C3E35]/20 bg-[#E2EBE6]/60 dark:bg-emerald-950/40"
+                        : "hover:bg-slate-50 dark:hover:bg-slate-800/40"
                     }`}
                   >
                     <div className="flex items-center justify-between">
-                      <span className="flex items-center gap-1.5 text-xs font-bold text-slate-900">
+                      <span className="flex items-center gap-1.5 text-xs font-bold text-slate-900 dark:text-white">
                         <User className="h-3.5 w-3.5 text-slate-400" />
                         {session.customerName ||
                           `Khách #${session.customerUserId.slice(0, 8).toUpperCase()}`}
@@ -358,7 +407,7 @@ export function SupportChatView() {
                         phiên chat ➔
                       </Button>
                     ) : (
-                      <span className="truncate text-[11px] font-semibold text-emerald-800">
+                      <span className="truncate text-[11px] font-semibold text-emerald-800 dark:text-emerald-400">
                         Đang trò chuyện ({session.messageCount} tin nhắn)
                       </span>
                     )}
@@ -370,11 +419,11 @@ export function SupportChatView() {
         </Card>
 
         {/* Right Column: Chat Conversation Pane (8 cols) */}
-        <Card className="flex min-h-0 flex-col overflow-hidden rounded-3xl border border-slate-200/90 bg-white shadow-sm lg:col-span-8">
+        <Card className="flex min-h-0 flex-col overflow-hidden rounded-3xl border border-slate-200/90 bg-white shadow-sm lg:col-span-8 dark:border-slate-800 dark:bg-slate-900">
           {activeSession ? (
             <>
               {/* Active Header */}
-              <div className="flex shrink-0 items-center justify-between border-b border-slate-100 bg-slate-50/60 p-4">
+              <div className="flex shrink-0 items-center justify-between border-b border-slate-100 bg-slate-50/60 p-4 dark:border-slate-800 dark:bg-slate-800/40">
                 <div className="flex items-center gap-2">
                   <div
                     className={`h-3 w-3 ${isClosed ? "bg-slate-400" : "animate-pulse bg-emerald-500"} rounded-full`}
@@ -398,9 +447,8 @@ export function SupportChatView() {
                 <Button
                   variant="outline"
                   size="sm"
-                  onClick={() => closeMutation.mutate(activeSession.id)}
-                  disabled={closeMutation.isPending}
-                  className="rounded-xl border-rose-200 text-xs font-bold text-rose-600 hover:bg-rose-50"
+                  onClick={() => setCloseModalOpen(true)}
+                  className="rounded-xl border-rose-200 text-xs font-bold text-rose-600 hover:bg-rose-50 dark:hover:bg-rose-950/30"
                 >
                   <XCircle className="mr-1.5 h-3.5 w-3.5" /> Đóng phiên chat
                 </Button>
@@ -432,7 +480,7 @@ export function SupportChatView() {
                         className={`max-w-[75%] rounded-2xl p-3 text-xs leading-relaxed ${
                           isStaff
                             ? "rounded-br-none bg-[#2C3E35] text-white"
-                            : "rounded-bl-none bg-slate-100 text-slate-800"
+                            : "rounded-bl-none bg-slate-100 text-slate-800 dark:bg-slate-800 dark:text-slate-200"
                         }`}
                       >
                         {msg.metadata?.type === "product"
@@ -522,7 +570,7 @@ export function SupportChatView() {
           ) : (
             <div className="flex flex-1 flex-col items-center justify-center gap-2 p-12 text-center text-xs text-slate-400">
               <MessageSquare className="h-12 w-12 text-slate-200" />
-              <span className="text-sm font-bold text-slate-600">
+              <span className="text-sm font-bold text-slate-600 dark:text-slate-300">
                 Chọn một phiên chat từ danh sách bên trái
               </span>
               <p className="max-w-xs text-slate-400">
@@ -533,6 +581,68 @@ export function SupportChatView() {
           )}
         </Card>
       </div>
+
+      {/* Close Ticket Modal with Reason (TC-STF-08 Step 7) */}
+      {closeModalOpen && activeSession && (
+        <Dialog open={closeModalOpen} onOpenChange={setCloseModalOpen}>
+          <DialogContent className="max-w-md rounded-3xl p-6 shadow-2xl">
+            <DialogHeader className="border-b border-slate-100 pb-4 dark:border-slate-800">
+              <DialogTitle className="flex items-center gap-2 text-lg font-bold text-rose-600">
+                <XCircle className="h-5 w-5" />
+                Xác Nhận Đóng Phiên Hỗ Trợ
+              </DialogTitle>
+              <DialogDescription className="text-xs text-slate-500">
+                Nhập lý do đóng phiên hỗ trợ #
+                {activeSession.id.slice(0, 8).toUpperCase()}.
+              </DialogDescription>
+            </DialogHeader>
+
+            <form
+              onSubmit={handleConfirmClose}
+              className="flex flex-col gap-4 py-2"
+            >
+              <div className="flex flex-col gap-1.5">
+                <Label
+                  htmlFor="close-reason"
+                  className="text-xs font-bold text-slate-700 dark:text-slate-300"
+                >
+                  Lý do đóng phiên (Reason) *:
+                </Label>
+                <Input
+                  id="close-reason"
+                  required
+                  placeholder="VD: Đã giải quyết, Khách hàng không phản hồi..."
+                  value={closeReason}
+                  onChange={(e) => setCloseReason(e.target.value)}
+                  className="rounded-xl text-xs"
+                />
+              </div>
+
+              <DialogFooter className="gap-2 border-t border-slate-100 pt-2 dark:border-slate-800">
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={() => setCloseModalOpen(false)}
+                  className="rounded-xl text-xs font-semibold"
+                >
+                  Quay lại
+                </Button>
+                <Button
+                  type="submit"
+                  disabled={closeMutation.isPending || !closeReason.trim()}
+                  className="rounded-xl bg-rose-600 px-6 text-xs font-bold text-white hover:bg-rose-700"
+                >
+                  {closeMutation.isPending ? (
+                    <Loader2 className="h-4 w-4 animate-spin" />
+                  ) : (
+                    "Đóng Phiên Chat"
+                  )}
+                </Button>
+              </DialogFooter>
+            </form>
+          </DialogContent>
+        </Dialog>
+      )}
     </div>
   );
 }

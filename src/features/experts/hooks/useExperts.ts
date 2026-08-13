@@ -1,4 +1,4 @@
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, keepPreviousData } from "@tanstack/react-query";
 import { queryKeys } from "@/lib/query/keys";
 import { expertsApi } from "../api/experts.api";
 import {
@@ -33,20 +33,21 @@ export function useExperts(
           if (spec) params.specialization = spec;
         }
         if (minRating && minRating > 0) {
-          params.minRating = minRating.toString();
+          params.minRating = String(minRating);
         }
-        if (maxFee && maxFee > 0 && maxFee < 5000000) {
-          params.maxFee = maxFee.toString();
+        if (maxFee && maxFee > 0) {
+          params.maxFee = String(maxFee);
         }
-        if (maxDistance && lat !== undefined && lng !== undefined) {
-          params.radiusKm = maxDistance.toString();
-          params.lat = lat.toString();
-          params.lng = lng.toString();
+        if (maxDistance && maxDistance > 0 && lat && lng) {
+          params.maxDistanceKm = String(maxDistance);
+          params.lat = String(lat);
+          params.lng = String(lng);
         }
       }
 
-      const response = await expertsApi.getExperts(params);
-      let experts = response.data.items.map(mapBackendExpertToFrontend);
+      const res = await expertsApi.getExperts(params);
+      const items: BackendExpert[] = res.data.items || [];
+      let experts = items.map(mapBackendExpertToFrontend);
 
       if (filters?.search) {
         const q = filters.search.toLowerCase();
@@ -65,6 +66,7 @@ export function useExperts(
 
       return experts;
     },
+    placeholderData: keepPreviousData,
     enabled,
   });
 }

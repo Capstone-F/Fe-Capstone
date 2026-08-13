@@ -73,12 +73,14 @@ export function CancellationDetailModal({
     class: "bg-slate-100 text-slate-700",
   };
 
-  const handleAdvance = () => {
+  const handleAdvance = (steps = 10) => {
     advanceMutation.mutate(
-      { id: cancellation.id, body: { steps: 3 } },
+      { id: cancellation.id, body: { steps } },
       {
         onSuccess: () => {
-          toast.success("Đã đẩy tiến trình (Advance 3 bước) thành công!");
+          toast.success(
+            `Đã đẩy tiến trình (Advance ${steps} bước) thành công!`,
+          );
         },
         onError: (err: unknown) => {
           const msg =
@@ -255,7 +257,7 @@ export function CancellationDetailModal({
                 <Button
                   type="button"
                   size="sm"
-                  onClick={handleAdvance}
+                  onClick={() => handleAdvance(10)}
                   disabled={advanceMutation.isPending}
                   className="rounded-xl bg-blue-700 text-xs font-bold text-white hover:bg-blue-800"
                 >
@@ -264,8 +266,21 @@ export function CancellationDetailModal({
                   ) : (
                     <Play className="mr-1.5 h-3.5 w-3.5" />
                   )}
-                  Đẩy tiến trình (Advance 3 bước)
+                  Đẩy tiến trình (Advance 10 bước ➔ AWAITING_RETURN)
                 </Button>
+
+                {cancellation.status === "RESTOCKED" && (
+                  <Button
+                    type="button"
+                    size="sm"
+                    onClick={() => handleAdvance(1)}
+                    disabled={advanceMutation.isPending}
+                    className="rounded-xl bg-emerald-700 text-xs font-bold text-white hover:bg-emerald-800"
+                  >
+                    <Play className="mr-1.5 h-3.5 w-3.5" />
+                    Advance 1 bước ➔ COMPLETED
+                  </Button>
+                )}
 
                 <Button
                   type="button"
