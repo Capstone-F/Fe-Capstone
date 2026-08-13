@@ -1,18 +1,19 @@
 "use client";
 
+import Image from "next/image";
 import React, { useState, useMemo } from "react";
 import { PackageSearch, Search } from "lucide-react";
-import { Button } from "@/shared/components/ui/button";
 import { Input } from "@/shared/components/ui/input";
 import {
   Popover,
   PopoverContent,
   PopoverTrigger,
 } from "@/shared/components/ui/popover";
+import { InventoryItemDto } from "@/features/stock/types/stock.types";
 import { useStockInventory } from "@/features/stock/hooks/useStock";
 
 interface ProductAttachmentPopoverProps {
-  onAttach: (product: any) => void;
+  onAttach: (product: InventoryItemDto) => void;
   disabled?: boolean;
 }
 
@@ -37,7 +38,7 @@ export function ProductAttachmentPopover({
     });
   }, [inventory, search]);
 
-  const handleSelect = (item: any) => {
+  const handleSelect = (item: InventoryItemDto) => {
     setOpen(false);
     onAttach(item);
   };
@@ -83,9 +84,11 @@ export function ProductAttachmentPopover({
                 className="flex w-[120px] shrink-0 snap-start flex-col items-center gap-2 rounded-xl border border-slate-100 p-2 text-center shadow-sm transition-colors hover:bg-slate-50"
               >
                 {item.imageUrl ? (
-                  <img
+                  <Image
                     src={item.imageUrl}
                     alt=""
+                    width={64}
+                    height={64}
                     className="h-16 w-16 rounded-lg border border-slate-100 bg-white object-cover"
                   />
                 ) : (

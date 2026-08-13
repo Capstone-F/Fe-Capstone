@@ -1,9 +1,13 @@
 "use client";
 
+import Image from "next/image";
+
 import { apiClient } from "@/core/api/client";
 import { API_ENDPOINTS } from "@/core/api/endpoints";
 import { StaffPageHeader } from "@/features/staff/components/staff-page-header";
 import { useSupportSessionDetail } from "@/features/support/hooks/useSupport";
+import { ProductMessageMetadata } from "@/features/support/types/support.types";
+import { InventoryItemDto } from "@/features/stock/types/stock.types";
 import { Button } from "@/shared/components/ui/button";
 import { Card, CardContent } from "@/shared/components/ui/card";
 import { Input } from "@/shared/components/ui/input";
@@ -40,7 +44,7 @@ export interface ChatMessage {
   senderUserId: string;
   senderRole: "CUSTOMER" | "STAFF" | "SYSTEM";
   content: string;
-  metadata?: Record<string, any> | null;
+  metadata?: Record<string, unknown> | null;
   seq: number;
   createdAt: string;
 }
@@ -151,7 +155,7 @@ export function SupportChatView() {
     }: {
       id: string;
       content: string;
-      metadata?: Record<string, any>;
+      metadata?: Record<string, unknown>;
     }) =>
       apiClient.post<ChatMessage>(
         `${API_ENDPOINTS.SUPPORT.SESSIONS}/${id}/messages`,
@@ -223,7 +227,7 @@ export function SupportChatView() {
     });
   };
 
-  const handleAttachProduct = (product: any) => {
+  const handleAttachProduct = (product: InventoryItemDto) => {
     if (!activeSession) return;
     sendMessageMutation.mutate({
       id: activeSession.id,
@@ -431,32 +435,38 @@ export function SupportChatView() {
                             : "rounded-bl-none bg-slate-100 text-slate-800"
                         }`}
                       >
-                        {msg.metadata?.type === "product" ? (
-                          <div className="flex items-center gap-3">
-                            {msg.metadata.imageUrl ? (
-                              <img
-                                src={msg.metadata.imageUrl}
-                                alt=""
-                                className="h-10 w-10 rounded bg-white object-cover"
-                              />
-                            ) : (
-                              <div className="h-10 w-10 rounded bg-slate-200" />
-                            )}
-                            <div className="flex-1">
-                              <p className="font-semibold">
-                                {msg.metadata.productName}
-                              </p>
-                              <p className="text-[10px] opacity-80">
-                                {new Intl.NumberFormat("vi-VN", {
-                                  style: "currency",
-                                  currency: "VND",
-                                }).format(msg.metadata.priceVnd)}
-                              </p>
-                            </div>
-                          </div>
-                        ) : (
-                          msg.content
-                        )}
+                        {msg.metadata?.type === "product"
+                          ? (() => {
+                              const pm =
+                                msg.metadata as unknown as ProductMessageMetadata;
+                              return (
+                                <div className="flex items-center gap-3">
+                                  {pm.imageUrl ? (
+                                    <Image
+                                      src={pm.imageUrl}
+                                      alt=""
+                                      width={40}
+                                      height={40}
+                                      className="h-10 w-10 rounded bg-white object-cover"
+                                    />
+                                  ) : (
+                                    <div className="h-10 w-10 rounded bg-slate-200" />
+                                  )}
+                                  <div className="flex-1">
+                                    <p className="font-semibold">
+                                      {pm.productName}
+                                    </p>
+                                    <p className="text-[10px] opacity-80">
+                                      {new Intl.NumberFormat("vi-VN", {
+                                        style: "currency",
+                                        currency: "VND",
+                                      }).format(pm.priceVnd)}
+                                    </p>
+                                  </div>
+                                </div>
+                              );
+                            })()
+                          : msg.content}
                       </div>
                       <span className="mt-1 px-1 text-[9px] text-slate-400">
                         {new Date(msg.createdAt).toLocaleTimeString("vi-VN", {

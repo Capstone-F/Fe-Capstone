@@ -52,7 +52,7 @@ export interface SupportMessageResponseDto {
   senderUserId: string;
   senderRole: SupportMessageSenderRole;
   content: string;
-  metadata?: Record<string, any> | null;
+  metadata?: Record<string, unknown> | null;
   createdAt: string;
 }
 
@@ -68,7 +68,7 @@ export interface CreateSupportSessionDto {
 
 export interface SendSupportMessageDto {
   content: string;
-  metadata?: Record<string, any> | null;
+  metadata?: Record<string, unknown> | null;
 }
 
 export interface MarkSupportReadDto {
@@ -77,4 +77,13 @@ export interface MarkSupportReadDto {
 
 export interface CloseSupportSessionDto {
   reason?: string;
+}
+
+export interface ProductMessageMetadata {
+  type: "product";
+  productId: string;
+  productVariantId: string;
+  productName: string;
+  priceVnd: number;
+  imageUrl: string | null;
 }
