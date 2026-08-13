@@ -43,16 +43,32 @@ export function mapSpecialtyToBackend(specialty: string): string | null {
 }
 
 export function mapBackendExpertToFrontend(be: BackendExpert): Expert {
+  const clinicName =
+    be.clinic?.name ||
+    be.clinicName ||
+    "Trung tâm chăm sóc da GlowScan Partner";
+
   return {
     id: be.id,
     name: be.name || "Chuyên gia da liễu",
     title: translateSpecialization(be.specialization),
-    clinic: be.clinicName || "Trung tâm chăm sóc da GlowScan Partner",
+    clinic: clinicName,
     rating: Number(be.rating) || 0,
     reviews: 0,
     fee: Number(be.consultationFee) || 0,
     specialties: [translateSpecialization(be.specialization)],
     distance: be.distanceKm !== null ? Number(be.distanceKm) : undefined,
     bio: be.bio || "",
+    clinicLocation: be.clinic
+      ? {
+          id: be.clinic.id,
+          name: clinicName,
+          address: be.clinic.address,
+          latitude:
+            be.clinic.latitude === null ? null : Number(be.clinic.latitude),
+          longitude:
+            be.clinic.longitude === null ? null : Number(be.clinic.longitude),
+        }
+      : null,
   };
 }

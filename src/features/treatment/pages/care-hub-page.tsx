@@ -41,10 +41,17 @@ import { RoutineHistoryPanel } from "../components/routine-history-panel";
 import { RoutineStepItem } from "../components/routine-step-item";
 import { SkipStepDialog } from "../components/skip-step-dialog";
 import { RoutineWeeklyCheckInDialog } from "../components/routine-weekly-checkin-dialog";
-import { SideEffectReportDialog } from "../components/side-effect-report-dialog";
 import { RoutineStepDetailSheet } from "../components/routine-step-detail-sheet";
 import { ProgressPhotoGallery } from "../components/progress-photo-gallery";
 import { CustomerTreatmentView } from "@/features/treatments/components/customer-treatment-view";
+import {
+  Pagination,
+  PaginationContent,
+  PaginationItem,
+  PaginationLink,
+  PaginationNext,
+  PaginationPrevious,
+} from "@/shared/components/ui/pagination";
 import { useTreatmentPlans } from "@/features/treatments/hooks/useTreatments";
 import {
   MOOD_LABELS,
@@ -142,7 +149,7 @@ export function CareHubPage() {
   const [isCheckInOpen, setIsCheckInOpen] = useState(false);
   const [isRestockOpen, setIsRestockOpen] = useState(false);
   const [isWeeklyCheckInOpen, setIsWeeklyCheckInOpen] = useState(false);
-  const [isSideEffectReportOpen, setIsSideEffectReportOpen] = useState(false);
+  const [stepPagination, setStepPagination] = useState({ key: "", page: 1 });
   const [selectedStepDetail, setSelectedStepDetail] =
     useState<TodayStep | null>(null);
   const [stepToSkip, setStepToSkip] = useState<{
@@ -228,6 +235,18 @@ export function CareHubPage() {
 
   const stepEntries = (todayData?.routines ?? []).flatMap((routine) =>
     routine.steps.map((step) => ({ routineId: routine.id, step })),
+  );
+  const routinePageKey = (todayData?.routines ?? [])
+    .map((routine) => routine.id)
+    .join(":");
+  const currentPaginationKey = `${activePeriod}:${routinePageKey}`;
+  const requestedStepPage =
+    stepPagination.key === currentPaginationKey ? stepPagination.page : 1;
+  const stepPageCount = Math.max(1, Math.ceil(stepEntries.length / 6));
+  const safeStepPage = Math.min(requestedStepPage, stepPageCount);
+  const visibleStepEntries = stepEntries.slice(
+    (safeStepPage - 1) * 6,
+    safeStepPage * 6,
   );
 
   const progressPct = aggregateProgress(
@@ -420,15 +439,6 @@ export function CareHubPage() {
               <Sparkles className="mr-1.5 h-3.5 w-3.5 text-amber-600" />
               Đánh Giá Tuần
             </Button>
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => setIsSideEffectReportOpen(true)}
-              className="rounded-xl border-rose-200 text-xs font-bold text-rose-600 hover:bg-rose-50 hover:text-rose-700"
-            >
-              <AlertTriangle className="mr-1.5 h-3.5 w-3.5 text-rose-500" />
-              Báo Tác Dụng Phụ
-            </Button>
             <Link href={contactDoctorHref}>
               <Button
                 size="sm"
@@ -563,7 +573,9 @@ export function CareHubPage() {
                       <div className="flex rounded-xl bg-slate-100 p-1">
                         <button
                           type="button"
-                          onClick={() => setPeriodOverride("MORNING")}
+                          onClick={() => {
+                            setPeriodOverride("MORNING");
+                          }}
                           className={`flex flex-1 items-center justify-center gap-1.5 rounded-lg py-2 text-xs font-bold transition-all ${
                             activePeriod === "MORNING"
                               ? "bg-white text-amber-600 shadow-xs"
@@ -575,7 +587,9 @@ export function CareHubPage() {
                         </button>
                         <button
                           type="button"
-                          onClick={() => setPeriodOverride("EVENING")}
+                          onClick={() => {
+                            setPeriodOverride("EVENING");
+                          }}
                           className={`flex flex-1 items-center justify-center gap-1.5 rounded-lg py-2 text-xs font-bold transition-all ${
                             activePeriod === "EVENING"
                               ? "bg-white text-indigo-600 shadow-xs"
@@ -732,7 +746,7 @@ export function CareHubPage() {
                   </Card>
 
                   {/* Skincare Steps */}
-                  <div className="space-y-3">
+                  <div id="routine-steps" className="scroll-mt-6 space-y-3">
                     <div className="flex items-center justify-between px-1">
                       <h2 className="text-sm font-bold text-slate-800">
                         Các Bước Skincare Khung Giờ
@@ -755,34 +769,104 @@ export function CareHubPage() {
                         </p>
                       </Card>
                     ) : (
-                      stepEntries.map((entry, index) => (
-                        <RoutineStepItem
-                          key={entry.step.id}
-                          step={entry.step}
-                          index={index}
-                          isRestocking={
-                            entry.step.productVariant !== null &&
-                            restock.restockingIds.has(
-                              entry.step.productVariant.id,
-                            )
-                          }
-                          isPending={
-                            completeStep.isPending || skipStep.isPending
-                          }
-                          onComplete={() =>
-                            handleCompleteStep(entry.routineId, entry.step.id)
-                          }
-                          onSkip={() =>
-                            setStepToSkip({
-                              routineId: entry.routineId,
-                              step: entry.step,
-                            })
-                          }
-                          onSelectDetail={() =>
-                            setSelectedStepDetail(entry.step)
-                          }
-                        />
-                      ))
+                      <>
+                        {visibleStepEntries.map((entry, index) => (
+                          <RoutineStepItem
+                            key={entry.step.id}
+                            step={entry.step}
+                            index={(safeStepPage - 1) * 6 + index}
+                            isRestocking={
+                              entry.step.productVariant !== null &&
+                              restock.restockingIds.has(
+                                entry.step.productVariant.id,
+                              )
+                            }
+                            isPending={
+                              completeStep.isPending || skipStep.isPending
+                            }
+                            onComplete={() =>
+                              handleCompleteStep(entry.routineId, entry.step.id)
+                            }
+                            onSkip={() =>
+                              setStepToSkip({
+                                routineId: entry.routineId,
+                                step: entry.step,
+                              })
+                            }
+                            onSelectDetail={() =>
+                              setSelectedStepDetail(entry.step)
+                            }
+                          />
+                        ))}
+                        {stepPageCount > 1 && (
+                          <Pagination className="pt-2">
+                            <PaginationContent>
+                              <PaginationItem>
+                                <PaginationPrevious
+                                  href="#routine-steps"
+                                  text="Trước"
+                                  aria-disabled={safeStepPage === 1}
+                                  className={
+                                    safeStepPage === 1
+                                      ? "pointer-events-none opacity-50"
+                                      : undefined
+                                  }
+                                  onClick={(event) => {
+                                    event.preventDefault();
+                                    setStepPagination({
+                                      key: currentPaginationKey,
+                                      page: Math.max(1, safeStepPage - 1),
+                                    });
+                                  }}
+                                />
+                              </PaginationItem>
+                              {Array.from(
+                                { length: stepPageCount },
+                                (_, index) => index + 1,
+                              ).map((page) => (
+                                <PaginationItem key={page}>
+                                  <PaginationLink
+                                    href="#routine-steps"
+                                    isActive={page === safeStepPage}
+                                    aria-label={`Trang ${page}`}
+                                    onClick={(event) => {
+                                      event.preventDefault();
+                                      setStepPagination({
+                                        key: currentPaginationKey,
+                                        page,
+                                      });
+                                    }}
+                                  >
+                                    {page}
+                                  </PaginationLink>
+                                </PaginationItem>
+                              ))}
+                              <PaginationItem>
+                                <PaginationNext
+                                  href="#routine-steps"
+                                  text="Tiếp"
+                                  aria-disabled={safeStepPage === stepPageCount}
+                                  className={
+                                    safeStepPage === stepPageCount
+                                      ? "pointer-events-none opacity-50"
+                                      : undefined
+                                  }
+                                  onClick={(event) => {
+                                    event.preventDefault();
+                                    setStepPagination({
+                                      key: currentPaginationKey,
+                                      page: Math.min(
+                                        stepPageCount,
+                                        safeStepPage + 1,
+                                      ),
+                                    });
+                                  }}
+                                />
+                              </PaginationItem>
+                            </PaginationContent>
+                          </Pagination>
+                        )}
+                      </>
                     )}
                   </div>
                 </div>
@@ -832,16 +916,6 @@ export function CareHubPage() {
             isOpen={isWeeklyCheckInOpen}
             onClose={() => setIsWeeklyCheckInOpen(false)}
             routineId={primaryRoutine.id}
-          />
-
-          <SideEffectReportDialog
-            isOpen={isSideEffectReportOpen}
-            onClose={() => setIsSideEffectReportOpen(false)}
-            routineId={primaryRoutine.id}
-            steps={stepEntries.map((e) => ({
-              id: e.step.id,
-              name: e.step.name,
-            }))}
           />
         </>
       )}

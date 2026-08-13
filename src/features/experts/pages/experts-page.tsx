@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import {
   Search,
@@ -9,10 +9,9 @@ import {
   Filter,
   RefreshCw,
   UserCheck,
-  Map,
-  User,
   LocateFixed,
   Sparkles,
+  Navigation,
 } from "lucide-react";
 import {
   useExperts,
@@ -43,6 +42,15 @@ import {
 import { Label } from "@/shared/components/ui/label";
 import { EmptyState } from "@/shared/components/ui/empty-state";
 import { ExpertCardSkeleton } from "@/features/experts/components/expert-card-skeleton";
+import { ExpertClinicMap } from "@/features/experts/components/expert-clinic-map";
+import {
+  Carousel,
+  type CarouselApi,
+  CarouselContent,
+  CarouselItem,
+  CarouselNext,
+  CarouselPrevious,
+} from "@/shared/components/ui/carousel";
 import { CurrencyInput } from "@/shared/components/form/currency-input";
 import { formatVnd } from "@/shared/utils/format";
 import useDebounce from "@/shared/hooks/useDebounce";
@@ -52,13 +60,6 @@ import {
   hasExpertDiscoverySelection,
   type ExpertDiscoverySelection,
 } from "@/features/experts/lib/expert-discovery";
-
-const mapCoordinates: Record<string, { top: string; left: string }> = {
-  exp_1: { top: "35%", left: "30%" },
-  exp_2: { top: "65%", left: "45%" },
-  exp_3: { top: "25%", left: "65%" },
-  exp_4: { top: "50%", left: "75%" },
-};
 
 const EMPTY_DISCOVERY_SELECTION: ExpertDiscoverySelection = {
   provinceCode: null,
@@ -106,9 +107,10 @@ export function ExpertsPage() {
   const [minRating, setMinRating] = useState<number>(0);
   const [maxFee, setMaxFee] = useState("2000000");
 
-  const [hoveredExpertId, setHoveredExpertId] = useState<string | null>(null);
   const [selectedExpertId, setSelectedExpertId] = useState<string | null>(null);
-  const [showMobileMap, setShowMobileMap] = useState(false);
+  const [carouselApi, setCarouselApi] = useState<CarouselApi>();
+  const [carouselIndex, setCarouselIndex] = useState(0);
+  const mapSectionRef = useRef<HTMLElement>(null);
   const [discoverySelection, setDiscoverySelection] =
     useState<ExpertDiscoverySelection>(readDiscoverySelection);
   const [geolocation, setGeolocation] = useState<GeolocationState>({
@@ -184,6 +186,24 @@ export function ExpertsPage() {
 
   const { data: experts, isLoading } = useExperts(filters, !session.isLoading);
   const { data: specialties } = useSpecialties(!session.isLoading);
+
+  useEffect(() => {
+    if (!carouselApi || !experts?.length) return;
+
+    const syncSelection = () => {
+      const index = carouselApi.selectedScrollSnap();
+      setCarouselIndex(index);
+      setSelectedExpertId(experts[index]?.id ?? null);
+    };
+
+    syncSelection();
+    carouselApi.on("select", syncSelection);
+    carouselApi.on("reInit", syncSelection);
+    return () => {
+      carouselApi.off("select", syncSelection);
+      carouselApi.off("reInit", syncSelection);
+    };
+  }, [carouselApi, experts]);
 
   const t = {
     title: "Mạng lưới Chuyên gia Da liễu",
@@ -278,7 +298,17 @@ export function ExpertsPage() {
     if (geolocation.status === "loading") {
       return "Đang định vị...";
     }
-    return "Mặc định";
+    return "Chưa cấp GPS";
+  };
+
+  const focusClinic = (expertId: string) => {
+    const index = experts?.findIndex((expert) => expert.id === expertId) ?? -1;
+    setSelectedExpertId(expertId);
+    if (index >= 0) carouselApi?.scrollTo(index);
+    mapSectionRef.current?.scrollIntoView({
+      behavior: "smooth",
+      block: "start",
+    });
   };
 
   if (session.isLoading) {
@@ -497,9 +527,7 @@ export function ExpertsPage() {
           </CardContent>
         </Card>
 
-        {/* Right Side: Location Header + Experts List + Map */}
-        <div className="flex flex-col gap-6 md:col-span-8 lg:col-span-8">
-          {/* Location Bar Banner */}
+        <div className="min-w-0 space-y-6 md:col-span-8 lg:col-span-8">
           <div className="flex flex-col gap-3 rounded-3xl border border-slate-200/90 bg-white p-5 shadow-sm sm:flex-row sm:items-center sm:justify-between dark:border-slate-800 dark:bg-slate-900">
             <div className="flex items-center gap-3">
               <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl bg-[#E2EBE6] text-[#2C3E35] dark:bg-emerald-950 dark:text-emerald-400">
@@ -518,289 +546,181 @@ export function ExpertsPage() {
               </div>
             </div>
 
-            <div className="flex items-center gap-2 self-end sm:self-auto">
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={requestPreciseLocation}
-                className="rounded-xl border-slate-200 text-xs font-bold hover:bg-slate-50"
-              >
-                <LocateFixed className="mr-1.5 h-3.5 w-3.5 text-[#2C3E35]" />
-                GPS
-              </Button>
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => setShowMobileMap(!showMobileMap)}
-                className="flex items-center gap-1.5 rounded-xl border-[#2C3E35] text-xs font-bold text-[#2C3E35] hover:bg-[#E2EBE6]/50 lg:hidden"
-              >
-                <Map className="h-3.5 w-3.5" />
-                {showMobileMap ? "Xem danh sách" : "Xem bản đồ"}
-              </Button>
-            </div>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={requestPreciseLocation}
+              className="self-end rounded-xl border-slate-200 text-xs font-bold hover:bg-slate-50 sm:self-auto"
+            >
+              <LocateFixed className="mr-1.5 h-3.5 w-3.5 text-[#2C3E35]" />
+              Bật GPS
+            </Button>
           </div>
 
-          <div className="grid grid-cols-1 items-start gap-6 lg:grid-cols-12">
-            {/* Experts List Column */}
-            <div
-              className={`flex flex-col gap-4 lg:col-span-7 ${showMobileMap ? "hidden lg:flex" : "flex"}`}
-            >
-              {isLoading ? (
-                <div className="flex flex-col gap-4">
-                  {Array.from({ length: 4 }).map((_, index) => (
-                    <ExpertCardSkeleton key={index} />
-                  ))}
-                </div>
-              ) : experts && experts.length > 0 ? (
-                <div className="flex flex-col gap-4">
+          {isLoading ? (
+            <div className="grid gap-4 sm:grid-cols-2">
+              {Array.from({ length: 2 }).map((_, index) => (
+                <ExpertCardSkeleton key={index} />
+              ))}
+            </div>
+          ) : experts && experts.length > 0 ? (
+            <>
+              <Carousel
+                setApi={setCarouselApi}
+                opts={{ align: "start", loop: false }}
+                className="w-full"
+              >
+                <CarouselContent className="items-stretch">
                   {experts.map((exp, idx) => (
-                    <Card
+                    <CarouselItem
                       key={exp.id}
-                      onMouseEnter={() => setHoveredExpertId(exp.id)}
-                      onMouseLeave={() => setHoveredExpertId(null)}
-                      className={`group flex flex-col justify-between overflow-hidden rounded-2xl border border-slate-200/90 bg-white shadow-xs transition-all duration-200 hover:border-[#2C3E35]/60 hover:shadow-md dark:border-slate-800 dark:bg-slate-900 ${
-                        hoveredExpertId === exp.id
-                          ? "border-[#2C3E35] ring-1 ring-[#2C3E35]/20"
-                          : ""
-                      }`}
+                      className="flex basis-[92%] sm:basis-1/2 xl:basis-1/3"
                     >
-                      <CardHeader className="p-5 pb-2">
-                        <div className="flex items-start justify-between gap-2">
-                          <div className="flex-1">
-                            <div className="flex items-center gap-2">
+                      <Card
+                        onFocus={() => setSelectedExpertId(exp.id)}
+                        onMouseEnter={() => setSelectedExpertId(exp.id)}
+                        className={`group flex h-full w-full flex-col overflow-hidden rounded-2xl border bg-white shadow-xs transition-all hover:shadow-md dark:bg-slate-900 ${
+                          selectedExpertId === exp.id
+                            ? "border-[#2C3E35] ring-1 ring-[#2C3E35]/20"
+                            : "border-slate-200/90 dark:border-slate-800"
+                        }`}
+                      >
+                        <CardHeader className="p-5 pb-2">
+                          <div className="flex items-start justify-between gap-2">
+                            <div className="min-w-0 flex-1">
                               <span className="rounded-full bg-[#E2EBE6] px-2.5 py-0.5 text-[10px] font-bold text-[#2C3E35] uppercase">
-                                Top {idx + 1}
+                                Chuyên gia {idx + 1}
                               </span>
-                              <span className="rounded-full bg-slate-100 px-2.5 py-0.5 text-[10px] font-bold text-slate-600 uppercase dark:bg-slate-800 dark:text-slate-300">
-                                {exp.title}
+                              <CardTitle className="mt-2 truncate text-base font-bold">
+                                {exp.name}
+                              </CardTitle>
+                            </div>
+                            <div className="flex shrink-0 items-center gap-1 rounded-full bg-amber-50 px-2.5 py-1 text-xs font-bold text-amber-700">
+                              <Star className="h-3.5 w-3.5 fill-amber-400 text-amber-400" />
+                              {exp.rating}
+                            </div>
+                          </div>
+                          <CardDescription className="mt-2 flex items-start gap-1.5 text-xs">
+                            <MapPin className="mt-0.5 h-3.5 w-3.5 shrink-0 text-emerald-600" />
+                            <span className="line-clamp-2">{exp.clinic}</span>
+                          </CardDescription>
+                        </CardHeader>
+                        <CardContent className="flex-1 p-5 pt-1 pb-3">
+                          <p className="line-clamp-3 text-xs leading-relaxed text-slate-600 dark:text-slate-300">
+                            {exp.bio || "Chưa cập nhật giới thiệu chuyên gia."}
+                          </p>
+                          <div className="mt-3 flex flex-wrap gap-1.5">
+                            {exp.specialties.map((item) => (
+                              <span
+                                key={item}
+                                className="rounded-lg bg-slate-100 px-2.5 py-1 text-[10px] font-semibold text-slate-600 dark:bg-slate-800 dark:text-slate-300"
+                              >
+                                {item}
+                              </span>
+                            ))}
+                          </div>
+                          <div className="mt-4 flex items-center justify-between border-t pt-3 text-xs">
+                            <span className="text-slate-400">
+                              {t.distanceLabel}
+                            </span>
+                            <span className="font-bold text-slate-700 dark:text-slate-300">
+                              {formatDistance(exp.distance)}
+                            </span>
+                          </div>
+                        </CardContent>
+                        <CardFooter className="flex flex-col items-stretch gap-3 border-t bg-slate-50/70 p-4 dark:bg-slate-800/40">
+                          <div className="flex items-end justify-between gap-2">
+                            <div>
+                              <span className="block text-[10px] font-bold text-slate-400 uppercase">
+                                {t.feeLabel}
+                              </span>
+                              <span className="text-base font-extrabold text-[#2C3E35] dark:text-emerald-400">
+                                {formatVnd(exp.fee)}
                               </span>
                             </div>
-                            <CardTitle className="mt-2 text-base font-bold text-slate-900 transition-colors group-hover:text-[#2C3E35] dark:text-white dark:group-hover:text-emerald-400">
-                              {exp.name}
-                            </CardTitle>
+                            <Link href={`/experts/${exp.id}`}>
+                              <Button size="sm" className="text-xs font-bold">
+                                {t.book}
+                              </Button>
+                            </Link>
                           </div>
-                          <div className="flex shrink-0 items-center gap-1 rounded-full bg-amber-50 px-2.5 py-1 text-xs font-bold text-amber-700 dark:bg-amber-950/40 dark:text-amber-300">
-                            <Star className="h-3.5 w-3.5 fill-amber-400 text-amber-400" />
-                            <span>{exp.rating}</span>
-                          </div>
-                        </div>
-                        <CardDescription className="mt-2 flex items-center gap-1.5 text-xs text-slate-500">
-                          <MapPin className="h-3.5 w-3.5 shrink-0 text-emerald-600" />
-                          <span className="truncate">{exp.clinic}</span>
-                        </CardDescription>
-                      </CardHeader>
-
-                      <CardContent className="flex-1 p-5 pt-1 pb-3">
-                        <p className="line-clamp-2 text-xs leading-relaxed text-slate-600 dark:text-slate-300">
-                          {exp.bio}
-                        </p>
-                        <div className="mt-3 flex flex-wrap gap-1.5">
-                          {exp.specialties.map((s) => (
-                            <span
-                              key={s}
-                              className="rounded-lg border border-slate-200/60 bg-slate-50 px-2.5 py-0.5 text-[10px] font-semibold text-slate-600 dark:border-slate-800 dark:bg-slate-800 dark:text-slate-300"
-                            >
-                              {s}
-                            </span>
-                          ))}
-                        </div>
-                        <div className="mt-3 flex items-center justify-between border-t border-slate-100 pt-3 text-xs dark:border-slate-800">
-                          <span className="text-slate-400">
-                            {t.distanceLabel}
-                          </span>
-                          <span className="font-bold text-slate-700 dark:text-slate-300">
-                            {formatDistance(exp.distance)}
-                          </span>
-                        </div>
-                      </CardContent>
-
-                      <CardFooter className="flex items-center justify-between border-t border-slate-100 bg-slate-50/70 p-5 pt-3 dark:border-slate-800 dark:bg-slate-800/40">
-                        <div>
-                          <span className="block text-[10px] font-bold text-slate-400 uppercase">
-                            {t.feeLabel}
-                          </span>
-                          <span className="text-base font-extrabold text-[#2C3E35] dark:text-emerald-400">
-                            {formatVnd(exp.fee)}
-                          </span>
-                        </div>
-                        <div className="flex items-center gap-2">
-                          <Link href={`/experts/${exp.id}`}>
-                            <Button
-                              size="sm"
-                              className="rounded-xl bg-[#2C3E35] px-4 py-2 text-xs font-bold text-white shadow-xs transition-all hover:bg-[#3A5246] active:scale-95"
-                            >
-                              {t.book}
-                            </Button>
-                          </Link>
-                        </div>
-                      </CardFooter>
-                    </Card>
+                          <Button
+                            type="button"
+                            variant="outline"
+                            size="sm"
+                            onClick={() => focusClinic(exp.id)}
+                            className="w-full text-xs font-bold"
+                          >
+                            <Navigation className="mr-1.5 h-3.5 w-3.5" />
+                            Xem vị trí phòng khám
+                          </Button>
+                        </CardFooter>
+                      </Card>
+                    </CarouselItem>
                   ))}
-                </div>
-              ) : (
-                <EmptyState
-                  icon={UserCheck}
-                  title={t.emptyTitle}
-                  description={t.emptyHint}
-                  action={{ label: t.emptyAction, onClick: handleReset }}
-                />
-              )}
-            </div>
+                </CarouselContent>
+                <CarouselPrevious className="left-2 z-10 bg-white/95 shadow-md" />
+                <CarouselNext className="right-2 z-10 bg-white/95 shadow-md" />
+              </Carousel>
 
-            {/* Right Column: Sticky Mock Map Panel */}
-            <div
-              className={`sticky top-6 w-full lg:col-span-5 lg:block ${showMobileMap ? "block" : "hidden"}`}
-            >
-              <div className="relative h-[530px] w-full overflow-hidden rounded-3xl border border-slate-200/90 bg-[#FAF8F5] shadow-xs dark:border-slate-800 dark:bg-slate-900">
-                <svg
-                  className="absolute inset-0 h-full w-full opacity-60"
-                  xmlns="http://www.w3.org/2000/svg"
-                >
-                  <defs>
-                    <pattern
-                      id="map-grid"
-                      width="40"
-                      height="40"
-                      patternUnits="userSpaceOnUse"
-                    >
-                      <path
-                        d="M 40 0 L 0 0 0 40"
-                        fill="none"
-                        stroke="#e2e8f0"
-                        strokeWidth="0.5"
-                      />
-                    </pattern>
-                  </defs>
-                  <rect width="100%" height="100%" fill="url(#map-grid)" />
-
-                  <path
-                    d="M-50,150 Q120,80 250,220 T550,180"
-                    fill="none"
-                    stroke="#D0E3FA"
-                    strokeWidth="24"
-                    strokeLinecap="round"
-                    className="opacity-70"
+              <div className="flex items-center justify-center gap-1.5 sm:hidden">
+                {experts.map((expert, index) => (
+                  <button
+                    key={expert.id}
+                    type="button"
+                    aria-label={`Đến chuyên gia ${index + 1}`}
+                    onClick={() => carouselApi?.scrollTo(index)}
+                    className={`h-2 rounded-full transition-all ${
+                      index === carouselIndex
+                        ? "w-6 bg-[#2C3E35]"
+                        : "w-2 bg-slate-300"
+                    }`}
                   />
-                  <path
-                    d="M-50,150 Q120,80 250,220 T550,180"
-                    fill="none"
-                    stroke="#E3F0FF"
-                    strokeWidth="16"
-                    strokeLinecap="round"
-                    className="opacity-80"
-                  />
-
-                  <path d="M0,80 L600,80" stroke="#f1f5f9" strokeWidth="6" />
-                  <path d="M0,80 L600,80" stroke="#cbd5e1" strokeWidth="1" />
-
-                  <path d="M180,0 L180,500" stroke="#f1f5f9" strokeWidth="8" />
-                  <path d="M180,0 L180,500" stroke="#cbd5e1" strokeWidth="1" />
-
-                  <path
-                    d="M350,-50 L200,550"
-                    stroke="#f1f5f9"
-                    strokeWidth="6"
-                  />
-                  <path
-                    d="M350,-50 L200,550"
-                    stroke="#cbd5e1"
-                    strokeWidth="1"
-                  />
-                </svg>
-
-                <div className="pointer-events-none absolute top-[10%] left-[5%] flex h-[50px] w-[80px] items-center justify-center rounded-lg border border-emerald-100/50 bg-emerald-50/70">
-                  <span className="text-[9px] font-bold tracking-wider text-emerald-800/40 uppercase">
-                    Công viên
-                  </span>
-                </div>
-
-                <div className="pointer-events-none absolute right-[10%] bottom-[15%] flex h-[60px] w-[100px] items-center justify-center rounded-lg border border-emerald-100/50 bg-emerald-50/70">
-                  <span className="text-[9px] font-bold tracking-wider text-emerald-800/40 uppercase">
-                    Hồ sinh thái
-                  </span>
-                </div>
-
-                {experts?.map((exp, idx) => {
-                  const coords = mapCoordinates[exp.id] || {
-                    top: "50%",
-                    left: "50%",
-                  };
-                  const isHovered = hoveredExpertId === exp.id;
-                  const isSelected = selectedExpertId === exp.id;
-                  return (
-                    <button
-                      key={exp.id}
-                      type="button"
-                      onClick={() => setSelectedExpertId(exp.id)}
-                      onMouseEnter={() => setHoveredExpertId(exp.id)}
-                      onMouseLeave={() => setHoveredExpertId(null)}
-                      style={{ top: coords.top, left: coords.left }}
-                      className={`absolute z-10 flex -translate-x-1/2 -translate-y-1/2 items-center justify-center transition-all duration-300 ${
-                        isHovered || isSelected ? "scale-125" : "scale-100"
-                      }`}
-                    >
-                      <div className="relative">
-                        <MapPin
-                          className={`h-8 w-8 transition-colors ${
-                            isHovered || isSelected
-                              ? "fill-[#E2EBE6] text-[#2C3E35]"
-                              : "fill-white text-[#2C3E35]"
-                          }`}
-                        />
-                        <span
-                          className={`absolute top-[5px] left-[11px] text-[9px] font-extrabold ${
-                            isHovered || isSelected
-                              ? "text-[#2C3E35]"
-                              : "text-white"
-                          }`}
-                        >
-                          {idx + 1}
-                        </span>
-                      </div>
-                    </button>
-                  );
-                })}
-
-                {selectedExpert && (
-                  <div className="animate-in fade-in slide-in-from-bottom-2 absolute right-4 bottom-4 left-4 z-20 flex gap-3 rounded-2xl border border-slate-200/90 bg-white p-4 shadow-xl duration-300 dark:border-slate-800 dark:bg-slate-900">
-                    <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-[#E2EBE6] text-[#2C3E35]">
-                      <User className="h-6 w-6" />
-                    </div>
-                    <div className="min-w-0 flex-1">
-                      <div className="flex items-center justify-between">
-                        <span className="rounded-full bg-[#E2EBE6] px-2 py-0.5 text-[9px] font-bold text-[#2C3E35] uppercase">
-                          {selectedExpert.title}
-                        </span>
-                        <button
-                          onClick={() => setSelectedExpertId(null)}
-                          className="p-1 text-[10px] font-bold text-slate-400 hover:text-slate-600"
-                        >
-                          ✕
-                        </button>
-                      </div>
-                      <h5 className="mt-1 truncate text-xs font-bold text-slate-900 dark:text-white">
-                        {selectedExpert.name}
-                      </h5>
-                      <p className="mt-0.5 truncate text-[10px] text-slate-500">
-                        {selectedExpert.clinic}
-                      </p>
-                      <div className="mt-2.5 flex items-center justify-between border-t border-slate-100 pt-2 dark:border-slate-800">
-                        <span className="text-xs font-extrabold text-[#2C3E35] dark:text-emerald-400">
-                          {formatVnd(selectedExpert.fee)}
-                        </span>
-                        <Link
-                          href={`/experts/${selectedExpert.id}`}
-                          className="flex items-center gap-0.5 text-[11px] font-bold text-[#2C3E35] hover:underline dark:text-emerald-400"
-                        >
-                          Chi tiết ➔
-                        </Link>
-                      </div>
-                    </div>
-                  </div>
-                )}
+                ))}
+                <span className="ml-2 text-xs text-slate-500">
+                  {carouselIndex + 1}/{experts.length}
+                </span>
               </div>
-            </div>
-          </div>
+
+              <section ref={mapSectionRef} className="scroll-mt-6 space-y-3">
+                <div>
+                  <h2 className="text-base font-bold text-slate-950 dark:text-white">
+                    Vị trí phòng khám
+                  </h2>
+                  <p className="text-xs text-slate-500">
+                    {selectedExpert
+                      ? `Đang xem ${selectedExpert.clinic}`
+                      : "Chọn một chuyên gia để xem vị trí phòng khám."}
+                  </p>
+                </div>
+                <div className="h-[430px] w-full overflow-hidden rounded-3xl border border-slate-200 bg-slate-50 shadow-sm sm:h-[520px]">
+                  <ExpertClinicMap
+                    experts={experts}
+                    userLocation={
+                      geolocation.lat !== null && geolocation.lng !== null
+                        ? { lat: geolocation.lat, lng: geolocation.lng }
+                        : null
+                    }
+                    selectedExpertId={selectedExpertId}
+                    onSelectExpert={(expertId) => {
+                      setSelectedExpertId(expertId);
+                      const index = experts.findIndex(
+                        (expert) => expert.id === expertId,
+                      );
+                      if (index >= 0) carouselApi?.scrollTo(index);
+                    }}
+                  />
+                </div>
+              </section>
+            </>
+          ) : (
+            <EmptyState
+              icon={UserCheck}
+              title={t.emptyTitle}
+              description={t.emptyHint}
+              action={{ label: t.emptyAction, onClick: handleReset }}
+            />
+          )}
         </div>
       </div>
     </div>
