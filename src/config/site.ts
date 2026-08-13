@@ -53,9 +53,59 @@ export const siteConfig = {
         icon: "ShoppingBag",
       },
       {
+        title: "Duyệt rút tiền phòng khám",
+        url: "/dashboard/clinic-withdrawals",
+        icon: "Banknote",
+      },
+      {
         title: "QA Cheats",
         url: "/dashboard/qa-cheats",
         icon: "Settings2",
+      },
+    ],
+    navSecondary: [],
+    documents: [],
+  },
+
+  // Config for clinic manager portal
+  clinicPortal: {
+    portal: "clinic" as const,
+    title: "GlowScan Clinic",
+    navMain: [
+      {
+        title: "Tổng quan",
+        url: "/clinic",
+        icon: "LayoutDashboard",
+      },
+      {
+        title: "Quản lý Chuyên gia",
+        url: "/clinic/experts",
+        icon: "Users",
+      },
+      {
+        title: "Lịch hẹn Tư vấn",
+        url: "/clinic/bookings",
+        icon: "Calendar",
+      },
+      {
+        title: "Phác đồ Điều trị",
+        url: "/clinic/treatments",
+        icon: "FileText",
+      },
+      {
+        title: "Ví & Ngân hàng",
+        url: "/clinic/wallet",
+        icon: "Wallet",
+      },
+      {
+        title: "Yêu cầu Rút tiền",
+        url: "/clinic/withdrawals",
+        icon: "Banknote",
+      },
+      {
+        title: "Sao kê & Xuất CSV",
+        url: "/clinic/statement",
+        icon: "ReceiptText",
       },
     ],
     navSecondary: [],
@@ -133,14 +183,24 @@ export const siteConfig = {
         icon: "LayoutDashboard",
       },
       {
+        title: "Tra cứu người dùng",
+        url: "/staff/users",
+        icon: "Users",
+      },
+      {
+        title: "Onboard sản phẩm",
+        url: "/staff/catalog",
+        icon: "PackagePlus",
+      },
+      {
         title: "Phiếu nhập kho",
         url: "/staff/stock-imports",
         icon: "Boxes",
       },
       {
-        title: "Bàn kiểm hàng trả",
-        url: "/staff/restock-desk",
-        icon: "PackageCheck",
+        title: "Bàn giao hàng & GHN",
+        url: "/staff/deliveries",
+        icon: "Truck",
       },
       {
         title: "Hỗ trợ khách hàng",
@@ -148,9 +208,14 @@ export const siteConfig = {
         icon: "MessageSquare",
       },
       {
-        title: "Onboard sản phẩm",
-        url: "/staff/catalog",
-        icon: "PackagePlus",
+        title: "Bàn kiểm hàng trả",
+        url: "/staff/restock-desk",
+        icon: "PackageCheck",
+      },
+      {
+        title: "Hồ sơ cá nhân",
+        url: "/staff/profile",
+        icon: "UserCheck",
       },
     ],
     navSecondary: [],

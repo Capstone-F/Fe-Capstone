@@ -22,14 +22,15 @@ export function AppShell({ children, showFooter = true }: AppShellProps) {
   const pathname = usePathname();
 
   useEffect(() => {
-    if (session?.roles) {
+    if (session?.roles && pathname === "/") {
       const roles: string[] = session.roles || [];
-      const isManagement = roles.some((r) =>
-        ["app_admin", "staff", "clinic_manager"].includes(r),
-      );
-      if (isManagement && pathname === "/") {
+      if (roles.includes("clinic_manager")) {
+        router.replace("/clinic/experts");
+      } else if (roles.includes("staff")) {
+        router.replace("/staff/user-lookup");
+      } else if (roles.includes("app_admin")) {
         router.replace("/dashboard/experts");
-      } else if (roles.includes("expert") && pathname === "/") {
+      } else if (roles.includes("expert")) {
         router.replace("/expert");
       }
     }

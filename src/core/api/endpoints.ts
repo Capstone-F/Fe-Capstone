@@ -205,4 +205,37 @@ export const API_ENDPOINTS = {
     ADVANCE: (id: string) => `/admin/order-cancellations/${id}/advance`,
     TICK: "/admin/order-cancellations/tick",
   },
+  ADMIN_DELIVERIES: {
+    LIST: "/admin/deliveries",
+    DETAIL: (id: string) => `/admin/deliveries/${id}`,
+    CREATE_GHN_ORDER: (id: string) =>
+      `/admin/deliveries/${id}/create-ghn-order`,
+    ADVANCE: (id: string) => `/admin/deliveries/${id}/advance`,
+    TICK: "/admin/deliveries/tick",
+    FORCE_STATUS: (id: string) => `/admin/deliveries/${id}/force-status`,
+  },
+  ADMIN_ORDERS: {
+    HANDOVER: (orderId: string) => `/admin/orders/${orderId}/handover`,
+  },
+  ADMIN_CLINIC_WITHDRAWALS: {
+    LIST: "/admin/clinic-withdrawals",
+    MARK_PAID: (id: string) => `/admin/clinic-withdrawals/${id}/mark-paid`,
+    REJECT: (id: string) => `/admin/clinic-withdrawals/${id}/reject`,
+  },
+  ADMIN_PLATFORM_COMMISSION: {
+    GET: "/admin/commerce-settings/platform-commission",
+    UPDATE: "/admin/commerce-settings/platform-commission",
+  },
+  CLINIC: {
+    WALLET: "/clinic/wallet",
+    BANK_ACCOUNT: "/clinic/bank-account",
+    WITHDRAWALS: "/clinic/withdrawals",
+    EXPERTS: "/clinic/experts",
+    BOOKINGS: "/clinic/bookings",
+    BOOKING_DETAIL: (id: string) => `/clinic/bookings/${id}`,
+    TREATMENTS: "/clinic/treatments",
+    TREATMENT_DETAIL: (id: string) => `/clinic/treatments/${id}`,
+    TRANSACTIONS: "/clinic/transactions",
+    TRANSACTIONS_EXPORT: "/clinic/transactions/export",
+  },
 } as const;

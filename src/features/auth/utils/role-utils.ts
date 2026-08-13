@@ -16,11 +16,13 @@ export function hasRole(
 }
 
 export function isManagementRole(roles: string[] | undefined | null): boolean {
-  return (
-    hasRole(roles, "app_admin") ||
-    hasRole(roles, "staff") ||
-    hasRole(roles, "clinic_manager")
-  );
+  return hasRole(roles, "app_admin") || hasRole(roles, "staff");
+}
+
+export function isClinicManagerRole(
+  roles: string[] | undefined | null,
+): boolean {
+  return hasRole(roles, "clinic_manager");
 }
 
 export function isExpertRole(roles: string[] | undefined | null): boolean {
@@ -31,7 +33,13 @@ export function getRoleBasedRedirectPath(
   roles: string[] | undefined | null,
   fallback?: string,
 ): string {
-  if (isManagementRole(roles)) {
+  if (hasRole(roles, "clinic_manager")) {
+    return "/clinic/experts";
+  }
+  if (hasRole(roles, "staff")) {
+    return "/staff/user-lookup";
+  }
+  if (hasRole(roles, "app_admin")) {
     return "/dashboard/experts";
   }
   if (isExpertRole(roles)) {

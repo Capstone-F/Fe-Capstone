@@ -1,4 +1,9 @@
-import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import {
+  useMutation,
+  useQuery,
+  useQueryClient,
+  keepPreviousData,
+} from "@tanstack/react-query";
 import { queryKeys } from "@/lib/query/keys";
 import { stockApi } from "../api/stock.api";
 import {
@@ -14,6 +19,7 @@ export function useStockImportForms(query?: ListStockImportFormsQueryDto) {
   return useQuery({
     queryKey: queryKeys.stockImportForms(query),
     queryFn: () => stockApi.listImportForms(query),
+    placeholderData: keepPreviousData,
   });
 }
 
