@@ -10,6 +10,7 @@ import {
   SidebarMenuItem,
 } from "@/shared/components/ui/sidebar";
 import { useSupportSessions } from "@/features/support/hooks/useSupport";
+import { SupportSessionStatus } from "@/features/support/types/support.types";
 import { Badge } from "@/shared/components/ui/badge";
 
 export function NavMain({
@@ -25,7 +26,7 @@ export function NavMain({
 
   // Load active sessions for ping badge
   const { data: supportSessions } = useSupportSessions({
-    status: "ACTIVE",
+    status: SupportSessionStatus.ACTIVE,
     assigned: "me",
   });
 

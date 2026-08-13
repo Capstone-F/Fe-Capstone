@@ -3,6 +3,7 @@
 import { apiClient } from "@/core/api/client";
 import { API_ENDPOINTS } from "@/core/api/endpoints";
 import { StaffPageHeader } from "@/features/staff/components/staff-page-header";
+import { useSupportSessionDetail } from "@/features/support/hooks/useSupport";
 import { Button } from "@/shared/components/ui/button";
 import { Card, CardContent } from "@/shared/components/ui/card";
 import { Input } from "@/shared/components/ui/input";
@@ -18,7 +19,6 @@ import {
 } from "lucide-react";
 import React, { useEffect, useRef, useState } from "react";
 import { toast } from "sonner";
-import { useSupportSessionDetail } from "@/features/support/hooks/useSupport";
 import { ProductAttachmentPopover } from "./components/product-attachment-popover";
 
 export interface SupportSession {
@@ -60,7 +60,9 @@ export function SupportChatView() {
   const activeSessionId = activeSession?.id;
 
   // Real-time detail query for active session
-  const { data: sessionDetail } = useSupportSessionDetail(activeSessionId || "");
+  const { data: sessionDetail } = useSupportSessionDetail(
+    activeSessionId || "",
+  );
   const currentSession = sessionDetail || activeSession;
   const isClosed = currentSession?.status === "CLOSED";
 
@@ -142,7 +144,15 @@ export function SupportChatView() {
 
   // Send Message Mutation
   const sendMessageMutation = useMutation({
-    mutationFn: ({ id, content, metadata }: { id: string; content: string; metadata?: Record<string, any> }) =>
+    mutationFn: ({
+      id,
+      content,
+      metadata,
+    }: {
+      id: string;
+      content: string;
+      metadata?: Record<string, any>;
+    }) =>
       apiClient.post<ChatMessage>(
         `${API_ENDPOINTS.SUPPORT.SESSIONS}/${id}/messages`,
         { content, metadata },
@@ -162,8 +172,6 @@ export function SupportChatView() {
       toast.error(msg);
     },
   });
-
-  const activeSessionId = activeSession?.id;
 
   // Initial Messages Fetch & Polling Loop
   useEffect(() => {
@@ -364,11 +372,16 @@ export function SupportChatView() {
               {/* Active Header */}
               <div className="flex shrink-0 items-center justify-between border-b border-slate-100 bg-slate-50/60 p-4">
                 <div className="flex items-center gap-2">
-                  <div className={`h-3 w-3 ${isClosed ? 'bg-slate-400' : 'bg-emerald-500 animate-pulse'} rounded-full`}></div>
+                  <div
+                    className={`h-3 w-3 ${isClosed ? "bg-slate-400" : "animate-pulse bg-emerald-500"} rounded-full`}
+                  ></div>
                   <div>
                     <h3 className="text-xs font-bold text-slate-900">
-                      Phiên hỗ trợ #{currentSession!.id.slice(0, 8).toUpperCase()}
-                      {isClosed && <span className="ml-2 text-rose-600">(Đã đóng)</span>}
+                      Phiên hỗ trợ #
+                      {currentSession!.id.slice(0, 8).toUpperCase()}
+                      {isClosed && (
+                        <span className="ml-2 text-rose-600">(Đã đóng)</span>
+                      )}
                     </h3>
                     <p className="text-[11px] text-slate-500">
                       Khách hàng:{" "}
@@ -421,13 +434,24 @@ export function SupportChatView() {
                         {msg.metadata?.type === "product" ? (
                           <div className="flex items-center gap-3">
                             {msg.metadata.imageUrl ? (
-                              <img src={msg.metadata.imageUrl} alt="" className="h-10 w-10 rounded object-cover bg-white" />
+                              <img
+                                src={msg.metadata.imageUrl}
+                                alt=""
+                                className="h-10 w-10 rounded bg-white object-cover"
+                              />
                             ) : (
                               <div className="h-10 w-10 rounded bg-slate-200" />
                             )}
                             <div className="flex-1">
-                              <p className="font-semibold">{msg.metadata.productName}</p>
-                              <p className="text-[10px] opacity-80">{new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(msg.metadata.priceVnd)}</p>
+                              <p className="font-semibold">
+                                {msg.metadata.productName}
+                              </p>
+                              <p className="text-[10px] opacity-80">
+                                {new Intl.NumberFormat("vi-VN", {
+                                  style: "currency",
+                                  currency: "VND",
+                                }).format(msg.metadata.priceVnd)}
+                              </p>
                             </div>
                           </div>
                         ) : (
@@ -470,7 +494,9 @@ export function SupportChatView() {
                     <Button
                       type="submit"
                       size="icon"
-                      disabled={!messageInput.trim() || sendMessageMutation.isPending}
+                      disabled={
+                        !messageInput.trim() || sendMessageMutation.isPending
+                      }
                       className="h-[44px] w-[44px] shrink-0 rounded-2xl bg-emerald-600 text-white hover:bg-emerald-700"
                     >
                       {sendMessageMutation.isPending ? (
