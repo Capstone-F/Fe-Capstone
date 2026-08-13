@@ -9,11 +9,11 @@ import {
   RefreshCw,
   Eye,
   CheckCircle2,
-  XCircle,
   Loader2,
   PackageCheck,
   Send,
   Ban,
+  XCircle,
 } from "lucide-react";
 import { apiClient } from "@/core/api/client";
 import { API_ENDPOINTS } from "@/core/api/endpoints";
@@ -29,7 +29,6 @@ import {
   DialogDescription,
   DialogFooter,
 } from "@/shared/components/ui/dialog";
-import { formatVnd } from "@/shared/utils/format";
 import { StaffPageHeader } from "@/features/staff/components/staff-page-header";
 
 export type StockImportStatus =
@@ -39,20 +38,15 @@ export type StockImportStatus =
   | "CANCELLED"
   | "REJECTED";
 
-export interface StockImportItem {
-  id?: string;
-  productVariantId: string;
-  quantity: number;
-  unitCostVnd: number;
-}
-
 export interface StockImportForm {
   id: string;
   status: StockImportStatus;
-  notes?: string;
-  createdByUserId: string;
+  productVariantId: string;
+  quantity: number;
+  manufacturingDate?: string;
+  batchCode?: string;
+  createdByUserId?: string;
   stockBatchId?: string | null;
-  items: StockImportItem[];
   createdAt: string;
   updatedAt: string;
 }
@@ -88,8 +82,12 @@ export function StockImportView() {
 
   const [newVariantId, setNewVariantId] = useState("");
   const [newQuantity, setNewQuantity] = useState(10);
-  const [newCost, setNewCost] = useState(100000);
-  const [newNotes, setNewNotes] = useState("");
+  const [newMfgDate, setNewMfgDate] = useState(
+    new Date().toISOString().split("T")[0],
+  );
+  const [newBatchCode, setNewBatchCode] = useState(
+    `LOT-${new Date().getFullYear()}-001`,
+  );
 
   const { data, isLoading, refetch, isRefetching } = useQuery({
     queryKey: ["stock-import-forms", statusFilter],
@@ -106,23 +104,24 @@ export function StockImportView() {
 
   const createMutation = useMutation({
     mutationFn: (body: {
-      notes?: string;
-      items: Array<{
-        productVariantId: string;
-        quantity: number;
-        unitCostVnd: number;
-      }>;
+      productVariantId: string;
+      quantity: number;
+      manufacturingDate: string;
+      batchCode?: string;
     }) => apiClient.post(API_ENDPOINTS.STOCK.IMPORT_FORMS, body),
     onSuccess: () => {
       toast.success("Tạo bản nháp phiếu nhập kho thành công!");
       queryClient.invalidateQueries({ queryKey: ["stock-import-forms"] });
       setCreateModalOpen(false);
-      setNewNotes("");
+      setNewVariantId("");
     },
     onError: (err: unknown) => {
-      const msg =
-        (err as { response?: { data?: { message?: string } } })?.response?.data
-          ?.message || "Không thể tạo phiếu nhập kho";
+      const errorMsg = (
+        err as { response?: { data?: { message?: string | string[] } } }
+      )?.response?.data?.message;
+      const msg = Array.isArray(errorMsg)
+        ? errorMsg.join(", ")
+        : errorMsg || "Không thể tạo phiếu nhập kho";
       toast.error(msg);
     },
   });
@@ -200,14 +199,10 @@ export function StockImportView() {
     }
 
     createMutation.mutate({
-      notes: newNotes.trim() || undefined,
-      items: [
-        {
-          productVariantId: newVariantId.trim(),
-          quantity: newQuantity,
-          unitCostVnd: newCost,
-        },
-      ],
+      productVariantId: newVariantId.trim(),
+      quantity: newQuantity,
+      manufacturingDate: newMfgDate,
+      batchCode: newBatchCode.trim() || undefined,
     });
   };
 
@@ -297,9 +292,10 @@ export function StockImportView() {
                   <tr className="border-b border-slate-100 bg-slate-50/80 text-[11px] font-bold text-slate-400 uppercase">
                     <th className="p-4">Mã Phiếu</th>
                     <th className="p-4">Trạng Thái</th>
-                    <th className="p-4">Mã Lô (Batch ID)</th>
-                    <th className="p-4">Số Lượng Hàng</th>
-                    <th className="p-4">Ngày Tạo</th>
+                    <th className="p-4">Variant UUID</th>
+                    <th className="p-4">Số Lượng</th>
+                    <th className="p-4">Mã Lô (Batch Code)</th>
+                    <th className="p-4">Ngày Sản Xuất</th>
                     <th className="p-4 text-right">Thao Tác</th>
                   </tr>
                 </thead>
@@ -309,8 +305,6 @@ export function StockImportView() {
                       label: item.status,
                       class: "bg-slate-100 text-slate-700",
                     };
-                    const totalQty =
-                      item.items?.reduce((sum, i) => sum + i.quantity, 0) || 0;
 
                     return (
                       <tr
@@ -329,22 +323,25 @@ export function StockImportView() {
                           </span>
                         </td>
 
+                        <td className="p-4 font-mono text-[11px] text-slate-700">
+                          {item.productVariantId}
+                        </td>
+
+                        <td className="p-4 font-bold text-slate-800 dark:text-slate-200">
+                          {item.quantity} sản phẩm
+                        </td>
+
                         <td className="p-4 font-mono text-slate-600 dark:text-slate-300">
-                          {item.stockBatchId ? (
-                            <span className="font-bold text-emerald-700">
-                              #{item.stockBatchId.slice(0, 8).toUpperCase()}
-                            </span>
-                          ) : (
+                          {item.batchCode || (
                             <span className="text-slate-400">—</span>
                           )}
                         </td>
 
-                        <td className="p-4 font-bold text-slate-800 dark:text-slate-200">
-                          {totalQty} sản phẩm ({item.items?.length || 0} SKU)
-                        </td>
-
                         <td className="p-4 text-[11px] text-slate-500">
-                          {new Date(item.createdAt).toLocaleString("vi-VN")}
+                          {item.manufacturingDate ||
+                            new Date(item.createdAt).toLocaleDateString(
+                              "vi-VN",
+                            )}
                         </td>
 
                         <td className="p-4 text-right">
@@ -380,7 +377,8 @@ export function StockImportView() {
               Tạo Bản Nháp Phiếu Nhập Kho
             </DialogTitle>
             <DialogDescription className="text-xs text-slate-500">
-              Nhập mã biến thể sản phẩm, số lượng và đơn giá nhập thực tế.
+              Nhập mã UUID biến thể sản phẩm, số lượng, ngày sản xuất và mã lô
+              hàng.
             </DialogDescription>
           </DialogHeader>
 
@@ -411,12 +409,13 @@ export function StockImportView() {
                   htmlFor="qty"
                   className="text-xs font-bold text-slate-700"
                 >
-                  Số Lượng Nhập:
+                  Số Lượng Nhập *:
                 </Label>
                 <Input
                   id="qty"
                   type="number"
                   min={1}
+                  required
                   value={newQuantity}
                   onChange={(e) =>
                     setNewQuantity(parseInt(e.target.value, 10) || 1)
@@ -427,37 +426,35 @@ export function StockImportView() {
 
               <div className="flex flex-col gap-1.5">
                 <Label
-                  htmlFor="cost"
+                  htmlFor="mfgDate"
                   className="text-xs font-bold text-slate-700"
                 >
-                  Đơn Giá Nhập (VNĐ):
+                  Ngày Sản Xuất *:
                 </Label>
                 <Input
-                  id="cost"
-                  type="number"
-                  min={0}
-                  value={newCost}
-                  onChange={(e) =>
-                    setNewCost(parseInt(e.target.value, 10) || 0)
-                  }
-                  className="rounded-xl border-slate-200 text-xs font-bold"
+                  id="mfgDate"
+                  type="date"
+                  required
+                  value={newMfgDate}
+                  onChange={(e) => setNewMfgDate(e.target.value)}
+                  className="rounded-xl border-slate-200 text-xs"
                 />
               </div>
             </div>
 
             <div className="flex flex-col gap-1.5">
               <Label
-                htmlFor="notes"
+                htmlFor="batchCode"
                 className="text-xs font-bold text-slate-700"
               >
-                Ghi Chú Nhập Kho:
+                Mã Lô Hàng (Batch Code):
               </Label>
               <Input
-                id="notes"
-                placeholder="VD: Nhập kho nhà cung cấp đợt 1..."
-                value={newNotes}
-                onChange={(e) => setNewNotes(e.target.value)}
-                className="rounded-xl border-slate-200 text-xs"
+                id="batchCode"
+                placeholder="VD: LOT-2026-001"
+                value={newBatchCode}
+                onChange={(e) => setNewBatchCode(e.target.value)}
+                className="rounded-xl border-slate-200 font-mono text-xs"
               />
             </div>
 
@@ -516,29 +513,30 @@ export function StockImportView() {
                 </div>
               )}
 
-              <div className="flex flex-col gap-2">
-                <Label className="text-xs font-bold text-slate-700">
-                  Mặt hàng trong phiếu:
-                </Label>
-                <div className="flex max-h-[200px] flex-col gap-2 overflow-y-auto">
-                  {detailItem.items?.map((item, idx) => (
-                    <div
-                      key={idx}
-                      className="flex items-center justify-between rounded-xl border border-slate-100 bg-slate-50 p-3"
-                    >
-                      <span className="font-mono font-bold text-slate-800">
-                        SKU/Variant: {item.productVariantId}
-                      </span>
-                      <div className="flex items-center gap-4">
-                        <span>
-                          SL: <strong>{item.quantity}</strong>
-                        </span>
-                        <span className="font-bold text-[#2C3E35]">
-                          {formatVnd(item.unitCostVnd)} / SP
-                        </span>
-                      </div>
-                    </div>
-                  ))}
+              <div className="grid grid-cols-2 gap-4 rounded-2xl border border-slate-100 bg-slate-50 p-4">
+                <div>
+                  <span className="text-slate-500">Mã Biến thể (UUID):</span>
+                  <p className="font-mono font-bold text-slate-800">
+                    {detailItem.productVariantId}
+                  </p>
+                </div>
+                <div>
+                  <span className="text-slate-500">Số lượng nhập:</span>
+                  <p className="font-bold text-[#2C3E35]">
+                    {detailItem.quantity} sản phẩm
+                  </p>
+                </div>
+                <div>
+                  <span className="text-slate-500">Mã Lô (Batch Code):</span>
+                  <p className="font-mono font-semibold text-slate-700">
+                    {detailItem.batchCode || "N/A"}
+                  </p>
+                </div>
+                <div>
+                  <span className="text-slate-500">Ngày sản xuất:</span>
+                  <p className="font-semibold text-slate-700">
+                    {detailItem.manufacturingDate || "N/A"}
+                  </p>
                 </div>
               </div>
 
@@ -582,7 +580,7 @@ export function StockImportView() {
                       variant="outline"
                       onClick={() => rejectMutation.mutate(detailItem.id)}
                       disabled={rejectMutation.isPending}
-                      className="rounded-xl border-rose-200 text-xs font-bold text-rose-600 hover:bg-rose-50"
+                      className="rounded-xl border-rose-200 bg-rose-50 text-xs font-bold text-rose-700 hover:bg-rose-100"
                     >
                       <XCircle className="mr-1.5 h-3.5 w-3.5" /> Từ Chối Phiếu
                     </Button>
@@ -590,17 +588,6 @@ export function StockImportView() {
                 )}
               </div>
             </div>
-
-            <DialogFooter className="border-t border-slate-100 pt-2">
-              <Button
-                type="button"
-                variant="outline"
-                onClick={() => setDetailItem(null)}
-                className="rounded-xl text-xs font-semibold"
-              >
-                Đóng
-              </Button>
-            </DialogFooter>
           </DialogContent>
         </Dialog>
       )}
