@@ -1,4 +1,7 @@
 export const API_ENDPOINTS = {
+  ANALYTICS: {
+    COMMERCE_EVENTS: "/analytics/commerce/events/batch",
+  },
   DASHBOARDS: {
     ADMIN: "/admin/dashboard",
     EXPERT: "/experts/me/dashboard",

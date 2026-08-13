@@ -8,6 +8,7 @@ import {
   Building2,
   CircleDollarSign,
   PackageCheck,
+  ReceiptText,
   RefreshCw,
   ShoppingBag,
   UserCheck,
@@ -15,16 +16,24 @@ import {
 } from "lucide-react";
 import {
   Area,
+  AreaChart,
   Bar,
+  BarChart,
   CartesianGrid,
-  ComposedChart,
+  Legend,
   XAxis,
   YAxis,
 } from "recharts";
+import {
+  Alert,
+  AlertDescription,
+  AlertTitle,
+} from "@/shared/components/ui/alert";
 import { Badge } from "@/shared/components/ui/badge";
 import { Button } from "@/shared/components/ui/button";
 import {
   ChartContainer,
+  ChartLegendContent,
   ChartTooltip,
   ChartTooltipContent,
   type ChartConfig,
@@ -52,9 +61,30 @@ import {
   formatDateTime,
 } from "./dashboard-shell";
 
-const chartConfig = {
-  netProductRevenueVnd: { label: "Sản phẩm", color: "#2563eb" },
-  netConsultationFeesVnd: { label: "Tư vấn", color: "#059669" },
+const ecommerceChartConfig = {
+  productPaymentsCollectedVnd: {
+    label: "Tiền order đã thu",
+    color: "#2563eb",
+  },
+  productRefundsVnd: { label: "Hoàn tiền sản phẩm", color: "#dc2626" },
+} satisfies ChartConfig;
+
+const serviceChartConfig = {
+  consultationFeesCollectedVnd: {
+    label: "Phí tư vấn đã thu",
+    color: "#0d9488",
+  },
+  consultationRefundsVnd: {
+    label: "Hoàn phí tư vấn",
+    color: "#ea580c",
+  },
+  platformCommissionRevenueVnd: {
+    label: "Hoa hồng nền tảng",
+    color: "#7c3aed",
+  },
+} satisfies ChartConfig;
+
+const customerChartConfig = {
   newCustomers: { label: "Khách hàng mới", color: "#d97706" },
 } satisfies ChartConfig;
 
@@ -67,72 +97,154 @@ export function AdminDashboardView() {
     <main className="flex flex-col gap-6 p-4 sm:p-6">
       <DashboardPageHeader
         title="Tổng quan quản trị"
-        description="Theo dõi sức khỏe nền tảng, dòng tiền và các luồng vận hành cần ưu tiên."
+        description="Theo dõi nền tảng, thương mại điện tử và doanh thu hoa hồng bằng dữ liệu giao dịch thật."
         range={range}
         period={data?.period}
         onRangeChange={setRange}
       />
 
       {query.isPending ? (
-        <DashboardLoading />
+        <DashboardLoading cards={9} />
       ) : query.isError || !data ? (
         <DashboardError retry={() => void query.refetch()} />
       ) : (
         <>
-          <section className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
-            <DashboardMetricCard
-              icon={Users}
-              label="Khách hàng hoạt động"
-              value={data.metrics.activeCustomers}
-              href="/dashboard/users"
+          <DashboardSectionCard
+            title="Tổng quan nền tảng"
+            description="Quy mô đang hoạt động trên toàn hệ thống"
+          >
+            <section className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
+              <DashboardMetricCard
+                icon={Users}
+                label="Khách hàng hoạt động"
+                value={data.metrics.activeCustomers}
+                href="/dashboard/users"
+              />
+              <DashboardMetricCard
+                icon={UserCheck}
+                label="Chuyên gia hoạt động"
+                value={data.metrics.activeExperts}
+                href="/dashboard/experts"
+              />
+              <DashboardMetricCard
+                icon={Building2}
+                label="Phòng khám hoạt động"
+                value={data.metrics.activeClinics}
+                href="/dashboard/clinics"
+              />
+            </section>
+          </DashboardSectionCard>
+
+          <DashboardSectionCard
+            title="Thương mại điện tử"
+            description="Tiền order đã thanh toán; không phải lợi nhuận và không tính giá vốn"
+          >
+            <section className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
+              <DashboardMetricCard
+                icon={ShoppingBag}
+                label="Đơn đã thanh toán"
+                value={data.metrics.paidOrders}
+                hint={`Trong ${range.replace("d", " ngày")}`}
+                href="/dashboard/commerce"
+              />
+              <DashboardMetricCard
+                icon={CircleDollarSign}
+                label="Tổng tiền order đã thu"
+                value={formatCurrency(data.metrics.productPaymentsCollectedVnd)}
+                hint="Bao gồm vận chuyển, sau giảm giá"
+                href="/dashboard/commerce"
+              />
+              <DashboardMetricCard
+                icon={RefreshCw}
+                label="Hoàn tiền sản phẩm"
+                value={formatCurrency(data.metrics.productRefundsVnd)}
+                hint="Hiển thị riêng, không tạo net sales"
+                href="/dashboard/cancellations"
+              />
+              <DashboardMetricCard
+                icon={ReceiptText}
+                label="Giá trị thanh toán trung bình"
+                value={formatCurrency(data.metrics.averageOrderValueVnd)}
+                hint="Tiền đã thu / số order"
+              />
+            </section>
+            <div className="bg-muted/20 mt-4 grid gap-3 rounded-xl border p-4 sm:grid-cols-3">
+              <Breakdown
+                label="Giá trị sản phẩm trước giảm"
+                value={data.metrics.grossProductSalesVnd}
+              />
+              <Breakdown label="Giảm giá" value={data.metrics.discountsVnd} />
+              <Breakdown
+                label="Phí vận chuyển đã thu"
+                value={data.metrics.shippingCollectedVnd}
+              />
+            </div>
+          </DashboardSectionCard>
+
+          <DashboardSectionCard
+            title="Dịch vụ và doanh thu nền tảng"
+            description="Tách tiền khách thanh toán khỏi phần hoa hồng thực sự thuộc GlowScan"
+          >
+            <section className="grid gap-4 sm:grid-cols-3">
+              <DashboardMetricCard
+                icon={Banknote}
+                label="Phí tư vấn đã thu"
+                value={formatCurrency(
+                  data.metrics.consultationFeesCollectedVnd,
+                )}
+                hint="Đang giữ hoặc chuyển cho clinic"
+              />
+              <DashboardMetricCard
+                icon={RefreshCw}
+                label="Hoàn phí tư vấn"
+                value={formatCurrency(data.metrics.consultationRefundsVnd)}
+              />
+              <DashboardMetricCard
+                icon={CircleDollarSign}
+                label="Hoa hồng nền tảng đã ghi nhận"
+                value={formatCurrency(
+                  data.metrics.platformCommissionRevenueVnd,
+                )}
+                hint="COMMISSION → PLATFORM_REVENUE"
+              />
+            </section>
+          </DashboardSectionCard>
+
+          <section className="grid gap-6 xl:grid-cols-2">
+            <MoneyChart
+              title="Dòng tiền ecommerce"
+              description="Tiền order đã thu và hoàn tiền theo ngày"
+              config={ecommerceChartConfig}
+              data={data.trend}
+              keys={["productPaymentsCollectedVnd", "productRefundsVnd"]}
             />
-            <DashboardMetricCard
-              icon={UserCheck}
-              label="Chuyên gia hoạt động"
-              value={data.metrics.activeExperts}
-              href="/dashboard/experts"
-            />
-            <DashboardMetricCard
-              icon={Building2}
-              label="Phòng khám hoạt động"
-              value={data.metrics.activeClinics}
-              href="/dashboard/clinics"
-            />
-            <DashboardMetricCard
-              icon={ShoppingBag}
-              label="Đơn đã thanh toán"
-              value={data.metrics.paidOrders}
-              hint={`Trong ${range.replace("d", " ngày")}`}
-              href="/dashboard/commerce"
-            />
-            <DashboardMetricCard
-              icon={CircleDollarSign}
-              label="Doanh số sản phẩm ròng"
-              value={formatCurrency(data.metrics.netProductRevenueVnd)}
-              hint="Đã trừ hoàn tiền"
-              href="/dashboard/commerce"
-            />
-            <DashboardMetricCard
-              icon={Banknote}
-              label="Phí tư vấn ròng"
-              value={formatCurrency(data.metrics.netConsultationFeesVnd)}
-              hint="Không gồm nạp ví"
+            <MoneyChart
+              title="Dịch vụ và hoa hồng"
+              description="Phí tư vấn, hoàn phí và hoa hồng theo ngày"
+              config={serviceChartConfig}
+              data={data.trend}
+              keys={[
+                "consultationFeesCollectedVnd",
+                "consultationRefundsVnd",
+                "platformCommissionRevenueVnd",
+              ]}
             />
           </section>
 
-          <section className="grid gap-6 xl:grid-cols-[minmax(0,1.6fr)_minmax(300px,1fr)]">
+          <section className="grid gap-6 xl:grid-cols-[minmax(0,1.5fr)_minmax(300px,1fr)]">
             <DashboardSectionCard
-              title="Xu hướng hoạt động"
-              description="Doanh số ròng và số khách hàng mới theo ngày"
+              title="Tăng trưởng khách hàng"
+              description="Tài khoản customer mới theo ngày"
             >
-              <ChartContainer config={chartConfig} className="h-[310px] w-full">
-                <ComposedChart
-                  accessibilityLayer
+              <ChartContainer
+                config={customerChartConfig}
+                className="h-[270px] w-full"
+              >
+                <BarChart
                   data={data.trend.map((point) => ({
                     ...point,
                     label: formatChartDate(point.date),
                   }))}
-                  margin={{ left: 4, right: 8, top: 8 }}
                 >
                   <CartesianGrid vertical={false} />
                   <XAxis
@@ -142,141 +254,309 @@ export function AdminDashboardView() {
                     minTickGap={20}
                   />
                   <YAxis
-                    yAxisId="money"
-                    axisLine={false}
-                    tickLine={false}
-                    tickFormatter={formatCompactCurrency}
-                    width={56}
-                  />
-                  <YAxis
-                    yAxisId="count"
-                    orientation="right"
-                    axisLine={false}
-                    tickLine={false}
                     allowDecimals={false}
-                    width={28}
+                    axisLine={false}
+                    tickLine={false}
+                    width={32}
                   />
                   <ChartTooltip
                     content={
                       <ChartTooltipContent
-                        formatter={(value, name) => (
+                        formatter={(value) => (
                           <span>
-                            {name === "newCustomers"
-                              ? Number(value).toLocaleString("vi-VN")
-                              : formatCurrency(Number(value))}
+                            {Number(value).toLocaleString("vi-VN")} khách hàng
                           </span>
                         )}
                       />
                     }
                   />
-                  <Area
-                    yAxisId="money"
-                    dataKey="netProductRevenueVnd"
-                    type="monotone"
-                    stroke="var(--color-netProductRevenueVnd)"
-                    fill="var(--color-netProductRevenueVnd)"
-                    fillOpacity={0.12}
-                    strokeWidth={2}
-                  />
-                  <Area
-                    yAxisId="money"
-                    dataKey="netConsultationFeesVnd"
-                    type="monotone"
-                    stroke="var(--color-netConsultationFeesVnd)"
-                    fill="var(--color-netConsultationFeesVnd)"
-                    fillOpacity={0.08}
-                    strokeWidth={2}
-                  />
+                  <Legend content={<ChartLegendContent />} />
                   <Bar
-                    yAxisId="count"
                     dataKey="newCustomers"
                     fill="var(--color-newCustomers)"
                     radius={[4, 4, 0, 0]}
-                    maxBarSize={18}
+                    maxBarSize={24}
                   />
-                </ComposedChart>
+                </BarChart>
               </ChartContainer>
             </DashboardSectionCard>
-
-            <DashboardSectionCard
-              title="Cần xử lý"
-              description="Các luồng đang chờ hoặc cần can thiệp"
-            >
-              <div className="space-y-2">
-                <AttentionRow
-                  icon={PackageCheck}
-                  label="Phiếu nhập chờ duyệt"
-                  value={data.attention.submittedStockForms}
-                  href="/dashboard/stock-imports"
-                />
-                <AttentionRow
-                  icon={RefreshCw}
-                  label="Luồng hủy/hoàn chưa xong"
-                  value={data.attention.openCancellations}
-                  href="/dashboard/cancellations"
-                />
-                <AttentionRow
-                  icon={AlertTriangle}
-                  label="Workflow lỗi"
-                  value={data.attention.failedWorkflows}
-                  href="/dashboard/cancellations"
-                  destructive={data.attention.failedWorkflows > 0}
-                />
-                <AttentionRow
-                  icon={UserCheck}
-                  label="Expert thiếu hồ sơ"
-                  value={data.attention.expertsMissingProfile}
-                  href="/dashboard/experts"
-                />
-              </div>
-            </DashboardSectionCard>
+            <AttentionPanel data={data.attention} />
           </section>
 
           <DashboardSectionCard
-            title="Hoạt động gần đây"
-            description="Tối đa 10 thay đổi mới nhất trong kỳ đã chọn"
+            title="Acquisition funnel"
+            description="Mỗi phiên được tính tối đa một lần ở mỗi bước và phải đi đúng thứ tự"
           >
-            {data.recentActivity.length === 0 ? (
-              <DashboardEmptyPanel
-                title="Chưa có hoạt động"
-                description="Không có sự kiện hệ thống nào trong kỳ này."
-              />
-            ) : (
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead>Sự kiện</TableHead>
-                    <TableHead>Chi tiết</TableHead>
-                    <TableHead>Số tiền</TableHead>
-                    <TableHead className="text-right">Thời gian</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {data.recentActivity.map((activity) => (
-                    <TableRow key={`${activity.type}-${activity.id}`}>
-                      <TableCell>
-                        <Badge variant="outline">{activity.title}</Badge>
-                      </TableCell>
-                      <TableCell className="max-w-72 truncate">
-                        {activity.description || "—"}
-                      </TableCell>
-                      <TableCell>
-                        {activity.amountVnd == null
-                          ? "—"
-                          : formatCurrency(activity.amountVnd)}
-                      </TableCell>
-                      <TableCell className="text-right">
-                        {formatDateTime(activity.occurredAt)}
-                      </TableCell>
-                    </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
-            )}
+            {data.funnel.isPartial ? (
+              <Alert className="mb-4">
+                <AlertTriangle />
+                <AlertTitle>Dữ liệu funnel chưa phủ toàn bộ kỳ</AlertTitle>
+                <AlertDescription>
+                  {data.funnel.availableFrom
+                    ? `Tracking chỉ có từ ${data.funnel.availableFrom}. Dữ liệu trước ngày này không được giả lập.`
+                    : "Tracking chưa ghi nhận event nào trong hệ thống."}
+                </AlertDescription>
+              </Alert>
+            ) : null}
+            <div className="grid gap-3 md:grid-cols-4">
+              {data.funnel.steps.map((step, index) => (
+                <div
+                  key={step.eventType}
+                  className="bg-card relative rounded-xl border p-4"
+                >
+                  <p className="text-muted-foreground text-xs">
+                    Bước {index + 1}
+                  </p>
+                  <p className="mt-1 font-medium">{step.label}</p>
+                  <p className="mt-3 text-2xl font-semibold">
+                    {step.sessions.toLocaleString("vi-VN")}
+                  </p>
+                  <p className="text-muted-foreground text-xs">
+                    phiên · {step.conversionFromPreviousPct}% từ bước trước
+                  </p>
+                </div>
+              ))}
+            </div>
           </DashboardSectionCard>
+
+          <section className="grid gap-6 xl:grid-cols-2">
+            <TopProducts products={data.topProducts} />
+            <RecentActivity activities={data.recentActivity} />
+          </section>
         </>
       )}
     </main>
+  );
+}
+
+function Breakdown({ label, value }: { label: string; value: number }) {
+  return (
+    <div>
+      <p className="text-muted-foreground text-xs">{label}</p>
+      <p className="mt-1 font-semibold">{formatCurrency(value)}</p>
+    </div>
+  );
+}
+
+function MoneyChart({
+  title,
+  description,
+  config,
+  data,
+  keys,
+}: {
+  title: string;
+  description: string;
+  config: ChartConfig;
+  data: Array<Record<string, string | number>>;
+  keys: string[];
+}) {
+  return (
+    <DashboardSectionCard title={title} description={description}>
+      <ChartContainer config={config} className="h-[290px] w-full">
+        <AreaChart
+          data={data.map((point) => ({
+            ...point,
+            label: formatChartDate(String(point.date)),
+          }))}
+          margin={{ left: 4, right: 8 }}
+        >
+          <CartesianGrid vertical={false} />
+          <XAxis
+            dataKey="label"
+            axisLine={false}
+            tickLine={false}
+            minTickGap={20}
+          />
+          <YAxis
+            axisLine={false}
+            tickLine={false}
+            tickFormatter={formatCompactCurrency}
+            width={56}
+          />
+          <ChartTooltip
+            content={
+              <ChartTooltipContent
+                formatter={(value) => (
+                  <span>{formatCurrency(Number(value))}</span>
+                )}
+              />
+            }
+          />
+          <Legend content={<ChartLegendContent />} />
+          {keys.map((key) => (
+            <Area
+              key={key}
+              dataKey={key}
+              type="monotone"
+              stroke={`var(--color-${key})`}
+              fill={`var(--color-${key})`}
+              fillOpacity={0.08}
+              strokeWidth={2}
+            />
+          ))}
+        </AreaChart>
+      </ChartContainer>
+    </DashboardSectionCard>
+  );
+}
+
+function AttentionPanel({
+  data,
+}: {
+  data: {
+    submittedStockForms: number;
+    openCancellations: number;
+    failedWorkflows: number;
+    expertsMissingProfile: number;
+  };
+}) {
+  return (
+    <DashboardSectionCard
+      title="Cần xử lý"
+      description="Các luồng đang chờ hoặc cần can thiệp"
+    >
+      <div className="space-y-2">
+        <AttentionRow
+          icon={PackageCheck}
+          label="Phiếu nhập chờ duyệt"
+          value={data.submittedStockForms}
+          href="/dashboard/stock-imports"
+        />
+        <AttentionRow
+          icon={RefreshCw}
+          label="Luồng hủy/hoàn chưa xong"
+          value={data.openCancellations}
+          href="/dashboard/cancellations"
+        />
+        <AttentionRow
+          icon={AlertTriangle}
+          label="Workflow lỗi"
+          value={data.failedWorkflows}
+          href="/dashboard/cancellations"
+          destructive={data.failedWorkflows > 0}
+        />
+        <AttentionRow
+          icon={UserCheck}
+          label="Expert thiếu hồ sơ"
+          value={data.expertsMissingProfile}
+          href="/dashboard/experts"
+        />
+      </div>
+    </DashboardSectionCard>
+  );
+}
+
+function TopProducts({
+  products,
+}: {
+  products: Array<{
+    productId: string;
+    productVariantId: string;
+    productName: string;
+    sku: string;
+    unitsSold: number;
+    grossSalesVnd: number;
+  }>;
+}) {
+  return (
+    <DashboardSectionCard
+      title="Sản phẩm nổi bật"
+      description="Top 5 theo giá trị dòng hàng trước giảm giá"
+    >
+      {products.length === 0 ? (
+        <DashboardEmptyPanel
+          title="Chưa có sản phẩm bán ra"
+          description="Không có order đã thanh toán trong kỳ này."
+        />
+      ) : (
+        <Table>
+          <TableHeader>
+            <TableRow>
+              <TableHead>Sản phẩm</TableHead>
+              <TableHead>Đã bán</TableHead>
+              <TableHead className="text-right">Giá trị</TableHead>
+            </TableRow>
+          </TableHeader>
+          <TableBody>
+            {products.map((product) => (
+              <TableRow key={product.productVariantId}>
+                <TableCell>
+                  <Link
+                    href={`/dashboard/products?productId=${product.productId}`}
+                    className="font-medium hover:underline"
+                  >
+                    {product.productName}
+                  </Link>
+                  <p className="text-muted-foreground text-xs">{product.sku}</p>
+                </TableCell>
+                <TableCell>{product.unitsSold}</TableCell>
+                <TableCell className="text-right">
+                  {formatCurrency(product.grossSalesVnd)}
+                </TableCell>
+              </TableRow>
+            ))}
+          </TableBody>
+        </Table>
+      )}
+    </DashboardSectionCard>
+  );
+}
+
+function RecentActivity({
+  activities,
+}: {
+  activities: Array<{
+    id: string;
+    type: string;
+    title: string;
+    description: string | null;
+    amountVnd: number | null;
+    occurredAt: string;
+  }>;
+}) {
+  return (
+    <DashboardSectionCard
+      title="Hoạt động gần đây"
+      description="Tối đa 10 thay đổi mới nhất trong kỳ"
+    >
+      {activities.length === 0 ? (
+        <DashboardEmptyPanel
+          title="Chưa có hoạt động"
+          description="Không có sự kiện hệ thống nào trong kỳ này."
+        />
+      ) : (
+        <Table>
+          <TableHeader>
+            <TableRow>
+              <TableHead>Sự kiện</TableHead>
+              <TableHead>Số tiền</TableHead>
+              <TableHead className="text-right">Thời gian</TableHead>
+            </TableRow>
+          </TableHeader>
+          <TableBody>
+            {activities.map((activity) => (
+              <TableRow key={`${activity.type}-${activity.id}`}>
+                <TableCell>
+                  <Badge variant="outline">{activity.title}</Badge>
+                  <p className="text-muted-foreground mt-1 max-w-48 truncate text-xs">
+                    {activity.description || "—"}
+                  </p>
+                </TableCell>
+                <TableCell>
+                  {activity.amountVnd == null
+                    ? "—"
+                    : formatCurrency(activity.amountVnd)}
+                </TableCell>
+                <TableCell className="text-right">
+                  {formatDateTime(activity.occurredAt)}
+                </TableCell>
+              </TableRow>
+            ))}
+          </TableBody>
+        </Table>
+      )}
+    </DashboardSectionCard>
   );
 }
 
