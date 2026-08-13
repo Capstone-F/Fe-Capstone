@@ -18,6 +18,7 @@ import {
 } from "lucide-react";
 import React, { useEffect, useRef, useState } from "react";
 import { toast } from "sonner";
+import { useSupportSessionDetail } from "@/features/support/hooks/useSupport";
 import { ProductAttachmentPopover } from "./components/product-attachment-popover";
 
 export interface SupportSession {
@@ -55,6 +56,13 @@ export function SupportChatView() {
   const [messagesList, setMessagesList] = useState<ChatMessage[]>([]);
   const lastSeqRef = useRef<number>(0);
   const messagesEndRef = useRef<HTMLDivElement | null>(null);
+
+  const activeSessionId = activeSession?.id;
+
+  // Real-time detail query for active session
+  const { data: sessionDetail } = useSupportSessionDetail(activeSessionId || "");
+  const currentSession = sessionDetail || activeSession;
+  const isClosed = currentSession?.status === "CLOSED";
 
   // Queue query: OPEN (unassigned) vs ACTIVE (me)
   const {
@@ -356,15 +364,16 @@ export function SupportChatView() {
               {/* Active Header */}
               <div className="flex shrink-0 items-center justify-between border-b border-slate-100 bg-slate-50/60 p-4">
                 <div className="flex items-center gap-2">
-                  <div className="h-3 w-3 animate-pulse rounded-full bg-emerald-500"></div>
+                  <div className={`h-3 w-3 ${isClosed ? 'bg-slate-400' : 'bg-emerald-500 animate-pulse'} rounded-full`}></div>
                   <div>
                     <h3 className="text-xs font-bold text-slate-900">
-                      Phiên hỗ trợ #{activeSession.id.slice(0, 8).toUpperCase()}
+                      Phiên hỗ trợ #{currentSession!.id.slice(0, 8).toUpperCase()}
+                      {isClosed && <span className="ml-2 text-rose-600">(Đã đóng)</span>}
                     </h3>
                     <p className="text-[11px] text-slate-500">
                       Khách hàng:{" "}
-                      {activeSession.customerName ||
-                        `#${activeSession.customerUserId.slice(0, 8).toUpperCase()}`}
+                      {currentSession!.customerName ||
+                        `#${currentSession!.customerUserId.slice(0, 8).toUpperCase()}`}
                     </p>
                   </div>
                 </div>
@@ -437,31 +446,42 @@ export function SupportChatView() {
                 <div ref={messagesEndRef} />
               </div>
 
-              {/* Input Footer */}
-              <form
-                onSubmit={handleSendMessage}
-                className="flex shrink-0 items-center gap-2 border-t border-slate-100 bg-slate-50/50 p-3"
-              >
-                <ProductAttachmentPopover
-                  onAttach={handleAttachProduct}
-                  disabled={sendMessageMutation.isPending}
-                />
-                <Input
-                  placeholder="Nhập tin nhắn phản hồi khách hàng..."
-                  value={messageInput}
-                  onChange={(e) => setMessageInput(e.target.value)}
-                  className="flex-1 rounded-xl border-slate-200 bg-white text-xs"
-                />
-                <Button
-                  type="submit"
-                  disabled={
-                    !messageInput.trim() || sendMessageMutation.isPending
-                  }
-                  className="rounded-xl bg-[#2C3E35] px-4 text-xs font-bold text-white hover:bg-[#3A5246]"
-                >
-                  <Send className="h-4 w-4" />
-                </Button>
-              </form>
+              {/* Input Area */}
+              <div className="shrink-0 border-t border-slate-100 bg-white p-4">
+                {isClosed ? (
+                  <div className="flex items-center justify-center rounded-2xl bg-slate-50 py-4 text-sm text-slate-500">
+                    Phiên trò chuyện đã được đóng.
+                  </div>
+                ) : (
+                  <form
+                    onSubmit={handleSendMessage}
+                    className="flex items-end gap-3"
+                  >
+                    <ProductAttachmentPopover onAttach={handleAttachProduct} />
+                    <div className="relative flex-1">
+                      <Input
+                        value={messageInput}
+                        onChange={(e) => setMessageInput(e.target.value)}
+                        placeholder="Nhập tin nhắn phản hồi khách hàng..."
+                        disabled={sendMessageMutation.isPending}
+                        className="min-h-[44px] rounded-2xl border-slate-200 pr-12 text-sm focus-visible:ring-[#2C3E35]"
+                      />
+                    </div>
+                    <Button
+                      type="submit"
+                      size="icon"
+                      disabled={!messageInput.trim() || sendMessageMutation.isPending}
+                      className="h-[44px] w-[44px] shrink-0 rounded-2xl bg-emerald-600 text-white hover:bg-emerald-700"
+                    >
+                      {sendMessageMutation.isPending ? (
+                        <Loader2 className="h-4 w-4 animate-spin" />
+                      ) : (
+                        <Send className="h-4 w-4" />
+                      )}
+                    </Button>
+                  </form>
+                )}
+              </div>
             </>
           ) : (
             <div className="flex flex-1 flex-col items-center justify-center gap-2 p-12 text-center text-xs text-slate-400">

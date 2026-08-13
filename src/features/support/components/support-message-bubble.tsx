@@ -99,9 +99,9 @@ export function SupportMessageBubble({
                 asChild
                 size="sm"
                 variant="secondary"
-                className="h-8 rounded-full bg-white text-slate-700 hover:bg-slate-100 hover:text-slate-900 border-0"
+                className="h-8 rounded-full bg-white text-slate-700 hover:bg-slate-100 hover:text-slate-900 border-0 flex items-center"
               >
-                <Link href={`/products/${message.metadata.productId}`} target="_blank" rel="noopener noreferrer">
+                <Link href={`/products/${message.metadata.productId}`} target="_blank" rel="noopener noreferrer" className="flex items-center">
                   <ExternalLink className="h-3.5 w-3.5 mr-1.5" />
                   Chi tiết
                 </Link>
