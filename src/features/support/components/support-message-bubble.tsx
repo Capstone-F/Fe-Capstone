@@ -95,17 +95,15 @@ export function SupportMessageBubble({
             
             {/* Hover Overlay */}
             <div className="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 transition-opacity duration-200 flex items-center justify-center gap-3 backdrop-blur-[2px]">
-              <Button
-                asChild
-                size="sm"
-                variant="secondary"
-                className="h-8 rounded-full bg-white text-slate-700 hover:bg-slate-100 hover:text-slate-900 border-0 flex items-center"
+              <Link
+                href={`/products/${message.metadata.productId}`}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="inline-flex items-center h-8 px-3 rounded-full bg-white text-slate-700 hover:bg-slate-100 hover:text-slate-900 border-0 text-sm font-medium transition-colors"
               >
-                <Link href={`/products/${message.metadata.productId}`} target="_blank" rel="noopener noreferrer" className="flex items-center">
-                  <ExternalLink className="h-3.5 w-3.5 mr-1.5" />
-                  Chi tiết
-                </Link>
-              </Button>
+                <ExternalLink className="h-3.5 w-3.5 mr-1.5" />
+                Chi tiết
+              </Link>
               <Button
                 size="sm"
                 className="h-8 rounded-full bg-emerald-600 text-white hover:bg-emerald-700 border-0"

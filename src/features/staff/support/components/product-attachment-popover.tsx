@@ -44,17 +44,13 @@ export function ProductAttachmentPopover({
 
   return (
     <Popover open={open} onOpenChange={setOpen}>
-      <PopoverTrigger asChild>
-        <Button
-          type="button"
-          variant="outline"
-          size="icon"
-          disabled={disabled}
-          className="shrink-0 rounded-xl h-10 w-10 border-slate-200 text-slate-500 hover:text-emerald-700 hover:bg-emerald-50"
-          title="Gắn sản phẩm"
-        >
-          <PackageSearch className="h-4 w-4" />
-        </Button>
+      <PopoverTrigger
+        type="button"
+        disabled={disabled}
+        className="shrink-0 rounded-xl h-10 w-10 border border-slate-200 text-slate-500 hover:text-emerald-700 hover:bg-emerald-50 inline-flex items-center justify-center"
+        title="Gắn sản phẩm"
+      >
+        <PackageSearch className="h-4 w-4" />
       </PopoverTrigger>
       <PopoverContent
         side="top"
