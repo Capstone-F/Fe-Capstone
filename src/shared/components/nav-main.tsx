@@ -30,9 +30,9 @@ export function NavMain({
     assigned: "me",
   });
 
-  const unreadCount = supportSessions?.items?.filter(
-    (s) => s.messageCount > s.staffLastReadSeq
-  ).length || 0;
+  const unreadCount =
+    supportSessions?.items?.filter((s) => s.messageCount > s.staffLastReadSeq)
+      .length || 0;
 
   return (
     <SidebarGroup>
@@ -63,8 +63,8 @@ export function NavMain({
                   {item.icon}
                   <span className="flex-1">{item.title}</span>
                   {item.url === "/staff/support-chat" && unreadCount > 0 && (
-                    <Badge 
-                      variant="destructive" 
+                    <Badge
+                      variant="destructive"
                       className="ml-auto flex h-5 w-5 shrink-0 items-center justify-center rounded-full p-0 text-[10px]"
                       title="Bạn còn phiên chat chưa đóng"
                     >

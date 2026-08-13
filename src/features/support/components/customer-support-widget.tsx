@@ -119,7 +119,7 @@ export function CustomerSupportWidget() {
       {
         onSuccess: (sessionData) => {
           toast.success("Đã khởi tạo yêu cầu hỗ trợ thành công!");
-          
+
           // Tự động gửi subject (vấn đề khách hàng chọn) thành tin nhắn đầu tiên
           if (sessionData && sessionData.id) {
             sendMessageMutation.mutate({
@@ -127,7 +127,7 @@ export function CustomerSupportWidget() {
               data: { content: subject },
             });
           }
-          
+
           refetchSession();
         },
         onError: (err: unknown) => {
