@@ -1,5 +1,5 @@
-import { UserManagementView } from "@/features/admin/components/user-management-view";
+import { AdminDashboardView } from "@/features/dashboard/components/admin-dashboard-view";
 
 export default function AdminDashboardPage() {
-  return <UserManagementView />;
+  return <AdminDashboardView />;
 }

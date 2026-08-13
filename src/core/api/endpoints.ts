@@ -1,4 +1,9 @@
 export const API_ENDPOINTS = {
+  DASHBOARDS: {
+    ADMIN: "/admin/dashboard",
+    EXPERT: "/experts/me/dashboard",
+    STAFF: "/staff/dashboard",
+  },
   AUTH: {
     MOBILE_LOGIN: "/auth/mobile/login",
     MOBILE_REGISTER: "/auth/mobile/register",
