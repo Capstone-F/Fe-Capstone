@@ -72,3 +72,14 @@ export interface AdjustStockDto {
   quantity: number;
   note?: string;
 }
+
+export interface InventoryItemDto {
+  productVariantId: string;
+  productId: string;
+  productName: string;
+  sku: string;
+  priceVnd: number;
+  imageUrl: string | null;
+  stockQuantity: number;
+  activeIngredients: string[];
+}

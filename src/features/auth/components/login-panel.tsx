@@ -14,6 +14,7 @@ import { useEffect, useState } from "react";
 import { toast } from "sonner";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm, useWatch } from "react-hook-form";
+import { isAxiosError } from "axios";
 
 import { BrandMark } from "@/shared/components/brand-mark";
 import { Button } from "@/shared/components/ui/button";
@@ -193,9 +194,15 @@ export function LoginPanel({ redirectTo = "/dashboard" }: LoginPanelProps) {
       }
     } catch (error: unknown) {
       console.error(error);
-      const e = error as Error;
-      const msg =
-        e?.message || "Đăng nhập thất bại. Vui lòng kiểm tra lại thông tin.";
+
+      let msg = "Đăng nhập thất bại. Vui lòng kiểm tra lại thông tin.";
+      if (isAxiosError(error) && error.response?.data) {
+        const dataMsg = error.response.data.message;
+        msg = Array.isArray(dataMsg) ? dataMsg[0] : dataMsg || msg;
+      } else if (error instanceof Error && error.message) {
+        msg = error.message;
+      }
+
       toast.error(msg);
     }
   };

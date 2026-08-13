@@ -70,6 +70,7 @@ export const API_ENDPOINTS = {
     REJECT_IMPORT_FORM: (id: string) => `/stock/import-forms/${id}/reject`,
     BATCHES: "/stock/batches",
     ADJUST_BATCH: (id: string) => `/stock/batches/${id}/adjust`,
+    INVENTORY: "/stock/inventory",
   },
   SUPPORT: {
     SESSIONS: "/support/sessions",

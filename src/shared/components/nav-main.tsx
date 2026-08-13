@@ -9,6 +9,9 @@ import {
   SidebarMenuButton,
   SidebarMenuItem,
 } from "@/shared/components/ui/sidebar";
+import { useSupportSessions } from "@/features/support/hooks/useSupport";
+import { SupportSessionStatus } from "@/features/support/types/support.types";
+import { Badge } from "@/shared/components/ui/badge";
 
 export function NavMain({
   items,
@@ -20,6 +23,16 @@ export function NavMain({
   }[];
 }) {
   const pathname = usePathname();
+
+  // Load active sessions for ping badge
+  const { data: supportSessions } = useSupportSessions({
+    status: SupportSessionStatus.ACTIVE,
+    assigned: "me",
+  });
+
+  const unreadCount =
+    supportSessions?.items?.filter((s) => s.messageCount > s.staffLastReadSeq)
+      .length || 0;
 
   return (
     <SidebarGroup>
@@ -48,7 +61,16 @@ export function NavMain({
                   }
                 >
                   {item.icon}
-                  <span>{item.title}</span>
+                  <span className="flex-1">{item.title}</span>
+                  {item.url === "/staff/support-chat" && unreadCount > 0 && (
+                    <Badge
+                      variant="destructive"
+                      className="ml-auto flex h-5 w-5 shrink-0 items-center justify-center rounded-full p-0 text-[10px]"
+                      title="Bạn còn phiên chat chưa đóng"
+                    >
+                      {unreadCount > 99 ? "99+" : unreadCount}
+                    </Badge>
+                  )}
                 </SidebarMenuButton>
               </SidebarMenuItem>
             );
