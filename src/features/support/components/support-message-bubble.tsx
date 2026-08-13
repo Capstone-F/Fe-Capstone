@@ -6,6 +6,11 @@ import {
   SupportMessageResponseDto,
   SupportMessageSenderRole,
 } from "../types/support.types";
+import { useAddToCart } from "@/features/commerce/hooks/useCart";
+import { Button } from "@/shared/components/ui/button";
+import { ShoppingCart, ExternalLink } from "lucide-react";
+import { toast } from "sonner";
+import Link from "next/link";
 
 interface SupportMessageBubbleProps {
   message: SupportMessageResponseDto;
@@ -19,6 +24,17 @@ export function SupportMessageBubble({
 }: SupportMessageBubbleProps) {
   const isCustomer = message.senderRole === SupportMessageSenderRole.CUSTOMER;
   const isSystem = message.senderRole === SupportMessageSenderRole.SYSTEM;
+  const addToCartMutation = useAddToCart();
+
+  const handleAddToCart = (productVariantId: string) => {
+    addToCartMutation.mutate(
+      { productVariantId, quantity: 1 },
+      {
+        onSuccess: () => toast.success("Đã thêm vào giỏ hàng"),
+        onError: () => toast.error("Có lỗi xảy ra khi thêm vào giỏ hàng"),
+      }
+    );
+  };
 
   if (isSystem) {
     return (
@@ -63,9 +79,49 @@ export function SupportMessageBubble({
             : "rounded-bl-xs border border-slate-200/90 bg-white text-slate-800 dark:border-slate-800 dark:bg-slate-900 dark:text-slate-100"
         }`}
       >
-        <p className="leading-relaxed break-words whitespace-pre-wrap">
-          {message.content}
-        </p>
+        {message.metadata?.type === "product" ? (
+          <div className="group relative flex items-center gap-3 bg-white dark:bg-slate-800 rounded-xl p-2 pr-4 border border-slate-100 dark:border-slate-700 shadow-sm overflow-hidden w-[260px]">
+            {message.metadata.imageUrl ? (
+              <img src={message.metadata.imageUrl} alt="" className="h-14 w-14 rounded-lg object-cover bg-white" />
+            ) : (
+              <div className="h-14 w-14 rounded-lg bg-slate-100" />
+            )}
+            <div className="flex-1 min-w-0">
+              <p className="font-semibold text-sm truncate text-slate-800 dark:text-slate-100">{message.metadata.productName}</p>
+              <p className="text-xs text-emerald-600 font-bold mt-1">
+                {new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(message.metadata.priceVnd)}
+              </p>
+            </div>
+            
+            {/* Hover Overlay */}
+            <div className="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 transition-opacity duration-200 flex items-center justify-center gap-3 backdrop-blur-[2px]">
+              <Button
+                asChild
+                size="sm"
+                variant="secondary"
+                className="h-8 rounded-full bg-white text-slate-700 hover:bg-slate-100 hover:text-slate-900 border-0"
+              >
+                <Link href={`/products/${message.metadata.productId}`} target="_blank" rel="noopener noreferrer">
+                  <ExternalLink className="h-3.5 w-3.5 mr-1.5" />
+                  Chi tiết
+                </Link>
+              </Button>
+              <Button
+                size="sm"
+                className="h-8 rounded-full bg-emerald-600 text-white hover:bg-emerald-700 border-0"
+                onClick={() => handleAddToCart(message.metadata!.productVariantId)}
+                disabled={addToCartMutation.isPending}
+              >
+                <ShoppingCart className="h-3.5 w-3.5 mr-1.5" />
+                Vào giỏ
+              </Button>
+            </div>
+          </div>
+        ) : (
+          <p className="leading-relaxed break-words whitespace-pre-wrap">
+            {message.content}
+          </p>
+        )}
       </div>
     </div>
   );

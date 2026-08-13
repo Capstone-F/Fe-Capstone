@@ -15,6 +15,7 @@ export function useMyLiveSupportSession(enabled = true) {
     queryFn: () => supportApi.getMyLiveSession(),
     enabled,
     staleTime: 5000,
+    refetchInterval: 5000,
   });
 }
 

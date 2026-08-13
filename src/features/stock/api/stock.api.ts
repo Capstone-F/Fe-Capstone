@@ -9,6 +9,7 @@ import {
   RejectStockImportFormDto,
   StockImportFormResponseDto,
   UpdateStockImportFormDto,
+  InventoryItemDto,
 } from "../types/stock.types";
 
 export const stockApi = {
@@ -81,6 +82,13 @@ export const stockApi = {
     const response = await apiClient.post(
       API_ENDPOINTS.STOCK.ADJUST_BATCH(id),
       data,
+    );
+    return response.data;
+  },
+
+  listInventory: async () => {
+    const response = await apiClient.get<InventoryItemDto[]>(
+      API_ENDPOINTS.STOCK.INVENTORY,
     );
     return response.data;
   },

@@ -52,6 +52,7 @@ export interface SupportMessageResponseDto {
   senderUserId: string;
   senderRole: SupportMessageSenderRole;
   content: string;
+  metadata?: Record<string, any> | null;
   createdAt: string;
 }
 
@@ -67,6 +68,7 @@ export interface CreateSupportSessionDto {
 
 export interface SendSupportMessageDto {
   content: string;
+  metadata?: Record<string, any> | null;
 }
 
 export interface MarkSupportReadDto {
