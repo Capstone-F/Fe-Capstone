@@ -176,6 +176,7 @@ export const API_ENDPOINTS = {
   },
   PAYMENTS: {
     CHECKOUT: "/payments/checkout",
+    CHECKOUT_WALLET: "/payments/checkout/wallet",
     STATUS: (paymentId: string | number) => `/payments/${paymentId}`,
   },
   SURVEYS: {

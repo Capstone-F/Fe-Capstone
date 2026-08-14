@@ -1,56 +1,38 @@
-import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { useMutation, useQuery } from "@tanstack/react-query";
+import { queryKeys } from "@/lib/query/keys";
 import { walletApi } from "../api/wallet.api";
+import type {
+  UseWalletOptions,
+  WalletTopUpRequest,
+  WalletTransactionsParams,
+} from "../types/wallet.types";
 
-export function useWallet() {
+export function useWallet(options: UseWalletOptions = {}) {
   return useQuery({
-    queryKey: ["wallet"],
-    queryFn: async () => {
-      const response = await walletApi.getWallet();
-      return response.data;
-    },
+    queryKey: queryKeys.wallet,
+    queryFn: () => walletApi.getWallet().then((res) => res.data),
+    // Guests have no wallet: callers on pages that also serve logged-out visitors
+    // must gate this, otherwise the 401 kicks off a pointless refresh round-trip.
+    enabled: options.enabled ?? true,
   });
 }
 
-export function useWalletTransactions() {
+export function useWalletTransactions(params?: WalletTransactionsParams) {
   return useQuery({
-    queryKey: ["wallet-transactions"],
-    queryFn: async () => {
-      const response = await walletApi.getTransactions();
-      return response.data;
-    },
+    queryKey: queryKeys.walletTransactions(params),
+    queryFn: () =>
+      walletApi.getTransactions(params).then((res) => res.data.items),
   });
 }
 
+/**
+ * Starts a top-up. The wallet is not credited here: the response is a gateway URL the
+ * caller redirects to, and the balance only moves once the gateway calls back — so
+ * there is deliberately no cache invalidation on success.
+ */
 export function useTopUpWallet() {
-  const queryClient = useQueryClient();
   return useMutation({
-    mutationFn: async (amountVnd: number) => {
-      const response = await walletApi.topUp(amountVnd);
-      return response.data;
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["wallet"] });
-      queryClient.invalidateQueries({ queryKey: ["wallet-transactions"] });
-    },
-  });
-}
-
-export function usePayConsultation() {
-  const queryClient = useQueryClient();
-  return useMutation({
-    mutationFn: async ({
-      consultationId,
-    }: {
-      consultationId: string;
-      amountVnd?: number;
-    }) => {
-      const response = await walletApi.payConsultation(consultationId);
-      return response.data;
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["wallet"] });
-      queryClient.invalidateQueries({ queryKey: ["wallet-transactions"] });
-      queryClient.invalidateQueries({ queryKey: ["bookings"] });
-    },
+    mutationFn: (payload: WalletTopUpRequest) =>
+      walletApi.topUp(payload).then((res) => res.data),
   });
 }

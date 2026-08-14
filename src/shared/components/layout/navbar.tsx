@@ -10,6 +10,7 @@ import {
   Scan,
   ArrowLeft,
   CalendarDays,
+  Wallet,
 } from "lucide-react";
 import { useSession } from "@/features/auth/hooks/useSession";
 import { useCart } from "@/features/commerce/hooks/useCart";
@@ -306,6 +307,10 @@ export function Navbar() {
                 <DropdownMenuItem render={<Link href="/profile" />}>
                   <UserCircle2 className="mr-2 h-4 w-4" />
                   Hồ sơ cá nhân
+                </DropdownMenuItem>
+                <DropdownMenuItem render={<Link href="/profile?tab=wallet" />}>
+                  <Wallet className="mr-2 h-4 w-4" />
+                  Ví GlowScan
                 </DropdownMenuItem>
                 <DropdownMenuItem
                   render={<Link href="/profile?tab=appointments" />}

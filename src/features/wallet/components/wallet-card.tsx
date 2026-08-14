@@ -1,21 +1,20 @@
 "use client";
 
 import { useState } from "react";
-import {
-  Wallet as WalletIcon,
-  PlusCircle,
-  ArrowUpRight,
-  ArrowDownLeft,
-} from "lucide-react";
+import { Wallet as WalletIcon, PlusCircle } from "lucide-react";
 import { Button } from "@/shared/components/ui/button";
-import { useWallet, useWalletTransactions } from "../hooks/useWallet";
+import { formatVnd } from "@/shared/utils/format";
+import { useWallet } from "../hooks/useWallet";
+import { walletBalance } from "../lib/wallet-ledger";
 import { WalletTopUpModal } from "./wallet-topup-modal";
-import formatCurrency from "@/shared/utils/currency";
+import { WalletTransactionsList } from "./wallet-transactions-list";
 
+/** Compact wallet summary — used in the wallet tab of the customer profile. */
 export function WalletCard() {
   const { data: wallet, isLoading } = useWallet();
-  const { data: transactions } = useWalletTransactions();
   const [topUpModalOpen, setTopUpModalOpen] = useState(false);
+
+  const isLocked = Boolean(wallet && !wallet.isActive);
 
   return (
     <div className="space-y-4">
@@ -31,13 +30,14 @@ export function WalletCard() {
                 Ví GlowScan Cá Nhân
               </span>
               <span className="text-xs font-semibold text-white/90">
-                Khám & Tư Vấn Chuyên Gia
+                Đơn hàng · Tư vấn · Phác đồ
               </span>
             </div>
           </div>
 
           <Button
             size="sm"
+            disabled={isLocked}
             onClick={() => setTopUpModalOpen(true)}
             className="rounded-xl bg-emerald-500 text-xs font-bold text-white shadow-xs hover:bg-emerald-400"
           >
@@ -51,73 +51,34 @@ export function WalletCard() {
             Số Dư Khả Dụng
           </span>
           <strong className="text-2xl font-black tracking-tight text-white sm:text-3xl">
-            {isLoading ? "---" : formatCurrency(wallet?.balanceVnd || 0)}
+            {isLoading ? "---" : formatVnd(walletBalance(wallet))}
           </strong>
         </div>
+
+        {isLocked && (
+          <p className="mt-3 rounded-lg bg-amber-500/20 px-3 py-2 text-[11px] font-semibold text-amber-100">
+            Ví đang tạm khoá. Vui lòng liên hệ hỗ trợ để mở lại.
+          </p>
+        )}
       </div>
 
-      {/* Transaction History List */}
-      {transactions && transactions.length > 0 && (
-        <div className="space-y-2">
-          <h4 className="text-xs font-bold text-slate-800">
-            Lịch sử giao dịch ví gần đây:
-          </h4>
-          <div className="space-y-2">
-            {transactions.slice(0, 5).map((tx) => (
-              <div
-                key={tx.id}
-                className="flex items-center justify-between rounded-xl border border-slate-100 bg-white p-3 text-xs shadow-2xs"
-              >
-                <div className="flex items-center gap-2.5">
-                  <div
-                    className={`rounded-lg p-2 ${
-                      tx.type === "TOP_UP" || tx.type === "REFUND"
-                        ? "bg-emerald-50 text-emerald-600"
-                        : "bg-slate-100 text-slate-600"
-                    }`}
-                  >
-                    {tx.type === "TOP_UP" || tx.type === "REFUND" ? (
-                      <ArrowDownLeft className="h-4 w-4" />
-                    ) : (
-                      <ArrowUpRight className="h-4 w-4" />
-                    )}
-                  </div>
-                  <div>
-                    <span className="block font-bold text-slate-900">
-                      {tx.type === "TOP_UP"
-                        ? "Nạp tiền vào ví"
-                        : tx.type === "CONSULTATION_PAYMENT"
-                          ? "Thanh toán ca hẹn tư vấn"
-                          : tx.type === "REFUND"
-                            ? "Hoàn tiền ca hẹn"
-                            : "Giao dịch ví"}
-                    </span>
-                    <span className="text-[10px] text-slate-400">
-                      {new Date(tx.createdAt).toLocaleString("vi-VN")}
-                    </span>
-                  </div>
-                </div>
-
-                <strong
-                  className={`font-extrabold ${
-                    tx.type === "TOP_UP" || tx.type === "REFUND"
-                      ? "text-emerald-700"
-                      : "text-slate-900"
-                  }`}
-                >
-                  {tx.type === "TOP_UP" || tx.type === "REFUND" ? "+" : "-"}
-                  {formatCurrency(tx.amountVnd)}
-                </strong>
-              </div>
-            ))}
-          </div>
-        </div>
-      )}
+      {/* Wallet ledger — money in and out of the wallet, not the order history. */}
+      <div className="rounded-2xl border border-slate-100 bg-white p-4 shadow-2xs">
+        <h4 className="text-xs font-bold text-slate-800">
+          Lịch sử giao dịch ví
+        </h4>
+        <p className="mt-0.5 text-[11px] text-slate-500">
+          Toàn bộ dòng tiền vào và ra khỏi ví — nạp tiền, thanh toán và hoàn
+          tiền.
+        </p>
+        <WalletTransactionsList />
+      </div>
 
       {/* Top-up Modal */}
       <WalletTopUpModal
         isOpen={topUpModalOpen}
         onClose={() => setTopUpModalOpen(false)}
+        returnTo="/profile?tab=wallet"
       />
     </div>
   );

@@ -1,6 +1,7 @@
 import { apiClient } from "@/core/api/client";
 import { API_ENDPOINTS } from "@/core/api/endpoints";
 import type { AxiosResponse } from "axios";
+import type { WalletCheckoutResponse } from "../types/order";
 
 export interface CheckoutResponse {
   paymentId: string;
@@ -24,6 +25,16 @@ export const paymentsApi = {
       orderId,
       client: "web",
     });
+  },
+
+  /** Settles the order from the customer wallet — no gateway redirect, PAID on return. */
+  checkoutWithWallet: (
+    orderId: string,
+  ): Promise<AxiosResponse<WalletCheckoutResponse>> => {
+    return apiClient.post<WalletCheckoutResponse>(
+      API_ENDPOINTS.PAYMENTS.CHECKOUT_WALLET,
+      { orderId },
+    );
   },
 
   getPaymentStatus: (

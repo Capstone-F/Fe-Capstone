@@ -33,6 +33,36 @@ export function toPaymentErrorMessage(
   return fallback;
 }
 
+/**
+ * Wallet checkout failures come back as ready-to-show Vietnamese sentences
+ * ("Số dư ví không đủ", "Ví không hoạt động", ...), so they are surfaced as-is
+ * instead of being flattened into one generic line.
+ */
+export function toWalletPaymentErrorMessage(
+  error: unknown,
+  fallback: string,
+): string {
+  if (
+    error instanceof ApiError &&
+    error.status !== undefined &&
+    error.status >= 400 &&
+    error.status < 500 &&
+    error.message
+  ) {
+    return error.message;
+  }
+  return fallback;
+}
+
+/** Balance was short when the wallet debit ran — the caller offers a top-up. */
+export function isInsufficientWalletBalance(error: unknown): boolean {
+  return (
+    error instanceof ApiError &&
+    error.status === 400 &&
+    /số dư ví không đủ/i.test(error.message)
+  );
+}
+
 /** The order left PENDING elsewhere (paid or cancelled in another tab). */
 export function isOrderNotPayable(error: unknown): boolean {
   return (

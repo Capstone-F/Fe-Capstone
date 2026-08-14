@@ -172,7 +172,7 @@ export function usePayTreatmentPlan() {
       (await treatmentApi.payTreatmentPlan(treatmentId)).data,
     onSuccess: (plan) => {
       invalidate(plan.id);
-      void queryClient.invalidateQueries({ queryKey: ["wallet"] });
+      void queryClient.invalidateQueries({ queryKey: queryKeys.wallet });
     },
   });
 }
@@ -185,7 +185,7 @@ export function useCancelTreatment() {
       (await treatmentApi.cancelTreatment(id, reason)).data,
     onSuccess: (plan) => {
       invalidate(plan.id);
-      void queryClient.invalidateQueries({ queryKey: ["wallet"] });
+      void queryClient.invalidateQueries({ queryKey: queryKeys.wallet });
     },
   });
 }

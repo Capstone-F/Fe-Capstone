@@ -148,7 +148,7 @@ export interface CartSummary {
   unresolvedVariantIds: string[];
 }
 
-export type PaymentMethod = "vnpay" | "cod";
+export type PaymentMethod = "vnpay" | "wallet" | "cod";
 
 // Shipping types live in features/commerce/types/delivery.ts — GHN address, master data
 // and delivery tracking are commerce-specific, not global domain concepts.
