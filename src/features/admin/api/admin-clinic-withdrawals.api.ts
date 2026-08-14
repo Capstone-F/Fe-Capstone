@@ -5,6 +5,7 @@ import type { AxiosResponse } from "axios";
 export interface ClinicWithdrawalItem {
   id: string;
   clinicId: string;
+  clinicName?: string | null;
   amountVnd: string; // integer VND as string
   status: "REQUESTED" | "PAID" | "REJECTED";
   requestedByUserId: string;

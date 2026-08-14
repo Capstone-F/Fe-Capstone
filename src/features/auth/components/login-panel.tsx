@@ -33,28 +33,16 @@ import {
 } from "../schemas/auth-form.schema";
 import { guestSurveyStorage } from "@/features/survey/lib/guest-survey-storage";
 import { treatmentApi } from "@/features/treatment/api/treatment.api";
+import { getRoleBasedRedirectPath } from "../utils/role-utils";
 
 type LoginPanelProps = {
   redirectTo: string;
 };
 
-function getRoleBasedRedirectPath(roles: string[], fallback?: string): string {
-  if (roles.includes("staff")) {
-    return "/staff";
-  }
-  if (roles.includes("app_admin") || roles.includes("clinic_manager")) {
-    return "/dashboard/experts";
-  }
-  if (roles.includes("expert")) {
-    return "/expert";
-  }
-  return fallback && fallback !== "/" ? fallback : "/";
-}
-
 import { useQueryClient } from "@tanstack/react-query";
 import { queryKeys } from "@/lib/query/keys";
 
-export function LoginPanel({ redirectTo = "/dashboard" }: LoginPanelProps) {
+export function LoginPanel({ redirectTo = "/" }: LoginPanelProps) {
   const router = useRouter();
   const queryClient = useQueryClient();
   const session = useSession();

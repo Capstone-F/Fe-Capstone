@@ -5,7 +5,7 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm, useWatch } from "react-hook-form";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { CreditCard, Truck } from "lucide-react";
+import { CreditCard, ShoppingBag, Truck } from "lucide-react";
 import { toast } from "sonner";
 import { PaymentMethod } from "@/types/domain";
 import { useCart } from "@/features/commerce/hooks/useCart";
@@ -44,9 +44,8 @@ import {
 
 const ck = {
   title: "Thanh toán",
-  loginRequiredTitle: "Vui lòng đăng nhập để đặt hàng",
-  loginRequiredHint:
-    "Bạn cần đăng nhập để tiếp tục thanh toán. Giỏ hàng của bạn sẽ được giữ lại.",
+  loginRequiredTitle: "Vui lòng đăng nhập để thanh toán",
+  loginRequiredHint: "Đơn hàng của bạn sẽ được lưu vào tài khoản cá nhân.",
   loginCta: "Đăng nhập",
   steps: {
     review: "Xem lại giỏ",
@@ -88,7 +87,12 @@ const LAST_STEP = 3;
 
 export function CheckoutPage() {
   const router = useRouter();
-  const { data: cart, conflicts, source: cartSource } = useCart();
+  const {
+    data: cart,
+    conflicts,
+    source: cartSource,
+    isLoading: isCartLoading,
+  } = useCart();
   const createOrder = useCreateOrder();
   const session = useSession();
 
@@ -125,6 +129,48 @@ export function CheckoutPage() {
   const shippingPlaceholder = feeQuote.isFetching
     ? ck.summary.feeCalculating
     : ck.summary.feeNeedsAddress;
+
+  // 1. Placing order / redirecting to VNPay state: Keep loading spinner, NEVER fallback to empty cart
+  if (isPlacing || createOrder.isPending) {
+    return (
+      <div className="mx-auto flex w-full max-w-4xl flex-col gap-6 py-6">
+        <CheckoutStepper current={2} />
+        <div className="flex min-h-[380px] flex-col items-center justify-center rounded-3xl border border-slate-100 bg-white p-12 shadow-xs dark:border-slate-800 dark:bg-slate-900">
+          <div className="relative flex items-center justify-center">
+            <div className="h-16 w-16 animate-spin rounded-full border-4 border-emerald-100 border-t-emerald-600 dark:border-emerald-950 dark:border-t-emerald-400" />
+            <CreditCard className="absolute h-6 w-6 animate-pulse text-emerald-600 dark:text-emerald-400" />
+          </div>
+          <p className="mt-6 font-bold text-slate-900 dark:text-slate-100">
+            Đang chuyển hướng đến cổng thanh toán VNPay...
+          </p>
+          <p className="mt-1 text-xs text-slate-500">
+            Vui lòng không tắt hoặc tải lại trang
+          </p>
+        </div>
+      </div>
+    );
+  }
+
+  // 2. Loading Spin Page state: Never show empty cart while fetching
+  if (session.isLoading || isCartLoading) {
+    return (
+      <div className="mx-auto flex w-full max-w-4xl flex-col gap-6 py-6">
+        <CheckoutStepper current={0} />
+        <div className="flex min-h-[380px] flex-col items-center justify-center rounded-3xl border border-slate-100 bg-white p-12 shadow-xs dark:border-slate-800 dark:bg-slate-900">
+          <div className="relative flex items-center justify-center">
+            <div className="h-16 w-16 animate-spin rounded-full border-4 border-emerald-100 border-t-emerald-600 dark:border-emerald-950 dark:border-t-emerald-400" />
+            <ShoppingBag className="absolute h-6 w-6 animate-pulse text-emerald-600 dark:text-emerald-400" />
+          </div>
+          <p className="mt-6 font-semibold text-slate-900 dark:text-slate-100">
+            Đang tải thông tin giỏ hàng & thanh toán...
+          </p>
+          <p className="mt-1 text-xs text-slate-500">
+            Vui lòng đợi trong giây lát
+          </p>
+        </div>
+      </div>
+    );
+  }
 
   if (!session.isLoading && !session.data) {
     return (
@@ -367,6 +413,20 @@ export function CheckoutPage() {
           </div>
         </div>
       </div>
+
+      {isPlacing && (
+        <div className="fixed inset-0 z-50 flex flex-col items-center justify-center bg-slate-950/60 backdrop-blur-xs">
+          <div className="flex flex-col items-center justify-center rounded-3xl bg-white p-8 shadow-2xl dark:bg-slate-900">
+            <div className="h-12 w-12 animate-spin rounded-full border-4 border-emerald-100 border-t-emerald-600 dark:border-emerald-950 dark:border-t-emerald-400" />
+            <p className="mt-4 font-bold text-slate-900 dark:text-slate-100">
+              Đang chuyển hướng đến cổng thanh toán VNPay...
+            </p>
+            <p className="mt-1 text-xs text-slate-500">
+              Vui lòng không tắt hoặc tải lại trang
+            </p>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

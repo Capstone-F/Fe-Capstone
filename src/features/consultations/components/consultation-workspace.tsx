@@ -9,11 +9,13 @@ import {
   FileClock,
   History,
   Loader2,
+  Maximize2,
   MessageSquare,
   Play,
   ShieldAlert,
   Stethoscope,
   Video,
+  X,
 } from "lucide-react";
 import { toast } from "sonner";
 
@@ -35,6 +37,7 @@ import {
   TabsList,
   TabsTrigger,
 } from "@/shared/components/ui/tabs";
+import { TreatmentPlanBuilder } from "@/features/treatments/components/treatment-plan-builder";
 import { useCustomerConsultationContext } from "../hooks/useConsultation";
 import { ZegoChatPanel } from "./zego-chat-panel";
 import { ZegoVideoRoom } from "./zego-video-room";
@@ -57,6 +60,7 @@ export function ConsultationWorkspace({
   perspective,
 }: ConsultationWorkspaceProps) {
   const router = useRouter();
+  const [isTreatmentPanelOpen, setIsTreatmentPanelOpen] = useState(false);
   const {
     data: booking,
     isLoading,
@@ -116,7 +120,7 @@ export function ConsultationWorkspace({
       plan.status !== "COMPLETED",
   );
 
-  function openTreatmentBuilder() {
+  function openTreatmentBuilderFullScreen() {
     const query = new URLSearchParams({
       customerId,
       customerName,
@@ -126,6 +130,10 @@ export function ConsultationWorkspace({
       query.set("treatmentId", existingTreatment.id);
     }
     router.push(`/expert/treatments/builder?${query.toString()}`);
+  }
+
+  function toggleTreatmentPanel() {
+    setIsTreatmentPanelOpen((prev) => !prev);
   }
 
   async function startConsultation() {
@@ -198,16 +206,25 @@ export function ConsultationWorkspace({
               {(booking.status === "in_progress" ||
                 booking.status === "completed") && (
                 <Button
-                  variant="outline"
-                  onClick={openTreatmentBuilder}
+                  variant={isTreatmentPanelOpen ? "default" : "outline"}
+                  onClick={toggleTreatmentPanel}
                   disabled={expertTreatments.isLoading}
+                  className={
+                    isTreatmentPanelOpen
+                      ? "bg-indigo-600 text-white shadow-xs hover:bg-indigo-700"
+                      : ""
+                  }
                 >
                   {expertTreatments.isLoading ? (
                     <Loader2 className="mr-2 h-4 w-4 animate-spin" />
                   ) : (
                     <ClipboardPlus className="mr-2 h-4 w-4" />
                   )}
-                  {existingTreatment ? "Mở phác đồ" : "Lập phác đồ"}
+                  {isTreatmentPanelOpen
+                    ? "Đóng bảng phác đồ"
+                    : existingTreatment
+                      ? "Mở phác đồ"
+                      : "Lập phác đồ"}
                 </Button>
               )}
               {booking.status === "in_progress" && (
@@ -225,6 +242,66 @@ export function ConsultationWorkspace({
         </div>
       </header>
 
+      {/* Floating Non-Modal Side Panel for Treatment Plan (No background blur/overlay) */}
+      {isTreatmentPanelOpen && perspective === "expert" && (
+        <aside
+          aria-label="Bảng lập phác đồ điều trị nổi"
+          className="animate-in fade-in slide-in-from-right-8 fixed top-20 right-4 bottom-6 z-40 flex w-[560px] max-w-[calc(100vw-32px)] flex-col overflow-hidden rounded-3xl border border-slate-200/90 bg-white shadow-2xl backdrop-blur-md transition-all duration-300 sm:right-6"
+        >
+          <div className="flex shrink-0 items-center justify-between border-b border-slate-100 bg-white/90 px-5 py-3.5 backdrop-blur-xs">
+            <div className="flex items-center gap-3">
+              <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-indigo-50 text-indigo-600 dark:bg-indigo-950 dark:text-indigo-300">
+                <ClipboardPlus className="h-4 w-4" />
+              </div>
+              <div>
+                <h2 className="text-sm font-bold text-slate-950">
+                  {existingTreatment
+                    ? "Phác đồ điều trị"
+                    : "Lập phác đồ điều trị"}
+                </h2>
+                <p className="text-[11px] text-slate-500">
+                  {customerName} · Nổi song song cùng ca gọi video
+                </p>
+              </div>
+            </div>
+
+            <div className="flex items-center gap-1.5">
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={openTreatmentBuilderFullScreen}
+                className="h-8 rounded-xl text-xs font-semibold text-slate-600 hover:text-slate-900"
+              >
+                <Maximize2 className="mr-1.5 h-3.5 w-3.5" /> Toàn màn hình
+              </Button>
+              <Button
+                variant="ghost"
+                size="icon"
+                onClick={() => setIsTreatmentPanelOpen(false)}
+                className="h-8 w-8 rounded-xl text-slate-400 hover:bg-slate-100 hover:text-slate-900"
+                title="Đóng bảng phác đồ"
+              >
+                <X className="h-4 w-4" />
+              </Button>
+            </div>
+          </div>
+
+          <div className="flex-1 overflow-y-auto p-5 sm:p-6">
+            <TreatmentPlanBuilder
+              initialTreatmentId={existingTreatment?.id}
+              initialCustomerId={customerId}
+              initialCustomerName={customerName}
+              initialSourceConsultationId={consultationId}
+              isDrawer
+              onClose={() => setIsTreatmentPanelOpen(false)}
+              onPlanCreated={() => {
+                void expertTreatments.refetch();
+              }}
+            />
+          </div>
+        </aside>
+      )}
+
       <main className="mx-auto max-w-7xl p-4 sm:p-6">
         {!canCommunicate ? (
           <div className="border bg-white p-8 text-center text-sm text-slate-600">
@@ -232,15 +309,15 @@ export function ConsultationWorkspace({
           </div>
         ) : (
           <Tabs defaultValue="video">
-            <TabsList variant="line" className="mb-3">
-              <TabsTrigger value="video">
-                <Video className="h-4 w-4" /> Video
+            <TabsList variant="line" className="mb-3.5">
+              <TabsTrigger value="video" className="text-xs font-semibold">
+                <Video className="h-4 w-4" /> Video Call
               </TabsTrigger>
-              <TabsTrigger value="chat">
+              <TabsTrigger value="chat" className="text-xs font-semibold">
                 <MessageSquare className="h-4 w-4" /> Tin nhắn
               </TabsTrigger>
               {perspective === "expert" && (
-                <TabsTrigger value="record">
+                <TabsTrigger value="record" className="text-xs font-semibold">
                   <FileClock className="h-4 w-4" /> Hồ sơ khách hàng
                 </TabsTrigger>
               )}
@@ -249,19 +326,22 @@ export function ConsultationWorkspace({
             <TabsContent
               value="video"
               keepMounted
-              className="overflow-hidden border bg-white"
+              className="overflow-hidden rounded-3xl bg-slate-950 shadow-sm"
             >
               <ZegoVideoRoom bookingId={bookingId} />
             </TabsContent>
             <TabsContent
               value="chat"
               keepMounted
-              className="overflow-hidden border bg-white"
+              className="h-[calc(100vh-210px)] min-h-[520px] overflow-hidden rounded-3xl border border-slate-200 bg-white shadow-xs"
             >
               <ZegoChatPanel bookingId={bookingId} />
             </TabsContent>
             {perspective === "expert" && (
-              <TabsContent value="record" className="border bg-white">
+              <TabsContent
+                value="record"
+                className="h-[calc(100vh-210px)] min-h-[520px] overflow-y-auto rounded-3xl border border-slate-200 bg-white shadow-xs"
+              >
                 <CustomerRecordPanel
                   isLoading={context.isLoading}
                   isError={context.isError}

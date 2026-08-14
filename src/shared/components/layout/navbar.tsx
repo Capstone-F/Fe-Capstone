@@ -89,15 +89,33 @@ export function Navbar() {
       active:
         pathname.startsWith("/experts") || pathname.startsWith("/booking"),
     },
+    {
+      label: "Phòng khám",
+      href: "/clinics",
+      active: pathname.startsWith("/clinics"),
+    },
   ];
 
   // Helper to get mobile header configuration
   const getMobileHeaderConfig = (path: string) => {
-    const topLevels = ["/", "/products", "/care", "/experts", "/profile"];
+    const topLevels = [
+      "/",
+      "/products",
+      "/care",
+      "/experts",
+      "/clinics",
+      "/profile",
+    ];
     if (topLevels.includes(path)) {
       return null;
     }
 
+    if (path === "/clinics") {
+      return { title: "Phòng khám đối tác", backHref: "/" };
+    }
+    if (path.startsWith("/clinics/")) {
+      return { title: "Chi tiết phòng khám", backHref: "/clinics" };
+    }
     if (path === "/cart") {
       return { title: "Giỏ hàng", backHref: "/products" };
     }

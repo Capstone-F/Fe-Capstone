@@ -1,8 +1,6 @@
 "use client";
 
 import React, { useState } from "react";
-import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { toast } from "sonner";
 import {
   Building2,
   Plus,
@@ -17,8 +15,6 @@ import {
   CheckCircle,
   XCircle,
 } from "lucide-react";
-import { apiClient } from "@/core/api/client";
-import { API_ENDPOINTS } from "@/core/api/endpoints";
 import { Button } from "@/shared/components/ui/button";
 import { Input } from "@/shared/components/ui/input";
 import { Label } from "@/shared/components/ui/label";
@@ -31,7 +27,15 @@ import {
   DialogDescription,
   DialogFooter,
 } from "@/shared/components/ui/dialog";
+import { toast } from "sonner";
 import { DataTablePagination } from "@/shared/components/ui/data-table-pagination";
+
+import {
+  useAdminClinics,
+  useCreateAdminClinic,
+  useUpdateAdminClinic,
+  useDeactivateAdminClinic,
+} from "../hooks/useAdminClinics";
 
 export interface Clinic {
   id: string;
@@ -45,7 +49,6 @@ export interface Clinic {
 }
 
 export function ClinicsManagementView() {
-  const queryClient = useQueryClient();
   const [searchTerm, setSearchTerm] = useState("");
   const [activeOnly, setActiveOnly] = useState(false);
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -60,66 +63,14 @@ export function ClinicsManagementView() {
     email: "",
   });
 
-  const { data, isLoading, refetch, isRefetching } = useQuery({
-    queryKey: ["admin-clinics", { q: searchTerm, activeOnly }],
-    queryFn: async () => {
-      const params: Record<string, string> = {};
-      if (searchTerm.trim()) params.q = searchTerm.trim();
-      if (activeOnly) params.activeOnly = "true";
-      const res = await apiClient.get<{ items: Clinic[]; total: number }>(
-        API_ENDPOINTS.ADMIN_CLINICS.LIST,
-        { params },
-      );
-      return res.data;
-    },
+  const { data, isLoading, refetch, isRefetching } = useAdminClinics({
+    q: searchTerm,
+    activeOnly,
   });
 
-  const createMutation = useMutation({
-    mutationFn: (body: typeof formData) =>
-      apiClient.post(API_ENDPOINTS.ADMIN_CLINICS.CREATE, body),
-    onSuccess: () => {
-      toast.success("Thêm phòng khám đối tác thành công!");
-      queryClient.invalidateQueries({ queryKey: ["admin-clinics"] });
-      closeModal();
-    },
-    onError: (err: unknown) => {
-      const msg =
-        (err as { response?: { data?: { message?: string } } })?.response?.data
-          ?.message || "Không thể tạo phòng khám";
-      toast.error(msg);
-    },
-  });
-
-  const updateMutation = useMutation({
-    mutationFn: ({ id, body }: { id: string; body: Partial<Clinic> }) =>
-      apiClient.patch(API_ENDPOINTS.ADMIN_CLINICS.UPDATE(id), body),
-    onSuccess: () => {
-      toast.success("Cập nhật thông tin phòng khám thành công!");
-      queryClient.invalidateQueries({ queryKey: ["admin-clinics"] });
-      closeModal();
-    },
-    onError: (err: unknown) => {
-      const msg =
-        (err as { response?: { data?: { message?: string } } })?.response?.data
-          ?.message || "Không thể cập nhật thông tin phòng khám";
-      toast.error(msg);
-    },
-  });
-
-  const deactivateMutation = useMutation({
-    mutationFn: (id: string) =>
-      apiClient.delete(API_ENDPOINTS.ADMIN_CLINICS.DEACTIVATE(id)),
-    onSuccess: () => {
-      toast.success("Đã tạm ngừng hoạt động phòng khám thành công!");
-      queryClient.invalidateQueries({ queryKey: ["admin-clinics"] });
-    },
-    onError: (err: unknown) => {
-      const msg =
-        (err as { response?: { data?: { message?: string } } })?.response?.data
-          ?.message || "Không thể tạm ngừng hoạt động phòng khám";
-      toast.error(msg);
-    },
-  });
+  const createMutation = useCreateAdminClinic();
+  const updateMutation = useUpdateAdminClinic();
+  const deactivateMutation = useDeactivateAdminClinic();
 
   const openCreateModal = () => {
     setEditingClinic(null);

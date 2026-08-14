@@ -12,6 +12,8 @@ import {
   PlusCircle,
   Building2,
   HelpCircle,
+  Lock,
+  Info,
 } from "lucide-react";
 import { useClinicWallet } from "../hooks/useClinicWallet";
 import {
@@ -23,7 +25,6 @@ import {
   Card,
   CardHeader,
   CardTitle,
-  CardDescription,
   CardContent,
 } from "@/shared/components/ui/card";
 import { Button } from "@/shared/components/ui/button";
@@ -63,6 +64,7 @@ export function ClinicWithdrawalsView() {
   );
 
   const balanceNumber = Number(wallet?.balanceVnd || "0");
+  const heldEscrowNumber = Number(wallet?.heldEscrowVnd || "0");
   const amountNumber = Number(amountInput || "0");
 
   let validationError: string | null = null;
@@ -72,7 +74,7 @@ export function ClinicWithdrawalsView() {
   } else if (amountInput !== "" && (isNaN(amountNumber) || amountNumber <= 0)) {
     validationError = "Số tiền rút phải lớn hơn 0 ₫.";
   } else if (amountNumber > balanceNumber) {
-    validationError = `Số tiền rút vượt quá số dư khả dụng (${formatVndString(wallet?.balanceVnd)}).`;
+    validationError = `Số tiền rút vượt quá số dư khả dụng (${formatVndString(wallet?.balanceVnd)}). Tiền tạm giữ Escrow (${formatVndString(wallet?.heldEscrowVnd)}) chưa thể rút cho đến khi hoàn thành dịch vụ.`;
   }
 
   const handleRequestSubmit = (e: React.FormEvent) => {
@@ -83,6 +85,12 @@ export function ClinicWithdrawalsView() {
         setAmountInput("");
       },
     });
+  };
+
+  const handleSetMaxAmount = () => {
+    if (balanceNumber > 0) {
+      setAmountInput(balanceNumber.toString());
+    }
   };
 
   if (isWalletLoading || (isListLoading && page === 1)) {
@@ -147,7 +155,7 @@ export function ClinicWithdrawalsView() {
   return (
     <div className="flex flex-col gap-6">
       {/* Header Card */}
-      <div className="flex items-center justify-between rounded-3xl border border-slate-200 bg-white p-6 shadow-xs dark:border-slate-800 dark:bg-slate-900">
+      <div className="flex flex-col gap-4 rounded-3xl border border-slate-200 bg-white p-6 shadow-xs sm:flex-row sm:items-center sm:justify-between dark:border-slate-800 dark:bg-slate-900">
         <div className="flex items-center gap-3">
           <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-emerald-50 text-emerald-700 dark:bg-emerald-950/50 dark:text-emerald-300">
             <Banknote className="h-6 w-6 text-emerald-600" />
@@ -162,6 +170,74 @@ export function ClinicWithdrawalsView() {
             </p>
           </div>
         </div>
+
+        <Link href="/clinic/wallet">
+          <Button
+            variant="outline"
+            size="sm"
+            className="rounded-xl text-xs font-semibold"
+          >
+            <Building2 className="mr-1.5 h-3.5 w-3.5" /> Quản lý Ví & Ngân hàng
+          </Button>
+        </Link>
+      </div>
+
+      {/* Wallet Balance Cards Grid */}
+      <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
+        {/* Card 1: Available Balance */}
+        <Card className="rounded-2xl border border-emerald-200 bg-emerald-50/50 p-5 shadow-xs dark:border-emerald-950/50 dark:bg-emerald-950/20">
+          <div className="flex items-center justify-between">
+            <span className="text-xs font-bold text-emerald-800 dark:text-emerald-300">
+              Số dư khả dụng
+            </span>
+            <div className="flex h-8 w-8 items-center justify-center rounded-xl bg-emerald-100 text-emerald-700 dark:bg-emerald-900 dark:text-emerald-300">
+              <CheckCircle2 className="h-4 w-4" />
+            </div>
+          </div>
+          <p className="mt-3 font-mono text-2xl font-extrabold text-emerald-900 dark:text-emerald-100">
+            {formatVndString(wallet?.balanceVnd)}
+          </p>
+          <p className="mt-1 text-[11px] text-emerald-700/80 dark:text-emerald-400/80">
+            Số tiền có thể rút về tài khoản ngay bây giờ
+          </p>
+        </Card>
+
+        {/* Card 2: Held Escrow */}
+        <Card className="rounded-2xl border border-purple-200 bg-purple-50/50 p-5 shadow-xs dark:border-purple-950/50 dark:bg-purple-950/20">
+          <div className="flex items-center justify-between">
+            <span className="text-xs font-bold text-purple-800 dark:text-purple-300">
+              Tạm giữ Escrow
+            </span>
+            <div className="flex h-8 w-8 items-center justify-center rounded-xl bg-purple-100 text-purple-700 dark:bg-purple-900 dark:text-purple-300">
+              <Lock className="h-4 w-4" />
+            </div>
+          </div>
+          <p className="mt-3 font-mono text-2xl font-extrabold text-purple-900 dark:text-purple-100">
+            {formatVndString(wallet?.heldEscrowVnd)}
+          </p>
+          <p className="mt-1 text-[11px] text-purple-700/80 dark:text-purple-400/80">
+            Tiền cọc ca tư vấn/giai đoạn (tự động cộng vào khả dụng sau khi hoàn
+            thành)
+          </p>
+        </Card>
+
+        {/* Card 3: Pending Withdrawals */}
+        <Card className="rounded-2xl border border-amber-200 bg-amber-50/50 p-5 shadow-xs dark:border-amber-950/50 dark:bg-amber-950/20">
+          <div className="flex items-center justify-between">
+            <span className="text-xs font-bold text-amber-800 dark:text-amber-300">
+              Đang chờ duyệt rút
+            </span>
+            <div className="flex h-8 w-8 items-center justify-center rounded-xl bg-amber-100 text-amber-700 dark:bg-amber-900 dark:text-amber-300">
+              <Clock className="h-4 w-4" />
+            </div>
+          </div>
+          <p className="mt-3 font-mono text-2xl font-extrabold text-amber-900 dark:text-amber-100">
+            {formatVndString(wallet?.pendingWithdrawalsVnd)}
+          </p>
+          <p className="mt-1 text-[11px] text-amber-700/80 dark:text-amber-400/80">
+            Đã trừ khỏi số dư khả dụng, chờ Admin chuyển khoản
+          </p>
+        </Card>
       </div>
 
       {/* Grid: Request Form Card + Bank Snapshot Info */}
@@ -172,12 +248,22 @@ export function ClinicWithdrawalsView() {
             <CardTitle className="text-base font-bold text-slate-900 dark:text-slate-100">
               Tạo Yêu cầu Rút tiền Mới
             </CardTitle>
-            <CardDescription className="text-xs text-slate-500 dark:text-slate-400">
-              Số dư khả dụng hiện tại:{" "}
-              <span className="font-mono font-bold text-emerald-700 dark:text-emerald-400">
-                {formatVndString(wallet?.balanceVnd)}
-              </span>
-            </CardDescription>
+            <div className="mt-2 flex flex-wrap items-center gap-3 text-xs">
+              <div className="inline-flex items-center gap-1.5 rounded-lg border border-emerald-200 bg-emerald-50 px-2.5 py-1 text-emerald-800 dark:border-emerald-900/50 dark:bg-emerald-950/40 dark:text-emerald-300">
+                <CheckCircle2 className="h-3.5 w-3.5 text-emerald-600 dark:text-emerald-400" />
+                <span>Số dư khả dụng:</span>
+                <span className="font-mono font-bold">
+                  {formatVndString(wallet?.balanceVnd)}
+                </span>
+              </div>
+              <div className="inline-flex items-center gap-1.5 rounded-lg border border-purple-200 bg-purple-50 px-2.5 py-1 text-purple-800 dark:border-purple-900/50 dark:bg-purple-950/40 dark:text-purple-300">
+                <Lock className="h-3.5 w-3.5 text-purple-600 dark:text-purple-400" />
+                <span>Tạm giữ Escrow:</span>
+                <span className="font-mono font-bold">
+                  {formatVndString(wallet?.heldEscrowVnd)}
+                </span>
+              </div>
+            </div>
           </CardHeader>
 
           <CardContent className="p-6">
@@ -186,17 +272,29 @@ export function ClinicWithdrawalsView() {
               className="flex flex-col gap-4"
             >
               <div className="flex flex-col gap-1.5">
-                <Label
-                  htmlFor="amountVnd"
-                  className="text-xs font-bold text-slate-700 dark:text-slate-300"
-                >
-                  Số tiền muốn rút (VNĐ) *:
-                </Label>
+                <div className="flex items-center justify-between">
+                  <Label
+                    htmlFor="amountVnd"
+                    className="text-xs font-bold text-slate-700 dark:text-slate-300"
+                  >
+                    Số tiền muốn rút (VNĐ) *:
+                  </Label>
+                  {balanceNumber > 0 && (
+                    <button
+                      type="button"
+                      onClick={handleSetMaxAmount}
+                      className="text-[11px] font-semibold text-emerald-600 hover:text-emerald-700 hover:underline dark:text-emerald-400"
+                    >
+                      Rút tối đa ({formatVndString(wallet?.balanceVnd)})
+                    </button>
+                  )}
+                </div>
                 <div className="relative">
                   <Input
                     id="amountVnd"
                     type="number"
                     min={1}
+                    max={balanceNumber > 0 ? balanceNumber : undefined}
                     required
                     placeholder="VD: 500000"
                     value={amountInput}
@@ -214,6 +312,19 @@ export function ClinicWithdrawalsView() {
                   </span>
                 )}
               </div>
+
+              {heldEscrowNumber > 0 && (
+                <div className="flex items-start gap-2 rounded-xl border border-purple-100 bg-purple-50/60 p-3 text-xs text-purple-800 dark:border-purple-900/40 dark:bg-purple-950/30 dark:text-purple-300">
+                  <Info className="mt-0.5 h-4 w-4 shrink-0 text-purple-600 dark:text-purple-400" />
+                  <span>
+                    Bạn đang có{" "}
+                    <strong>{formatVndString(wallet?.heldEscrowVnd)}</strong>{" "}
+                    tiền tạm giữ (Escrow). Khoản tiền này sẽ được tự động mở
+                    khóa và cộng vào <strong>Số dư khả dụng</strong> ngay sau
+                    khi hoàn thành các ca tư vấn hoặc dịch vụ.
+                  </span>
+                </div>
+              )}
 
               {validationError && (
                 <div className="flex items-center gap-2 rounded-xl bg-rose-50 p-3 text-xs font-medium text-rose-700 dark:bg-rose-950/40 dark:text-rose-300">
@@ -233,7 +344,8 @@ export function ClinicWithdrawalsView() {
                   disabled={
                     requestMutation.isPending ||
                     Boolean(validationError) ||
-                    amountNumber <= 0
+                    amountNumber <= 0 ||
+                    balanceNumber <= 0
                   }
                   className="rounded-xl bg-emerald-600 px-6 text-xs font-bold text-white shadow-xs hover:bg-emerald-700"
                 >

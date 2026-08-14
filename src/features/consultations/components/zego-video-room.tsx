@@ -105,8 +105,8 @@ export function ZegoVideoRoom({ bookingId }: ZegoVideoRoomProps) {
   }
 
   return (
-    <div className="relative min-h-[420px] overflow-hidden bg-slate-950">
-      <div ref={containerRef} className="h-[min(72vh,720px)] min-h-[420px]" />
+    <div className="relative h-[calc(100vh-210px)] min-h-[520px] w-full overflow-hidden rounded-3xl bg-slate-950 shadow-inner">
+      <div ref={containerRef} className="h-full w-full" />
       {state === "loading" && (
         <div className="absolute inset-0 flex items-center justify-center bg-slate-950 text-sm text-white">
           <Loader2 className="mr-2 h-4 w-4 animate-spin" />

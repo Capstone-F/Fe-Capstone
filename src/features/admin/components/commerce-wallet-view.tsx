@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState } from "react";
-import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { useQuery, useMutation } from "@tanstack/react-query";
 import { toast } from "sonner";
 import {
   ShoppingBag,
@@ -36,20 +36,17 @@ import {
 } from "@/shared/components/ui/dialog";
 import { formatVnd } from "@/shared/utils/format";
 
-export function CommerceWalletView() {
-  const queryClient = useQueryClient();
+import {
+  useAdminComboDiscount,
+  useUpdateComboDiscount,
+  useAdminPlatformCommission,
+  useUpdatePlatformCommission,
+} from "../hooks/useAdminCommerce";
 
+export function CommerceWalletView() {
   // Combo Discount Settings State
-  const { data: comboSettings, isLoading: isComboLoading } = useQuery({
-    queryKey: ["admin-combo-discount"],
-    queryFn: async () => {
-      const res = await apiClient.get<{
-        percent: number;
-        minSubtotalVnd: number;
-      }>(API_ENDPOINTS.ADMIN_COMMERCE.COMBO_DISCOUNT);
-      return res.data;
-    },
-  });
+  const { data: comboSettings, isLoading: isComboLoading } =
+    useAdminComboDiscount();
 
   const [comboForm, setComboForm] = useState({
     percent: 10,
@@ -57,15 +54,8 @@ export function CommerceWalletView() {
   });
 
   // Platform Commission Setting State
-  const { data: commissionSetting, isLoading: isCommissionLoading } = useQuery({
-    queryKey: ["admin-platform-commission"],
-    queryFn: async () => {
-      const res = await apiClient.get<{ percent: number }>(
-        API_ENDPOINTS.ADMIN_PLATFORM_COMMISSION.GET,
-      );
-      return res.data;
-    },
-  });
+  const { data: commissionSetting, isLoading: isCommissionLoading } =
+    useAdminPlatformCommission();
 
   const [commissionPercentInput, setCommissionPercentInput] =
     useState<string>("10");
@@ -74,44 +64,29 @@ export function CommerceWalletView() {
 
   React.useEffect(() => {
     if (commissionSetting) {
-      queueMicrotask(() => {
+      const timer = setTimeout(() => {
         setCommissionPercentInput(String(commissionSetting.percent ?? 10));
-      });
+      }, 0);
+      return () => clearTimeout(timer);
     }
   }, [commissionSetting]);
 
-  const updateCommissionMutation = useMutation({
-    mutationFn: (percent: number) =>
-      apiClient.patch<{ percent: number }>(
-        API_ENDPOINTS.ADMIN_PLATFORM_COMMISSION.UPDATE,
-        { percent },
-      ),
-    onSuccess: (res) => {
-      toast.success("Đã cập nhật tỷ lệ hoa hồng nền tảng thành công!");
-      if (res.data?.percent !== undefined) {
-        setCommissionPercentInput(String(res.data.percent));
-      }
-      queryClient.invalidateQueries({
-        queryKey: ["admin-platform-commission"],
-      });
-      setCommissionConfirmOpen(false);
-      setCommissionError(null);
-    },
-    onError: (err: unknown) => {
-      const msg =
-        (err as { response?: { data?: { message?: string } } })?.response?.data
-          ?.message || "Tỷ lệ hoa hồng phải là số nằm trong khoảng 0 đến 100";
-      setCommissionError(msg);
-      toast.error(msg);
-      setCommissionConfirmOpen(false);
-    },
-  });
+  const updateCommissionMutation = useUpdatePlatformCommission();
 
   const handleCommissionSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     const val = Number(commissionPercentInput);
-    if (isNaN(val) || val < 0 || val > 100) {
-      setCommissionError("Tỷ lệ hoa hồng phải từ 0 đến 100%");
+    if (
+      isNaN(val) ||
+      !Number.isInteger(val) ||
+      val < 0 ||
+      val > 100 ||
+      commissionPercentInput.includes(".") ||
+      commissionPercentInput.includes(",")
+    ) {
+      setCommissionError(
+        "Tỷ lệ hoa hồng phải là số nguyên từ 0 đến 100% (không dùng số thập phân)",
+      );
       return;
     }
     setCommissionError(null);
@@ -120,29 +95,17 @@ export function CommerceWalletView() {
 
   React.useEffect(() => {
     if (comboSettings) {
-      queueMicrotask(() => {
+      const timer = setTimeout(() => {
         setComboForm({
           percent: comboSettings.percent ?? 10,
           minSubtotalVnd: comboSettings.minSubtotalVnd ?? 0,
         });
-      });
+      }, 0);
+      return () => clearTimeout(timer);
     }
   }, [comboSettings]);
 
-  const updateComboMutation = useMutation({
-    mutationFn: (body: typeof comboForm) =>
-      apiClient.patch(API_ENDPOINTS.ADMIN_COMMERCE.COMBO_DISCOUNT, body),
-    onSuccess: () => {
-      toast.success("Đã cập nhật cấu hình ưu đãi Combo AI Khảo sát!");
-      queryClient.invalidateQueries({ queryKey: ["admin-combo-discount"] });
-    },
-    onError: (err: unknown) => {
-      const msg =
-        (err as { response?: { data?: { message?: string } } })?.response?.data
-          ?.message || "Không thể cập nhật cấu hình ưu đãi";
-      toast.error(msg);
-    },
-  });
+  const updateComboMutation = useUpdateComboDiscount();
 
   // Wallet Top-up & Inspector State
   const [customerQuery, setCustomerQuery] = useState("");
@@ -556,14 +519,20 @@ export function CommerceWalletView() {
                     <Input
                       id="platformCommission"
                       type="number"
-                      step="0.01"
+                      step="1"
                       min={0}
                       max={100}
                       required
                       placeholder="VD: 10"
                       value={commissionPercentInput}
+                      onKeyDown={(e) => {
+                        if (["e", "E", "+", "-", ".", ","].includes(e.key)) {
+                          e.preventDefault();
+                        }
+                      }}
                       onChange={(e) => {
-                        setCommissionPercentInput(e.target.value);
+                        const cleanVal = e.target.value.replace(/[^0-9]/g, "");
+                        setCommissionPercentInput(cleanVal);
                         setCommissionError(null);
                       }}
                       className="rounded-xl border-slate-200 pr-10 font-mono text-xs"
