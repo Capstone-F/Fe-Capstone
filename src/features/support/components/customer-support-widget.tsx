@@ -205,6 +205,9 @@ export function CustomerSupportWidget() {
       <div className="fixed right-6 bottom-6 z-50">
         <Button
           onClick={() => setIsOpen((prev) => !prev)}
+          aria-label={
+            isOpen ? "Đóng hỗ trợ khách hàng" : "Mở hỗ trợ khách hàng"
+          }
           className={`relative h-13 w-13 rounded-full shadow-xl transition-all duration-300 ${
             isOpen
               ? "bg-slate-800 text-white hover:bg-slate-900"

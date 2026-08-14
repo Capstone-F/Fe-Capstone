@@ -51,10 +51,11 @@ test("a missing live support session is an empty state and stops polling", async
     });
   });
 
-  await page.goto("/support");
+  await page.goto("/");
+  await page.getByRole("button", { name: "Mở hỗ trợ khách hàng" }).click();
 
   await expect(
-    page.getByRole("heading", { name: "Bắt Đầu Yêu Cầu Tư Vấn 1-1" }),
+    page.getByRole("heading", { name: "Tư Vấn Hỗ Trợ 1-1" }),
   ).toBeVisible();
   await expect(page.getByText("No live support session")).toHaveCount(0);
   await expect.poll(() => liveSessionRequests).toBe(1);

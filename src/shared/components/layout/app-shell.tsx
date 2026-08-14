@@ -40,6 +40,7 @@ export function AppShell({ children, showFooter = true }: AppShellProps) {
   const isStaffOrAdmin = roles.some((r) =>
     ["app_admin", "staff", "clinic_manager", "expert"].includes(r),
   );
+  const showCustomerSupportWidget = !isStaffOrAdmin && pathname !== "/support";
 
   return (
     <div className="flex min-h-screen flex-col bg-[#FAF8F5] font-sans text-slate-800 antialiased selection:bg-[#E2EBE6]">
@@ -48,7 +49,7 @@ export function AppShell({ children, showFooter = true }: AppShellProps) {
       {showFooter && <Footer />}
       <BottomNav />
       <ProfileOnboardingGuard />
-      {!isStaffOrAdmin && <CustomerSupportWidget />}
+      {showCustomerSupportWidget && <CustomerSupportWidget />}
     </div>
   );
 }
