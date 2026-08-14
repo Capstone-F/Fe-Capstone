@@ -87,7 +87,12 @@ import type {
   TreatmentPhase,
   TreatmentPhasePayload,
   TreatmentPlan,
+  TreatmentProductConflict,
 } from "../types/treatment.types";
+import {
+  CandidateConflictBadge,
+  PhaseProductConflictAlert,
+} from "./product-conflict-warning";
 import {
   getTreatmentStatusLabel,
   treatmentPhaseStatusLabel,
@@ -1519,6 +1524,9 @@ function PhaseConfiguration({
   const [routine, setRoutine] = useState<ExpertRoutine | null>(null);
   const [persistedRoutine, setPersistedRoutine] =
     useState<ExpertRoutine | null>(null);
+  const [productConflicts, setProductConflicts] = useState<
+    TreatmentProductConflict[]
+  >([]);
 
   const busy =
     setIngredientsMutation.isPending ||
@@ -1540,6 +1548,22 @@ function PhaseConfiguration({
       };
     });
   }, [phase.products, candidates.data]);
+
+  const resolveProductName = useCallback(
+    (variantId: string) => {
+      const candidate = candidates.data?.find(
+        (item) => item.productVariantId === variantId,
+      );
+      if (candidate) return candidate.productName;
+      const selectedProduct = phase.products.find(
+        (item) => item.productVariantId === variantId,
+      );
+      return (
+        selectedProduct?.productName || `Sản phẩm ${variantId.slice(0, 8)}`
+      );
+    },
+    [candidates.data, phase.products],
+  );
 
   const hasSavedRoutine =
     routine?.status === "ACTIVE" ||
@@ -1580,11 +1604,13 @@ function PhaseConfiguration({
 
   async function saveProducts() {
     try {
-      await setProductsMutation.mutateAsync({
+      const updatedPhase = await setProductsMutation.mutateAsync({
         phaseId: phase.id,
         productVariantIds: productIds,
       });
+      setProductConflicts(updatedPhase.conflicts ?? []);
       toast.success("Đã lưu sản phẩm cho giai đoạn.");
+      await candidates.refetch();
       onRefresh();
     } catch (reason) {
       toast.error(
@@ -1783,6 +1809,10 @@ function PhaseConfiguration({
 
   return (
     <div className="grid gap-5 border bg-white p-5 lg:grid-cols-2">
+      <PhaseProductConflictAlert
+        conflicts={productConflicts}
+        resolveProductName={resolveProductName}
+      />
       <section>
         <h3 className="text-sm font-semibold text-slate-950">
           Hoạt chất chỉ định
@@ -1846,9 +1876,15 @@ function PhaseConfiguration({
                     )
                   }
                 />
-                <span>
-                  <span className="block font-medium text-slate-900">
-                    {product.productName}
+                <span className="min-w-0 flex-1">
+                  <span className="flex flex-wrap items-center justify-between gap-2">
+                    <span className="font-medium text-slate-900">
+                      {product.productName}
+                    </span>
+                    <CandidateConflictBadge
+                      warnings={product.conflictWarnings ?? []}
+                      resolveProductName={resolveProductName}
+                    />
                   </span>
                   <span className="text-xs text-slate-500">
                     {product.sku} · tồn {product.stockQuantity}
