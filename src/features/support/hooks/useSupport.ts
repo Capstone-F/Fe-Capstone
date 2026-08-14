@@ -15,14 +15,17 @@ export function useMyLiveSupportSession(enabled = true) {
     queryKey: queryKeys.supportLiveSession(),
     queryFn: () => supportApi.getMyLiveSession(),
     enabled,
-    staleTime: 5000,
+    staleTime: Infinity,
     retry: (failureCount, error) =>
       error instanceof ApiError && error.status === 404
         ? false
         : failureCount < 2,
-    // `null` means the customer has no live session. Do not keep requesting the
-    // endpoint in that valid state; creating a session seeds this query cache.
-    refetchInterval: (query) => (query.state.data ? 5000 : false),
+    // Session mutations update/invalidate this cache and messages have their own
+    // polling query. This endpoint only hydrates state; a 404 must stay idle.
+    refetchInterval: false,
+    refetchOnMount: false,
+    refetchOnWindowFocus: false,
+    refetchOnReconnect: false,
   });
 }
 
