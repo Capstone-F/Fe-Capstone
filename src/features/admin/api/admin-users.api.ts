@@ -7,7 +7,7 @@ export interface CreateManagedUserPayload {
   name: string;
   role: "expert" | "staff" | "clinic_manager";
   clinicId?: string;
-  temporaryPassword?: string;
+  temporaryPassword: string;
 }
 
 export interface ManagedUserResponse {

@@ -2,11 +2,12 @@
 
 import { useState } from "react";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { useForm } from "react-hook-form";
+import { useForm, useWatch } from "react-hook-form";
 import {
   CircleDollarSign,
   Info,
   Loader2,
+  Plus,
   Search,
   ShieldCheck,
   UserCheck,
@@ -22,6 +23,9 @@ import {
   useAdminUserDirectory,
   useAdminWallet,
   useAdminWalletTopUp,
+  useClinics,
+  useCreateExpert,
+  useCreateUser,
   useUpdateAdminUserRoles,
   useUpdateAdminUserStatus,
 } from "@/features/admin/hooks/useAdminUsers";
@@ -61,6 +65,8 @@ import {
 import {
   adminWalletTopUpSchema,
   type AdminWalletTopUpValues,
+  createManagedUserSchema,
+  type CreateManagedUserValues,
 } from "@/features/admin/schemas/admin-forms.schema";
 import { DataTablePagination } from "@/shared/components/ui/data-table-pagination";
 
@@ -88,6 +94,7 @@ export function UserManagementView() {
   const debouncedSearch = useDebounce(search.trim(), 350);
   const [role, setRole] = useState("all");
   const [selectedUserId, setSelectedUserId] = useState("");
+  const [isCreateOpen, setIsCreateOpen] = useState(false);
 
   // Pagination state
   const [page, setPage] = useState(1);
@@ -126,6 +133,9 @@ export function UserManagementView() {
               </p>
             </div>
           </div>
+          <Button onClick={() => setIsCreateOpen(true)}>
+            <Plus /> Tạo người dùng
+          </Button>
         </div>
 
         <section className="grid gap-4 sm:grid-cols-3">
@@ -298,8 +308,207 @@ export function UserManagementView() {
           currentUserId={session.data?.id ?? ""}
           onClose={() => setSelectedUserId("")}
         />
+        <CreateUserDialog open={isCreateOpen} onOpenChange={setIsCreateOpen} />
       </div>
     </TooltipProvider>
+  );
+}
+
+const createRoleItems = {
+  staff: "Nhân viên",
+  expert: "Chuyên gia",
+  clinic_manager: "Quản lý phòng khám",
+};
+
+function CreateUserDialog({
+  open,
+  onOpenChange,
+}: {
+  open: boolean;
+  onOpenChange: (open: boolean) => void;
+}) {
+  const clinics = useClinics();
+  const createUser = useCreateUser();
+  const createExpert = useCreateExpert();
+  const form = useForm<CreateManagedUserValues>({
+    resolver: zodResolver(createManagedUserSchema),
+    defaultValues: {
+      email: "",
+      fullName: "",
+      role: "staff",
+      temporaryPassword: "",
+      clinicId: "",
+      specialization: "",
+      consultationFee: "",
+    },
+  });
+  const selectedRole = useWatch({ control: form.control, name: "role" });
+  const requiresClinic =
+    selectedRole === "expert" || selectedRole === "clinic_manager";
+  const busy = createUser.isPending || createExpert.isPending;
+
+  async function submit(values: CreateManagedUserValues) {
+    const common = {
+      email: values.email.trim().toLowerCase(),
+      name: values.fullName.trim(),
+      role: values.role,
+      temporaryPassword: values.temporaryPassword,
+      clinicId: requiresClinic ? values.clinicId : undefined,
+    };
+    try {
+      if (values.role === "expert") {
+        await createExpert.mutateAsync({
+          ...common,
+          role: "expert",
+          specialization: values.specialization.trim(),
+          consultationFee: parseVndInput(values.consultationFee),
+        });
+      } else {
+        await createUser.mutateAsync(common);
+      }
+      toast.success("Đã tạo người dùng thành công.");
+      form.reset();
+      onOpenChange(false);
+    } catch (reason) {
+      toast.error(
+        reason instanceof Error ? reason.message : "Không thể tạo người dùng.",
+      );
+    }
+  }
+
+  return (
+    <Dialog
+      open={open}
+      onOpenChange={(nextOpen) => {
+        if (!busy) onOpenChange(nextOpen);
+      }}
+    >
+      <DialogContent className="max-h-[90vh] overflow-y-auto sm:max-w-xl">
+        <DialogHeader>
+          <DialogTitle>Tạo người dùng</DialogTitle>
+          <DialogDescription>
+            Tạo tài khoản vận hành bằng mật khẩu ban đầu. Không hỗ trợ tạo khách
+            hàng hoặc quản trị viên tại đây.
+          </DialogDescription>
+        </DialogHeader>
+        <form
+          className="grid gap-4 sm:grid-cols-2"
+          onSubmit={form.handleSubmit(submit)}
+          noValidate
+        >
+          <FormController
+            control={form.control}
+            name="fullName"
+            label="Họ và tên"
+          >
+            {(field) => <Input {...field} autoComplete="name" />}
+          </FormController>
+          <FormController control={form.control} name="email" label="Email">
+            {(field) => <Input {...field} type="email" autoComplete="email" />}
+          </FormController>
+          <FormController control={form.control} name="role" label="Vai trò">
+            {(field) => (
+              <Select
+                value={field.value}
+                onValueChange={(value) => {
+                  if (value) field.onChange(value);
+                }}
+                items={createRoleItems}
+              >
+                <SelectTrigger className="w-full">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="staff">Nhân viên</SelectItem>
+                  <SelectItem value="expert">Chuyên gia</SelectItem>
+                  <SelectItem value="clinic_manager">
+                    Quản lý phòng khám
+                  </SelectItem>
+                </SelectContent>
+              </Select>
+            )}
+          </FormController>
+          <FormController
+            control={form.control}
+            name="temporaryPassword"
+            label="Mật khẩu ban đầu"
+          >
+            {(field) => (
+              <Input {...field} type="password" autoComplete="new-password" />
+            )}
+          </FormController>
+          {requiresClinic ? (
+            <FormController
+              control={form.control}
+              name="clinicId"
+              label="Phòng khám"
+            >
+              {(field) => (
+                <Select
+                  value={field.value}
+                  onValueChange={(value) => field.onChange(value ?? "")}
+                  items={Object.fromEntries(
+                    (clinics.data ?? []).map((clinic) => [
+                      clinic.id,
+                      clinic.name,
+                    ]),
+                  )}
+                >
+                  <SelectTrigger className="w-full">
+                    <SelectValue placeholder="Chọn phòng khám" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {(clinics.data ?? []).map((clinic) => (
+                      <SelectItem key={clinic.id} value={clinic.id}>
+                        {clinic.name}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              )}
+            </FormController>
+          ) : null}
+          {selectedRole === "expert" ? (
+            <>
+              <FormController
+                control={form.control}
+                name="specialization"
+                label="Chuyên khoa"
+              >
+                {(field) => <Input {...field} />}
+              </FormController>
+              <FormController
+                control={form.control}
+                name="consultationFee"
+                label="Phí tư vấn"
+              >
+                {(field) => (
+                  <CurrencyInput
+                    id={field.name}
+                    value={field.value}
+                    onValueChange={field.onChange}
+                  />
+                )}
+              </FormController>
+            </>
+          ) : null}
+          <DialogFooter className="sm:col-span-2">
+            <Button
+              type="button"
+              variant="outline"
+              disabled={busy}
+              onClick={() => onOpenChange(false)}
+            >
+              Hủy
+            </Button>
+            <Button type="submit" disabled={busy || clinics.isLoading}>
+              {busy ? <Loader2 className="animate-spin" /> : <Plus />}
+              Tạo tài khoản
+            </Button>
+          </DialogFooter>
+        </form>
+      </DialogContent>
+    </Dialog>
   );
 }
 

@@ -43,12 +43,14 @@ export interface ListClinicExpertsQuery {
 export interface CreateExpertUserDto {
   name: string;
   email: string;
-  password?: string;
+  temporaryPassword: string;
   role: "expert";
+  clinicId: string;
 }
 
 export interface CreateExpertProfileDto {
   userId: string;
+  clinicId: string;
   specialization: string;
   consultationFee: number;
   licenseNumber?: string;
@@ -68,10 +70,10 @@ export interface ExpertAvailabilitySlot {
   id: string;
   expertId: string;
   dayOfWeek: number; // 0-6 (Sun-Sat)
-  startTime: string; // "08:00"
-  endTime: string; // "12:00"
-  slotDurationMinutes?: number;
-  isActive?: boolean;
+  startHour: number;
+  endHour: number;
+  createdAt?: string;
+  updatedAt?: string;
 }
 
 export const clinicExpertsApi = {

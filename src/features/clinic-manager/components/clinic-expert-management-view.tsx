@@ -8,6 +8,7 @@ import {
   Pencil,
   Power,
   Calendar,
+  Clock3,
   Star,
   Plus,
   Trash2,
@@ -17,6 +18,7 @@ import {
   AlertCircle,
 } from "lucide-react";
 import useDebounce from "@/shared/hooks/useDebounce";
+import { useSession } from "@/features/auth/hooks/useSession";
 import {
   useClinicExperts,
   useCreateExpert,
@@ -105,6 +107,10 @@ const specializationFilterItems: Record<string, string> = {
   PIGMENTATION: "Điều trị sắc tố & Nám",
 };
 
+const START_HOURS = Array.from({ length: 11 }, (_, index) => index + 9);
+const END_HOURS = Array.from({ length: 11 }, (_, index) => index + 10);
+const formatHour = (hour: number) => `${String(hour).padStart(2, "0")}:00`;
+
 const translateSpecialization = (spec?: string | null) => {
   if (!spec) return "Chưa phân loại";
   return (
@@ -113,6 +119,7 @@ const translateSpecialization = (spec?: string | null) => {
 };
 
 export function ClinicExpertManagementView() {
+  const session = useSession();
   const [page, setPage] = useState(1);
   const [search, setSearch] = useState("");
   const debouncedSearch = useDebounce(search.trim(), 350);
@@ -133,7 +140,6 @@ export function ClinicExpertManagementView() {
     specialization: "DERMATOLOGY",
     consultationFee: 300000,
     licenseNumber: "",
-    bio: "",
     avatarUrl: "",
   });
 
@@ -149,8 +155,8 @@ export function ClinicExpertManagementView() {
   // Form state for availability
   const [newSlot, setNewSlot] = useState({
     dayOfWeek: 1,
-    startTime: "08:00",
-    endTime: "12:00",
+    startHour: 9,
+    endHour: 12,
   });
 
   const parsedActive =
@@ -195,19 +201,22 @@ export function ClinicExpertManagementView() {
 
   const handleCreateSubmit = (e: React.FormEvent) => {
     e.preventDefault();
+    const clinicId = session.data?.clinicId;
+    if (!clinicId) return;
     createMutation.mutate(
       {
         user: {
           name: createForm.name,
           email: createForm.email,
-          password: createForm.password,
+          temporaryPassword: createForm.password,
           role: "expert",
+          clinicId,
         },
         profile: {
+          clinicId,
           specialization: createForm.specialization,
           consultationFee: createForm.consultationFee,
           licenseNumber: createForm.licenseNumber || undefined,
-          bio: createForm.bio || undefined,
           avatarUrl: createForm.avatarUrl || undefined,
         },
       },
@@ -221,7 +230,6 @@ export function ClinicExpertManagementView() {
             specialization: "Dermatology",
             consultationFee: 300000,
             licenseNumber: "",
-            bio: "",
             avatarUrl: "",
           });
         },
@@ -291,8 +299,8 @@ export function ClinicExpertManagementView() {
       expertId: availabilityTarget.id,
       slot: {
         dayOfWeek: Number(newSlot.dayOfWeek),
-        startTime: newSlot.startTime,
-        endTime: newSlot.endTime,
+        startHour: newSlot.startHour,
+        endHour: newSlot.endHour,
       },
     });
   };
@@ -732,20 +740,6 @@ export function ClinicExpertManagementView() {
               />
             </div>
 
-            <div className="flex flex-col gap-1">
-              <Label className="font-bold">
-                Tiểu sử / Giới thiệu chuyên môn:
-              </Label>
-              <Textarea
-                placeholder="Tóm tắt kinh nghiệm làm việc và chứng chỉ..."
-                value={createForm.bio}
-                onChange={(e) =>
-                  setCreateForm({ ...createForm, bio: e.target.value })
-                }
-                className="h-16 resize-none rounded-xl text-xs"
-              />
-            </div>
-
             <DialogFooter className="border-t border-slate-100 pt-3 dark:border-slate-800">
               <Button
                 type="button"
@@ -878,28 +872,39 @@ export function ClinicExpertManagementView() {
         open={Boolean(availabilityTarget)}
         onOpenChange={(open) => !open && setAvailabilityTarget(null)}
       >
-        <DialogContent className="w-full max-w-xl rounded-3xl p-6">
-          <DialogHeader className="border-b border-slate-100 pb-3 dark:border-slate-800">
-            <DialogTitle className="flex items-center gap-2 text-base font-bold text-slate-900 dark:text-slate-100">
-              <Calendar className="h-5 w-5 text-emerald-600" />
-              Lịch làm việc tuần:{" "}
-              {availabilityTarget?.name || availabilityTarget?.user?.name}
+        <DialogContent className="max-h-[90vh] w-[calc(100%-2rem)] overflow-y-auto rounded-3xl p-0 sm:max-w-2xl">
+          <DialogHeader className="border-b border-slate-100 bg-linear-to-br from-emerald-50 to-white p-6 dark:border-slate-800 dark:from-emerald-950/40 dark:to-slate-900">
+            <DialogTitle className="flex items-center gap-3 text-lg font-bold text-slate-900 dark:text-slate-100">
+              <span className="flex h-10 w-10 items-center justify-center rounded-2xl bg-emerald-600 text-white shadow-sm">
+                <Calendar className="h-5 w-5" />
+              </span>
+              <span>
+                Lịch làm việc tuần
+                <span className="mt-0.5 block text-sm font-medium text-slate-500">
+                  {availabilityTarget?.name || availabilityTarget?.user?.name}
+                </span>
+              </span>
             </DialogTitle>
-            <DialogDescription className="text-xs text-slate-500">
-              Cấu hình các ca rảnh rỗi trong tuần để sinh slot cho bệnh nhân đặt
-              lịch
+            <DialogDescription className="pl-13 text-sm text-slate-500">
+              Thiết lập giờ nhận lịch lặp lại hằng tuần theo múi giờ Việt Nam.
             </DialogDescription>
           </DialogHeader>
 
-          <div className="flex flex-col gap-4 py-2 text-xs">
+          <div className="flex flex-col gap-5 p-6 text-xs">
             {/* Add Slot Form */}
             <form
               onSubmit={handleAddSlotSubmit}
-              className="flex flex-col gap-3 rounded-2xl bg-slate-50 p-4 dark:bg-slate-800/50"
+              className="flex flex-col gap-4 rounded-2xl border border-emerald-100 bg-emerald-50/50 p-4 dark:border-emerald-900 dark:bg-emerald-950/20"
             >
-              <span className="font-bold text-slate-800 dark:text-slate-200">
-                Thêm khung giờ rảnh:
-              </span>
+              <div>
+                <span className="flex items-center gap-2 text-sm font-bold text-slate-800 dark:text-slate-200">
+                  <Clock3 className="h-4 w-4 text-emerald-600" /> Thêm ca làm
+                  việc
+                </span>
+                <p className="mt-1 text-[11px] text-slate-500">
+                  Giờ bắt đầu từ 09:00–19:00, kết thúc muộn nhất 20:00.
+                </p>
+              </div>
               <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
                 <div className="flex flex-col gap-1">
                   <label className="text-[11px] font-bold text-slate-600 dark:text-slate-400">
@@ -929,30 +934,61 @@ export function ClinicExpertManagementView() {
                   <label className="text-[11px] font-bold text-slate-600 dark:text-slate-400">
                     Từ giờ:
                   </label>
-                  <Input
-                    type="time"
-                    required
-                    value={newSlot.startTime}
-                    onChange={(e) =>
-                      setNewSlot({ ...newSlot, startTime: e.target.value })
-                    }
-                    className="h-9 w-full min-w-[105px] rounded-xl px-3 font-mono text-xs"
-                  />
+                  <Select
+                    value={String(newSlot.startHour)}
+                    items={Object.fromEntries(
+                      START_HOURS.map((hour) => [hour, formatHour(hour)]),
+                    )}
+                    onValueChange={(value) => {
+                      const startHour = Number(value);
+                      setNewSlot((current) => ({
+                        ...current,
+                        startHour,
+                        endHour: Math.max(current.endHour, startHour + 1),
+                      }));
+                    }}
+                  >
+                    <SelectTrigger className="h-10 w-full rounded-xl bg-white font-mono text-xs">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {START_HOURS.map((hour) => (
+                        <SelectItem key={hour} value={String(hour)}>
+                          {formatHour(hour)}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
                 </div>
 
                 <div className="flex flex-col gap-1">
                   <label className="text-[11px] font-bold text-slate-600 dark:text-slate-400">
                     Đến giờ:
                   </label>
-                  <Input
-                    type="time"
-                    required
-                    value={newSlot.endTime}
-                    onChange={(e) =>
-                      setNewSlot({ ...newSlot, endTime: e.target.value })
+                  <Select
+                    value={String(newSlot.endHour)}
+                    items={Object.fromEntries(
+                      END_HOURS.filter((hour) => hour > newSlot.startHour).map(
+                        (hour) => [hour, formatHour(hour)],
+                      ),
+                    )}
+                    onValueChange={(value) =>
+                      setNewSlot({ ...newSlot, endHour: Number(value) })
                     }
-                    className="h-9 w-full min-w-[105px] rounded-xl px-3 font-mono text-xs"
-                  />
+                  >
+                    <SelectTrigger className="h-10 w-full rounded-xl bg-white font-mono text-xs">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {END_HOURS.filter((hour) => hour > newSlot.startHour).map(
+                        (hour) => (
+                          <SelectItem key={hour} value={String(hour)}>
+                            {formatHour(hour)}
+                          </SelectItem>
+                        ),
+                      )}
+                    </SelectContent>
+                  </Select>
                 </div>
               </div>
 
@@ -966,7 +1002,7 @@ export function ClinicExpertManagementView() {
                   <Loader2 className="h-4 w-4 animate-spin" />
                 ) : (
                   <>
-                    <Plus className="mr-1.5 h-4 w-4" /> Thêm Ca rảnh
+                    <Plus className="mr-1.5 h-4 w-4" /> Thêm ca làm việc
                   </>
                 )}
               </Button>
@@ -998,14 +1034,8 @@ export function ClinicExpertManagementView() {
                   ) : (
                     <div className="flex max-h-56 flex-col gap-2 overflow-y-auto pr-1">
                       {slotsList.map((slot) => {
-                        const rec = slot as unknown as Record<string, string>;
-                        const displayStart =
-                          slot.startTime ||
-                          rec.start_time ||
-                          rec.startAt ||
-                          "08:00";
-                        const displayEnd =
-                          slot.endTime || rec.end_time || rec.endAt || "17:00";
+                        const displayStart = formatHour(slot.startHour);
+                        const displayEnd = formatHour(slot.endHour);
                         const dayName =
                           DAY_LABELS[String(slot.dayOfWeek)] ||
                           `Thứ ${slot.dayOfWeek}`;
@@ -1013,7 +1043,7 @@ export function ClinicExpertManagementView() {
                         return (
                           <div
                             key={slot.id}
-                            className="flex items-center justify-between rounded-2xl border border-slate-200 bg-white p-3 shadow-xs dark:border-slate-800 dark:bg-slate-900"
+                            className="flex items-center justify-between rounded-2xl border border-slate-200 bg-white p-3.5 shadow-xs dark:border-slate-800 dark:bg-slate-900"
                           >
                             <div className="flex items-center gap-3">
                               <Badge
@@ -1051,7 +1081,7 @@ export function ClinicExpertManagementView() {
             })()}
           </div>
 
-          <DialogFooter className="border-t border-slate-100 pt-3 dark:border-slate-800">
+          <DialogFooter className="border-t border-slate-100 bg-slate-50 px-6 py-4 dark:border-slate-800 dark:bg-slate-900">
             <Button
               variant="outline"
               onClick={() => setAvailabilityTarget(null)}

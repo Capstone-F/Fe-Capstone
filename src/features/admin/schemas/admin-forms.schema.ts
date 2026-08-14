@@ -18,6 +18,54 @@ export const adminWalletTopUpSchema = z.object({
 
 export type AdminWalletTopUpValues = z.infer<typeof adminWalletTopUpSchema>;
 
+export const createManagedUserSchema = z
+  .object({
+    email: z.email("Địa chỉ email không hợp lệ."),
+    fullName: z
+      .string()
+      .trim()
+      .min(2, "Họ và tên phải có ít nhất 2 ký tự.")
+      .max(100, "Họ và tên không được vượt quá 100 ký tự."),
+    role: z.enum(["staff", "expert", "clinic_manager"]),
+    temporaryPassword: z
+      .string()
+      .min(8, "Mật khẩu phải có ít nhất 8 ký tự.")
+      .max(128, "Mật khẩu không được vượt quá 128 ký tự."),
+    clinicId: z.string(),
+    specialization: z.string().trim().max(120),
+    consultationFee: z.string(),
+  })
+  .superRefine((values, context) => {
+    if (
+      (values.role === "expert" || values.role === "clinic_manager") &&
+      !values.clinicId
+    ) {
+      context.addIssue({
+        code: "custom",
+        path: ["clinicId"],
+        message: "Vui lòng chọn phòng khám.",
+      });
+    }
+    if (values.role === "expert") {
+      if (!values.specialization) {
+        context.addIssue({
+          code: "custom",
+          path: ["specialization"],
+          message: "Vui lòng nhập chuyên khoa.",
+        });
+      }
+      if (!requiredVndSchema.safeParse(values.consultationFee).success) {
+        context.addIssue({
+          code: "custom",
+          path: ["consultationFee"],
+          message: "Phí tư vấn phải là số tiền lớn hơn 0.",
+        });
+      }
+    }
+  });
+
+export type CreateManagedUserValues = z.infer<typeof createManagedUserSchema>;
+
 export const createExpertSchema = z
   .object({
     emailPrefix: z.string().trim().min(1, "Vui lòng nhập email đăng nhập."),
