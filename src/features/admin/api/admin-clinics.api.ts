@@ -8,6 +8,8 @@ export interface AdminClinic {
   address?: string;
   phone?: string;
   email?: string;
+  latitude: number | null;
+  longitude: number | null;
   isActive: boolean;
   createdAt: string;
   updatedAt: string;
@@ -28,6 +30,8 @@ export interface CreateAdminClinicDto {
   address?: string;
   phone?: string;
   email?: string;
+  latitude?: number;
+  longitude?: number;
   isActive?: boolean;
 }
 

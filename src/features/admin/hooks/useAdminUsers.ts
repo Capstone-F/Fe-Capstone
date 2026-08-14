@@ -119,8 +119,11 @@ export function useCreateUser() {
       return response.data;
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["admin-users"] });
-      queryClient.invalidateQueries({ queryKey: ["experts"] });
+      void queryClient.invalidateQueries({ queryKey: ["admin-users"] });
+      void queryClient.invalidateQueries({
+        queryKey: ["admin-user-directory"],
+      });
+      void queryClient.invalidateQueries({ queryKey: ["experts"] });
     },
   });
 }
@@ -152,8 +155,11 @@ export function useCreateExpert() {
       return userResponse.data;
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["admin-users"] });
-      queryClient.invalidateQueries({ queryKey: ["experts"] });
+      void queryClient.invalidateQueries({ queryKey: ["admin-users"] });
+      void queryClient.invalidateQueries({
+        queryKey: ["admin-user-directory"],
+      });
+      void queryClient.invalidateQueries({ queryKey: ["experts"] });
     },
   });
 }
