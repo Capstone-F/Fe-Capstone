@@ -35,6 +35,7 @@ import {
   DialogFooter,
 } from "@/shared/components/ui/dialog";
 import { formatVnd } from "@/shared/utils/format";
+import { LowStockThresholdCard } from "./low-stock-threshold-card";
 
 import {
   useAdminComboDiscount,
@@ -312,6 +313,8 @@ export function CommerceWalletView() {
             )}
           </CardContent>
         </Card>
+
+        <LowStockThresholdCard />
 
         {/* Card 2: Wallet Top-Up & Inspector */}
         <Card className="rounded-3xl border border-slate-200/90 bg-white shadow-sm dark:border-slate-800 dark:bg-slate-900">
