@@ -13,22 +13,34 @@ export function DashboardRoleGuard({
   const { data: session, isLoading } = useSession();
   const router = useRouter();
 
-  useEffect(() => {
-    if (!isLoading && session?.roles) {
-      const roles = session.roles;
-      const isAdmin = hasRole(roles, "app_admin");
+  const isAdmin = Boolean(
+    session?.roles && hasRole(session.roles, "app_admin"),
+  );
 
-      if (!isAdmin) {
+  useEffect(() => {
+    if (!isLoading) {
+      if (!session) {
+        router.replace("/login");
+        return;
+      }
+      const roles = session.roles;
+      if (!hasRole(roles, "app_admin")) {
         if (hasRole(roles, "clinic_manager")) {
           router.replace("/clinic/experts");
         } else if (hasRole(roles, "staff")) {
           router.replace("/staff/user-lookup");
         } else if (hasRole(roles, "expert")) {
           router.replace("/expert");
+        } else {
+          router.replace("/");
         }
       }
     }
   }, [session, isLoading, router]);
+
+  if (isLoading || !isAdmin) {
+    return null;
+  }
 
   return <>{children}</>;
 }

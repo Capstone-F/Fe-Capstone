@@ -19,6 +19,10 @@ import {
 import { useClinicExperts } from "../hooks/useClinicExperts";
 import { formatVndString } from "@/shared/utils/format";
 import {
+  treatmentPhaseTypeLabel,
+  treatmentPhaseStatusLabel,
+} from "@/features/treatments/lib/treatment-labels";
+import {
   Card,
   CardHeader,
   CardTitle,
@@ -156,20 +160,18 @@ export function ClinicTreatmentsView() {
   };
 
   const translatePhaseStatus = (status: string) => {
-    switch (status) {
-      case "COMPLETED":
-        return "Đã hoàn thành";
-      case "ACTIVE":
-        return "Đang thực hiện";
-      case "PAUSED":
-        return "Tạm dừng";
-      case "PENDING":
-        return "Chờ thực hiện";
-      case "CANCELLED":
-        return "Đã hủy";
-      default:
-        return status;
-    }
+    return (
+      treatmentPhaseStatusLabel[
+        status as keyof typeof treatmentPhaseStatusLabel
+      ] || (status === "CANCELLED" ? "Đã hủy" : status)
+    );
+  };
+
+  const translatePhaseType = (type: string) => {
+    return (
+      treatmentPhaseTypeLabel[type as keyof typeof treatmentPhaseTypeLabel] ||
+      type
+    );
   };
 
   return (
@@ -461,7 +463,7 @@ export function ClinicTreatmentsView() {
               <div className="grid grid-cols-3 gap-2">
                 <div className="rounded-xl border border-emerald-200 bg-emerald-50/50 p-2.5 text-center">
                   <span className="text-[10px] font-medium text-emerald-700">
-                    Đã giải ngân (Gross)
+                    Đã giải ngân
                   </span>
                   <p className="mt-0.5 font-mono text-sm font-bold text-emerald-800">
                     {formatVndString(detailData.escrow?.releasedVnd)}
@@ -469,7 +471,7 @@ export function ClinicTreatmentsView() {
                 </div>
                 <div className="rounded-xl border border-purple-200 bg-purple-50/50 p-2.5 text-center">
                   <span className="text-[10px] font-medium text-purple-700">
-                    Đang giữ (Held)
+                    Đang tạm giữ
                   </span>
                   <p className="mt-0.5 font-mono text-sm font-bold text-purple-800">
                     {formatVndString(detailData.escrow?.heldVnd)}
@@ -477,7 +479,7 @@ export function ClinicTreatmentsView() {
                 </div>
                 <div className="rounded-xl border border-rose-200 bg-rose-50/50 p-2.5 text-center">
                   <span className="text-[10px] font-medium text-rose-700">
-                    Đã hoàn (Refunded)
+                    Đã hoàn trả
                   </span>
                   <p className="mt-0.5 font-mono text-sm font-bold text-rose-800">
                     {formatVndString(detailData.escrow?.refundedVnd)}
@@ -488,7 +490,7 @@ export function ClinicTreatmentsView() {
               {/* Phases List */}
               <div className="flex flex-col gap-2 pt-2">
                 <span className="font-bold text-slate-900 dark:text-slate-100">
-                  Các giai đoạn điều trị (Phases):
+                  Các giai đoạn điều trị:
                 </span>
                 {detailData.phases?.map((phase, idx) => (
                   <div
@@ -497,7 +499,8 @@ export function ClinicTreatmentsView() {
                   >
                     <div>
                       <span className="font-bold text-slate-800 dark:text-slate-200">
-                        Giai đoạn {phase.phaseOrder + 1}: {phase.phaseType}
+                        Giai đoạn {phase.phaseOrder + 1}:{" "}
+                        {translatePhaseType(phase.phaseType)}
                       </span>
                       <div className="text-[10px] text-slate-500">
                         Trạng thái:{" "}

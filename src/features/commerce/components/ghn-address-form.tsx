@@ -1,21 +1,22 @@
 "use client";
 
-import { memo } from "react";
+import { memo, useEffect, useMemo, useRef, useState } from "react";
 import {
   Controller,
   useWatch,
   type Control,
   type UseFormSetValue,
 } from "react-hook-form";
+import { Check, ChevronDown, Loader2, Search, X } from "lucide-react";
 import { Input } from "@/shared/components/ui/input";
 import { Label } from "@/shared/components/ui/label";
 import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/shared/components/ui/select";
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from "@/shared/components/ui/popover";
+import { cn } from "@/lib/utils";
+import { normalizeVietnamese } from "@/shared/utils/string";
 import {
   useDistricts,
   useProvinces,
@@ -281,6 +282,33 @@ function LocationSelect({
   isLoading,
   isError,
 }: LocationSelectProps) {
+  const [open, setOpen] = useState(false);
+  const [search, setSearch] = useState("");
+  const debouncedSearch = useDebounce(search, 150);
+  const inputRef = useRef<HTMLInputElement>(null);
+
+  useEffect(() => {
+    if (open) {
+      const timer = setTimeout(() => {
+        inputRef.current?.focus();
+      }, 50);
+      return () => clearTimeout(timer);
+    }
+  }, [open]);
+
+  const selectedOption = useMemo(
+    () => options.find((opt) => opt.value === value),
+    [options, value],
+  );
+
+  const filteredOptions = useMemo(() => {
+    if (!debouncedSearch.trim()) return options;
+    const query = normalizeVietnamese(debouncedSearch);
+    return options.filter((opt) =>
+      normalizeVietnamese(opt.label).includes(query),
+    );
+  }, [options, debouncedSearch]);
+
   if (isError) {
     return (
       <p className="bg-warning-soft text-warning rounded-lg px-3 py-2 text-xs">
@@ -290,31 +318,94 @@ function LocationSelect({
   }
 
   return (
-    <Select
-      // Base UI's SelectValue renders the raw value (the GHN id) unless the root
-      // is given the value -> label pairs to look the selected name up from.
-      items={options}
-      value={value}
-      // The primitive can emit null on clear; there is nothing to select then.
-      onValueChange={(next) => next !== null && onValueChange(next)}
-      disabled={disabled || isLoading}
+    <Popover
+      open={open}
+      onOpenChange={(next) => {
+        setOpen(next);
+        if (!next) setSearch("");
+      }}
     >
-      <SelectTrigger className="w-full text-sm">
-        <SelectValue placeholder={isLoading ? t.loading : placeholder} />
-      </SelectTrigger>
-      <SelectContent>
-        {options.length === 0 ? (
-          <div className="text-muted-foreground px-3 py-2 text-xs">
-            {isLoading ? t.loading : t.empty}
-          </div>
-        ) : (
-          options.map((option) => (
-            <SelectItem key={option.value} value={option.value}>
-              {option.label}
-            </SelectItem>
-          ))
+      <PopoverTrigger
+        disabled={disabled || isLoading}
+        className={cn(
+          "border-input bg-background ring-offset-background placeholder:text-muted-foreground focus:ring-ring flex h-10 w-full items-center justify-between rounded-xl border px-3 py-2 text-sm shadow-xs transition-colors focus:ring-2 focus:ring-offset-2 focus:outline-none disabled:cursor-not-allowed disabled:opacity-50",
+          !selectedOption && "text-muted-foreground",
         )}
-      </SelectContent>
-    </Select>
+      >
+        <span className="truncate text-left">
+          {isLoading
+            ? t.loading
+            : selectedOption
+              ? selectedOption.label
+              : placeholder}
+        </span>
+        {isLoading ? (
+          <Loader2 className="ml-2 h-4 w-4 shrink-0 animate-spin opacity-50" />
+        ) : (
+          <ChevronDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+        )}
+      </PopoverTrigger>
+      <PopoverContent
+        align="start"
+        side="bottom"
+        className="w-[280px] max-w-[90vw] p-0 shadow-lg sm:w-[320px]"
+      >
+        <div className="flex items-center border-b border-slate-100 px-3 py-2 dark:border-slate-800">
+          <Search className="mr-2 h-4 w-4 shrink-0 text-slate-400" />
+          <input
+            ref={inputRef}
+            type="text"
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+            placeholder="Tìm kiếm nhanh..."
+            className="flex h-7 w-full rounded-md bg-transparent text-xs outline-none placeholder:text-slate-400"
+          />
+          {search && (
+            <button
+              type="button"
+              onClick={() => setSearch("")}
+              className="text-slate-400 hover:text-slate-600"
+            >
+              <X className="h-3.5 w-3.5" />
+            </button>
+          )}
+        </div>
+        <div className="max-h-60 overflow-y-auto p-1 text-xs">
+          {options.length === 0 ? (
+            <div className="px-3 py-4 text-center text-slate-400">
+              {isLoading ? t.loading : t.empty}
+            </div>
+          ) : filteredOptions.length === 0 ? (
+            <div className="px-3 py-4 text-center text-slate-400">
+              Không tìm thấy kết quả phù hợp
+            </div>
+          ) : (
+            filteredOptions.map((option) => {
+              const isSelected = option.value === value;
+              return (
+                <button
+                  key={option.value}
+                  type="button"
+                  onClick={() => {
+                    onValueChange(option.value);
+                    setOpen(false);
+                  }}
+                  className={cn(
+                    "flex w-full items-center justify-between rounded-lg px-2.5 py-2 text-left text-xs transition-colors hover:bg-slate-100 dark:hover:bg-slate-800",
+                    isSelected &&
+                      "bg-emerald-50 font-semibold text-emerald-800 dark:bg-emerald-950/40 dark:text-emerald-300",
+                  )}
+                >
+                  <span className="truncate">{option.label}</span>
+                  {isSelected && (
+                    <Check className="ml-2 h-3.5 w-3.5 shrink-0 text-emerald-600 dark:text-emerald-400" />
+                  )}
+                </button>
+              );
+            })
+          )}
+        </div>
+      </PopoverContent>
+    </Popover>
   );
 }

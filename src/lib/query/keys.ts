@@ -64,4 +64,16 @@ export const queryKeys = {
   // Keyed by the expert PROFILE id, which is not the same value as the account user id.
   expertAvailability: (expertProfileId: string) =>
     ["experts", expertProfileId, "availability"] as const,
+  clinics: (query?: unknown) => ["clinics", query] as const,
+  clinic: (id: string | null | undefined) => ["clinic", id] as const,
+  clinicExperts: (id: string | null | undefined) =>
+    ["clinic-experts", id] as const,
+  adminComboDiscount: ["admin", "commerce", "combo-discount"] as const,
+  adminPlatformCommission: [
+    "admin",
+    "commerce",
+    "platform-commission",
+  ] as const,
+  adminClinicWithdrawals: (query?: unknown) =>
+    ["admin", "clinic-withdrawals", query] as const,
 };

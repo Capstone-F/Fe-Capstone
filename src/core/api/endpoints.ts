@@ -49,6 +49,8 @@ export const API_ENDPOINTS = {
   },
   CLINICS: {
     LIST: "/clinics",
+    DETAIL: (id: string) => `/clinics/${id}`,
+    EXPERTS: (id: string) => `/clinics/${id}/experts`,
   },
   CUSTOMERS: {
     ME: "/customers/me",
