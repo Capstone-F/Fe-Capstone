@@ -5,6 +5,7 @@ import { PackagePlus } from "lucide-react";
 
 import { ProductOnboardingForm } from "@/features/commerce/components/product-onboarding-form";
 import { StaffPageHeader } from "@/features/staff/components/staff-page-header";
+import { InventoryWarningTable } from "@/features/stock/components/inventory-warning-table";
 
 export default function CatalogOnboardingPage() {
   return (
@@ -16,6 +17,7 @@ export default function CatalogOnboardingPage() {
       />
 
       <ProductOnboardingForm />
+      <InventoryWarningTable />
     </div>
   );
 }

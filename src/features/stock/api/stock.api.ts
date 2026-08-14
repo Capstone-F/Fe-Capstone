@@ -10,6 +10,7 @@ import {
   StockImportFormResponseDto,
   UpdateStockImportFormDto,
   InventoryItemDto,
+  LowStockThresholdDto,
 } from "../types/stock.types";
 
 export const stockApi = {
@@ -89,6 +90,21 @@ export const stockApi = {
   listInventory: async () => {
     const response = await apiClient.get<InventoryItemDto[]>(
       API_ENDPOINTS.STOCK.INVENTORY,
+    );
+    return response.data;
+  },
+
+  getLowStockThreshold: async () => {
+    const response = await apiClient.get<LowStockThresholdDto>(
+      API_ENDPOINTS.STOCK.LOW_STOCK_THRESHOLD,
+    );
+    return response.data;
+  },
+
+  updateLowStockThreshold: async (threshold: number) => {
+    const response = await apiClient.patch<LowStockThresholdDto>(
+      API_ENDPOINTS.STOCK.LOW_STOCK_THRESHOLD,
+      { threshold },
     );
     return response.data;
   },
