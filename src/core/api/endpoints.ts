@@ -46,6 +46,7 @@ export const API_ENDPOINTS = {
   ADMIN_QA_CHEATS: {
     CUSTOMER_PROFILE: (id: string) => `/admin/customers/${id}/profile`,
     CUSTOMER_SURVEY: (id: string) => `/admin/customers/${id}/survey`,
+    SEED_DEMO_CUSTOMER: "/admin/demo/customers",
   },
   CLINICS: {
     LIST: "/clinics",
