@@ -12,7 +12,9 @@ import { ProductImage } from "./product-image";
 
 interface ProductCardProps {
   product: Product;
-  onAddToCart: (product: Product) => void;
+  /** Omit for a display-only card: the footer then shows the price alone.
+   *  The rails do this — browsing surfaces send you to the detail page. */
+  onAddToCart?: (product: Product) => void;
   isAdding?: boolean;
 }
 
@@ -24,7 +26,9 @@ export function ProductCard({
   const variant = primaryVariant(product);
 
   return (
-    <Card className="hover:border-primary/40 flex flex-col justify-between overflow-hidden border-slate-200 py-0 shadow-xs transition-colors">
+    // h-full so the card fills its track slot: in a rail every card then ends at
+    // the same height regardless of how many lines its name wraps to.
+    <Card className="hover:border-primary/40 flex h-full flex-col justify-between overflow-hidden border-slate-200 py-0 shadow-xs transition-colors">
       <Link href={`/products/${product.id}`} className="block">
         <div className="relative aspect-square w-full bg-slate-50">
           <ProductImage
@@ -45,19 +49,23 @@ export function ProductCard({
           </h3>
         </Link>
       </CardContent>
-      <CardFooter className="flex items-center justify-between border-t border-slate-100 bg-slate-50/50 p-3">
+      {/* Price and button stack instead of sharing a row: side by side, the
+          button had to shrink to fit a narrow rail card and crowded the price. */}
+      <CardFooter className="flex flex-col items-stretch gap-2 border-t border-slate-100 bg-slate-50/50 p-3">
         <span className="text-sm font-bold text-slate-800">
           {variant ? formatVnd(variant.priceVnd) : "—"}
         </span>
-        <Button
-          size="sm"
-          disabled={!variant || isAdding}
-          onClick={() => onAddToCart(product)}
-          className="rounded-lg text-xs font-semibold"
-        >
-          <ShoppingCart className="mr-1 h-3.5 w-3.5" />
-          {"Thêm vào giỏ"}
-        </Button>
+        {onAddToCart ? (
+          <Button
+            size="sm"
+            disabled={!variant || isAdding}
+            onClick={() => onAddToCart(product)}
+            className="w-full rounded-lg text-xs font-semibold"
+          >
+            <ShoppingCart className="mr-1 h-3.5 w-3.5" />
+            {"Thêm vào giỏ"}
+          </Button>
+        ) : null}
       </CardFooter>
     </Card>
   );

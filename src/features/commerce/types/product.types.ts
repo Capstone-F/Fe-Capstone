@@ -39,15 +39,37 @@ export interface ProductCategory {
   name: string;
 }
 
-export type ProductSort = "featured" | "price_asc" | "price_desc";
+export interface BrandSummary {
+  id: string;
+  name: string;
+  /** Count within the scan batch, NOT the catalog total. See useBrands. */
+  productCount: number;
+}
 
 export interface ProductQuery {
   categoryId?: string;
+  /** Exact FK match — preferred over `brandName`, which BE matches with ILIKE %...%. */
+  brandId?: string;
   brandName?: string;
   ingredientName?: string;
   query?: string;
   page?: number;
   limit?: number;
+}
+
+/** Page state parsed out of the URL. The URL is the single source of truth. */
+export interface ProductFilters {
+  categoryId?: string;
+  brandId?: string;
+  brandName?: string;
+  ingredientName?: string;
+  query?: string;
+  /** Only meaningful when no other filter is set: "show the full catalog". */
+  view?: "all";
+  /** `recommended` | `newest` — links coming from shop home. */
+  section?: string;
+  page: number;
+  limit: number;
 }
 
 export interface ProductsPage {

@@ -17,6 +17,7 @@ export const productsApi = {
       {
         params: {
           categoryId: query?.categoryId,
+          brandId: query?.brandId,
           brandName: query?.brandName,
           ingredientName: query?.ingredientName,
           query: query?.query,
