@@ -56,6 +56,8 @@ export const queryKeys = {
   stockImportForms: (query: unknown) =>
     ["stock", "import-forms", query] as const,
   stockImportForm: (id: string) => ["stock", "import-form", id] as const,
+  stockInventory: ["stock", "inventory"] as const,
+  lowStockThreshold: ["stock", "low-stock-threshold"] as const,
   supportSessions: (query: unknown) => ["support", "sessions", query] as const,
   supportLiveSession: () => ["support", "liveSession"] as const,
   supportSession: (id: string) => ["support", "session", id] as const,

@@ -76,6 +76,7 @@ export const API_ENDPOINTS = {
     BATCHES: "/stock/batches",
     ADJUST_BATCH: (id: string) => `/stock/batches/${id}/adjust`,
     INVENTORY: "/stock/inventory",
+    LOW_STOCK_THRESHOLD: "/stock/low-stock-threshold",
   },
   SUPPORT: {
     SESSIONS: "/support/sessions",

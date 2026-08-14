@@ -84,6 +84,7 @@ export function useConfirmStockImportForm() {
         queryKey: queryKeys.stockImportForm(id),
       });
       queryClient.invalidateQueries({ queryKey: ["products"] });
+      queryClient.invalidateQueries({ queryKey: queryKeys.stockInventory });
     },
   });
 }
@@ -126,6 +127,7 @@ export function useDirectBatchImport() {
     mutationFn: (data: ImportBatchDto) => stockApi.directBatchImport(data),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["products"] });
+      queryClient.invalidateQueries({ queryKey: queryKeys.stockInventory });
     },
   });
 }
@@ -137,13 +139,37 @@ export function useAdjustStockBatch() {
       stockApi.adjustBatch(id, data),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["products"] });
+      queryClient.invalidateQueries({ queryKey: queryKeys.stockInventory });
     },
   });
 }
 
 export function useStockInventory() {
   return useQuery({
-    queryKey: ["stock", "inventory"],
+    queryKey: queryKeys.stockInventory,
     queryFn: () => stockApi.listInventory(),
+  });
+}
+
+export function useLowStockThreshold() {
+  return useQuery({
+    queryKey: queryKeys.lowStockThreshold,
+    queryFn: () => stockApi.getLowStockThreshold(),
+  });
+}
+
+export function useUpdateLowStockThreshold() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (threshold: number) =>
+      stockApi.updateLowStockThreshold(threshold),
+    onSuccess: () => {
+      void queryClient.invalidateQueries({
+        queryKey: queryKeys.lowStockThreshold,
+      });
+      void queryClient.invalidateQueries({
+        queryKey: queryKeys.stockInventory,
+      });
+    },
   });
 }
