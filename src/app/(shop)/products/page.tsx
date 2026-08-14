@@ -9,16 +9,18 @@ export const metadata = {
 
 export default function Page() {
   return (
-    <div className="mx-auto w-full max-w-7xl p-4 md:p-6 lg:p-8">
-      <Suspense
-        fallback={
-          <div className="animate-pulse py-20 text-center font-medium text-slate-500">
-            Đang tải sản phẩm...
-          </div>
-        }
-      >
-        <ProductsPage />
-      </Suspense>
+    <div className="min-h-screen bg-[#FAF8F5]">
+      <div className="mx-auto w-full max-w-7xl p-4 md:p-6 lg:p-8">
+        <Suspense
+          fallback={
+            <div className="animate-pulse py-20 text-center font-medium text-slate-500">
+              Đang tải sản phẩm...
+            </div>
+          }
+        >
+          <ProductsPage />
+        </Suspense>
+      </div>
     </div>
   );
 }

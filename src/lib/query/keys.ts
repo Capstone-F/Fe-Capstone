@@ -35,6 +35,8 @@ export const queryKeys = {
   suggestions: (limit: number) => ["products", "suggestions", limit] as const,
   product: (id: string) => ["product", id] as const,
   productCategories: ["productCategories"] as const,
+  /** One scan of the catalog, shared by useBrands and useCategoryProductCounts. */
+  catalogScan: ["products", "catalog-scan"] as const,
   productPool: ["productPool"] as const,
   cart: ["cart"] as const,
   provinces: ["delivery", "provinces"] as const,

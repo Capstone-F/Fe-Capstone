@@ -25,6 +25,10 @@ import {
   getCategoryIcon,
   getCategoryLabel,
 } from "@/features/commerce/mapper/category-mapper";
+import {
+  buildProductsHref,
+  type ProductFilterPatch,
+} from "@/features/commerce/lib/product-filters";
 import { ProductImageGallery } from "@/features/commerce/components/product-image-gallery";
 import { RelatedProducts } from "@/features/commerce/components/related-products";
 import { Button } from "@/shared/components/ui/button";
@@ -55,6 +59,10 @@ const d = {
   variantLabel: "Phân loại",
   sku: "Mã SKU",
   keyIngredients: "Thành phần chính",
+  seeCategory: (name: string) => `Xem sản phẩm thuộc danh mục ${name}`,
+  seeBrand: (name: string) => `Xem sản phẩm của thương hiệu ${name}`,
+  seeVolume: (volume: string) => `Tìm sản phẩm dung tích ${volume}`,
+  seeIngredient: (name: string) => `Xem sản phẩm chứa ${name}`,
   trustGenuine: "Chính hãng",
   trustShipping: "Miễn phí vận chuyển",
   trustReturn: "Đổi trả trong 7 ngày",
@@ -64,6 +72,44 @@ function variantLabel(variant: ProductVariant): string {
   return (
     [variant.volume, variant.packaging].filter(Boolean).join(" · ") ||
     variant.sku
+  );
+}
+
+/**
+ * Detail-page tags link into a freshly filtered catalog, so they build from
+ * empty params — nothing about the product being viewed should leak in.
+ */
+function catalogHref(patch: ProductFilterPatch): string {
+  return buildProductsHref(new URLSearchParams(), patch);
+}
+
+/**
+ * A product attribute rendered as a link into the filtered catalog. The shared
+ * transition + focus ring is what tells the user these tags are clickable at
+ * all; each caller supplies its own resting and hover colours.
+ */
+function TagLink({
+  href,
+  title,
+  className,
+  children,
+}: {
+  href: string;
+  title: string;
+  className?: string;
+  children: React.ReactNode;
+}) {
+  return (
+    <Link
+      href={href}
+      title={title}
+      className={cn(
+        "focus-visible:ring-primary inline-flex items-center gap-1.5 transition-colors focus-visible:ring-2 focus-visible:outline-none motion-reduce:transition-none",
+        className,
+      )}
+    >
+      {children}
+    </Link>
   );
 }
 
@@ -155,15 +201,24 @@ export function ProductDetailPage({
         <div className="flex h-fit flex-col gap-4">
           <div className="flex flex-col gap-2">
             <div className="flex items-center gap-2">
-              <span className="inline-flex items-center gap-1.5 rounded-full bg-slate-100 px-2.5 py-1 text-xs font-semibold text-slate-600">
+              <TagLink
+                href={catalogHref({ categoryId: product.categoryId })}
+                title={d.seeCategory(getCategoryLabel(product.categoryName))}
+                className="rounded-full bg-slate-100 px-2.5 py-1 text-xs font-semibold text-slate-600 hover:bg-slate-200 hover:text-slate-900"
+              >
                 {categoryIcon && (
                   <Image src={categoryIcon} alt="" width={14} height={14} />
                 )}
                 {getCategoryLabel(product.categoryName)}
-              </span>
-              <span className="text-muted-foreground text-xs font-semibold tracking-wide uppercase">
+              </TagLink>
+              <TagLink
+                // brandId is an exact FK match; brandName would be a fuzzy ILIKE.
+                href={catalogHref({ brandId: product.brandId })}
+                title={d.seeBrand(product.brandName)}
+                className="text-muted-foreground hover:text-primary text-xs font-semibold tracking-wide uppercase underline-offset-4 hover:underline"
+              >
                 {product.brandName}
-              </span>
+              </TagLink>
             </div>
             <h1 className="text-2xl font-bold text-slate-900">
               {product.name}
@@ -206,9 +261,23 @@ export function ProductDetailPage({
                 ))}
               </div>
               {selectedVariant && (
-                <span className="text-muted-foreground text-xs">
-                  {d.sku}: {selectedVariant.sku}
-                </span>
+                <div className="text-muted-foreground flex flex-wrap items-center gap-2 text-xs">
+                  <span>
+                    {d.sku}: {selectedVariant.sku}
+                  </span>
+                  {/* The variant chips above are selectors, so volume gets its
+                      own tag here — a chip cannot both switch variant and
+                      navigate away. */}
+                  {selectedVariant.volume ? (
+                    <TagLink
+                      href={catalogHref({ query: selectedVariant.volume })}
+                      title={d.seeVolume(selectedVariant.volume)}
+                      className="hover:border-primary hover:text-primary rounded-full border border-slate-200 px-2 py-0.5 font-medium"
+                    >
+                      {selectedVariant.volume}
+                    </TagLink>
+                  ) : null}
+                </div>
               )}
             </div>
           )}
@@ -276,15 +345,17 @@ export function ProductDetailPage({
           </h2>
           <div className="flex flex-wrap gap-2">
             {keyIngredients.map((ingredient) => (
-              <span
+              <TagLink
                 key={ingredient.name}
-                className="bg-primary-soft text-primary rounded-full px-3 py-1.5 text-sm font-semibold"
+                href={catalogHref({ ingredientName: ingredient.name })}
+                title={d.seeIngredient(ingredient.name)}
+                className="bg-primary-soft text-primary hover:bg-primary rounded-full px-3 py-1.5 text-sm font-semibold hover:text-white"
               >
                 {ingredient.name}
                 {ingredient.concentrationPct !== null
                   ? ` ${ingredient.concentrationPct}%`
                   : ""}
-              </span>
+              </TagLink>
             ))}
           </div>
         </Card>
@@ -309,19 +380,21 @@ export function ProductDetailPage({
               </span>
             )}
             {ingredients.map((ingredient) => (
-              <span
+              <TagLink
                 key={ingredient.name}
+                href={catalogHref({ ingredientName: ingredient.name })}
+                title={d.seeIngredient(ingredient.name)}
                 className={
                   ingredient.isKeyIngredient
-                    ? "bg-primary-soft text-primary rounded-full px-3 py-1 text-xs font-bold"
-                    : "rounded-full bg-slate-100 px-3 py-1 text-xs font-medium text-slate-600"
+                    ? "bg-primary-soft text-primary hover:bg-primary rounded-full px-3 py-1 text-xs font-bold hover:text-white"
+                    : "rounded-full bg-slate-100 px-3 py-1 text-xs font-medium text-slate-600 hover:bg-slate-200 hover:text-slate-900"
                 }
               >
                 {ingredient.name}
                 {ingredient.concentrationPct !== null
                   ? ` ${ingredient.concentrationPct}%`
                   : ""}
-              </span>
+              </TagLink>
             ))}
           </div>
         </TabsContent>

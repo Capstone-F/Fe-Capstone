@@ -1,12 +1,7 @@
 "use client";
 
-import { toast } from "sonner";
-import { Product } from "@/types/domain";
 import { useProducts } from "../hooks/useProducts";
-import { useAddToCart } from "../hooks/useCart";
-import { primaryVariant } from "@/features/commerce/mapper/variant";
-import { ProductCard } from "./product-card";
-import { showAddToCartError } from "../lib/cart-errors";
+import { ProductRail } from "./product-rail";
 
 const d = {
   quantity: "Số lượng",
@@ -30,7 +25,8 @@ const d = {
 /**
  * "Sản phẩm cùng danh mục" — fetches active products in the same category via
  * the server-side `categoryId` filter and drops the product being viewed.
- * Renders nothing when there is no other product in the category.
+ * Renders as the shared looping rail; `ProductRail` itself renders nothing when
+ * the category holds no other product.
  */
 export function RelatedProducts({
   categoryId,
@@ -39,40 +35,15 @@ export function RelatedProducts({
   categoryId: string;
   currentProductId: string;
 }) {
-  const { data } = useProducts({ categoryId, limit: 8 });
-  const addToCart = useAddToCart();
+  const { data, isLoading } = useProducts({ categoryId, limit: 8 });
 
   const items = (data?.products ?? []).filter((p) => p.id !== currentProductId);
 
-  if (items.length === 0) return null;
-
-  const handleAdd = (product: Product) => {
-    const variant = primaryVariant(product);
-    if (!variant) return;
-    addToCart.mutate(
-      { productVariantId: variant.id },
-      {
-        onSuccess: () => toast.success(`${"Đã thêm vào giỏ"}: ${product.name}`),
-        onError: showAddToCartError,
-      },
-    );
-  };
-
   return (
-    <section className="flex flex-col gap-4">
-      <h2 className="text-lg font-bold text-slate-900">
-        {d.relatedInCategory}
-      </h2>
-      <div className="grid grid-cols-2 gap-4 lg:grid-cols-4">
-        {items.map((product) => (
-          <ProductCard
-            key={product.id}
-            product={product}
-            onAddToCart={handleAdd}
-            isAdding={addToCart.isPending}
-          />
-        ))}
-      </div>
-    </section>
+    <ProductRail
+      title={d.relatedInCategory}
+      products={items}
+      isLoading={isLoading}
+    />
   );
 }
