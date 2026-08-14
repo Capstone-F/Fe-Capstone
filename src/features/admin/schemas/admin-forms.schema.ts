@@ -18,6 +18,37 @@ export const adminWalletTopUpSchema = z.object({
 
 export type AdminWalletTopUpValues = z.infer<typeof adminWalletTopUpSchema>;
 
+const optionalEmailSchema = z
+  .string()
+  .refine(
+    (value) => value.trim() === "" || z.email().safeParse(value.trim()).success,
+    "Địa chỉ email không hợp lệ.",
+  );
+
+export const seedDemoCustomerSchema = z.object({
+  email: optionalEmailSchema,
+  password: z
+    .string()
+    .refine(
+      (value) => value === "" || (value.length >= 6 && value.length <= 72),
+      "Mật khẩu phải có từ 6 đến 72 ký tự.",
+    ),
+  fullName: z
+    .string()
+    .refine(
+      (value) => value.trim().length <= 120,
+      "Họ tên không được vượt quá 120 ký tự.",
+    ),
+  historyDays: z.string().refine((value) => {
+    if (value === "") return true;
+    if (!/^\d+$/.test(value)) return false;
+    const days = Number(value);
+    return Number.isInteger(days) && days >= 7 && days <= 60;
+  }, "Số ngày lịch sử phải là số nguyên từ 7 đến 60."),
+});
+
+export type SeedDemoCustomerFormValues = z.infer<typeof seedDemoCustomerSchema>;
+
 export const createManagedUserSchema = z
   .object({
     email: z.email("Địa chỉ email không hợp lệ."),

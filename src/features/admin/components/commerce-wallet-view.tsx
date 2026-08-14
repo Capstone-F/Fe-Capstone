@@ -44,7 +44,17 @@ import {
   useUpdatePlatformCommission,
 } from "../hooks/useAdminCommerce";
 
-export function CommerceWalletView() {
+interface CommerceWalletViewProps {
+  initialCustomer?: {
+    id: string;
+    name: string;
+    email: string;
+  };
+}
+
+export function CommerceWalletView({
+  initialCustomer,
+}: CommerceWalletViewProps) {
   // Combo Discount Settings State
   const { data: comboSettings, isLoading: isComboLoading } =
     useAdminComboDiscount();
@@ -114,7 +124,7 @@ export function CommerceWalletView() {
     id: string;
     name: string;
     email: string;
-  } | null>(null);
+  } | null>(initialCustomer ?? null);
   const [topUpAmount, setTopUpAmount] = useState<number>(50000);
   const [topUpReason, setTopUpReason] = useState("");
 

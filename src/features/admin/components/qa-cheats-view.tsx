@@ -15,6 +15,7 @@ import {
   CardTitle,
   CardContent,
 } from "@/shared/components/ui/card";
+import { DemoCustomerSeeder } from "./demo-customer-seeder";
 
 export function QaCheatsView() {
   const [customerId, setCustomerId] = useState("");
@@ -63,12 +64,14 @@ export function QaCheatsView() {
               Bảng Công Cụ Phím Tắt QA & Kiểm Thử Hệ Thống (QA Cheats)
             </h2>
             <p className="text-xs text-slate-500">
-              Cho phép Quản trị viên thay đổi nhanh loại da Baumann hoặc thông
-              tin hồ sơ để kiểm thử các luồng gợi ý sản phẩm/routine.
+              Chuẩn bị dữ liệu live demo và thay đổi nhanh trạng thái khách hàng
+              để kiểm thử các luồng sản phẩm, routine và ví.
             </p>
           </div>
         </div>
       </div>
+
+      <DemoCustomerSeeder />
 
       <div className="max-w-2xl">
         <Card className="rounded-3xl border border-slate-200/90 bg-white shadow-sm dark:border-slate-800 dark:bg-slate-900">
