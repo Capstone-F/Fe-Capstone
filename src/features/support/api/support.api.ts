@@ -1,5 +1,6 @@
 import { apiClient } from "@/core/api/client";
 import { API_ENDPOINTS } from "@/core/api/endpoints";
+import { ApiError } from "@/core/api/errors";
 import {
   CloseSupportSessionDto,
   CreateSupportSessionDto,
@@ -19,13 +20,14 @@ export const supportApi = {
         API_ENDPOINTS.SUPPORT.LIVE_SESSION,
       );
       return response.data;
-    } catch (err: unknown) {
-      if (
-        (err as { response?: { status?: number } })?.response?.status === 404
-      ) {
+    } catch (error: unknown) {
+      // The API client normalizes Axios failures to ApiError, so a missing live
+      // session is represented by `error.status` rather than `error.response`.
+      // A 404 is the expected "no active session" state for customers.
+      if (error instanceof ApiError && error.status === 404) {
         return null;
       }
-      throw err;
+      throw error;
     }
   },
 

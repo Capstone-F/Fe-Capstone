@@ -1,4 +1,5 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { ApiError } from "@/core/api/errors";
 import { queryKeys } from "@/lib/query/keys";
 import { supportApi } from "../api/support.api";
 import {
@@ -15,7 +16,13 @@ export function useMyLiveSupportSession(enabled = true) {
     queryFn: () => supportApi.getMyLiveSession(),
     enabled,
     staleTime: 5000,
-    refetchInterval: 5000,
+    retry: (failureCount, error) =>
+      error instanceof ApiError && error.status === 404
+        ? false
+        : failureCount < 2,
+    // `null` means the customer has no live session. Do not keep requesting the
+    // endpoint in that valid state; creating a session seeds this query cache.
+    refetchInterval: (query) => (query.state.data ? 5000 : false),
   });
 }
 
