@@ -13,6 +13,7 @@ import { OrderStatusBadge } from "@/features/commerce/components/order-status-ba
 import { OrderCardSkeleton } from "@/features/commerce/components/order-card-skeleton";
 import { DeliveryTrackingCard } from "@/features/commerce/components/delivery-tracking-card";
 import { PayOrderButton } from "@/features/commerce/components/pay-order-button";
+import { PayOrderWithWalletButton } from "@/features/commerce/components/pay-order-with-wallet-button";
 import { CancelOrderDialog } from "@/features/commerce/components/cancel-order-dialog";
 import { formatOrderCode } from "@/features/commerce/lib/order-hydration";
 import { formatVnd } from "@/shared/utils/format";
@@ -123,7 +124,13 @@ export default function OrderDetailPage({
                   </Button>
                 )}
                 {order.status === "PENDING" && (
-                  <PayOrderButton orderId={order.id} />
+                  <>
+                    <PayOrderWithWalletButton
+                      orderId={order.id}
+                      totalVnd={order.totalVnd}
+                    />
+                    <PayOrderButton orderId={order.id} />
+                  </>
                 )}
               </div>
             </div>

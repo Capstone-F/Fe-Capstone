@@ -53,6 +53,9 @@ export const queryKeys = {
   ordersAll: ["orders"] as const,
   order: (id: string) => ["order", id] as const,
   payment: (id: string) => ["payment", id] as const,
+  wallet: ["wallet"] as const,
+  walletTransactions: (params?: unknown) =>
+    ["wallet", "transactions", params ?? {}] as const,
   stockImportForms: (query: unknown) =>
     ["stock", "import-forms", query] as const,
   stockImportForm: (id: string) => ["stock", "import-form", id] as const,
