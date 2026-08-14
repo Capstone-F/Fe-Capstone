@@ -10,6 +10,7 @@ import {
   Scan,
   ArrowLeft,
   CalendarDays,
+  Wallet,
 } from "lucide-react";
 import { useSession } from "@/features/auth/hooks/useSession";
 import { useCart } from "@/features/commerce/hooks/useCart";
@@ -89,15 +90,33 @@ export function Navbar() {
       active:
         pathname.startsWith("/experts") || pathname.startsWith("/booking"),
     },
+    {
+      label: "Phòng khám",
+      href: "/clinics",
+      active: pathname.startsWith("/clinics"),
+    },
   ];
 
   // Helper to get mobile header configuration
   const getMobileHeaderConfig = (path: string) => {
-    const topLevels = ["/", "/products", "/care", "/experts", "/profile"];
+    const topLevels = [
+      "/",
+      "/products",
+      "/care",
+      "/experts",
+      "/clinics",
+      "/profile",
+    ];
     if (topLevels.includes(path)) {
       return null;
     }
 
+    if (path === "/clinics") {
+      return { title: "Phòng khám đối tác", backHref: "/" };
+    }
+    if (path.startsWith("/clinics/")) {
+      return { title: "Chi tiết phòng khám", backHref: "/clinics" };
+    }
     if (path === "/cart") {
       return { title: "Giỏ hàng", backHref: "/products" };
     }
@@ -288,6 +307,10 @@ export function Navbar() {
                 <DropdownMenuItem render={<Link href="/profile" />}>
                   <UserCircle2 className="mr-2 h-4 w-4" />
                   Hồ sơ cá nhân
+                </DropdownMenuItem>
+                <DropdownMenuItem render={<Link href="/profile?tab=wallet" />}>
+                  <Wallet className="mr-2 h-4 w-4" />
+                  Ví GlowScan
                 </DropdownMenuItem>
                 <DropdownMenuItem
                   render={<Link href="/profile?tab=appointments" />}

@@ -1,26 +1,37 @@
 import { apiClient } from "@/core/api/client";
 import { API_ENDPOINTS } from "@/core/api/endpoints";
+import type { PaginatedResponse } from "@/core/api/types";
 import type { AxiosResponse } from "axios";
-import type { Wallet, WalletTransaction } from "../types/wallet.types";
+import type {
+  Wallet,
+  WalletTopUpRequest,
+  WalletTopUpResponse,
+  WalletTransaction,
+  WalletTransactionsParams,
+} from "../types/wallet.types";
 
 export const walletApi = {
-  getWallet: async (): Promise<AxiosResponse<Wallet>> => {
+  getWallet: (): Promise<AxiosResponse<Wallet>> => {
     return apiClient.get<Wallet>(API_ENDPOINTS.WALLET.ME);
   },
 
-  getTransactions: async (): Promise<AxiosResponse<WalletTransaction[]>> => {
-    return apiClient.get<WalletTransaction[]>(
+  /** Wallet ledger, newest first. The backend resolves `direction` per row. */
+  getTransactions: (
+    params?: WalletTransactionsParams,
+  ): Promise<AxiosResponse<PaginatedResponse<WalletTransaction>>> => {
+    return apiClient.get<PaginatedResponse<WalletTransaction>>(
       API_ENDPOINTS.WALLET.TRANSACTIONS,
+      { params },
     );
   },
 
-  topUp: async (amountVnd: number): Promise<AxiosResponse<Wallet>> => {
-    return apiClient.post<Wallet>(API_ENDPOINTS.WALLET.TOP_UP, { amountVnd });
-  },
-
-  payConsultation: async (
-    consultationId: string,
-  ): Promise<AxiosResponse<Wallet>> => {
-    return apiClient.post<Wallet>(API_ENDPOINTS.BOOKINGS.PAY(consultationId));
+  /** Returns a gateway URL to redirect to — the balance only moves after the gateway callback. */
+  topUp: (
+    payload: WalletTopUpRequest,
+  ): Promise<AxiosResponse<WalletTopUpResponse>> => {
+    return apiClient.post<WalletTopUpResponse>(
+      API_ENDPOINTS.WALLET.TOP_UP,
+      payload,
+    );
   },
 };

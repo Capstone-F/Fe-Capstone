@@ -1,8 +1,6 @@
 "use client";
 
 import React, { useState } from "react";
-import { useQuery } from "@tanstack/react-query";
-import { apiClient } from "@/core/api/client";
 import {
   Banknote,
   CheckCircle2,
@@ -17,6 +15,7 @@ import {
   useMarkWithdrawalPaid,
   useRejectWithdrawal,
 } from "../hooks/useClinicWithdrawals";
+import { useAdminClinics } from "../hooks/useAdminClinics";
 import { ClinicWithdrawalItem } from "../api/admin-clinic-withdrawals.api";
 import { formatVndString } from "@/shared/utils/format";
 import {
@@ -70,21 +69,18 @@ export function AdminClinicWithdrawalsView() {
   const [clinicIdFilter, setClinicIdFilter] = useState("");
 
   // Fetch clinics list for dropdown selection
-  const { data: clinicsRes } = useQuery({
-    queryKey: ["admin-clinics-simple-list"],
-    queryFn: async () => {
-      const res = await apiClient.get("/admin/clinics");
-      return res.data;
-    },
-  });
-  const clinicsList = Array.isArray(clinicsRes)
-    ? clinicsRes
-    : clinicsRes?.items || [];
+  const { data: clinicsRes } = useAdminClinics();
+
+  const clinicMap = React.useMemo(() => {
+    const map = new Map<string, string>();
+    (clinicsRes?.items || []).forEach((c: { id: string; name?: string }) => {
+      if (c.id && c.name) map.set(c.id, c.name);
+    });
+    return map;
+  }, [clinicsRes?.items]);
 
   const clinicFilterItems = React.useMemo(() => {
-    const list = Array.isArray(clinicsRes)
-      ? clinicsRes
-      : clinicsRes?.items || [];
+    const list = clinicsRes?.items || [];
     return {
       ALL: "Tất cả phòng khám",
       ...Object.fromEntries(
@@ -94,7 +90,7 @@ export function AdminClinicWithdrawalsView() {
         ]),
       ),
     };
-  }, [clinicsRes]);
+  }, [clinicsRes?.items]);
 
   // Modals state
   const [markPaidTarget, setMarkPaidTarget] =
@@ -278,11 +274,13 @@ export function AdminClinicWithdrawalsView() {
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="ALL">Tất cả phòng khám</SelectItem>
-                  {clinicsList.map((c: { id: string; name?: string }) => (
-                    <SelectItem key={c.id} value={c.id}>
-                      {c.name || `Phòng khám #${c.id.slice(0, 6)}`}
-                    </SelectItem>
-                  ))}
+                  {(clinicsRes?.items || []).map(
+                    (c: { id: string; name?: string }) => (
+                      <SelectItem key={c.id} value={c.id}>
+                        {c.name || `Phòng khám #${c.id.slice(0, 6)}`}
+                      </SelectItem>
+                    ),
+                  )}
                 </SelectContent>
               </Select>
             </div>
@@ -316,84 +314,91 @@ export function AdminClinicWithdrawalsView() {
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {items.map((item) => (
-                  <TableRow key={item.id}>
-                    <TableCell>
-                      <div className="flex items-center gap-1.5 font-bold text-slate-900 dark:text-slate-100">
-                        <Building2 className="h-3.5 w-3.5 text-slate-400" />
-                        <span>Clinic #{item.clinicId.slice(0, 8)}</span>
-                      </div>
-                      <div className="font-mono text-[10px] text-slate-400">
-                        {item.clinicId}
-                      </div>
-                    </TableCell>
-                    <TableCell className="font-mono font-bold text-emerald-700 dark:text-emerald-400">
-                      {formatVndString(item.amountVnd)}
-                    </TableCell>
-                    <TableCell>
-                      <div className="font-semibold text-slate-800 dark:text-slate-200">
-                        {item.bankName} - {item.bankAccountNumber}
-                      </div>
-                      <div className="text-[10px] text-slate-500 uppercase">
-                        {item.bankAccountHolder}
-                      </div>
-                    </TableCell>
-                    <TableCell className="text-slate-500">
-                      <div>User: #{item.requestedByUserId.slice(0, 6)}</div>
-                      <div className="text-[10px]">
-                        {new Date(item.createdAt).toLocaleString("vi-VN")}
-                      </div>
-                    </TableCell>
-                    <TableCell>{renderStatusBadge(item.status)}</TableCell>
-                    <TableCell>
-                      {item.transferRef && (
-                        <div className="font-mono text-[11px] font-bold text-indigo-600 dark:text-indigo-400">
-                          Ref: {item.transferRef}
+                {items.map((item) => {
+                  const clinicName =
+                    item.clinicName || clinicMap.get(item.clinicId);
+                  return (
+                    <TableRow key={item.id}>
+                      <TableCell>
+                        <div className="flex items-center gap-1.5 font-bold text-slate-900 dark:text-slate-100">
+                          <Building2 className="h-3.5 w-3.5 text-slate-400" />
+                          <span>
+                            {clinicName ||
+                              `Phòng khám #${item.clinicId.slice(0, 8)}`}
+                          </span>
                         </div>
-                      )}
-                      {item.staffNote && (
-                        <div className="text-[11px] text-slate-600 italic dark:text-slate-400">
-                          {`"${item.staffNote}"`}
+                        <div className="font-mono text-[10px] text-slate-400">
+                          {item.clinicId}
                         </div>
-                      )}
-                      {!item.transferRef && !item.staffNote && (
-                        <span className="text-slate-400">—</span>
-                      )}
-                    </TableCell>
-                    <TableCell className="text-right">
-                      {item.status === "REQUESTED" ? (
-                        <div className="flex items-center justify-end gap-2">
-                          <Button
-                            size="sm"
-                            onClick={() => {
-                              setMarkPaidTarget(item);
-                              setTransferRefInput("");
-                              setNoteInput("");
-                            }}
-                            className="h-8 rounded-xl bg-emerald-700 px-3 text-[11px] font-bold text-white hover:bg-emerald-800"
-                          >
-                            Xác nhận Đã chuyển
-                          </Button>
-                          <Button
-                            variant="outline"
-                            size="sm"
-                            onClick={() => {
-                              setRejectTarget(item);
-                              setNoteInput("");
-                            }}
-                            className="h-8 rounded-xl border-rose-200 text-[11px] font-bold text-rose-600 hover:bg-rose-50"
-                          >
-                            Từ chối
-                          </Button>
+                      </TableCell>
+                      <TableCell className="font-mono font-bold text-emerald-700 dark:text-emerald-400">
+                        {formatVndString(item.amountVnd)}
+                      </TableCell>
+                      <TableCell>
+                        <div className="font-semibold text-slate-800 dark:text-slate-200">
+                          {item.bankName} - {item.bankAccountNumber}
                         </div>
-                      ) : (
-                        <span className="text-[11px] font-medium text-slate-400">
-                          Đã xong
-                        </span>
-                      )}
-                    </TableCell>
-                  </TableRow>
-                ))}
+                        <div className="text-[10px] text-slate-500 uppercase">
+                          {item.bankAccountHolder}
+                        </div>
+                      </TableCell>
+                      <TableCell className="text-slate-500">
+                        <div>User: #{item.requestedByUserId.slice(0, 6)}</div>
+                        <div className="text-[10px]">
+                          {new Date(item.createdAt).toLocaleString("vi-VN")}
+                        </div>
+                      </TableCell>
+                      <TableCell>{renderStatusBadge(item.status)}</TableCell>
+                      <TableCell>
+                        {item.transferRef && (
+                          <div className="font-mono text-[11px] font-bold text-indigo-600 dark:text-indigo-400">
+                            Ref: {item.transferRef}
+                          </div>
+                        )}
+                        {item.staffNote && (
+                          <div className="text-[11px] text-slate-600 italic dark:text-slate-400">
+                            {`"${item.staffNote}"`}
+                          </div>
+                        )}
+                        {!item.transferRef && !item.staffNote && (
+                          <span className="text-slate-400">—</span>
+                        )}
+                      </TableCell>
+                      <TableCell className="text-right">
+                        {item.status === "REQUESTED" ? (
+                          <div className="flex items-center justify-end gap-2">
+                            <Button
+                              size="sm"
+                              onClick={() => {
+                                setMarkPaidTarget(item);
+                                setTransferRefInput("");
+                                setNoteInput("");
+                              }}
+                              className="h-8 rounded-xl bg-emerald-700 px-3 text-[11px] font-bold text-white hover:bg-emerald-800"
+                            >
+                              Xác nhận Đã chuyển
+                            </Button>
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              onClick={() => {
+                                setRejectTarget(item);
+                                setNoteInput("");
+                              }}
+                              className="h-8 rounded-xl border-rose-200 text-[11px] font-bold text-rose-600 hover:bg-rose-50"
+                            >
+                              Từ chối
+                            </Button>
+                          </div>
+                        ) : (
+                          <span className="text-[11px] font-medium text-slate-400">
+                            Đã xong
+                          </span>
+                        )}
+                      </TableCell>
+                    </TableRow>
+                  );
+                })}
               </TableBody>
             </Table>
           )}

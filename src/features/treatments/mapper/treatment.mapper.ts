@@ -22,6 +22,7 @@ interface BackendTreatmentPhase {
   ingredients?: TreatmentPhase["ingredients"];
   products?: TreatmentPhase["products"];
   routines?: TreatmentPhase["routines"];
+  conflicts?: TreatmentPhase["conflicts"];
 }
 
 export interface BackendTreatmentResponse {
@@ -73,6 +74,7 @@ export function mapBackendPhase(phase: BackendTreatmentPhase): TreatmentPhase {
     ingredients: phase.ingredients ?? [],
     products: phase.products ?? [],
     routines: phase.routines ?? [],
+    ...(phase.conflicts ? { conflicts: phase.conflicts } : {}),
   };
 }
 

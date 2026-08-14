@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect, Suspense } from "react";
 import Link from "next/link";
-import { useSearchParams, useRouter } from "next/navigation";
+import { usePathname, useSearchParams, useRouter } from "next/navigation";
 import {
   Wallet as WalletIcon,
   ShieldCheck,
@@ -12,12 +12,13 @@ import {
   PlusCircle,
   CheckCircle2,
 } from "lucide-react";
-import { useBookingDetail } from "@/features/booking/hooks/useBooking";
-import { useExpertDetail } from "@/features/experts/hooks/useExperts";
 import {
-  useWallet,
+  useBookingDetail,
   usePayConsultation,
-} from "@/features/wallet/hooks/useWallet";
+} from "@/features/booking/hooks/useBooking";
+import { useExpertDetail } from "@/features/experts/hooks/useExperts";
+import { useWallet } from "@/features/wallet/hooks/useWallet";
+import { walletBalance } from "@/features/wallet/lib/wallet-ledger";
 import { WalletTopUpModal } from "@/features/wallet/components/wallet-topup-modal";
 import { Button } from "@/shared/components/ui/button";
 import {
@@ -34,6 +35,7 @@ import { toast } from "sonner";
 function CheckoutPageContent() {
   const searchParams = useSearchParams();
   const router = useRouter();
+  const pathname = usePathname();
   const bookingId = searchParams?.get("bookingId") as string;
 
   const { data: booking, isLoading, error } = useBookingDetail(bookingId);
@@ -86,7 +88,7 @@ function CheckoutPageContent() {
     if (!bookingId || !booking) return;
 
     const amount = payableFee;
-    const balance = wallet?.balanceVnd || 0;
+    const balance = walletBalance(wallet);
 
     if (!booking.isFollowUp && amount <= 0) {
       toast.error(
@@ -104,10 +106,7 @@ function CheckoutPageContent() {
     }
 
     try {
-      await payConsultationMutation.mutateAsync({
-        consultationId: bookingId,
-        amountVnd: amount,
-      });
+      await payConsultationMutation.mutateAsync(bookingId);
 
       toast.success("Thanh toán ca hẹn qua Ví GlowScan thành công! 🎉");
       router.push(`/booking/success?bookingId=${bookingId}`);
@@ -144,12 +143,12 @@ function CheckoutPageContent() {
   }
 
   const consultationFee = booking.isFollowUp ? 0 : payableFee;
-  const walletBalance = wallet?.balanceVnd || 0;
+  const balanceVnd = walletBalance(wallet);
   const hasPayableFee =
     booking.isFollowUp || booking.isPaid || consultationFee > 0;
   const isBalanceEnough =
     hasPayableFee &&
-    (booking.isFollowUp || booking.isPaid || walletBalance >= consultationFee);
+    (booking.isFollowUp || booking.isPaid || balanceVnd >= consultationFee);
 
   return (
     <div className="mx-auto flex w-full max-w-md flex-col gap-4">
@@ -235,7 +234,7 @@ function CheckoutPageContent() {
                 Số Dư Ví GlowScan:
               </span>
               <strong className="text-sm font-extrabold text-slate-900">
-                {formatVnd(walletBalance)}
+                {formatVnd(balanceVnd)}
               </strong>
             </div>
 
@@ -252,7 +251,7 @@ function CheckoutPageContent() {
             ) : (
               <div className="flex items-center justify-between gap-2 pt-1">
                 <span className="text-[11px] font-bold text-amber-700">
-                  ⚠️ Còn thiếu {formatVnd(consultationFee - walletBalance)}
+                  ⚠️ Còn thiếu {formatVnd(consultationFee - balanceVnd)}
                 </span>
                 <Button
                   size="sm"
@@ -294,7 +293,8 @@ function CheckoutPageContent() {
       <WalletTopUpModal
         isOpen={topUpModalOpen}
         onClose={() => setTopUpModalOpen(false)}
-        requiredAmountVnd={consultationFee - walletBalance}
+        requiredAmountVnd={consultationFee - balanceVnd}
+        returnTo={`${pathname}?bookingId=${bookingId}`}
       />
     </div>
   );

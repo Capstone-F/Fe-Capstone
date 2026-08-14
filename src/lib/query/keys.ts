@@ -35,6 +35,8 @@ export const queryKeys = {
   suggestions: (limit: number) => ["products", "suggestions", limit] as const,
   product: (id: string) => ["product", id] as const,
   productCategories: ["productCategories"] as const,
+  /** One scan of the catalog, shared by useBrands and useCategoryProductCounts. */
+  catalogScan: ["products", "catalog-scan"] as const,
   productPool: ["productPool"] as const,
   cart: ["cart"] as const,
   provinces: ["delivery", "provinces"] as const,
@@ -51,9 +53,14 @@ export const queryKeys = {
   ordersAll: ["orders"] as const,
   order: (id: string) => ["order", id] as const,
   payment: (id: string) => ["payment", id] as const,
+  wallet: ["wallet"] as const,
+  walletTransactions: (params?: unknown) =>
+    ["wallet", "transactions", params ?? {}] as const,
   stockImportForms: (query: unknown) =>
     ["stock", "import-forms", query] as const,
   stockImportForm: (id: string) => ["stock", "import-form", id] as const,
+  stockInventory: ["stock", "inventory"] as const,
+  lowStockThreshold: ["stock", "low-stock-threshold"] as const,
   supportSessions: (query: unknown) => ["support", "sessions", query] as const,
   supportLiveSession: () => ["support", "liveSession"] as const,
   supportSession: (id: string) => ["support", "session", id] as const,
@@ -62,4 +69,16 @@ export const queryKeys = {
   // Keyed by the expert PROFILE id, which is not the same value as the account user id.
   expertAvailability: (expertProfileId: string) =>
     ["experts", expertProfileId, "availability"] as const,
+  clinics: (query?: unknown) => ["clinics", query] as const,
+  clinic: (id: string | null | undefined) => ["clinic", id] as const,
+  clinicExperts: (id: string | null | undefined) =>
+    ["clinic-experts", id] as const,
+  adminComboDiscount: ["admin", "commerce", "combo-discount"] as const,
+  adminPlatformCommission: [
+    "admin",
+    "commerce",
+    "platform-commission",
+  ] as const,
+  adminClinicWithdrawals: (query?: unknown) =>
+    ["admin", "clinic-withdrawals", query] as const,
 };

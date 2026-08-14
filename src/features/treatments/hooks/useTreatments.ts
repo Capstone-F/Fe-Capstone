@@ -7,6 +7,7 @@ import type {
   TreatmentEventType,
   TreatmentListFilters,
   TreatmentPhasePayload,
+  TreatmentPlan,
   UpdateExpertRoutinePayload,
 } from "../types/treatment.types";
 
@@ -28,21 +29,54 @@ function useInvalidateTreatments() {
 export function useTreatmentPlans(
   as: "customer" | "expert" = "customer",
   filters: TreatmentListFilters = {},
-  options: { enabled?: boolean } = {},
+  options: {
+    enabled?: boolean;
+    refetchInterval?:
+      | number
+      | false
+      | ((query: { state: { data?: TreatmentPlan[] } }) => number | false);
+  } = {},
 ) {
   return useQuery({
     queryKey: queryKeys.treatmentPlans(as, filters),
     queryFn: async () => (await treatmentApi.getPlans(as, filters)).data,
     placeholderData: (previous) => previous,
     enabled: options.enabled ?? true,
+    refetchInterval:
+      options.refetchInterval ??
+      ((query) => {
+        const plans = query.state.data;
+        const hasPendingPayment = plans?.some(
+          (plan) => plan.isSubmittedForPayment && !plan.paidAt,
+        );
+        return hasPendingPayment ? 2000 : false;
+      }),
   });
 }
 
-export function useTreatmentPlanDetail(id: string) {
+export function useTreatmentPlanDetail(
+  id: string,
+  options?: {
+    enabled?: boolean;
+    refetchInterval?:
+      | number
+      | false
+      | ((query: { state: { data?: TreatmentPlan } }) => number | false);
+  },
+) {
   return useQuery({
     queryKey: queryKeys.treatment(id),
     queryFn: async () => (await treatmentApi.getPlanById(id)).data,
-    enabled: Boolean(id),
+    enabled: Boolean(id) && (options?.enabled ?? true),
+    refetchInterval:
+      options?.refetchInterval ??
+      ((query) => {
+        const plan = query.state.data;
+        if (plan && plan.isSubmittedForPayment && !plan.paidAt) {
+          return 2000;
+        }
+        return false;
+      }),
   });
 }
 
@@ -138,7 +172,7 @@ export function usePayTreatmentPlan() {
       (await treatmentApi.payTreatmentPlan(treatmentId)).data,
     onSuccess: (plan) => {
       invalidate(plan.id);
-      void queryClient.invalidateQueries({ queryKey: ["wallet"] });
+      void queryClient.invalidateQueries({ queryKey: queryKeys.wallet });
     },
   });
 }
@@ -151,7 +185,7 @@ export function useCancelTreatment() {
       (await treatmentApi.cancelTreatment(id, reason)).data,
     onSuccess: (plan) => {
       invalidate(plan.id);
-      void queryClient.invalidateQueries({ queryKey: ["wallet"] });
+      void queryClient.invalidateQueries({ queryKey: queryKeys.wallet });
     },
   });
 }

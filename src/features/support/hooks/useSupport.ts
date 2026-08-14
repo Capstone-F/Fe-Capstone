@@ -1,4 +1,5 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { ApiError } from "@/core/api/errors";
 import { queryKeys } from "@/lib/query/keys";
 import { supportApi } from "../api/support.api";
 import {
@@ -14,8 +15,17 @@ export function useMyLiveSupportSession(enabled = true) {
     queryKey: queryKeys.supportLiveSession(),
     queryFn: () => supportApi.getMyLiveSession(),
     enabled,
-    staleTime: 5000,
-    refetchInterval: 5000,
+    staleTime: Infinity,
+    retry: (failureCount, error) =>
+      error instanceof ApiError && error.status === 404
+        ? false
+        : failureCount < 2,
+    // Session mutations update/invalidate this cache and messages have their own
+    // polling query. This endpoint only hydrates state; a 404 must stay idle.
+    refetchInterval: false,
+    refetchOnMount: false,
+    refetchOnWindowFocus: false,
+    refetchOnReconnect: false,
   });
 }
 

@@ -43,9 +43,11 @@ export interface ListOrdersQuery {
 export const ordersApi = {
   createOrder: (
     shippingAddress: ShippingAddressInput,
+    analyticsSessionId?: string,
   ): Promise<AxiosResponse<OrderResponse>> => {
     return apiClient.post<OrderResponse>(API_ENDPOINTS.ORDERS.CREATE, {
       shippingAddress,
+      analyticsSessionId,
     });
   },
 

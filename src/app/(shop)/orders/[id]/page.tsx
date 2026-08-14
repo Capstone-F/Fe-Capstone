@@ -1,9 +1,10 @@
 "use client";
 
-import { use } from "react";
+import { use, useState } from "react";
 import Link from "next/link";
-import { ArrowLeft, PackageX } from "lucide-react";
+import { ArrowLeft, PackageX, XCircle } from "lucide-react";
 import { Card, CardContent } from "@/shared/components/ui/card";
+import { Button } from "@/shared/components/ui/button";
 import { EmptyState } from "@/shared/components/ui/empty-state";
 import { useOrder } from "@/features/commerce/hooks/useOrders";
 import { useOrderDelivery } from "@/features/commerce/hooks/useDelivery";
@@ -12,6 +13,8 @@ import { OrderStatusBadge } from "@/features/commerce/components/order-status-ba
 import { OrderCardSkeleton } from "@/features/commerce/components/order-card-skeleton";
 import { DeliveryTrackingCard } from "@/features/commerce/components/delivery-tracking-card";
 import { PayOrderButton } from "@/features/commerce/components/pay-order-button";
+import { PayOrderWithWalletButton } from "@/features/commerce/components/pay-order-with-wallet-button";
+import { CancelOrderDialog } from "@/features/commerce/components/cancel-order-dialog";
 import { formatOrderCode } from "@/features/commerce/lib/order-hydration";
 import { formatVnd } from "@/shared/utils/format";
 
@@ -61,10 +64,14 @@ export default function OrderDetailPage({
     shipping: "Phí vận chuyển",
     total: "Tổng cộng",
   };
+  const [cancelOpen, setCancelOpen] = useState(false);
   const { order, items, isLoading, isNotFound } = useOrder(id);
   // Deferred until the order is known to exist and belong to this customer.
   // Orders placed before the GHN migration have no delivery row and 404 here.
   const { delivery } = useOrderDelivery(order ? id : "");
+
+  const canCancel =
+    order?.status === "PENDING" || order?.status === "PROCESSING";
 
   return (
     <div className="p-4 md:p-6 lg:p-8">
@@ -104,8 +111,26 @@ export default function OrderDetailPage({
               </div>
               <div className="flex items-center gap-2">
                 <OrderStatusBadge status={order.status} />
+                {canCancel && (
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    onClick={() => setCancelOpen(true)}
+                    className="h-8 rounded-xl border-rose-200 text-xs text-rose-600 hover:bg-rose-50 hover:text-rose-700"
+                  >
+                    <XCircle className="mr-1 h-3.5 w-3.5" />
+                    Hủy đơn
+                  </Button>
+                )}
                 {order.status === "PENDING" && (
-                  <PayOrderButton orderId={order.id} />
+                  <>
+                    <PayOrderWithWalletButton
+                      orderId={order.id}
+                      totalVnd={order.totalVnd}
+                    />
+                    <PayOrderButton orderId={order.id} />
+                  </>
                 )}
               </div>
             </div>
@@ -160,6 +185,12 @@ export default function OrderDetailPage({
             </Card>
 
             {delivery && <DeliveryTrackingCard delivery={delivery} />}
+
+            <CancelOrderDialog
+              isOpen={cancelOpen}
+              onClose={() => setCancelOpen(false)}
+              orderId={order.id}
+            />
           </>
         )}
       </div>

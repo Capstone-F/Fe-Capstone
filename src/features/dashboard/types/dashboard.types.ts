@@ -14,8 +14,15 @@ export interface AdminDashboardResponse {
     activeExperts: number;
     activeClinics: number;
     paidOrders: number;
-    netProductRevenueVnd: number;
-    netConsultationFeesVnd: number;
+    grossProductSalesVnd: number;
+    discountsVnd: number;
+    shippingCollectedVnd: number;
+    productPaymentsCollectedVnd: number;
+    productRefundsVnd: number;
+    averageOrderValueVnd: number;
+    consultationFeesCollectedVnd: number;
+    consultationRefundsVnd: number;
+    platformCommissionRevenueVnd: number;
   };
   attention: {
     submittedStockForms: number;
@@ -26,8 +33,34 @@ export interface AdminDashboardResponse {
   trend: Array<{
     date: string;
     newCustomers: number;
-    netProductRevenueVnd: number;
-    netConsultationFeesVnd: number;
+    paidOrders: number;
+    grossProductSalesVnd: number;
+    discountsVnd: number;
+    shippingCollectedVnd: number;
+    productPaymentsCollectedVnd: number;
+    productRefundsVnd: number;
+    consultationFeesCollectedVnd: number;
+    consultationRefundsVnd: number;
+    platformCommissionRevenueVnd: number;
+  }>;
+  funnel: {
+    availableFrom: string | null;
+    isPartial: boolean;
+    steps: Array<{
+      eventType: string;
+      label: string;
+      sessions: number;
+      conversionFromPreviousPct: number;
+      overallConversionPct: number;
+    }>;
+  };
+  topProducts: Array<{
+    productId: string;
+    productVariantId: string;
+    productName: string;
+    sku: string;
+    unitsSold: number;
+    grossSalesVnd: number;
   }>;
   recentActivity: Array<{
     id: string;

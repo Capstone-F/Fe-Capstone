@@ -1,4 +1,7 @@
 export const API_ENDPOINTS = {
+  ANALYTICS: {
+    COMMERCE_EVENTS: "/analytics/commerce/events/batch",
+  },
   DASHBOARDS: {
     ADMIN: "/admin/dashboard",
     EXPERT: "/experts/me/dashboard",
@@ -43,9 +46,12 @@ export const API_ENDPOINTS = {
   ADMIN_QA_CHEATS: {
     CUSTOMER_PROFILE: (id: string) => `/admin/customers/${id}/profile`,
     CUSTOMER_SURVEY: (id: string) => `/admin/customers/${id}/survey`,
+    SEED_DEMO_CUSTOMER: "/admin/demo/customers",
   },
   CLINICS: {
     LIST: "/clinics",
+    DETAIL: (id: string) => `/clinics/${id}`,
+    EXPERTS: (id: string) => `/clinics/${id}/experts`,
   },
   CUSTOMERS: {
     ME: "/customers/me",
@@ -71,6 +77,7 @@ export const API_ENDPOINTS = {
     BATCHES: "/stock/batches",
     ADJUST_BATCH: (id: string) => `/stock/batches/${id}/adjust`,
     INVENTORY: "/stock/inventory",
+    LOW_STOCK_THRESHOLD: "/stock/low-stock-threshold",
   },
   SUPPORT: {
     SESSIONS: "/support/sessions",
@@ -171,6 +178,7 @@ export const API_ENDPOINTS = {
   },
   PAYMENTS: {
     CHECKOUT: "/payments/checkout",
+    CHECKOUT_WALLET: "/payments/checkout/wallet",
     STATUS: (paymentId: string | number) => `/payments/${paymentId}`,
   },
   SURVEYS: {

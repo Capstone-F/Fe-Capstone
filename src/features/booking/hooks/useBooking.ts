@@ -106,7 +106,7 @@ export function usePayConsultation() {
     onSuccess: (data) => {
       queryClient.invalidateQueries({ queryKey: queryKeys.bookings });
       queryClient.invalidateQueries({ queryKey: queryKeys.booking(data.id) });
-      queryClient.invalidateQueries({ queryKey: ["wallet"] });
+      queryClient.invalidateQueries({ queryKey: queryKeys.wallet });
     },
   });
 }
@@ -126,7 +126,7 @@ export function useUpdatePaymentStatus() {
     onSuccess: (data) => {
       queryClient.invalidateQueries({ queryKey: queryKeys.bookings });
       queryClient.invalidateQueries({ queryKey: queryKeys.booking(data.id) });
-      queryClient.invalidateQueries({ queryKey: ["wallet"] });
+      queryClient.invalidateQueries({ queryKey: queryKeys.wallet });
     },
   });
 }
@@ -173,7 +173,7 @@ export function useCancelBooking() {
       queryClient.invalidateQueries({ queryKey: queryKeys.bookings });
       queryClient.invalidateQueries({ queryKey: queryKeys.booking(data.id) });
       queryClient.invalidateQueries({ queryKey: ["expert-bookings"] });
-      queryClient.invalidateQueries({ queryKey: ["wallet"] });
+      queryClient.invalidateQueries({ queryKey: queryKeys.wallet });
     },
   });
 }

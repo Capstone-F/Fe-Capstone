@@ -1,8 +1,6 @@
 "use client";
 
-import React, { useState } from "react";
-import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { toast } from "sonner";
+import React, { useRef, useState } from "react";
 import {
   Building2,
   Plus,
@@ -17,8 +15,7 @@ import {
   CheckCircle,
   XCircle,
 } from "lucide-react";
-import { apiClient } from "@/core/api/client";
-import { API_ENDPOINTS } from "@/core/api/endpoints";
+import { externalApiClient } from "@/core/api/client";
 import { Button } from "@/shared/components/ui/button";
 import { Input } from "@/shared/components/ui/input";
 import { Label } from "@/shared/components/ui/label";
@@ -31,25 +28,28 @@ import {
   DialogDescription,
   DialogFooter,
 } from "@/shared/components/ui/dialog";
+import { toast } from "sonner";
 import { DataTablePagination } from "@/shared/components/ui/data-table-pagination";
+import {
+  ClinicLocationPicker,
+  type ClinicCoordinate,
+} from "./clinic-location-picker";
 
-export interface Clinic {
-  id: string;
-  name: string;
-  address?: string;
-  phone?: string;
-  email?: string;
-  isActive: boolean;
-  createdAt: string;
-  updatedAt: string;
-}
+import {
+  useAdminClinics,
+  useCreateAdminClinic,
+  useUpdateAdminClinic,
+  useDeactivateAdminClinic,
+} from "../hooks/useAdminClinics";
+import type { AdminClinic } from "../api/admin-clinics.api";
 
 export function ClinicsManagementView() {
-  const queryClient = useQueryClient();
+  const reverseGeocodeRequestRef = useRef(0);
   const [searchTerm, setSearchTerm] = useState("");
   const [activeOnly, setActiveOnly] = useState(false);
   const [isModalOpen, setIsModalOpen] = useState(false);
-  const [editingClinic, setEditingClinic] = useState<Clinic | null>(null);
+  const [isResolvingAddress, setIsResolvingAddress] = useState(false);
+  const [editingClinic, setEditingClinic] = useState<AdminClinic | null>(null);
   const [page, setPage] = useState(1);
   const PAGE_SIZE = 10;
 
@@ -58,106 +58,137 @@ export function ClinicsManagementView() {
     address: "",
     phone: "",
     email: "",
+    latitude: null as number | null,
+    longitude: null as number | null,
   });
 
-  const { data, isLoading, refetch, isRefetching } = useQuery({
-    queryKey: ["admin-clinics", { q: searchTerm, activeOnly }],
-    queryFn: async () => {
-      const params: Record<string, string> = {};
-      if (searchTerm.trim()) params.q = searchTerm.trim();
-      if (activeOnly) params.activeOnly = "true";
-      const res = await apiClient.get<{ items: Clinic[]; total: number }>(
-        API_ENDPOINTS.ADMIN_CLINICS.LIST,
-        { params },
-      );
-      return res.data;
-    },
+  const { data, isLoading, refetch, isRefetching } = useAdminClinics({
+    q: searchTerm,
+    activeOnly,
   });
 
-  const createMutation = useMutation({
-    mutationFn: (body: typeof formData) =>
-      apiClient.post(API_ENDPOINTS.ADMIN_CLINICS.CREATE, body),
-    onSuccess: () => {
-      toast.success("Thêm phòng khám đối tác thành công!");
-      queryClient.invalidateQueries({ queryKey: ["admin-clinics"] });
-      closeModal();
-    },
-    onError: (err: unknown) => {
-      const msg =
-        (err as { response?: { data?: { message?: string } } })?.response?.data
-          ?.message || "Không thể tạo phòng khám";
-      toast.error(msg);
-    },
-  });
-
-  const updateMutation = useMutation({
-    mutationFn: ({ id, body }: { id: string; body: Partial<Clinic> }) =>
-      apiClient.patch(API_ENDPOINTS.ADMIN_CLINICS.UPDATE(id), body),
-    onSuccess: () => {
-      toast.success("Cập nhật thông tin phòng khám thành công!");
-      queryClient.invalidateQueries({ queryKey: ["admin-clinics"] });
-      closeModal();
-    },
-    onError: (err: unknown) => {
-      const msg =
-        (err as { response?: { data?: { message?: string } } })?.response?.data
-          ?.message || "Không thể cập nhật thông tin phòng khám";
-      toast.error(msg);
-    },
-  });
-
-  const deactivateMutation = useMutation({
-    mutationFn: (id: string) =>
-      apiClient.delete(API_ENDPOINTS.ADMIN_CLINICS.DEACTIVATE(id)),
-    onSuccess: () => {
-      toast.success("Đã tạm ngừng hoạt động phòng khám thành công!");
-      queryClient.invalidateQueries({ queryKey: ["admin-clinics"] });
-    },
-    onError: (err: unknown) => {
-      const msg =
-        (err as { response?: { data?: { message?: string } } })?.response?.data
-          ?.message || "Không thể tạm ngừng hoạt động phòng khám";
-      toast.error(msg);
-    },
-  });
+  const createMutation = useCreateAdminClinic();
+  const updateMutation = useUpdateAdminClinic();
+  const deactivateMutation = useDeactivateAdminClinic();
 
   const openCreateModal = () => {
     setEditingClinic(null);
-    setFormData({ name: "", address: "", phone: "", email: "" });
+    setFormData({
+      name: "",
+      address: "",
+      phone: "",
+      email: "",
+      latitude: null,
+      longitude: null,
+    });
     setIsModalOpen(true);
   };
 
-  const openEditModal = (clinic: Clinic) => {
+  const openEditModal = (clinic: AdminClinic) => {
     setEditingClinic(clinic);
     setFormData({
       name: clinic.name || "",
       address: clinic.address || "",
       phone: clinic.phone || "",
       email: clinic.email || "",
+      latitude: clinic.latitude,
+      longitude: clinic.longitude,
     });
     setIsModalOpen(true);
   };
 
   const closeModal = () => {
+    reverseGeocodeRequestRef.current += 1;
+    setIsResolvingAddress(false);
     setIsModalOpen(false);
     setEditingClinic(null);
   };
 
+  const handleLocationChange = async (coordinate: ClinicCoordinate) => {
+    setFormData((current) => ({
+      ...current,
+      latitude: coordinate.lat,
+      longitude: coordinate.lng,
+    }));
+
+    const requestId = reverseGeocodeRequestRef.current + 1;
+    reverseGeocodeRequestRef.current = requestId;
+    setIsResolvingAddress(true);
+
+    try {
+      const response = await externalApiClient.get<{ display_name?: string }>(
+        "https://nominatim.openstreetmap.org/reverse",
+        {
+          params: {
+            format: "jsonv2",
+            lat: coordinate.lat,
+            lon: coordinate.lng,
+            zoom: 18,
+            addressdetails: 1,
+            "accept-language": "vi",
+          },
+          timeout: 8000,
+        },
+      );
+
+      if (requestId !== reverseGeocodeRequestRef.current) return;
+
+      const resolvedAddress = response.data.display_name?.trim();
+      if (resolvedAddress) {
+        setFormData((current) => ({
+          ...current,
+          address: resolvedAddress,
+        }));
+      } else {
+        toast.warning(
+          "Đã cập nhật tọa độ nhưng chưa xác định được địa chỉ. Bạn có thể nhập địa chỉ thủ công.",
+        );
+      }
+    } catch {
+      if (requestId === reverseGeocodeRequestRef.current) {
+        toast.warning(
+          "Đã cập nhật tọa độ nhưng không thể tra địa chỉ. Địa chỉ hiện tại được giữ nguyên.",
+        );
+      }
+    } finally {
+      if (requestId === reverseGeocodeRequestRef.current) {
+        setIsResolvingAddress(false);
+      }
+    }
+  };
+
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
+    if (isResolvingAddress) {
+      toast.info("Vui lòng chờ hệ thống xác định địa chỉ từ vị trí đã ghim.");
+      return;
+    }
     if (!formData.name.trim()) {
       toast.error("Vui lòng nhập tên phòng khám.");
       return;
     }
+    if (formData.latitude === null || formData.longitude === null) {
+      toast.error("Vui lòng ghim vị trí phòng khám trên bản đồ.");
+      return;
+    }
+
+    const body = {
+      ...formData,
+      latitude: Number(formData.latitude.toFixed(6)),
+      longitude: Number(formData.longitude.toFixed(6)),
+    };
 
     if (editingClinic) {
-      updateMutation.mutate({ id: editingClinic.id, body: formData });
+      updateMutation.mutate(
+        { id: editingClinic.id, body },
+        { onSuccess: closeModal },
+      );
     } else {
-      createMutation.mutate(formData);
+      createMutation.mutate(body, { onSuccess: closeModal });
     }
   };
 
-  const handleToggleStatus = (clinic: Clinic) => {
+  const handleToggleStatus = (clinic: AdminClinic) => {
     if (clinic.isActive) {
       deactivateMutation.mutate(clinic.id);
     } else {
@@ -378,8 +409,8 @@ export function ClinicsManagementView() {
 
       {/* Create / Edit Modal */}
       <Dialog open={isModalOpen} onOpenChange={(open) => !open && closeModal()}>
-        <DialogContent className="max-w-md rounded-3xl p-6 shadow-2xl">
-          <DialogHeader className="space-y-2 border-b border-slate-100 pb-4">
+        <DialogContent className="max-h-[92vh] w-[calc(100%-2rem)] overflow-y-auto rounded-3xl p-0 shadow-2xl sm:max-w-3xl">
+          <DialogHeader className="space-y-2 border-b border-slate-100 p-6 pb-4">
             <DialogTitle className="flex items-center gap-2 text-lg font-bold text-[#2C3E35]">
               <Building2 className="h-5 w-5 text-[#2C3E35]" />
               {editingClinic ? "Chỉnh sửa Phòng Khám" : "Thêm Phòng Khám Mới"}
@@ -389,7 +420,10 @@ export function ClinicsManagementView() {
             </DialogDescription>
           </DialogHeader>
 
-          <form onSubmit={handleSubmit} className="flex flex-col gap-4 py-2">
+          <form
+            onSubmit={handleSubmit}
+            className="flex flex-col gap-5 p-6 pt-2"
+          >
             <div className="flex flex-col gap-1.5">
               <Label
                 htmlFor="name"
@@ -409,12 +443,47 @@ export function ClinicsManagementView() {
               />
             </div>
 
+            <div className="flex flex-col gap-2">
+              <div className="flex flex-col justify-between gap-1 sm:flex-row sm:items-end">
+                <div>
+                  <Label className="text-xs font-bold text-slate-700">
+                    Vị trí chính xác trên bản đồ *
+                  </Label>
+                  <p className="mt-1 text-[11px] text-slate-500">
+                    Click bản đồ hoặc kéo ghim đến đúng cổng phòng khám. Địa chỉ
+                    nhập tay không tự quyết định tọa độ.
+                  </p>
+                </div>
+                <span className="font-mono text-[11px] text-emerald-700">
+                  {formData.latitude === null || formData.longitude === null
+                    ? "Chưa chọn tọa độ"
+                    : `${formData.latitude.toFixed(6)}, ${formData.longitude.toFixed(6)}`}
+                </span>
+              </div>
+              <div className="overflow-hidden rounded-2xl border border-slate-200">
+                <ClinicLocationPicker
+                  value={
+                    formData.latitude === null || formData.longitude === null
+                      ? null
+                      : { lat: formData.latitude, lng: formData.longitude }
+                  }
+                  onChange={handleLocationChange}
+                />
+              </div>
+            </div>
+
             <div className="flex flex-col gap-1.5">
               <Label
                 htmlFor="address"
-                className="text-xs font-bold text-slate-700"
+                className="flex items-center justify-between gap-2 text-xs font-bold text-slate-700"
               >
-                Địa Chỉ:
+                <span>Địa Chỉ:</span>
+                {isResolvingAddress && (
+                  <span className="flex items-center gap-1 font-normal text-emerald-700">
+                    <Loader2 className="h-3 w-3 animate-spin" />
+                    Đang xác định địa chỉ...
+                  </span>
+                )}
               </Label>
               <Input
                 id="address"
@@ -466,7 +535,7 @@ export function ClinicsManagementView() {
               </div>
             </div>
 
-            <DialogFooter className="gap-2 border-t border-slate-100 pt-2">
+            <DialogFooter className="gap-2 border-t border-slate-100 pt-4">
               <Button
                 type="button"
                 variant="outline"
@@ -477,7 +546,11 @@ export function ClinicsManagementView() {
               </Button>
               <Button
                 type="submit"
-                disabled={createMutation.isPending || updateMutation.isPending}
+                disabled={
+                  createMutation.isPending ||
+                  updateMutation.isPending ||
+                  isResolvingAddress
+                }
                 className="rounded-xl bg-[#2C3E35] px-6 text-xs font-bold text-white hover:bg-[#3A5246]"
               >
                 {createMutation.isPending || updateMutation.isPending ? (

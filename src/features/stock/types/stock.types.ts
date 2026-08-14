@@ -82,4 +82,10 @@ export interface InventoryItemDto {
   imageUrl: string | null;
   stockQuantity: number;
   activeIngredients: string[];
+  stockWarning: "LOW" | "OUT_OF_STOCK" | null;
+  warningMessage: string | null;
+}
+
+export interface LowStockThresholdDto {
+  threshold: number;
 }

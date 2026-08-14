@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm, useWatch } from "react-hook-form";
 import Image from "next/image";
@@ -87,16 +87,23 @@ import type {
   TreatmentPhase,
   TreatmentPhasePayload,
   TreatmentPlan,
+  TreatmentProductConflict,
 } from "../types/treatment.types";
+import {
+  CandidateConflictBadge,
+  PhaseProductConflictAlert,
+} from "./product-conflict-warning";
 import {
   getTreatmentStatusLabel,
   treatmentPhaseStatusLabel,
   treatmentPhaseTypeLabel,
 } from "../lib/treatment-labels";
 import {
+  createTreatmentPhaseFormSchema,
   createTreatmentPlanSchema,
+  getNextDay,
+  getPreviousDay,
   routineSchema,
-  treatmentPhaseFormSchema,
   type CreateTreatmentPlanValues,
   type TreatmentPhaseFormValues,
 } from "../schemas/treatment-forms.schema";
@@ -116,13 +123,51 @@ function toLocalDateInput(date: Date): string {
   return `${year}-${month}-${day}`;
 }
 
-export function TreatmentPlanBuilder() {
+export interface TreatmentPlanBuilderProps {
+  initialTreatmentId?: string;
+  initialCustomerId?: string | null;
+  initialCustomerName?: string;
+  initialSourceConsultationId?: string | null;
+  isDrawer?: boolean;
+  onClose?: () => void;
+  onPlanCreated?: (plan: TreatmentPlan) => void;
+}
+
+export function TreatmentPlanBuilder({
+  initialTreatmentId,
+  initialCustomerId,
+  initialCustomerName,
+  initialSourceConsultationId,
+  isDrawer = false,
+  onPlanCreated,
+}: TreatmentPlanBuilderProps = {}) {
   const router = useRouter();
   const searchParams = useSearchParams();
-  const treatmentId = searchParams.get("treatmentId") ?? "";
-  const customerId = searchParams.get("customerId");
-  const customerName = searchParams.get("customerName") || "Khách hàng";
-  const sourceConsultationId = searchParams.get("sourceConsultationId");
+  const [localTreatmentId, setLocalTreatmentId] = useState<string | undefined>(
+    initialTreatmentId,
+  );
+
+  useEffect(() => {
+    if (initialTreatmentId !== undefined) {
+      const timer = setTimeout(() => {
+        setLocalTreatmentId(initialTreatmentId);
+      }, 0);
+      return () => clearTimeout(timer);
+    }
+  }, [initialTreatmentId]);
+
+  const urlTreatmentId = searchParams.get("treatmentId") ?? "";
+  const treatmentId = isDrawer ? (localTreatmentId ?? "") : urlTreatmentId;
+  const customerId = isDrawer
+    ? (initialCustomerId ?? null)
+    : searchParams.get("customerId");
+  const customerName = isDrawer
+    ? (initialCustomerName ?? "")
+    : searchParams.get("customerName") || "";
+  const sourceConsultationId = isDrawer
+    ? (initialSourceConsultationId ?? null)
+    : searchParams.get("sourceConsultationId");
+
   const detail = useTreatmentPlanDetail(treatmentId);
   const createMutation = useCreateTreatmentPlan();
   const existingPlans = useTreatmentPlans(
@@ -137,8 +182,22 @@ export function TreatmentPlanBuilder() {
       plan.status !== "COMPLETED",
   );
 
+  const paidToastShownRef = useRef(false);
+  useEffect(() => {
+    if (detail.data?.paidAt && !paidToastShownRef.current) {
+      paidToastShownRef.current = true;
+      toast.success("Khách hàng đã thanh toán phác đồ điều trị thành công!");
+    }
+  }, [detail.data?.paidAt]);
+
   useEffect(() => {
     if (treatmentId || !existingPlan) return;
+    if (isDrawer) {
+      const timer = setTimeout(() => {
+        setLocalTreatmentId(existingPlan.id);
+      }, 0);
+      return () => clearTimeout(timer);
+    }
     const query = new URLSearchParams({
       treatmentId: existingPlan.id,
       customerId: existingPlan.customerId,
@@ -151,12 +210,19 @@ export function TreatmentPlanBuilder() {
       );
     }
     router.replace(`/expert/treatments/builder?${query.toString()}`);
-  }, [customerName, existingPlan, router, sourceConsultationId, treatmentId]);
+  }, [
+    customerName,
+    existingPlan,
+    isDrawer,
+    router,
+    sourceConsultationId,
+    treatmentId,
+  ]);
 
   if (!treatmentId) {
     if (customerId && (existingPlans.isLoading || existingPlan)) {
       return (
-        <div className="flex min-h-[520px] items-center justify-center text-sm text-slate-500">
+        <div className="flex min-h-[400px] items-center justify-center text-sm text-slate-500">
           <Loader2 className="mr-2 h-4 w-4 animate-spin" /> Đang kiểm tra phác
           đồ hiện có...
         </div>
@@ -165,7 +231,7 @@ export function TreatmentPlanBuilder() {
 
     if (customerId && existingPlans.isError) {
       return (
-        <div className="flex min-h-[520px] flex-col items-center justify-center gap-3 p-6 text-center">
+        <div className="flex min-h-[400px] flex-col items-center justify-center gap-3 p-6 text-center">
           <CircleAlert className="h-8 w-8 text-red-500" />
           <p className="max-w-md text-sm text-slate-700">
             Không thể kiểm tra phác đồ hiện có. Tạm thời chưa thể tạo mới để
@@ -187,17 +253,23 @@ export function TreatmentPlanBuilder() {
         customerName={customerName}
         sourceConsultationId={sourceConsultationId}
         isPending={createMutation.isPending}
+        isDrawer={isDrawer}
         onCreate={async (payload) => {
           const plan = await createMutation.mutateAsync(payload);
-          const query = new URLSearchParams({
-            treatmentId: plan.id,
-            customerId: plan.customerId,
-            customerName,
-          });
-          if (plan.sourceConsultationId) {
-            query.set("sourceConsultationId", plan.sourceConsultationId);
+          if (isDrawer) {
+            setLocalTreatmentId(plan.id);
+            onPlanCreated?.(plan);
+          } else {
+            const query = new URLSearchParams({
+              treatmentId: plan.id,
+              customerId: plan.customerId,
+              customerName,
+            });
+            if (plan.sourceConsultationId) {
+              query.set("sourceConsultationId", plan.sourceConsultationId);
+            }
+            router.replace(`/expert/treatments/builder?${query.toString()}`);
           }
-          router.replace(`/expert/treatments/builder?${query.toString()}`);
         }}
       />
     );
@@ -205,7 +277,7 @@ export function TreatmentPlanBuilder() {
 
   if (detail.isLoading) {
     return (
-      <div className="flex min-h-[520px] items-center justify-center text-sm text-slate-500">
+      <div className="flex min-h-[400px] items-center justify-center text-sm text-slate-500">
         <Loader2 className="mr-2 h-4 w-4 animate-spin" /> Đang tải phác đồ...
       </div>
     );
@@ -213,7 +285,7 @@ export function TreatmentPlanBuilder() {
 
   if (detail.isError || !detail.data) {
     return (
-      <div className="flex min-h-[520px] flex-col items-center justify-center gap-3 text-center">
+      <div className="flex min-h-[400px] flex-col items-center justify-center gap-3 text-center">
         <p className="text-sm text-red-600">Không thể tải phác đồ điều trị.</p>
         <Button variant="outline" onClick={() => void detail.refetch()}>
           Thử lại
@@ -226,47 +298,76 @@ export function TreatmentPlanBuilder() {
   const canEditDraft = plan.status === "DRAFT" && !plan.paidAt;
 
   return (
-    <div className="min-h-full bg-slate-50">
-      <header className="border-b bg-white px-4 py-4 sm:px-6">
-        <div className="mx-auto flex max-w-6xl flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-          <div className="flex items-start gap-3">
-            <Button
-              size="icon"
-              variant="ghost"
-              onClick={() => router.push("/expert/treatments")}
-              aria-label="Quay lại"
-            >
-              <ArrowLeft className="h-4 w-4" />
-            </Button>
-            <div>
-              <div className="flex flex-wrap items-center gap-2">
-                <h1 className="text-lg font-semibold text-slate-950">
-                  {plan.title}
-                </h1>
-                <Badge variant="outline">{getTreatmentStatusLabel(plan)}</Badge>
+    <div
+      className={cn("min-h-full", isDrawer ? "bg-transparent" : "bg-slate-50")}
+    >
+      {!isDrawer && (
+        <header className="border-b bg-white px-4 py-4 sm:px-6">
+          <div className="mx-auto flex max-w-6xl flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+            <div className="flex items-start gap-3">
+              <Button
+                size="icon"
+                variant="ghost"
+                onClick={() => router.push("/expert/treatments")}
+                aria-label="Quay lại"
+              >
+                <ArrowLeft className="h-4 w-4" />
+              </Button>
+              <div>
+                <div className="flex flex-wrap items-center gap-2">
+                  <h1 className="text-lg font-semibold text-slate-950">
+                    {plan.title}
+                  </h1>
+                  <Badge variant="outline">
+                    {getTreatmentStatusLabel(plan)}
+                  </Badge>
+                </div>
+                <p className="mt-1 text-xs text-slate-500">
+                  {customerName} · {plan.phases.length} giai đoạn ·{" "}
+                  {formatVnd(plan.totalPriceVnd ?? 0)}
+                </p>
               </div>
-              <p className="mt-1 text-xs text-slate-500">
-                {customerName} · {plan.phases.length} giai đoạn ·{" "}
-                {formatVnd(plan.totalPriceVnd ?? 0)}
-              </p>
             </div>
+            {plan.sourceConsultationId && (
+              <Button
+                variant="outline"
+                onClick={() =>
+                  router.push(
+                    `/expert/consultations/${plan.sourceConsultationId}`,
+                  )
+                }
+              >
+                Quay lại ca tư vấn
+              </Button>
+            )}
           </div>
-          {plan.sourceConsultationId && (
-            <Button
-              variant="outline"
-              onClick={() =>
-                router.push(
-                  `/expert/consultations/${plan.sourceConsultationId}`,
-                )
-              }
-            >
-              Quay lại ca tư vấn
-            </Button>
-          )}
-        </div>
-      </header>
+        </header>
+      )}
 
-      <main className="mx-auto max-w-6xl space-y-6 p-4 sm:p-6">
+      {isDrawer && (
+        <div className="mb-4 flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-slate-200 bg-white p-4 shadow-xs">
+          <div>
+            <div className="flex flex-wrap items-center gap-2">
+              <h2 className="text-base font-bold text-slate-950">
+                {plan.title}
+              </h2>
+              <Badge variant="outline">{getTreatmentStatusLabel(plan)}</Badge>
+            </div>
+            <p className="mt-0.5 text-xs text-slate-500">
+              {customerName} · {plan.phases.length} giai đoạn ·{" "}
+              <span className="font-semibold text-emerald-600">
+                {formatVnd(plan.totalPriceVnd ?? 0)}
+              </span>
+            </p>
+          </div>
+        </div>
+      )}
+
+      <main
+        className={cn(
+          isDrawer ? "space-y-4" : "mx-auto max-w-6xl space-y-6 p-4 sm:p-6",
+        )}
+      >
         <PlanSummary plan={plan} />
         {canEditDraft ? (
           <DraftPhaseEditor
@@ -507,12 +608,14 @@ function CreatePlanForm({
   customerName,
   sourceConsultationId,
   isPending,
+  isDrawer = false,
   onCreate,
 }: {
   customerId: string | null;
   customerName: string;
   sourceConsultationId: string | null;
   isPending: boolean;
+  isDrawer?: boolean;
   onCreate: (payload: {
     customerId: string;
     title: string;
@@ -557,39 +660,53 @@ function CreatePlanForm({
   }
 
   return (
-    <div className="mx-auto max-w-3xl p-4 sm:p-6">
-      <Button variant="ghost" onClick={() => router.push("/expert")}>
-        <ArrowLeft className="mr-2 h-4 w-4" /> Quay lại
-      </Button>
-      <div className="mt-4 border bg-white p-5 sm:p-7">
-        <h1 className="text-lg font-semibold text-slate-950">
-          Tạo phác đồ cho {customerName}
-        </h1>
-        <p className="mt-1 text-sm text-slate-500">
-          Khởi tạo bản nháp từ ca tư vấn hiện tại.
-        </p>
+    <div className={cn(isDrawer ? "w-full" : "mx-auto max-w-3xl p-4 sm:p-6")}>
+      {!isDrawer && (
+        <Button variant="ghost" onClick={() => router.push("/expert")}>
+          <ArrowLeft className="mr-2 h-4 w-4" /> Quay lại
+        </Button>
+      )}
+      <div
+        className={cn(
+          isDrawer
+            ? "space-y-4"
+            : "mt-4 rounded-2xl border bg-white p-5 shadow-xs sm:p-7",
+        )}
+      >
+        {!isDrawer && (
+          <div className="border-b pb-4">
+            <h1 className="text-lg font-semibold text-slate-950">
+              Tạo phác đồ cho {customerName}
+            </h1>
+            <p className="mt-1 text-sm text-slate-500">
+              Khởi tạo bản nháp từ ca tư vấn hiện tại.
+            </p>
+          </div>
+        )}
 
         {!validSource ? (
-          <p className="mt-6 border border-red-200 bg-red-50 p-4 text-sm text-red-700">
+          <p className="rounded-xl border border-red-200 bg-red-50 p-4 text-sm text-red-700">
             Thiếu customer hoặc source consultation hợp lệ. Hãy mở thao tác này
             từ ca tư vấn đang diễn ra hoặc đã hoàn thành.
           </p>
         ) : (
           <form
             onSubmit={form.handleSubmit(handleSubmit)}
-            className="mt-6 space-y-5"
+            className="space-y-4"
             noValidate
           >
             <FormController
               control={form.control}
               name="title"
-              label="Tên phác đồ"
+              label="Tên phác đồ *"
             >
               {(field) => (
                 <Input
                   {...field}
                   id={field.name}
                   maxLength={200}
+                  placeholder="VD: Phác đồ điều trị mụn viêm & phục hồi da"
+                  className="rounded-xl text-sm"
                   aria-invalid={Boolean(form.formState.errors.title)}
                 />
               )}
@@ -597,29 +714,32 @@ function CreatePlanForm({
             <FormController
               control={form.control}
               name="description"
-              label="Tóm tắt đánh giá"
+              label="Tóm tắt đánh giá lâm sàng"
             >
               {(field) => (
                 <Textarea
                   {...field}
                   id={field.name}
                   maxLength={2000}
-                  rows={4}
+                  rows={3}
+                  placeholder="Ghi chú đánh giá tình trạng da, tiền sử kích ứng, mục tiêu điều trị..."
+                  className="rounded-xl text-sm"
                   aria-invalid={Boolean(form.formState.errors.description)}
                 />
               )}
             </FormController>
-            <div className="grid gap-4 sm:grid-cols-2">
+            <div className="grid gap-3 sm:grid-cols-2">
               <FormController
                 control={form.control}
                 name="startDate"
-                label="Ngày bắt đầu"
+                label="Ngày bắt đầu *"
               >
                 {(field) => (
                   <Input
                     {...field}
                     id={field.name}
                     type="date"
+                    className="rounded-xl text-sm"
                     aria-invalid={Boolean(form.formState.errors.startDate)}
                   />
                 )}
@@ -627,7 +747,7 @@ function CreatePlanForm({
               <FormController
                 control={form.control}
                 name="endDate"
-                label="Ngày kết thúc"
+                label="Ngày kết thúc *"
               >
                 {(field) => (
                   <Input
@@ -635,19 +755,26 @@ function CreatePlanForm({
                     id={field.name}
                     type="date"
                     min={startDate}
+                    className="rounded-xl text-sm"
                     aria-invalid={Boolean(form.formState.errors.endDate)}
                   />
                 )}
               </FormController>
             </div>
-            <Button type="submit" disabled={isPending}>
-              {isPending ? (
-                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-              ) : (
-                <Save className="mr-2 h-4 w-4" />
-              )}
-              Tạo bản nháp
-            </Button>
+            <div className="pt-2">
+              <Button
+                type="submit"
+                disabled={isPending}
+                className="rounded-xl bg-indigo-600 px-6 text-xs font-bold text-white shadow-xs hover:bg-indigo-700"
+              >
+                {isPending ? (
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                ) : (
+                  <Save className="mr-2 h-4 w-4" />
+                )}
+                Tạo bản nháp phác đồ
+              </Button>
+            </div>
           </form>
         )}
       </div>
@@ -785,15 +912,20 @@ function DraftPhaseEditor({
     }
   }
 
+  const sortedPhases = useMemo(
+    () => [...phases].sort((a, b) => a.phaseOrder - b.phaseOrder),
+    [phases],
+  );
+
   return (
-    <section className="space-y-4">
+    <section className="space-y-6">
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div>
           <h2 className="text-base font-semibold text-slate-950">
-            Các giai đoạn điều trị
+            Các giai đoạn điều trị ({sortedPhases.length})
           </h2>
           <p className="text-xs text-slate-500">
-            Có thể lưu bản nháp trước, sau đó hoàn thiện để gửi khách hàng.
+            Tổng phí các giai đoạn: {formatVnd(totalPhasePrice)}
           </p>
         </div>
         <Button variant="outline" onClick={() => setShowNew(true)}>
@@ -801,13 +933,16 @@ function DraftPhaseEditor({
         </Button>
       </div>
 
-      {phases.length > 0 && (
+      {sortedPhases.length > 0 && (
         <Accordion
           multiple
           defaultValue={defaultOpenPhases}
           className="overflow-hidden border bg-white"
         >
-          {phases.map((phase) => {
+          {sortedPhases.map((phase, idx) => {
+            const prevPhase = idx > 0 ? sortedPhases[idx - 1] : undefined;
+            const nextPhase =
+              idx < sortedPhases.length - 1 ? sortedPhases[idx + 1] : undefined;
             const complete = Boolean(phase.noteByExpert?.trim());
             return (
               <AccordionItem key={phase.id} value={phase.id}>
@@ -826,6 +961,11 @@ function DraftPhaseEditor({
                         </p>
                         <p className="mt-0.5 text-xs font-normal text-slate-500">
                           {treatmentPhaseTypeLabel[phase.phaseType]}
+                          {phase.startDate && phase.endDate && (
+                            <span className="ml-2 text-slate-400">
+                              ({phase.startDate} → {phase.endDate})
+                            </span>
+                          )}
                         </p>
                       </div>
                     </div>
@@ -844,6 +984,33 @@ function DraftPhaseEditor({
                     key={`${phase.id}:${phase.ingredients.map((item) => item.ingredientId).join(",")}:${phase.products.map((item) => item.productVariantId).join(",")}`}
                     formKey={phase.id}
                     phase={phase}
+                    phaseOrder={phase.phaseOrder}
+                    minStartDate={
+                      prevPhase?.endDate
+                        ? getNextDay(prevPhase.endDate)
+                        : plan.startDate || undefined
+                    }
+                    maxEndDate={
+                      nextPhase?.startDate
+                        ? getPreviousDay(nextPhase.startDate)
+                        : plan.endDate || undefined
+                    }
+                    previousPhaseInfo={
+                      prevPhase?.endDate
+                        ? {
+                            order: prevPhase.phaseOrder + 1,
+                            endDate: prevPhase.endDate,
+                          }
+                        : undefined
+                    }
+                    nextPhaseInfo={
+                      nextPhase?.startDate
+                        ? {
+                            order: nextPhase.phaseOrder + 1,
+                            startDate: nextPhase.startDate,
+                          }
+                        : undefined
+                    }
                     submitLabel="Lưu giai đoạn"
                     isPending={
                       updateMutation.isPending || deleteMutation.isPending
@@ -888,23 +1055,45 @@ function DraftPhaseEditor({
             </p>
           </div>
           <div className="p-4 sm:p-5">
-            <PhaseForm
-              formKey="new-phase"
-              phaseOrder={
-                phases.length
-                  ? Math.max(...phases.map((phase) => phase.phaseOrder)) + 1
-                  : 0
-              }
-              submitLabel="Tạo giai đoạn"
-              isPending={addMutation.isPending}
-              onCancel={() => setShowNew(false)}
-              onSubmit={async (payload) => {
-                await addMutation.mutateAsync({ treatmentId, payload });
-                toast.success("Đã thêm giai đoạn.");
-                setShowNew(false);
-                onRefresh();
-              }}
-            />
+            {(() => {
+              const lastPhase =
+                sortedPhases.length > 0
+                  ? sortedPhases[sortedPhases.length - 1]
+                  : undefined;
+              const nextAvailableStartDate = lastPhase?.endDate
+                ? getNextDay(lastPhase.endDate)
+                : plan.startDate || undefined;
+              return (
+                <PhaseForm
+                  formKey="new-phase"
+                  phaseOrder={
+                    phases.length
+                      ? Math.max(...phases.map((phase) => phase.phaseOrder)) + 1
+                      : 0
+                  }
+                  minStartDate={nextAvailableStartDate}
+                  maxEndDate={plan.endDate || undefined}
+                  previousPhaseInfo={
+                    lastPhase?.endDate
+                      ? {
+                          order: lastPhase.phaseOrder + 1,
+                          endDate: lastPhase.endDate,
+                        }
+                      : undefined
+                  }
+                  defaultStartDate={nextAvailableStartDate || ""}
+                  submitLabel="Tạo giai đoạn"
+                  isPending={addMutation.isPending}
+                  onCancel={() => setShowNew(false)}
+                  onSubmit={async (payload) => {
+                    await addMutation.mutateAsync({ treatmentId, payload });
+                    toast.success("Đã thêm giai đoạn.");
+                    setShowNew(false);
+                    onRefresh();
+                  }}
+                />
+              );
+            })()}
           </div>
         </section>
       )}
@@ -974,6 +1163,11 @@ function PhaseForm({
   formKey,
   phase,
   phaseOrder = 0,
+  minStartDate,
+  maxEndDate,
+  previousPhaseInfo,
+  nextPhaseInfo,
+  defaultStartDate,
   submitLabel,
   isPending,
   onSubmit,
@@ -984,6 +1178,11 @@ function PhaseForm({
   formKey: string;
   phase?: TreatmentPhase;
   phaseOrder?: number;
+  minStartDate?: string;
+  maxEndDate?: string;
+  previousPhaseInfo?: { order: number; endDate: string };
+  nextPhaseInfo?: { order: number; startDate: string };
+  defaultStartDate?: string;
   submitLabel: string;
   isPending: boolean;
   onSubmit: (payload: TreatmentPhasePayload) => Promise<void>;
@@ -992,7 +1191,14 @@ function PhaseForm({
   onDirtyChange?: (formKey: string, dirty: boolean) => void;
 }) {
   const form = useForm<TreatmentPhaseFormValues>({
-    resolver: zodResolver(treatmentPhaseFormSchema),
+    resolver: zodResolver(
+      createTreatmentPhaseFormSchema({
+        minStartDate,
+        maxEndDate,
+        previousPhaseInfo,
+        nextPhaseInfo,
+      }),
+    ),
     defaultValues: {
       phaseType: phase?.phaseType ?? "ACTIVE_TREATMENT",
       title: phase?.title ?? "",
@@ -1000,7 +1206,7 @@ function PhaseForm({
       notes: phase?.notes ?? "",
       noteByExpert: phase?.noteByExpert ?? "",
       priceVnd: phase ? String(phase.priceVnd) : "",
-      startDate: phase?.startDate ?? "",
+      startDate: phase?.startDate ?? defaultStartDate ?? minStartDate ?? "",
       endDate: phase?.endDate ?? "",
     },
   });
@@ -1172,15 +1378,23 @@ function PhaseForm({
             control={form.control}
             name="startDate"
             label="Bắt đầu"
+            description={
+              previousPhaseInfo
+                ? `Sau Giai đoạn ${previousPhaseInfo.order} (từ ngày ${minStartDate})`
+                : undefined
+            }
           >
             {(field) => (
               <Input
                 {...field}
                 id={field.name}
                 type="date"
+                min={minStartDate}
+                max={maxEndDate}
                 className={cn(
                   dirtyFields.startDate && "border-amber-400 bg-amber-50/60",
                 )}
+                aria-invalid={Boolean(form.formState.errors.startDate)}
               />
             )}
           </FormController>
@@ -1188,13 +1402,19 @@ function PhaseForm({
             control={form.control}
             name="endDate"
             label="Kết thúc"
+            description={
+              nextPhaseInfo
+                ? `Trước Giai đoạn ${nextPhaseInfo.order} (đến ngày ${maxEndDate})`
+                : undefined
+            }
           >
             {(field) => (
               <Input
                 {...field}
                 id={field.name}
                 type="date"
-                min={startDate}
+                min={startDate || minStartDate}
+                max={maxEndDate}
                 className={cn(
                   dirtyFields.endDate && "border-amber-400 bg-amber-50/60",
                 )}
@@ -1304,6 +1524,9 @@ function PhaseConfiguration({
   const [routine, setRoutine] = useState<ExpertRoutine | null>(null);
   const [persistedRoutine, setPersistedRoutine] =
     useState<ExpertRoutine | null>(null);
+  const [productConflicts, setProductConflicts] = useState<
+    TreatmentProductConflict[]
+  >([]);
 
   const busy =
     setIngredientsMutation.isPending ||
@@ -1313,6 +1536,35 @@ function PhaseConfiguration({
     updateRoutineMutation.isPending ||
     activateMutation.isPending;
   const selectedProducts = useMemo(() => new Set(productIds), [productIds]);
+  const savedPhaseProducts = useMemo(() => {
+    return phase.products.map((p) => {
+      const candidate = candidates.data?.find(
+        (c) => c.productVariantId === p.productVariantId,
+      );
+      return {
+        productVariantId: p.productVariantId,
+        sku: candidate?.sku || p.productVariantId.slice(0, 8),
+        productName: candidate?.productName || "Sản phẩm chỉ định",
+      };
+    });
+  }, [phase.products, candidates.data]);
+
+  const resolveProductName = useCallback(
+    (variantId: string) => {
+      const candidate = candidates.data?.find(
+        (item) => item.productVariantId === variantId,
+      );
+      if (candidate) return candidate.productName;
+      const selectedProduct = phase.products.find(
+        (item) => item.productVariantId === variantId,
+      );
+      return (
+        selectedProduct?.productName || `Sản phẩm ${variantId.slice(0, 8)}`
+      );
+    },
+    [candidates.data, phase.products],
+  );
+
   const hasSavedRoutine =
     routine?.status === "ACTIVE" ||
     phase.routines.some((item) => item.status === "ACTIVE");
@@ -1322,6 +1574,17 @@ function PhaseConfiguration({
   const hasDraftRoutine =
     routine?.status === "DRAFT" ||
     phase.routines.some((item) => item.status === "DRAFT");
+
+  const hasUnsavedRoutineChanges =
+    routine !== null &&
+    (routine.status === "DRAFT" ||
+      JSON.stringify(routine) !== JSON.stringify(persistedRoutine));
+
+  const canActivate =
+    phase.status !== "ACTIVE" &&
+    hasSavedRoutine &&
+    !hasUnsavedRoutineChanges &&
+    !busy;
 
   async function saveIngredients() {
     try {
@@ -1341,11 +1604,13 @@ function PhaseConfiguration({
 
   async function saveProducts() {
     try {
-      await setProductsMutation.mutateAsync({
+      const updatedPhase = await setProductsMutation.mutateAsync({
         phaseId: phase.id,
         productVariantIds: productIds,
       });
+      setProductConflicts(updatedPhase.conflicts ?? []);
       toast.success("Đã lưu sản phẩm cho giai đoạn.");
+      await candidates.refetch();
       onRefresh();
     } catch (reason) {
       toast.error(
@@ -1413,6 +1678,7 @@ function PhaseConfiguration({
           .filter((step) => step.period === period)
           .reduce((maximum, step) => Math.max(maximum, step.stepOrder), -1) + 1;
       const now = new Date().toISOString();
+      const firstProduct = savedPhaseProducts[0];
       return {
         ...current,
         steps: [
@@ -1420,13 +1686,29 @@ function PhaseConfiguration({
           {
             id: `new-${crypto.randomUUID()}`,
             routineId: current.id,
-            name: "",
+            name: firstProduct ? firstProduct.productName : "",
             period,
             stepOrder,
             instructions: null,
             waitMinutes: null,
             dosageText: null,
-            details: [],
+            details: firstProduct
+              ? [
+                  {
+                    id: `new-detail-${crypto.randomUUID()}`,
+                    routineStepId: `new-${crypto.randomUUID()}`,
+                    productVariantId: firstProduct.productVariantId,
+                    amountMl: null,
+                    date: null,
+                    period,
+                    progressNote: null,
+                    productVariant: {
+                      id: firstProduct.productVariantId,
+                      sku: firstProduct.sku,
+                    },
+                  },
+                ]
+              : [],
             createdAt: now,
             updatedAt: now,
           },
@@ -1448,6 +1730,17 @@ function PhaseConfiguration({
 
   async function saveRoutine() {
     if (!routine) return;
+
+    const missingProductStep = (routine.steps ?? []).find(
+      (step) => !step.details?.[0]?.productVariantId,
+    );
+    if (missingProductStep) {
+      toast.error(
+        `Bước "${missingProductStep.name || "chưa đặt tên"}" chưa được chọn sản phẩm. Vui lòng chọn sản phẩm cho từng bước.`,
+      );
+      return;
+    }
+
     const parsed = routineSchema.safeParse({
       title: routine.title,
       description: routine.description ?? "",
@@ -1516,6 +1809,10 @@ function PhaseConfiguration({
 
   return (
     <div className="grid gap-5 border bg-white p-5 lg:grid-cols-2">
+      <PhaseProductConflictAlert
+        conflicts={productConflicts}
+        resolveProductName={resolveProductName}
+      />
       <section>
         <h3 className="text-sm font-semibold text-slate-950">
           Hoạt chất chỉ định
@@ -1579,9 +1876,15 @@ function PhaseConfiguration({
                     )
                   }
                 />
-                <span>
-                  <span className="block font-medium text-slate-900">
-                    {product.productName}
+                <span className="min-w-0 flex-1">
+                  <span className="flex flex-wrap items-center justify-between gap-2">
+                    <span className="font-medium text-slate-900">
+                      {product.productName}
+                    </span>
+                    <CandidateConflictBadge
+                      warnings={product.conflictWarnings ?? []}
+                      resolveProductName={resolveProductName}
+                    />
                   </span>
                   <span className="text-xs text-slate-500">
                     {product.sku} · tồn {product.stockQuantity}
@@ -1609,6 +1912,7 @@ function PhaseConfiguration({
         <RoutineEditor
           key={routine.id}
           routine={routine}
+          availableProducts={savedPhaseProducts}
           disabled={busy}
           onRoutineChange={setRoutine}
           onStepChange={updateRoutineStep}
@@ -1618,34 +1922,53 @@ function PhaseConfiguration({
         />
       )}
 
-      <div className="flex flex-wrap gap-2 border-t pt-4 lg:col-span-2">
-        {!hasSavedRoutine && (
+      <div className="flex flex-col gap-3 border-t pt-4 lg:col-span-2">
+        <div className="flex flex-wrap items-center gap-2">
+          {!hasSavedRoutine && (
+            <Button
+              variant="outline"
+              disabled={busy || productIds.length === 0}
+              onClick={() => void generateRoutine()}
+            >
+              <Plus className="mr-2 h-4 w-4" />
+              {hasDraftRoutine ? "Tạo lại bản nháp" : "Tạo routine"}
+            </Button>
+          )}
+          {hasSavedRoutine && !routine && (
+            <Button
+              type="button"
+              variant="outline"
+              disabled={busy}
+              onClick={() => void loadSavedRoutine()}
+            >
+              <Check className="mr-2 h-4 w-4 text-emerald-700" /> Mở routine đã
+              lưu
+            </Button>
+          )}
           <Button
-            variant="outline"
-            disabled={busy || productIds.length === 0}
-            onClick={() => void generateRoutine()}
+            disabled={!canActivate}
+            onClick={() => void activate()}
+            className={
+              canActivate
+                ? "bg-emerald-600 font-semibold text-white hover:bg-emerald-700"
+                : ""
+            }
           >
-            <Plus className="mr-2 h-4 w-4" />
-            {hasDraftRoutine ? "Tạo lại bản nháp" : "Tạo routine"}
+            <Check className="mr-2 h-4 w-4" /> Kích hoạt giai đoạn
           </Button>
+        </div>
+
+        {phase.status !== "ACTIVE" && !hasSavedRoutine && (
+          <p className="text-xs text-amber-600">
+            * Cần tạo và lưu Routine điều trị trước khi kích hoạt giai đoạn.
+          </p>
         )}
-        {hasSavedRoutine && !routine && (
-          <Button
-            type="button"
-            variant="outline"
-            disabled={busy}
-            onClick={() => void loadSavedRoutine()}
-          >
-            <Check className="mr-2 h-4 w-4 text-emerald-700" /> Mở routine đã
-            lưu
-          </Button>
+        {phase.status !== "ACTIVE" && hasUnsavedRoutineChanges && (
+          <p className="text-xs text-amber-600">
+            * Bạn có thay đổi trong Routine chưa được lưu. Vui lòng bấm
+            &quot;Lưu routine&quot; trước khi kích hoạt.
+          </p>
         )}
-        <Button
-          disabled={busy || phase.status === "ACTIVE" || hasDraftRoutine}
-          onClick={() => void activate()}
-        >
-          <Check className="mr-2 h-4 w-4" /> Kích hoạt giai đoạn
-        </Button>
       </div>
     </div>
   );
@@ -1653,6 +1976,7 @@ function PhaseConfiguration({
 
 function RoutineEditor({
   routine,
+  availableProducts,
   disabled,
   onRoutineChange,
   onStepChange,
@@ -1661,6 +1985,11 @@ function RoutineEditor({
   onSave,
 }: {
   routine: ExpertRoutine;
+  availableProducts: Array<{
+    productVariantId: string;
+    sku: string;
+    productName: string;
+  }>;
   disabled: boolean;
   onRoutineChange: (routine: ExpertRoutine) => void;
   onStepChange: (stepId: string, patch: Partial<ExpertRoutineStep>) => void;
@@ -1759,6 +2088,7 @@ function RoutineEditor({
                     key={step.id}
                     step={step}
                     displayOrder={index + 1}
+                    availableProducts={availableProducts}
                     disabled={disabled}
                     onChange={(patch) => onStepChange(step.id, patch)}
                     onDelete={() => onDeleteStep(step.id)}
@@ -1780,78 +2110,180 @@ function RoutineEditor({
 function RoutineStepEditor({
   step,
   displayOrder,
+  availableProducts,
   disabled,
   onChange,
   onDelete,
 }: {
   step: ExpertRoutineStep;
   displayOrder: number;
+  availableProducts: Array<{
+    productVariantId: string;
+    sku: string;
+    productName: string;
+  }>;
   disabled: boolean;
   onChange: (patch: Partial<ExpertRoutineStep>) => void;
   onDelete: () => void;
 }) {
-  const sku = step.details?.[0]?.productVariant?.sku;
+  const currentVariantId = step.details?.[0]?.productVariantId;
+  const matchedProduct = availableProducts.find(
+    (p) => p.productVariantId === currentVariantId,
+  );
+  const sku = matchedProduct?.sku || step.details?.[0]?.productVariant?.sku;
 
   return (
-    <div className="border p-4">
-      <div className="mb-4 flex flex-wrap items-center gap-2">
-        <Badge variant="secondary">Bước {displayOrder}</Badge>
-        {sku && <span className="text-xs text-slate-500">{sku}</span>}
+    <div className="rounded-2xl border border-slate-200 bg-white p-4 shadow-xs">
+      <div className="mb-4 flex flex-wrap items-center justify-between gap-2 border-b border-slate-100 pb-3">
+        <div className="flex items-center gap-2">
+          <Badge variant="secondary" className="text-xs font-semibold">
+            Bước {displayOrder}
+          </Badge>
+          {sku ? (
+            <Badge
+              variant="outline"
+              className="border-indigo-200 bg-indigo-50 font-mono text-xs font-semibold text-indigo-700"
+            >
+              {sku}
+            </Badge>
+          ) : (
+            <Badge
+              variant="outline"
+              className="border-amber-200 bg-amber-50 text-xs text-amber-700"
+            >
+              Chưa chọn sản phẩm
+            </Badge>
+          )}
+        </div>
         <Button
           type="button"
           variant="ghost"
           size="sm"
           disabled={disabled}
           onClick={onDelete}
-          className="ml-auto text-red-700 hover:bg-red-50 hover:text-red-800"
+          className="h-8 px-2.5 text-xs font-semibold text-red-600 hover:bg-red-50 hover:text-red-700"
         >
           <Trash2 className="mr-1.5 h-3.5 w-3.5" /> Xóa bước
         </Button>
       </div>
+
       <div className="grid gap-4 md:grid-cols-6">
-        <div className="space-y-2 md:col-span-4">
-          <Label htmlFor={`routine-step-name-${step.id}`}>Tên bước</Label>
+        {/* Product selector */}
+        <div className="space-y-1.5 md:col-span-6">
+          <Label className="text-xs font-semibold text-slate-900">
+            Sản phẩm đã lưu trong giai đoạn *
+          </Label>
+          <Select
+            value={currentVariantId || ""}
+            disabled={disabled}
+            onValueChange={(selectedId) => {
+              if (!selectedId) return;
+              const product = availableProducts.find(
+                (p) => p.productVariantId === selectedId,
+              );
+              if (!product) return;
+              onChange({
+                name:
+                  !step.name || step.name === "Bước mới"
+                    ? product.productName
+                    : step.name,
+                details: [
+                  {
+                    id:
+                      step.details?.[0]?.id || `detail-${crypto.randomUUID()}`,
+                    routineStepId: step.id,
+                    productVariantId: selectedId,
+                    amountMl: null,
+                    date: null,
+                    period: step.period,
+                    progressNote: null,
+                    productVariant: {
+                      id: selectedId,
+                      sku: product.sku,
+                    },
+                  },
+                ],
+              });
+            }}
+          >
+            <SelectTrigger
+              className={cn(
+                "w-full",
+                !currentVariantId && "border-amber-400 bg-amber-50/60",
+              )}
+            >
+              <SelectValue placeholder="-- Chọn sản phẩm cho bước này --">
+                {matchedProduct
+                  ? `[${matchedProduct.sku}] ${matchedProduct.productName}`
+                  : "-- Chọn sản phẩm đã lưu cho bước này --"}
+              </SelectValue>
+            </SelectTrigger>
+            <SelectContent>
+              {availableProducts.length > 0 ? (
+                availableProducts.map((product) => (
+                  <SelectItem
+                    key={product.productVariantId}
+                    value={product.productVariantId}
+                  >
+                    <span className="font-mono font-semibold text-indigo-600">
+                      [{product.sku}]
+                    </span>{" "}
+                    <span>{product.productName}</span>
+                  </SelectItem>
+                ))
+              ) : (
+                <SelectItem value="none" disabled>
+                  Chưa có sản phẩm nào được lưu ở giai đoạn này
+                </SelectItem>
+              )}
+            </SelectContent>
+          </Select>
+          {!currentVariantId && (
+            <p className="text-[11px] font-medium text-amber-600">
+              * Vui lòng chọn sản phẩm áp dụng cho bước này.
+            </p>
+          )}
+        </div>
+
+        <div className="space-y-1.5 md:col-span-6">
+          <Label
+            htmlFor={`routine-step-name-${step.id}`}
+            className="text-xs font-semibold"
+          >
+            Tên bước
+          </Label>
           <Input
             id={`routine-step-name-${step.id}`}
             value={step.name}
             disabled={disabled}
+            placeholder="Ví dụ: Thoa serum phục hồi"
             onChange={(event) => onChange({ name: event.target.value })}
           />
         </div>
-        <div className="space-y-2 md:col-span-2">
-          <Label>Thời điểm</Label>
-          <Select
-            value={step.period}
-            disabled={disabled}
-            onValueChange={(value) => {
-              if (value) onChange({ period: value });
-            }}
+
+        <div className="space-y-1.5 md:col-span-3">
+          <Label
+            htmlFor={`routine-step-dosage-${step.id}`}
+            className="text-xs font-semibold"
           >
-            <SelectTrigger>
-              <SelectValue>
-                {step.period === "MORNING" ? "Buổi sáng" : "Buổi tối"}
-              </SelectValue>
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="MORNING">Buổi sáng</SelectItem>
-              <SelectItem value="EVENING">Buổi tối</SelectItem>
-            </SelectContent>
-          </Select>
-        </div>
-        <div className="space-y-2 md:col-span-3">
-          <Label htmlFor={`routine-step-dosage-${step.id}`}>Liều lượng</Label>
+            Liều lượng
+          </Label>
           <Input
             id={`routine-step-dosage-${step.id}`}
             value={step.dosageText ?? ""}
             disabled={disabled}
-            placeholder="Ví dụ: 2 lần nhấn"
+            placeholder="Ví dụ: 2 lần nhấn / 3-4 giọt"
             onChange={(event) =>
               onChange({ dosageText: event.target.value || null })
             }
           />
         </div>
-        <div className="space-y-2 md:col-span-3">
-          <Label htmlFor={`routine-step-wait-${step.id}`}>
+
+        <div className="space-y-1.5 md:col-span-3">
+          <Label
+            htmlFor={`routine-step-wait-${step.id}`}
+            className="text-xs font-semibold"
+          >
             Chờ trước bước tiếp theo (phút)
           </Label>
           <Input
@@ -1860,6 +2292,7 @@ function RoutineStepEditor({
             min={0}
             value={step.waitMinutes ?? ""}
             disabled={disabled}
+            placeholder="0"
             onChange={(event) =>
               onChange({
                 waitMinutes:

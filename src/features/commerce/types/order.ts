@@ -42,3 +42,17 @@ export interface PaymentStatus {
   amountVnd: string;
   paidAt: string | null;
 }
+
+/**
+ * Result of POST /payments/checkout/wallet. The wallet settles server-side inside one
+ * transaction, so a 200 already means PAID — there is no gateway URL and nothing to poll.
+ */
+export interface WalletCheckoutResponse {
+  paymentId: string;
+  orderId: string;
+  status: PaymentStatusValue;
+  amountVnd: string;
+  transactionId: string;
+  walletBalanceVnd: string;
+  paidAt: string;
+}

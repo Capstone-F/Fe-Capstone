@@ -1,7 +1,7 @@
 import { CartLine, CartSummary } from "@/types/domain";
 
 export const FREE_SHIP_THRESHOLD = 500000;
-export const SHIPPING_FEE = 30000;
+export const SHIPPING_FEE = 0;
 
 /** Compute subtotal / shipping / total for a set of hydrated cart lines. */
 export function computeCartSummary(

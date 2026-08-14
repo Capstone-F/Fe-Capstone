@@ -5,11 +5,22 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm, useWatch } from "react-hook-form";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { CreditCard, Truck } from "lucide-react";
+import { useQueryClient } from "@tanstack/react-query";
+import {
+  CreditCard,
+  ShoppingBag,
+  Truck,
+  Wallet as WalletIcon,
+} from "lucide-react";
 import { toast } from "sonner";
 import { PaymentMethod } from "@/types/domain";
+import { queryKeys } from "@/lib/query/keys";
+import { useWallet } from "@/features/wallet/hooks/useWallet";
+import { walletBalance } from "@/features/wallet/lib/wallet-ledger";
+import { WalletTopUpModal } from "@/features/wallet/components/wallet-topup-modal";
 import { useCart } from "@/features/commerce/hooks/useCart";
 import { useCreateOrder } from "@/features/commerce/hooks/useCheckout";
+import { trackCommerceEvent } from "@/features/commerce/lib/commerce-analytics";
 import {
   useDistricts,
   useProvinces,
@@ -21,7 +32,11 @@ import {
   emptyShippingAddressDraft,
   toShippingAddressInput,
 } from "@/features/commerce/lib/shipping-address";
-import { toPaymentErrorMessage } from "@/features/commerce/lib/payment-errors";
+import {
+  isInsufficientWalletBalance,
+  toPaymentErrorMessage,
+  toWalletPaymentErrorMessage,
+} from "@/features/commerce/lib/payment-errors";
 import { formatVnd } from "@/shared/utils/format";
 import { OrderSummary } from "@/features/commerce/components/order-summary";
 import { CartConflictAlert } from "@/features/commerce/components/cart-conflict-alert";
@@ -43,9 +58,8 @@ import {
 
 const ck = {
   title: "Thanh toán",
-  loginRequiredTitle: "Vui lòng đăng nhập để đặt hàng",
-  loginRequiredHint:
-    "Bạn cần đăng nhập để tiếp tục thanh toán. Giỏ hàng của bạn sẽ được giữ lại.",
+  loginRequiredTitle: "Vui lòng đăng nhập để thanh toán",
+  loginRequiredHint: "Đơn hàng của bạn sẽ được lưu vào tài khoản cá nhân.",
   loginCta: "Đăng nhập",
   steps: {
     review: "Xem lại giỏ",
@@ -68,8 +82,12 @@ const ck = {
   payment: {
     vnpay: "VnPay",
     vnpayHint: "Thanh toán qua thẻ/ngân hàng (sandbox).",
+    wallet: "Ví GlowScan",
+    walletLocked: "Ví đang tạm khoá. Vui lòng liên hệ hỗ trợ.",
+    walletLoginRequired: "Đăng nhập để dùng số dư ví.",
     cod: "COD — Thanh toán khi nhận hàng",
     codDisabledHint: "Backend chỉ hỗ trợ VNPay ở giai đoạn này.",
+    topUp: "Nạp tiền",
   },
   back: "Quay lại",
   next: "Tiếp tục",
@@ -78,6 +96,7 @@ const ck = {
   errors: {
     address: "Vui lòng nhập đầy đủ và đúng thông tin nhận hàng.",
     placeOrder: "Không thể đặt hàng. Vui lòng thử lại.",
+    walletPay: "Không thể thanh toán bằng ví. Vui lòng thử lại.",
   },
   emptyCartTitle: "Giỏ hàng đang trống",
   continueShopping: "Tiếp tục mua sắm",
@@ -87,7 +106,12 @@ const LAST_STEP = 3;
 
 export function CheckoutPage() {
   const router = useRouter();
-  const { data: cart, conflicts } = useCart();
+  const {
+    data: cart,
+    conflicts,
+    source: cartSource,
+    isLoading: isCartLoading,
+  } = useCart();
   const createOrder = useCreateOrder();
   const session = useSession();
 
@@ -99,8 +123,16 @@ export function CheckoutPage() {
   const draft = useWatch({
     control: addressForm.control,
   }) as ShippingAddressFormValues;
-  const [payment] = useState<PaymentMethod>("vnpay");
+  const [payment, setPayment] = useState<PaymentMethod>("vnpay");
   const [isPlacing, setIsPlacing] = useState(false);
+  const [topUpOpen, setTopUpOpen] = useState(false);
+  const queryClient = useQueryClient();
+  const { data: wallet, refetch: refetchWallet } = useWallet({
+    enabled: Boolean(session.data),
+  });
+  // POST /orders consumes the cart, so a payment that fails afterwards must reuse the
+  // order it already created — creating a second one would find an empty cart.
+  const [pendingOrderId, setPendingOrderId] = useState<string | null>(null);
 
   // Null until every field is present and valid — this is what gates both the fee
   // preview and the place-order call.
@@ -124,6 +156,64 @@ export function CheckoutPage() {
   const shippingPlaceholder = feeQuote.isFetching
     ? ck.summary.feeCalculating
     : ck.summary.feeNeedsAddress;
+
+  // The backend re-prices the order, so this is only what gates the wallet option in
+  // the UI; the authoritative "enough balance?" check runs server-side.
+  const orderTotal = summary?.total ?? 0;
+  const balanceVnd = walletBalance(wallet);
+  const walletLocked = Boolean(wallet && !wallet.isActive);
+  const walletShortfall = Math.max(0, orderTotal - balanceVnd);
+  const canPayWithWallet =
+    Boolean(wallet) && !walletLocked && walletShortfall === 0;
+  const walletHint = walletLocked
+    ? ck.payment.walletLocked
+    : walletShortfall > 0
+      ? `Số dư ${formatVnd(balanceVnd)} · Còn thiếu ${formatVnd(walletShortfall)}`
+      : `Số dư ${formatVnd(balanceVnd)} · Đơn hàng ${formatVnd(orderTotal)}`;
+
+  // 1. Placing order / redirecting to VNPay state: Keep loading spinner, NEVER fallback to empty cart
+  if (isPlacing || createOrder.isPending) {
+    return (
+      <div className="mx-auto flex w-full max-w-4xl flex-col gap-6 py-6">
+        <CheckoutStepper current={2} />
+        <div className="flex min-h-[380px] flex-col items-center justify-center rounded-3xl border border-slate-100 bg-white p-12 shadow-xs dark:border-slate-800 dark:bg-slate-900">
+          <div className="relative flex items-center justify-center">
+            <div className="h-16 w-16 animate-spin rounded-full border-4 border-emerald-100 border-t-emerald-600 dark:border-emerald-950 dark:border-t-emerald-400" />
+            <CreditCard className="absolute h-6 w-6 animate-pulse text-emerald-600 dark:text-emerald-400" />
+          </div>
+          <p className="mt-6 font-bold text-slate-900 dark:text-slate-100">
+            {payment === "wallet"
+              ? "Đang thanh toán bằng Ví GlowScan..."
+              : "Đang chuyển hướng đến cổng thanh toán VNPay..."}
+          </p>
+          <p className="mt-1 text-xs text-slate-500">
+            Vui lòng không tắt hoặc tải lại trang
+          </p>
+        </div>
+      </div>
+    );
+  }
+
+  // 2. Loading Spin Page state: Never show empty cart while fetching
+  if (session.isLoading || isCartLoading) {
+    return (
+      <div className="mx-auto flex w-full max-w-4xl flex-col gap-6 py-6">
+        <CheckoutStepper current={0} />
+        <div className="flex min-h-[380px] flex-col items-center justify-center rounded-3xl border border-slate-100 bg-white p-12 shadow-xs dark:border-slate-800 dark:bg-slate-900">
+          <div className="relative flex items-center justify-center">
+            <div className="h-16 w-16 animate-spin rounded-full border-4 border-emerald-100 border-t-emerald-600 dark:border-emerald-950 dark:border-t-emerald-400" />
+            <ShoppingBag className="absolute h-6 w-6 animate-pulse text-emerald-600 dark:text-emerald-400" />
+          </div>
+          <p className="mt-6 font-semibold text-slate-900 dark:text-slate-100">
+            Đang tải thông tin giỏ hàng & thanh toán...
+          </p>
+          <p className="mt-1 text-xs text-slate-500">
+            Vui lòng đợi trong giây lát
+          </p>
+        </div>
+      </div>
+    );
+  }
 
   if (!session.isLoading && !session.data) {
     return (
@@ -178,12 +268,41 @@ export function CheckoutPage() {
 
     setIsPlacing(true);
     try {
+      trackCommerceEvent({
+        eventType: "CHECKOUT_STARTED",
+        source: cartSource,
+      });
       // POST /orders locks the GHN fee and creates the Delivery the payment needs.
-      const order = await createOrder.mutateAsync(address);
-      const checkoutResponse = await paymentsApi.startCheckout(order.id);
+      const orderId =
+        pendingOrderId ?? (await createOrder.mutateAsync(address)).id;
+      setPendingOrderId(orderId);
+
+      if (payment === "wallet") {
+        const walletResponse = await paymentsApi.checkoutWithWallet(orderId);
+        await queryClient.invalidateQueries({ queryKey: queryKeys.wallet });
+        // The wallet settles server-side, so there is nothing to poll — but the
+        // confirmation screen is also what generates the routine for SURVEY orders,
+        // so wallet payments go through it too.
+        router.push(
+          `/vnpay_return?paymentId=${walletResponse.data.paymentId}&status=success`,
+        );
+        return;
+      }
+
+      const checkoutResponse = await paymentsApi.startCheckout(orderId);
       window.location.assign(checkoutResponse.data.paymentUrl);
     } catch (error) {
       setIsPlacing(false);
+
+      if (payment === "wallet") {
+        void refetchWallet();
+        toast.error(toWalletPaymentErrorMessage(error, ck.errors.walletPay));
+        if (isInsufficientWalletBalance(error)) {
+          setTopUpOpen(true);
+        }
+        return;
+      }
+
       toast.error(toPaymentErrorMessage(error, ck.errors.placeOrder));
     }
   };
@@ -279,10 +398,31 @@ export function CheckoutPage() {
               <CardContent className="flex flex-col gap-3 p-4">
                 <PaymentOption
                   selected={payment === "vnpay"}
+                  onSelect={() => setPayment("vnpay")}
                   icon={<CreditCard className="h-5 w-5" />}
                   title={ck.payment.vnpay}
                   hint={ck.payment.vnpayHint}
                 />
+                <div className="flex flex-col gap-2">
+                  <PaymentOption
+                    selected={payment === "wallet"}
+                    disabled={!canPayWithWallet}
+                    onSelect={() => setPayment("wallet")}
+                    icon={<WalletIcon className="h-5 w-5" />}
+                    title={ck.payment.wallet}
+                    hint={walletHint}
+                  />
+                  {!walletLocked && walletShortfall > 0 && (
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      onClick={() => setTopUpOpen(true)}
+                      className="self-end rounded-lg text-xs font-semibold"
+                    >
+                      {ck.payment.topUp}
+                    </Button>
+                  )}
+                </div>
                 <PaymentOption
                   selected={false}
                   disabled
@@ -311,7 +451,12 @@ export function CheckoutPage() {
                       : ck.shipping.feeUnavailable
                   }
                 />
-                <ConfirmRow label={ck.steps.payment} value={ck.payment.vnpay} />
+                <ConfirmRow
+                  label={ck.steps.payment}
+                  value={
+                    payment === "wallet" ? ck.payment.wallet : ck.payment.vnpay
+                  }
+                />
               </CardContent>
             </Card>
           )}
@@ -339,7 +484,11 @@ export function CheckoutPage() {
             ) : (
               <Button
                 size="sm"
-                disabled={createOrder.isPending || isPlacing}
+                disabled={
+                  createOrder.isPending ||
+                  isPlacing ||
+                  (payment === "wallet" && !canPayWithWallet)
+                }
                 onClick={() => void handlePlaceOrder()}
                 className="rounded-lg text-xs font-semibold"
               >
@@ -362,6 +511,31 @@ export function CheckoutPage() {
           </div>
         </div>
       </div>
+
+      <WalletTopUpModal
+        isOpen={topUpOpen}
+        onClose={() => setTopUpOpen(false)}
+        requiredAmountVnd={walletShortfall}
+        // An order already exists once a payment attempt failed, and the cart is gone
+        // with it — send the user to that order instead of an empty checkout.
+        returnTo={pendingOrderId ? `/orders/${pendingOrderId}` : "/checkout"}
+      />
+
+      {isPlacing && (
+        <div className="fixed inset-0 z-50 flex flex-col items-center justify-center bg-slate-950/60 backdrop-blur-xs">
+          <div className="flex flex-col items-center justify-center rounded-3xl bg-white p-8 shadow-2xl dark:bg-slate-900">
+            <div className="h-12 w-12 animate-spin rounded-full border-4 border-emerald-100 border-t-emerald-600 dark:border-emerald-950 dark:border-t-emerald-400" />
+            <p className="mt-4 font-bold text-slate-900 dark:text-slate-100">
+              {payment === "wallet"
+                ? "Đang thanh toán bằng Ví GlowScan..."
+                : "Đang chuyển hướng đến cổng thanh toán VNPay..."}
+            </p>
+            <p className="mt-1 text-xs text-slate-500">
+              Vui lòng không tắt hoặc tải lại trang
+            </p>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
@@ -381,17 +555,24 @@ function PaymentOption({
   icon,
   title,
   hint,
+  onSelect,
 }: {
   selected: boolean;
   disabled?: boolean;
   icon: React.ReactNode;
   title: string;
   hint: string;
+  onSelect?: () => void;
 }) {
   return (
-    <div
+    <button
+      type="button"
+      role="radio"
+      aria-checked={selected}
+      disabled={disabled || !onSelect}
+      onClick={onSelect}
       className={cn(
-        "flex items-center gap-3 rounded-xl border p-4 text-left",
+        "flex w-full items-center gap-3 rounded-xl border p-4 text-left",
         selected
           ? "border-primary bg-primary-soft"
           : "border-slate-200 bg-white",
@@ -405,6 +586,6 @@ function PaymentOption({
         <span className="text-sm font-bold text-slate-900">{title}</span>
         <span className="text-muted-foreground text-xs">{hint}</span>
       </span>
-    </div>
+    </button>
   );
 }

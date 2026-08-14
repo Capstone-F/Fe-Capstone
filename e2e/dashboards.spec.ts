@@ -20,8 +20,15 @@ test("admin dashboard renders authoritative KPI and drill-down links", async ({
           activeExperts: 8,
           activeClinics: 4,
           paidOrders: 35,
-          netProductRevenueVnd: 12500000,
-          netConsultationFeesVnd: 2400000,
+          grossProductSalesVnd: 12500000,
+          discountsVnd: 500000,
+          shippingCollectedVnd: 300000,
+          productPaymentsCollectedVnd: 12300000,
+          productRefundsVnd: 400000,
+          averageOrderValueVnd: 351429,
+          consultationFeesCollectedVnd: 2400000,
+          consultationRefundsVnd: 200000,
+          platformCommissionRevenueVnd: 240000,
         },
         attention: {
           submittedStockForms: 3,
@@ -33,8 +40,59 @@ test("admin dashboard renders authoritative KPI and drill-down links", async ({
           {
             date: "2026-08-13",
             newCustomers: 4,
-            netProductRevenueVnd: 500000,
-            netConsultationFeesVnd: 300000,
+            paidOrders: 2,
+            grossProductSalesVnd: 500000,
+            discountsVnd: 0,
+            shippingCollectedVnd: 30000,
+            productPaymentsCollectedVnd: 530000,
+            productRefundsVnd: 0,
+            consultationFeesCollectedVnd: 300000,
+            consultationRefundsVnd: 0,
+            platformCommissionRevenueVnd: 30000,
+          },
+        ],
+        funnel: {
+          availableFrom: "2026-08-01",
+          isPartial: true,
+          steps: [
+            {
+              eventType: "PRODUCT_VIEWED",
+              label: "Xem sản phẩm",
+              sessions: 100,
+              conversionFromPreviousPct: 100,
+              overallConversionPct: 100,
+            },
+            {
+              eventType: "ADDED_TO_CART",
+              label: "Thêm vào giỏ",
+              sessions: 40,
+              conversionFromPreviousPct: 40,
+              overallConversionPct: 40,
+            },
+            {
+              eventType: "CHECKOUT_STARTED",
+              label: "Bắt đầu thanh toán",
+              sessions: 20,
+              conversionFromPreviousPct: 50,
+              overallConversionPct: 20,
+            },
+            {
+              eventType: "PURCHASE_COMPLETED",
+              label: "Thanh toán thành công",
+              sessions: 10,
+              conversionFromPreviousPct: 50,
+              overallConversionPct: 10,
+            },
+          ],
+        },
+        topProducts: [
+          {
+            productId: "p1",
+            productVariantId: "v1",
+            productName: "Sữa rửa mặt",
+            sku: "CLEANSER-1",
+            unitsSold: 12,
+            grossSalesVnd: 2400000,
           },
         ],
         recentActivity: [],
@@ -46,7 +104,9 @@ test("admin dashboard renders authoritative KPI and drill-down links", async ({
   await expect(
     page.getByRole("heading", { name: "Tổng quan quản trị" }),
   ).toBeVisible();
-  await expect(page.getByText("12.500.000 ₫")).toBeVisible();
+  await expect(page.getByText("12.300.000 ₫")).toBeVisible();
+  await expect(page.getByText("Hoa hồng nền tảng đã ghi nhận")).toBeVisible();
+  await expect(page.getByText("Tracking chỉ có từ 2026-08-01")).toBeVisible();
   await expect(
     page.getByRole("link", { name: /Khách hàng hoạt động/ }),
   ).toHaveAttribute("href", "/dashboard/users");
