@@ -37,6 +37,26 @@ export interface Ingredient {
   description?: string | null;
 }
 
+export type ConflictSeverity = "HIGH" | "MEDIUM" | "LOW";
+
+export interface CandidateConflictWarning {
+  selectedProductVariantId: string;
+  protocolCode: string;
+  conflictingProtocolCode: string;
+  severity: ConflictSeverity;
+  description: string;
+}
+
+export interface TreatmentProductConflict {
+  protocolCode: string;
+  conflictingProtocolCode: string;
+  severity: ConflictSeverity;
+  description: string;
+  reason: string | null;
+  productVariantIds: string[];
+  conflictingProductVariantIds: string[];
+}
+
 export interface ProductCandidate {
   productVariantId: string;
   productId: string;
@@ -46,6 +66,7 @@ export interface ProductCandidate {
   matchScore: number;
   matchedIngredientIds: string[];
   stockQuantity: number;
+  conflictWarnings: CandidateConflictWarning[];
 }
 
 export interface TreatmentPhaseIngredient {
@@ -145,6 +166,7 @@ export interface TreatmentPhase {
   ingredients: TreatmentPhaseIngredient[];
   products: TreatmentPhaseProduct[];
   routines: TreatmentRoutineSummary[];
+  conflicts?: TreatmentProductConflict[];
 }
 
 export interface TreatmentPlan {
