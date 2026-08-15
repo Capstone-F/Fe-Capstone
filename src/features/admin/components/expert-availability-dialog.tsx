@@ -9,10 +9,10 @@ import {
   Dialog,
   DialogContent,
   DialogDescription,
-  DialogFooter,
   DialogHeader,
   DialogTitle,
 } from "@/shared/components/ui/dialog";
+import { Label } from "@/shared/components/ui/label";
 import {
   Select,
   SelectContent,
@@ -140,8 +140,8 @@ export function ExpertAvailabilityDialog({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-lg">
-        <DialogHeader>
+      <DialogContent className="flex max-h-[calc(100dvh-2rem)] flex-col gap-0 overflow-hidden p-0 sm:max-w-xl">
+        <DialogHeader className="shrink-0 border-b border-slate-200 px-5 py-4 pr-12 dark:border-slate-800">
           <DialogTitle className="flex items-center gap-2">
             <CalendarClock className="h-5 w-5" />
             Khung giờ tư vấn hàng tuần
@@ -154,13 +154,26 @@ export function ExpertAvailabilityDialog({
         </DialogHeader>
 
         {!expertProfileId ? (
-          <p className="rounded-lg bg-amber-50 p-3 text-sm text-amber-800 dark:bg-amber-950 dark:text-amber-200">
-            Chưa tìm thấy hồ sơ chuyên gia cho tài khoản này. Hãy tạo hồ sơ
-            chuyên gia trước khi thiết lập lịch.
-          </p>
+          <div className="p-5">
+            <p className="rounded-lg bg-amber-50 p-3 text-sm text-amber-800 dark:bg-amber-950 dark:text-amber-200">
+              Chưa tìm thấy hồ sơ chuyên gia cho tài khoản này. Hãy tạo hồ sơ
+              chuyên gia trước khi thiết lập lịch.
+            </p>
+          </div>
         ) : (
-          <div className="space-y-4">
-            <div className="space-y-2">
+          <div className="flex min-h-0 flex-1 flex-col">
+            <div
+              className="min-h-0 flex-1 overflow-y-auto px-5 py-4"
+              data-testid="availability-list-scroll"
+            >
+              <div className="mb-3 flex items-center justify-between gap-3">
+                <p className="font-medium">Khung giờ hiện tại</p>
+                {!isLoading && (
+                  <span className="text-xs text-slate-500">
+                    {sortedBlocks.length} khung giờ
+                  </span>
+                )}
+              </div>
               {isLoading ? (
                 <div className="flex items-center gap-2 text-sm text-slate-500">
                   <Loader2 className="h-4 w-4 animate-spin" />
@@ -172,136 +185,144 @@ export function ExpertAvailabilityDialog({
                   cho tới khi thêm ít nhất một khung.
                 </p>
               ) : (
-                sortedBlocks.map((block) => (
-                  <div
-                    key={block.id}
-                    className="flex items-center justify-between rounded-lg border border-slate-200 px-3 py-2 dark:border-slate-800"
-                  >
-                    <span className="text-sm">
-                      <strong>{DAY_OF_WEEK_LABELS[block.dayOfWeek]}</strong>
-                      {"  "}
-                      {formatHour(block.startHour)} –
-                    </span>
-                    <div className="flex items-center gap-1">
-                      {/* Only the end hour is editable inline; changing the day or start is a
+                <div className="space-y-2">
+                  {sortedBlocks.map((block) => (
+                    <div
+                      key={block.id}
+                      className="flex items-center justify-between gap-3 rounded-lg border border-slate-200 px-3 py-2 dark:border-slate-800"
+                    >
+                      <span className="min-w-0 text-sm">
+                        <strong>{DAY_OF_WEEK_LABELS[block.dayOfWeek]}</strong>
+                        {"  "}
+                        {formatHour(block.startHour)} –
+                      </span>
+                      <div className="flex shrink-0 items-center gap-1">
+                        {/* Only the end hour is editable inline; changing the day or start is a
                           delete-and-re-add, which keeps the overlap check simple. */}
-                      <Select
-                        value={String(block.endHour)}
-                        onValueChange={(value) =>
-                          handleUpdateEndHour(block.id, value)
-                        }
-                        items={END_HOUR_ITEMS}
-                      >
-                        <SelectTrigger
-                          className="h-8 w-24"
-                          aria-label="Giờ kết thúc"
+                        <Select
+                          value={String(block.endHour)}
+                          onValueChange={(value) =>
+                            handleUpdateEndHour(block.id, value)
+                          }
+                          items={END_HOUR_ITEMS}
                         >
-                          <SelectValue />
-                        </SelectTrigger>
-                        <SelectContent>
-                          {START_HOURS.map((hour) => hour + 1)
-                            .filter((hour) => hour > block.startHour)
-                            .map((hour) => (
-                              <SelectItem key={hour} value={String(hour)}>
-                                {formatHour(hour)}
-                              </SelectItem>
-                            ))}
-                        </SelectContent>
-                      </Select>
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        onClick={() => handleDelete(block.id)}
-                        disabled={deleteBlock.isPending}
-                        aria-label="Xoá khung giờ"
-                      >
-                        <Trash2 className="h-4 w-4 text-red-500" />
-                      </Button>
+                          <SelectTrigger
+                            className="h-8 w-24"
+                            aria-label="Giờ kết thúc"
+                          >
+                            <SelectValue />
+                          </SelectTrigger>
+                          <SelectContent>
+                            {START_HOURS.map((hour) => hour + 1)
+                              .filter((hour) => hour > block.startHour)
+                              .map((hour) => (
+                                <SelectItem key={hour} value={String(hour)}>
+                                  {formatHour(hour)}
+                                </SelectItem>
+                              ))}
+                          </SelectContent>
+                        </Select>
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => handleDelete(block.id)}
+                          disabled={deleteBlock.isPending}
+                          aria-label="Xoá khung giờ"
+                        >
+                          <Trash2 className="h-4 w-4 text-red-500" />
+                        </Button>
+                      </div>
                     </div>
-                  </div>
-                ))
+                  ))}
+                </div>
               )}
             </div>
 
-            <div className="grid grid-cols-3 gap-2 border-t border-slate-200 pt-4 dark:border-slate-800">
-              <Select
-                value={dayOfWeek}
-                onValueChange={(value) => setDayOfWeek(value ?? "1")}
-                items={DAY_ITEMS}
-              >
-                <SelectTrigger>
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  {DAY_OF_WEEK_LABELS.map((label, index) => (
-                    <SelectItem key={label} value={String(index)}>
-                      {label}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+            <div className="shrink-0 border-t border-slate-200 bg-white px-5 py-4 dark:border-slate-800 dark:bg-slate-950">
+              <p className="mb-3 font-medium">Thêm khung giờ mới</p>
+              <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
+                <div className="space-y-1.5">
+                  <Label>Ngày</Label>
+                  <Select
+                    value={dayOfWeek}
+                    onValueChange={(value) => setDayOfWeek(value ?? "1")}
+                    items={DAY_ITEMS}
+                  >
+                    <SelectTrigger className="w-full">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {DAY_OF_WEEK_LABELS.map((label, index) => (
+                        <SelectItem key={label} value={String(index)}>
+                          {label}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
 
-              <Select
-                value={startHour}
-                onValueChange={(value) => setStartHour(value ?? "9")}
-                items={START_HOUR_ITEMS}
-              >
-                <SelectTrigger>
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  {START_HOURS.map((hour) => (
-                    <SelectItem key={hour} value={String(hour)}>
-                      {formatHour(hour)}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+                <div className="space-y-1.5">
+                  <Label>Bắt đầu</Label>
+                  <Select
+                    value={startHour}
+                    onValueChange={(value) => setStartHour(value ?? "9")}
+                    items={START_HOUR_ITEMS}
+                  >
+                    <SelectTrigger className="w-full">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {START_HOURS.map((hour) => (
+                        <SelectItem key={hour} value={String(hour)}>
+                          {formatHour(hour)}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
 
-              <Select
-                value={endHour}
-                onValueChange={(value) => setEndHour(value ?? "12")}
-                items={END_HOUR_ITEMS}
-              >
-                <SelectTrigger>
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  {START_HOURS.map((hour) => hour + 1).map((hour) => (
-                    <SelectItem key={hour} value={String(hour)}>
-                      {formatHour(hour)}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
+                <div className="space-y-1.5">
+                  <Label>Kết thúc</Label>
+                  <Select
+                    value={endHour}
+                    onValueChange={(value) => setEndHour(value ?? "12")}
+                    items={END_HOUR_ITEMS}
+                  >
+                    <SelectTrigger className="w-full">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {START_HOURS.map((hour) => hour + 1).map((hour) => (
+                        <SelectItem key={hour} value={String(hour)}>
+                          {formatHour(hour)}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+              </div>
 
-            {!isRangeValid && (
-              <p className="text-xs text-red-500">
-                Giờ kết thúc phải lớn hơn giờ bắt đầu.
-              </p>
-            )}
-
-            <Button
-              onClick={handleAdd}
-              disabled={!isRangeValid || createBlock.isPending}
-              className="w-full"
-            >
-              {createBlock.isPending ? (
-                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-              ) : (
-                <Plus className="mr-2 h-4 w-4" />
+              {!isRangeValid && (
+                <p className="mt-2 text-xs text-red-500">
+                  Giờ kết thúc phải lớn hơn giờ bắt đầu.
+                </p>
               )}
-              Thêm khung giờ
-            </Button>
+
+              <Button
+                onClick={handleAdd}
+                disabled={!isRangeValid || createBlock.isPending}
+                className="mt-3 w-full"
+              >
+                {createBlock.isPending ? (
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                ) : (
+                  <Plus className="mr-2 h-4 w-4" />
+                )}
+                Thêm khung giờ
+              </Button>
+            </div>
           </div>
         )}
-
-        <DialogFooter>
-          <Button variant="outline" onClick={() => onOpenChange(false)}>
-            Đóng
-          </Button>
-        </DialogFooter>
       </DialogContent>
     </Dialog>
   );

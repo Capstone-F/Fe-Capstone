@@ -22,6 +22,7 @@ import type { ZIM, ZIMMessage, ZIMTextMessage } from "zego-zim-web";
 import { Button } from "@/shared/components/ui/button";
 import { Textarea } from "@/shared/components/ui/textarea";
 import { consultationApi } from "../api/consultation.api";
+import { getConsultationConnectionError } from "../utils/consultation-errors";
 
 const HISTORY_PAGE_SIZE = 50;
 const BOTTOM_THRESHOLD_PX = 48;
@@ -238,7 +239,7 @@ export function ZegoChatPanel({ bookingId }: ZegoChatPanelProps) {
       } catch (reason) {
         if (disposed) return;
         instance?.destroy();
-        setError(getZimErrorMessage(reason, "Không thể mở cuộc trò chuyện."));
+        setError(getConsultationConnectionError(reason, "chat"));
         setStatus("error");
       }
     }

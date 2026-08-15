@@ -9,7 +9,6 @@ import {
   FileClock,
   History,
   Loader2,
-  Maximize2,
   MessageSquare,
   Play,
   ShieldAlert,
@@ -39,6 +38,7 @@ import {
 } from "@/shared/components/ui/tabs";
 import { TreatmentPlanBuilder } from "@/features/treatments/components/treatment-plan-builder";
 import { useCustomerConsultationContext } from "../hooks/useConsultation";
+import { getBookingWorkspaceError } from "../utils/consultation-errors";
 import { ZegoChatPanel } from "./zego-chat-panel";
 import { ZegoVideoRoom } from "./zego-video-room";
 
@@ -65,6 +65,7 @@ export function ConsultationWorkspace({
     data: booking,
     isLoading,
     isError,
+    error: bookingError,
     refetch,
   } = useBookingDetail(bookingId);
   const startMutation = useStartBooking();
@@ -95,8 +96,8 @@ export function ConsultationWorkspace({
     return (
       <div className="flex min-h-[520px] flex-col items-center justify-center gap-3 p-6 text-center">
         <ShieldAlert className="h-9 w-9 text-red-500" />
-        <p className="text-sm text-slate-700">
-          Không thể mở ca tư vấn này hoặc bạn không có quyền truy cập.
+        <p className="max-w-md text-sm text-slate-700">
+          {getBookingWorkspaceError(bookingError)}
         </p>
         <Button variant="outline" onClick={() => void refetch()}>
           Thử lại
@@ -109,7 +110,9 @@ export function ConsultationWorkspace({
   const peerName =
     perspective === "expert" ? booking.customerName : booking.expertName;
   const backPath =
-    perspective === "expert" ? "/expert" : "/profile?tab=appointments";
+    perspective === "expert"
+      ? "/expert/consultations"
+      : "/profile?tab=appointments";
   const customerId = booking.customerId;
   const customerName = booking.customerName || "Khách hàng";
   const consultationId = booking.id;
@@ -120,19 +123,11 @@ export function ConsultationWorkspace({
       plan.status !== "COMPLETED",
   );
 
-  function openTreatmentBuilderFullScreen() {
-    const query = new URLSearchParams({
-      customerId,
-      customerName,
-      sourceConsultationId: consultationId,
-    });
-    if (existingTreatment) {
-      query.set("treatmentId", existingTreatment.id);
-    }
-    router.push(`/expert/treatments/builder?${query.toString()}`);
-  }
-
   function toggleTreatmentPanel() {
+    if (!customerId || !consultationId) {
+      toast.error("Ca tư vấn đang thiếu thông tin khách hàng để lập phác đồ.");
+      return;
+    }
     setIsTreatmentPanelOpen((prev) => !prev);
   }
 
@@ -265,15 +260,7 @@ export function ConsultationWorkspace({
               </div>
             </div>
 
-            <div className="flex items-center gap-1.5">
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={openTreatmentBuilderFullScreen}
-                className="h-8 rounded-xl text-xs font-semibold text-slate-600 hover:text-slate-900"
-              >
-                <Maximize2 className="mr-1.5 h-3.5 w-3.5" /> Toàn màn hình
-              </Button>
+            <div className="flex items-center">
               <Button
                 variant="ghost"
                 size="icon"

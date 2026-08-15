@@ -1,8 +1,10 @@
 "use client";
 
 import { useState, useMemo } from "react";
+import { useRouter } from "next/navigation";
 import {
   CalendarDays,
+  CalendarClock,
   Clock,
   CheckCircle2,
   XCircle,
@@ -13,6 +15,7 @@ import {
   ChevronRight,
   UserCheck,
   Stethoscope,
+  Video,
 } from "lucide-react";
 import { Badge } from "@/shared/components/ui/badge";
 import { Button } from "@/shared/components/ui/button";
@@ -26,6 +29,7 @@ import {
   useCancelBooking,
 } from "@/features/booking/hooks/useBooking";
 import type { ConsultationBooking } from "@/features/booking/types/booking.types";
+import { ExpertAvailabilityDialog } from "@/features/admin/components/expert-availability-dialog";
 import { toast } from "sonner";
 
 // ─── Helpers ────────────────────────────────────────────────────────────────
@@ -63,6 +67,7 @@ function formatDateTime(iso: string) {
 // ─── Booking Card ────────────────────────────────────────────────────────────
 
 function BookingCard({ booking }: { booking: ConsultationBooking }) {
+  const router = useRouter();
   const confirmMutation = useConfirmBooking();
   const startMutation = useStartBooking();
   const completeMutation = useCompleteBooking();
@@ -74,6 +79,7 @@ function BookingCard({ booking }: { booking: ConsultationBooking }) {
     startMutation.isPending ||
     completeMutation.isPending ||
     cancelMutation.isPending;
+  const canConfirm = booking.isPaid || booking.isFollowUp;
 
   const handleConfirm = () => {
     confirmMutation.mutate(booking.id, {
@@ -115,7 +121,7 @@ function BookingCard({ booking }: { booking: ConsultationBooking }) {
             <UserCheck className="h-4 w-4 shrink-0 text-emerald-600" />
             <div>
               <p className="text-sm font-bold text-slate-900">
-                {booking.expertName || "Bệnh nhân"}
+                {booking.customerName || "Bệnh nhân chưa cập nhật tên"}
               </p>
               <p className="line-clamp-1 text-xs text-slate-500">
                 {booking.symptoms || "Không có mô tả"}
@@ -166,14 +172,19 @@ function BookingCard({ booking }: { booking: ConsultationBooking }) {
                 size="sm"
                 className="h-7 rounded-lg bg-blue-600 px-3 text-[11px] font-bold text-white hover:bg-blue-700"
                 onClick={handleConfirm}
-                disabled={isPending}
+                disabled={isPending || !canConfirm}
+                title={
+                  canConfirm
+                    ? "Xác nhận lịch hẹn"
+                    : "Khách hàng cần thanh toán trước khi xác nhận"
+                }
               >
                 {confirmMutation.isPending ? (
                   <Loader2 className="mr-1 h-3 w-3 animate-spin" />
                 ) : (
                   <CheckCircle2 className="mr-1 h-3 w-3" />
                 )}
-                Xác nhận
+                {canConfirm ? "Xác nhận" : "Chờ thanh toán"}
               </Button>
             )}
 
@@ -190,6 +201,21 @@ function BookingCard({ booking }: { booking: ConsultationBooking }) {
                   <Play className="mr-1 h-3 w-3" />
                 )}
                 Bắt đầu
+              </Button>
+            )}
+
+            {(booking.status === "confirmed" ||
+              booking.status === "in_progress") && (
+              <Button
+                size="sm"
+                variant="outline"
+                className="h-7 rounded-lg border-indigo-200 px-3 text-[11px] font-semibold text-indigo-700 hover:bg-indigo-50"
+                onClick={() =>
+                  router.push(`/expert/consultations/${booking.id}`)
+                }
+              >
+                <Video className="mr-1 h-3 w-3" />
+                Phòng tư vấn
               </Button>
             )}
 
@@ -238,15 +264,39 @@ function BookingCard({ booking }: { booking: ConsultationBooking }) {
 export default function ExpertSchedulePage() {
   const [activeTab, setActiveTab] = useState<TabType>("all");
   const [weekOffset, setWeekOffset] = useState(0); // 0 = current week
+  const [availabilityOpen, setAvailabilityOpen] = useState(false);
 
   const { data: expertProfile, isLoading: loadingProfile } = useExpertMe();
   const { data: allBookings = [], isLoading: loadingBookings } =
     useExpertBookings();
 
-  // Filter bookings by tab
+  const weekRange = useMemo(() => {
+    const now = new Date();
+    const monday = new Date(now);
+    const vietnamDay = now.getDay() || 7;
+    monday.setDate(now.getDate() - vietnamDay + 1 + weekOffset * 7);
+    monday.setHours(0, 0, 0, 0);
+    const endExclusive = new Date(monday);
+    endExclusive.setDate(monday.getDate() + 7);
+    return { monday, endExclusive };
+  }, [weekOffset]);
+
+  const weekBookings = useMemo(
+    () =>
+      allBookings.filter((booking) => {
+        const scheduledAt = new Date(booking.dateTime);
+        return (
+          scheduledAt >= weekRange.monday &&
+          scheduledAt < weekRange.endExclusive
+        );
+      }),
+    [allBookings, weekRange],
+  );
+
+  // Filter the selected week's bookings by tab.
   const filteredBookings = useMemo(() => {
     const now = new Date();
-    return allBookings.filter((b) => {
+    return weekBookings.filter((b) => {
       if (activeTab === "upcoming") {
         return (
           (b.status === "pending" ||
@@ -259,34 +309,31 @@ export default function ExpertSchedulePage() {
       if (activeTab === "cancelled") return b.status === "cancelled";
       return true; // "all"
     });
-  }, [allBookings, activeTab]);
+  }, [weekBookings, activeTab]);
 
   // Stats
   const stats = useMemo(
     () => ({
-      all: allBookings.length,
-      upcoming: allBookings.filter(
+      all: weekBookings.length,
+      upcoming: weekBookings.filter(
         (b) =>
           (b.status === "pending" ||
             b.status === "confirmed" ||
             b.status === "in_progress") &&
           new Date(b.dateTime) >= new Date(),
       ).length,
-      completed: allBookings.filter((b) => b.status === "completed").length,
-      cancelled: allBookings.filter((b) => b.status === "cancelled").length,
+      completed: weekBookings.filter((b) => b.status === "completed").length,
+      cancelled: weekBookings.filter((b) => b.status === "cancelled").length,
     }),
-    [allBookings],
+    [weekBookings],
   );
 
   // Week date range label
   const weekLabel = useMemo(() => {
-    const now = new Date();
-    const monday = new Date(now);
-    monday.setDate(now.getDate() - now.getDay() + 1 + weekOffset * 7);
-    const sunday = new Date(monday);
-    sunday.setDate(monday.getDate() + 6);
-    return `${monday.toLocaleDateString("vi-VN", { day: "2-digit", month: "2-digit" })} – ${sunday.toLocaleDateString("vi-VN", { day: "2-digit", month: "2-digit", year: "numeric" })}`;
-  }, [weekOffset]);
+    const sunday = new Date(weekRange.endExclusive);
+    sunday.setDate(sunday.getDate() - 1);
+    return `${weekRange.monday.toLocaleDateString("vi-VN", { day: "2-digit", month: "2-digit" })} – ${sunday.toLocaleDateString("vi-VN", { day: "2-digit", month: "2-digit", year: "numeric" })}`;
+  }, [weekRange]);
 
   const TABS: { key: TabType; label: string }[] = [
     { key: "all", label: `Tất cả (${stats.all})` },
@@ -296,52 +343,67 @@ export default function ExpertSchedulePage() {
   ];
 
   return (
-    <div className="space-y-6 p-6">
+    <div className="mx-auto w-full max-w-[1600px] space-y-5 px-4 py-5 sm:px-6 lg:px-8">
       {/* Header */}
-      <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+      <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
         <div>
-          <h2 className="flex items-center gap-2 text-xl font-bold text-slate-900">
+          <p className="mb-1 text-xs font-bold tracking-[0.16em] text-emerald-700 uppercase">
+            Lịch làm việc
+          </p>
+          <h2 className="flex items-center gap-2 text-2xl font-bold tracking-tight text-slate-950 sm:text-3xl">
             <CalendarDays className="h-5 w-5 text-emerald-600" />
-            Lịch Khám & Tư Vấn
+            Lịch khám & khung giờ
           </h2>
-          <p className="mt-0.5 text-xs text-slate-500">
-            Quản lý toàn bộ lịch hẹn — xác nhận, bắt đầu và hoàn thành buổi tư
-            vấn.
+          <p className="mt-1 max-w-2xl text-sm leading-6 text-slate-500">
+            Xem lịch theo tuần và thiết lập các khung giờ bệnh nhân có thể đặt
+            tư vấn.
           </p>
         </div>
 
-        {/* Expert Profile Card */}
-        {loadingProfile ? (
-          <div className="flex items-center gap-2 rounded-xl border border-slate-200 bg-white px-4 py-2.5 shadow-xs">
-            <Loader2 className="h-4 w-4 animate-spin text-slate-400" />
-            <span className="text-xs text-slate-500">Đang tải profile...</span>
-          </div>
-        ) : expertProfile ? (
-          <div className="flex items-center gap-3 rounded-xl border border-emerald-100 bg-emerald-50 px-4 py-2.5 shadow-xs">
-            <Stethoscope className="h-4 w-4 text-emerald-600" />
-            <div>
-              <p className="text-xs font-bold text-emerald-800">
-                {expertProfile.name || "Chuyên gia"}
-              </p>
-              <p className="text-[11px] text-emerald-600">
-                {expertProfile.clinicName || expertProfile.specialization}
-              </p>
+        <div className="flex flex-col items-stretch gap-2 sm:flex-row sm:items-center">
+          <Button
+            variant="outline"
+            className="rounded-xl border-emerald-200 bg-white text-xs font-semibold text-emerald-800 shadow-xs hover:bg-emerald-50"
+            onClick={() => setAvailabilityOpen(true)}
+            disabled={!expertProfile}
+          >
+            <CalendarClock className="mr-1.5 h-4 w-4" />
+            Thiết lập khung giờ
+          </Button>
+
+          {/* Expert Profile Card */}
+          {loadingProfile ? (
+            <div className="flex items-center gap-2 rounded-xl border border-slate-200 bg-white px-4 py-2.5 shadow-xs">
+              <Loader2 className="h-4 w-4 animate-spin text-slate-400" />
+              <span className="text-xs text-slate-500">Đang tải hồ sơ...</span>
             </div>
-            <Badge
-              variant="outline"
-              className="border-emerald-200 bg-white text-[10px] font-bold text-emerald-700"
-            >
-              ⭐ {Number(expertProfile.rating || 0).toFixed(1)}
-            </Badge>
-          </div>
-        ) : null}
+          ) : expertProfile ? (
+            <div className="flex items-center gap-3 rounded-xl border border-emerald-100 bg-emerald-50 px-4 py-2.5 shadow-xs">
+              <Stethoscope className="h-4 w-4 text-emerald-600" />
+              <div className="min-w-0">
+                <p className="truncate text-xs font-bold text-emerald-900">
+                  {expertProfile.name || "Chuyên gia"}
+                </p>
+                <p className="truncate text-[11px] text-emerald-700">
+                  {expertProfile.clinicName || expertProfile.specialization}
+                </p>
+              </div>
+              <Badge
+                variant="outline"
+                className="shrink-0 border-emerald-200 bg-white text-[10px] font-bold text-emerald-700"
+              >
+                ⭐ {Number(expertProfile.rating || 0).toFixed(1)}
+              </Badge>
+            </div>
+          ) : null}
+        </div>
       </div>
 
       {/* Stats Row */}
       <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
         {[
           {
-            label: "Tổng lịch hẹn",
+            label: "Lịch trong tuần",
             value: stats.all,
             color: "text-slate-700 bg-slate-50 border-slate-200",
           },
@@ -369,7 +431,7 @@ export default function ExpertSchedulePage() {
       </div>
 
       {/* Week Navigator + Tab Filters */}
-      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+      <div className="flex flex-col gap-3 rounded-2xl border border-slate-200/80 bg-white p-3 shadow-xs sm:p-4 xl:flex-row xl:items-center xl:justify-between">
         {/* Week Navigation */}
         <div className="flex items-center gap-2">
           <Button
@@ -404,12 +466,12 @@ export default function ExpertSchedulePage() {
         </div>
 
         {/* Tab Pills */}
-        <div className="flex flex-wrap gap-1.5">
+        <div className="flex w-full gap-1.5 overflow-x-auto pb-1 xl:w-auto xl:pb-0">
           {TABS.map((tab) => (
             <button
               key={tab.key}
               onClick={() => setActiveTab(tab.key)}
-              className={`rounded-lg px-3 py-1.5 text-xs font-semibold transition-colors ${
+              className={`shrink-0 rounded-lg px-3 py-1.5 text-xs font-semibold transition-colors ${
                 activeTab === tab.key
                   ? "bg-emerald-600 text-white shadow-sm"
                   : "border border-slate-200 bg-white text-slate-600 hover:bg-slate-50"
@@ -431,16 +493,23 @@ export default function ExpertSchedulePage() {
         <div className="flex flex-col items-center gap-3 rounded-2xl border border-dashed border-slate-200 py-16 text-center">
           <AlertCircle className="h-8 w-8 text-slate-300" />
           <p className="text-sm font-medium text-slate-500">
-            Không có lịch hẹn nào trong mục này.
+            Không có lịch hẹn nào trong tuần và bộ lọc đã chọn.
           </p>
         </div>
       ) : (
-        <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+        <div className="grid gap-3 lg:grid-cols-2">
           {filteredBookings.map((booking) => (
             <BookingCard key={booking.id} booking={booking} />
           ))}
         </div>
       )}
+
+      <ExpertAvailabilityDialog
+        open={availabilityOpen}
+        onOpenChange={setAvailabilityOpen}
+        expertName={expertProfile?.name || "Chuyên gia"}
+        expertProfileId={expertProfile?.id || null}
+      />
     </div>
   );
 }

@@ -27,7 +27,7 @@ export function AppShell({ children, showFooter = true }: AppShellProps) {
       if (roles.includes("clinic_manager")) {
         router.replace("/clinic/experts");
       } else if (roles.includes("staff")) {
-        router.replace("/staff/user-lookup");
+        router.replace("/staff");
       } else if (roles.includes("app_admin")) {
         router.replace("/dashboard/experts");
       } else if (roles.includes("expert")) {
