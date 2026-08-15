@@ -13,7 +13,6 @@ import {
   Dialog,
   DialogContent,
   DialogDescription,
-  DialogFooter,
   DialogHeader,
   DialogTitle,
 } from "@/shared/components/ui/dialog";
@@ -296,7 +295,7 @@ function UserDetailReadOnlyDialog({
 
   return (
     <Dialog open={Boolean(userId)} onOpenChange={(open) => !open && onClose()}>
-      <DialogContent className="max-h-[90vh] overflow-y-auto rounded-3xl p-6 sm:max-w-xl">
+      <DialogContent className="w-[calc(100%-2rem)] rounded-3xl p-4 sm:max-w-xl sm:p-6">
         <DialogHeader className="border-b border-slate-100 pb-4 dark:border-slate-800">
           <DialogTitle className="flex items-center gap-2 text-lg font-bold text-[#2C3E35] dark:text-emerald-400">
             <Info className="h-5 w-5" />
@@ -361,17 +360,6 @@ function UserDetailReadOnlyDialog({
             </div>
           </div>
         )}
-
-        <DialogFooter className="border-t border-slate-100 pt-3 dark:border-slate-800">
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={onClose}
-            className="rounded-xl text-xs font-semibold"
-          >
-            Đóng
-          </Button>
-        </DialogFooter>
       </DialogContent>
     </Dialog>
   );

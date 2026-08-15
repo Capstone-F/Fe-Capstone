@@ -8,7 +8,6 @@ import {
   DialogHeader,
   DialogTitle,
   DialogDescription,
-  DialogFooter,
 } from "@/shared/components/ui/dialog";
 import { Button } from "@/shared/components/ui/button";
 import { Input } from "@/shared/components/ui/input";
@@ -125,17 +124,6 @@ export function WalletInspectorModal({
               </div>
             </div>
           ) : null}
-
-          <DialogFooter className="pt-2">
-            <Button
-              type="button"
-              variant="outline"
-              onClick={onClose}
-              className="w-full rounded-xl text-xs font-semibold sm:w-auto"
-            >
-              Đóng
-            </Button>
-          </DialogFooter>
         </form>
       </DialogContent>
     </Dialog>
