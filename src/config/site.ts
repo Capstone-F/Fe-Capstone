@@ -153,17 +153,17 @@ export const siteConfig = {
         icon: "LayoutDashboard",
       },
       {
-        title: "Ca Tư Vấn Bệnh Nhân",
+        title: "Ca tư vấn",
         url: "/expert/consultations",
         icon: "Stethoscope",
       },
       {
-        title: "Phác Đồ Điều Trị",
+        title: "Phác đồ điều trị",
         url: "/expert/treatments",
         icon: "FileText",
       },
       {
-        title: "Lịch Khám & Slots",
+        title: "Lịch khám & khung giờ",
         url: "/expert/schedule",
         icon: "Calendar",
       },

@@ -28,7 +28,7 @@ export function DashboardRoleGuard({
         if (hasRole(roles, "clinic_manager")) {
           router.replace("/clinic/experts");
         } else if (hasRole(roles, "staff")) {
-          router.replace("/staff/user-lookup");
+          router.replace("/staff");
         } else if (hasRole(roles, "expert")) {
           router.replace("/expert");
         } else {
