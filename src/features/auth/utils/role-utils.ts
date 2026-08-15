@@ -37,7 +37,7 @@ export function getRoleBasedRedirectPath(
     return "/clinic/experts";
   }
   if (hasRole(roles, "staff")) {
-    return "/staff/user-lookup";
+    return "/staff";
   }
   if (hasRole(roles, "app_admin")) {
     return "/dashboard/experts";

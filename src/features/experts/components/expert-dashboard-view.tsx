@@ -18,6 +18,7 @@ import {
   FilePenLine,
   Video,
   Info,
+  RefreshCw,
 } from "lucide-react";
 import { toast } from "sonner";
 
@@ -140,6 +141,20 @@ export function ExpertDashboardView() {
     });
   };
 
+  const handleOpenTreatmentBuilder = (booking: ConsultationBooking) => {
+    if (!booking.id || !booking.customerId) {
+      toast.error("Ca tư vấn đang thiếu thông tin khách hàng để lập phác đồ.");
+      return;
+    }
+
+    const query = new URLSearchParams({
+      customerId: booking.customerId,
+      customerName: booking.customerName || "Khách hàng",
+      sourceConsultationId: booking.id,
+    });
+    router.push(`/expert/treatments/builder?${query.toString()}`);
+  };
+
   // Filtered Bookings
   const filteredBookings = bookings.filter((b) => {
     // Filter by tab status
@@ -174,74 +189,85 @@ export function ExpertDashboardView() {
   ).length;
 
   return (
-    <div className="space-y-6">
+    <div className="mx-auto w-full max-w-[1600px] space-y-5 px-4 py-5 sm:px-6 lg:px-8">
       {/* ── Header Welcome ── */}
-      <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+      <div className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
         <div>
-          <h2 className="text-2xl font-bold text-slate-900">
-            Workspace Chuyên Gia Da Liễu
+          <p className="mb-1 text-xs font-bold tracking-[0.16em] text-emerald-700 uppercase">
+            Quản lý tư vấn
+          </p>
+          <h2 className="text-2xl font-bold tracking-tight text-slate-950 sm:text-3xl">
+            Ca tư vấn bệnh nhân
           </h2>
-          <p className="text-sm text-slate-500">
-            Quản lý các ca khám tư vấn, duyệt lịch hẹn và thực hiện cuộc gọi hỗ
-            trợ khách hàng.
+          <p className="mt-1 max-w-2xl text-sm leading-6 text-slate-500">
+            Theo dõi lịch hẹn, trao đổi trực tuyến và cập nhật phác đồ cho từng
+            bệnh nhân.
           </p>
         </div>
         <Button
           onClick={() => refetch()}
           variant="outline"
-          className="self-start rounded-xl border-slate-200 text-xs font-semibold text-slate-700 hover:bg-slate-50 sm:self-auto"
+          size="sm"
+          className="self-start rounded-xl border-slate-200 bg-white text-xs font-semibold text-slate-700 shadow-xs hover:bg-slate-50 sm:self-auto"
         >
+          <RefreshCw className="mr-1.5 h-3.5 w-3.5" />
           Làm mới danh sách
         </Button>
       </div>
 
       {/* ── Top Stats Cards ── */}
-      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
-        <div className="flex items-center gap-4 rounded-2xl border border-slate-200/80 bg-white p-4 shadow-sm">
-          <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-amber-50 text-amber-600">
-            <Clock className="h-6 w-6" />
+      <div className="grid grid-cols-2 gap-3 xl:grid-cols-4">
+        <div className="flex min-w-0 items-center gap-3 rounded-2xl border border-slate-200/80 bg-white p-3.5 shadow-xs sm:p-4">
+          <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-amber-50 text-amber-600 sm:h-11 sm:w-11">
+            <Clock className="h-5 w-5" />
           </div>
-          <div>
-            <p className="text-xs font-semibold text-slate-500">Chờ xác nhận</p>
-            <p className="text-2xl font-bold text-slate-900">{pendingCount}</p>
+          <div className="min-w-0">
+            <p className="truncate text-[11px] font-semibold text-slate-500 sm:text-xs">
+              Chờ xác nhận
+            </p>
+            <p className="text-xl font-bold text-slate-950 sm:text-2xl">
+              {pendingCount}
+            </p>
           </div>
         </div>
 
-        <div className="flex items-center gap-4 rounded-2xl border border-slate-200/80 bg-white p-4 shadow-sm">
-          <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-emerald-50 text-emerald-600">
-            <UserCheck className="h-6 w-6" />
+        <div className="flex min-w-0 items-center gap-3 rounded-2xl border border-slate-200/80 bg-white p-3.5 shadow-xs sm:p-4">
+          <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-emerald-50 text-emerald-600 sm:h-11 sm:w-11">
+            <UserCheck className="h-5 w-5" />
           </div>
-          <div>
-            <p className="text-xs font-semibold text-slate-500">Đã xác nhận</p>
-            <p className="text-2xl font-bold text-slate-900">
+          <div className="min-w-0">
+            <p className="truncate text-[11px] font-semibold text-slate-500 sm:text-xs">
+              Đã xác nhận
+            </p>
+            <p className="text-xl font-bold text-slate-950 sm:text-2xl">
               {confirmedCount}
             </p>
           </div>
         </div>
 
-        <div className="flex items-center gap-4 rounded-2xl border border-slate-200/80 bg-white p-4 shadow-sm">
-          <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-violet-50 text-violet-600">
-            <CheckCircle2 className="h-6 w-6" />
+        <div className="flex min-w-0 items-center gap-3 rounded-2xl border border-slate-200/80 bg-white p-3.5 shadow-xs sm:p-4">
+          <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-violet-50 text-violet-600 sm:h-11 sm:w-11">
+            <CheckCircle2 className="h-5 w-5" />
           </div>
-          <div>
-            <p className="text-xs font-semibold text-slate-500">
+          <div className="min-w-0">
+            <p className="truncate text-[11px] font-semibold text-slate-500 sm:text-xs">
               Đã hoàn thành
             </p>
-            <p className="text-2xl font-bold text-slate-900">
+            <p className="text-xl font-bold text-slate-950 sm:text-2xl">
               {completedCount}
             </p>
           </div>
         </div>
 
-        <div className="flex items-center gap-4 rounded-2xl border border-slate-200/80 bg-white p-4 shadow-sm">
-          <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-teal-50 text-teal-600">
-            <Stethoscope className="h-6 w-6" />
+        <div className="flex min-w-0 items-center gap-3 rounded-2xl border border-slate-200/80 bg-white p-3.5 shadow-xs sm:p-4">
+          <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-teal-50 text-teal-600 sm:h-11 sm:w-11">
+            <Stethoscope className="h-5 w-5" />
           </div>
-          <div>
-            <p className="text-xs font-semibold text-slate-500">
+          <div className="min-w-0">
+            <p className="truncate text-[11px] font-semibold text-slate-500 sm:text-xs">
               Tổng ca tư vấn
             </p>
-            <p className="text-2xl font-bold text-slate-900">
+            <p className="text-xl font-bold text-slate-950 sm:text-2xl">
               {bookings.length}
             </p>
           </div>
@@ -249,48 +275,54 @@ export function ExpertDashboardView() {
       </div>
 
       {/* ── Main Content Area ── */}
-      <div className="space-y-4 rounded-2xl border border-slate-200/80 bg-white p-6 shadow-sm">
+      <div className="space-y-4 rounded-2xl border border-slate-200/80 bg-white p-3 shadow-xs sm:p-5">
         {/* Search & Tabs Filter Bar */}
-        <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
+        <div className="flex flex-col gap-3 xl:flex-row xl:items-center xl:justify-between">
           {/* Tabs */}
-          <ToggleGroup
-            multiple={false}
-            value={[activeTab]}
-            onValueChange={(value) =>
-              value[0] && setActiveTab(value[0] as FilterTab)
-            }
-            variant="outline"
-            size="sm"
-            className="flex-wrap"
-          >
-            {(
-              [
-                { id: "ALL", label: "Tất cả" },
-                { id: "PENDING", label: `Chờ duyệt (${pendingCount})` },
-                { id: "CONFIRMED", label: `Đã duyệt (${confirmedCount})` },
-                {
-                  id: "IN_PROGRESS",
-                  label: `Đang tư vấn (${inProgressCount})`,
-                },
-                { id: "COMPLETED", label: `Hoàn tất (${completedCount})` },
-                { id: "CANCELLED", label: "Đã hủy" },
-              ] as const
-            ).map((tab) => (
-              <ToggleGroupItem key={tab.id} value={tab.id} className="text-xs">
-                {tab.label}
-              </ToggleGroupItem>
-            ))}
-          </ToggleGroup>
+          <div className="w-full overflow-x-auto pb-1 xl:w-auto xl:pb-0">
+            <ToggleGroup
+              multiple={false}
+              value={[activeTab]}
+              onValueChange={(value) =>
+                value[0] && setActiveTab(value[0] as FilterTab)
+              }
+              variant="outline"
+              size="sm"
+              className="w-max bg-slate-50/70"
+            >
+              {(
+                [
+                  { id: "ALL", label: "Tất cả" },
+                  { id: "PENDING", label: `Chờ duyệt (${pendingCount})` },
+                  { id: "CONFIRMED", label: `Đã duyệt (${confirmedCount})` },
+                  {
+                    id: "IN_PROGRESS",
+                    label: `Đang tư vấn (${inProgressCount})`,
+                  },
+                  { id: "COMPLETED", label: `Hoàn tất (${completedCount})` },
+                  { id: "CANCELLED", label: "Đã hủy" },
+                ] as const
+              ).map((tab) => (
+                <ToggleGroupItem
+                  key={tab.id}
+                  value={tab.id}
+                  className="h-9 px-3 text-xs data-pressed:bg-[#2C3E35] data-pressed:text-white"
+                >
+                  {tab.label}
+                </ToggleGroupItem>
+              ))}
+            </ToggleGroup>
+          </div>
 
           {/* Search Input */}
-          <div className="relative w-full md:w-64">
+          <div className="relative w-full xl:w-80">
             <Search className="absolute top-1/2 left-3 h-4 w-4 -translate-y-1/2 text-slate-400" />
             <Input
               type="text"
               placeholder="Tìm theo khách hàng, triệu chứng..."
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
-              className="rounded-xl border-slate-200 pl-9 text-xs"
+              className="h-10 rounded-xl border-slate-200 bg-white pl-9 text-xs"
             />
           </div>
         </div>
@@ -328,12 +360,12 @@ export function ExpertDashboardView() {
               return (
                 <div
                   key={booking.id}
-                  className="flex flex-col gap-4 rounded-xl border border-slate-200/80 bg-slate-50/40 p-4 transition-all hover:border-slate-300 hover:bg-slate-50 sm:flex-row sm:items-center sm:justify-between"
+                  className="grid gap-4 rounded-2xl border border-slate-200/80 bg-white p-4 transition-all hover:border-emerald-200 hover:shadow-xs xl:grid-cols-[minmax(0,1fr)_auto] xl:items-center"
                 >
                   {/* Left: Info */}
-                  <div className="space-y-2">
-                    <div className="flex items-center gap-2">
-                      <span className="text-sm font-semibold text-slate-900">
+                  <div className="min-w-0 space-y-2">
+                    <div className="flex flex-wrap items-center gap-2">
+                      <span className="truncate text-sm font-bold text-slate-950">
                         {booking.customerName || "Khách hàng chưa cập nhật tên"}
                       </span>
                       {renderStatusBadge(booking)}
@@ -383,11 +415,12 @@ export function ExpertDashboardView() {
                   </div>
 
                   {/* Right: Actions */}
-                  <div className="flex flex-wrap items-center gap-2">
+                  <div className="flex flex-wrap items-center gap-2 border-t border-slate-100 pt-3 xl:justify-end xl:border-t-0 xl:pt-0">
                     <Button
                       size="sm"
                       variant="ghost"
                       onClick={() => setDetailBookingId(booking.id)}
+                      className="rounded-xl text-xs font-semibold text-slate-600"
                     >
                       <Info className="mr-1.5 h-3.5 w-3.5" /> Chi tiết
                     </Button>
@@ -445,7 +478,7 @@ export function ExpertDashboardView() {
                           ) : (
                             <>
                               <Play className="mr-1.5 h-3.5 w-3.5" />
-                              Bắt Đầu Tư Vấn
+                              Bắt đầu tư vấn
                             </>
                           )}
                         </Button>
@@ -455,7 +488,7 @@ export function ExpertDashboardView() {
                           onClick={() => handleOpenCancelModal(booking)}
                           className="rounded-xl border-red-200 text-xs font-semibold text-red-600 hover:bg-red-50"
                         >
-                          Hủy Ca
+                          Hủy ca
                         </Button>
                       </>
                     )}
@@ -471,7 +504,7 @@ export function ExpertDashboardView() {
                         className="rounded-xl bg-indigo-600 text-xs font-bold text-white shadow-xs hover:bg-indigo-700"
                       >
                         <Video className="mr-1.5 h-3.5 w-3.5" />
-                        Phòng Tư Vấn
+                        Phòng tư vấn
                       </Button>
                     )}
 
@@ -480,14 +513,7 @@ export function ExpertDashboardView() {
                       <Button
                         size="sm"
                         variant="outline"
-                        onClick={() => {
-                          const cname = encodeURIComponent(
-                            booking.customerName || "Khách hàng",
-                          );
-                          router.push(
-                            `/expert/treatments/builder?customerId=${booking.customerId}&customerName=${cname}&sourceConsultationId=${booking.id}`,
-                          );
-                        }}
+                        onClick={() => handleOpenTreatmentBuilder(booking)}
                         className="rounded-xl border-amber-300 bg-amber-50 text-xs font-bold text-amber-900 hover:bg-amber-100"
                       >
                         <FilePenLine className="mr-1.5 h-3.5 w-3.5 text-amber-700" />
@@ -510,7 +536,7 @@ export function ExpertDashboardView() {
                         ) : (
                           <>
                             <CheckCircle2 className="mr-1.5 h-3.5 w-3.5" />
-                            Hoàn Thành Ca Tư Vấn
+                            Hoàn thành ca
                           </>
                         )}
                       </Button>

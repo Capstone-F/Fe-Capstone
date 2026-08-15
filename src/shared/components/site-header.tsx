@@ -10,13 +10,15 @@ export function SiteHeader() {
 
   let pageTitle = "GlowScan Portal";
   if (pathname === "/expert") {
-    pageTitle = "Danh Sách Ca Tư Vấn Bệnh Nhân";
+    pageTitle = "Tổng quan chuyên gia";
+  } else if (pathname?.startsWith("/expert/consultations")) {
+    pageTitle = "Ca tư vấn";
   } else if (pathname === "/expert/treatments") {
-    pageTitle = "Quản Lý Phác Đồ Điều Trị";
+    pageTitle = "Phác đồ điều trị";
   } else if (pathname?.startsWith("/expert/treatments/builder")) {
-    pageTitle = "Thiết Kế Phác Đồ Điều Trị Đa Giai Đoạn (Builder)";
+    pageTitle = "Thiết kế phác đồ điều trị";
   } else if (pathname === "/expert/schedule") {
-    pageTitle = "Lịch Khám & Slots Ca Tư Vấn";
+    pageTitle = "Lịch khám và khung giờ";
   } else if (pathname === "/dashboard") {
     pageTitle = "Quản Lý Người Dùng & Phân Quyền";
   } else if (pathname === "/dashboard/experts") {

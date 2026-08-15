@@ -33,6 +33,15 @@ import {
   DialogFooter,
 } from "@/shared/components/ui/dialog";
 import { StaffPageHeader } from "@/features/staff/components/staff-page-header";
+import { ProductVariantSelect } from "@/features/stock/components/product-variant-select";
+import { useProductVariantOptions } from "@/features/stock/hooks/use-product-variant-options";
+
+function toLocalDateInputValue(date: Date) {
+  const year = date.getFullYear();
+  const month = String(date.getMonth() + 1).padStart(2, "0");
+  const day = String(date.getDate()).padStart(2, "0");
+  return `${year}-${month}-${day}`;
+}
 
 export type StockImportStatus =
   | "DRAFT"
@@ -94,6 +103,8 @@ const statusBadges: Record<
 
 export function StockImportView() {
   const queryClient = useQueryClient();
+  const today = toLocalDateInputValue(new Date());
+  const { optionsById: variantOptionsById } = useProductVariantOptions();
   const [activeTab, setActiveTab] = useState<"IMPORT_FORMS" | "DIRECT_BATCHES">(
     "IMPORT_FORMS",
   );
@@ -119,7 +130,7 @@ export function StockImportView() {
   const [newVariantId, setNewVariantId] = useState("");
   const [newQuantity, setNewQuantity] = useState(10);
   const [newMfgDate, setNewMfgDate] = useState(
-    new Date().toISOString().split("T")[0],
+    toLocalDateInputValue(new Date()),
   );
   const [newBatchCode, setNewBatchCode] = useState(
     `LOT-${new Date().getFullYear()}-001`,
@@ -130,7 +141,7 @@ export function StockImportView() {
   const [directVariantId, setDirectVariantId] = useState("");
   const [directQty, setDirectQty] = useState(20);
   const [directMfgDate, setDirectMfgDate] = useState(
-    new Date().toISOString().split("T")[0],
+    toLocalDateInputValue(new Date()),
   );
   const [directBatchCode, setDirectBatchCode] = useState(
     `LOT-DIRECT-${new Date().getFullYear()}-001`,
@@ -341,7 +352,11 @@ export function StockImportView() {
   const handleCreateSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (!newVariantId.trim()) {
-      toast.error("Vui lòng nhập Product Variant ID.");
+      toast.error("Vui lòng chọn sản phẩm cần nhập kho.");
+      return;
+    }
+    if (newMfgDate > today) {
+      toast.error("Ngày sản xuất không được ở tương lai.");
       return;
     }
 
@@ -356,7 +371,11 @@ export function StockImportView() {
   const handleDirectBatchSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (!directVariantId.trim()) {
-      toast.error("Vui lòng nhập Product Variant ID.");
+      toast.error("Vui lòng chọn sản phẩm cần nhập kho.");
+      return;
+    }
+    if (directMfgDate > today) {
+      toast.error("Ngày sản xuất không được ở tương lai.");
       return;
     }
 
@@ -512,7 +531,7 @@ export function StockImportView() {
                       <tr className="border-b border-slate-100 bg-slate-50/80 text-[11px] font-bold text-slate-400 uppercase dark:border-slate-800 dark:bg-slate-800/40">
                         <th className="p-4">Mã Phiếu</th>
                         <th className="p-4">Trạng Thái</th>
-                        <th className="p-4">Variant UUID</th>
+                        <th className="p-4">Sản Phẩm</th>
                         <th className="p-4">Số Lượng</th>
                         <th className="p-4">Mã Lô (Batch Code)</th>
                         <th className="p-4">Ngày Sản Xuất</th>
@@ -543,8 +562,30 @@ export function StockImportView() {
                               </span>
                             </td>
 
-                            <td className="p-4 font-mono text-[11px] text-slate-700 dark:text-slate-300">
-                              {item.productVariantId}
+                            <td className="p-4 text-slate-700 dark:text-slate-300">
+                              {variantOptionsById.has(item.productVariantId) ? (
+                                <div className="space-y-0.5">
+                                  <p className="font-semibold text-slate-900 dark:text-white">
+                                    {
+                                      variantOptionsById.get(
+                                        item.productVariantId,
+                                      )?.productName
+                                    }
+                                  </p>
+                                  <p className="text-[11px] text-slate-500">
+                                    SKU{" "}
+                                    {
+                                      variantOptionsById.get(
+                                        item.productVariantId,
+                                      )?.sku
+                                    }
+                                  </p>
+                                </div>
+                              ) : (
+                                <span className="text-[11px] text-amber-700">
+                                  Chưa tải được thông tin sản phẩm
+                                </span>
+                              )}
                             </td>
 
                             <td className="p-4 font-bold text-slate-800 dark:text-slate-200">
@@ -577,7 +618,6 @@ export function StockImportView() {
                                     className="h-8 rounded-xl text-xs font-semibold text-blue-600 hover:bg-blue-50"
                                   >
                                     <Pencil className="mr-1 h-3.5 w-3.5" /> Sửa
-                                    (PATCH)
                                   </Button>
                                 )}
 
@@ -587,8 +627,11 @@ export function StockImportView() {
                                   onClick={() => setDetailItem(item)}
                                   className="h-8 rounded-xl text-xs font-semibold text-slate-600 hover:bg-slate-100"
                                 >
-                                  <Eye className="mr-1 h-3.5 w-3.5" /> Chi tiết
-                                  & Duyệt
+                                  <Eye className="mr-1 h-3.5 w-3.5" />
+                                  {item.status === "DRAFT" ||
+                                  item.status === "SUBMITTED"
+                                    ? "Chi tiết & Duyệt"
+                                    : "Chi tiết"}
                                 </Button>
                               </div>
                             </td>
@@ -628,9 +671,9 @@ export function StockImportView() {
                   <thead>
                     <tr className="border-b border-slate-100 bg-slate-50/80 text-[11px] font-bold text-slate-400 uppercase dark:border-slate-800 dark:bg-slate-800/40">
                       <th className="p-4">Batch ID</th>
-                      <th className="p-4">Variant UUID</th>
+                      <th className="p-4">Sản Phẩm</th>
                       <th className="p-4">Số Lượng Ban Đầu</th>
-                      <th className="p-4">Số Lượng Tồn Thực Tế (Remaining)</th>
+                      <th className="p-4">Tồn Thực Tế</th>
                       <th className="p-4">Mã Lô (Batch Code)</th>
                       <th className="p-4 text-right">Thao Tác</th>
                     </tr>
@@ -644,8 +687,28 @@ export function StockImportView() {
                         <td className="p-4 font-mono font-bold text-slate-900 dark:text-white">
                           #{b.id.slice(0, 8).toUpperCase()}
                         </td>
-                        <td className="p-4 font-mono text-[11px] text-slate-700 dark:text-slate-300">
-                          {b.productVariantId}
+                        <td className="p-4 text-slate-700 dark:text-slate-300">
+                          {variantOptionsById.has(b.productVariantId) ? (
+                            <div className="space-y-0.5">
+                              <p className="font-semibold text-slate-900 dark:text-white">
+                                {
+                                  variantOptionsById.get(b.productVariantId)
+                                    ?.productName
+                                }
+                              </p>
+                              <p className="text-[11px] text-slate-500">
+                                SKU{" "}
+                                {
+                                  variantOptionsById.get(b.productVariantId)
+                                    ?.sku
+                                }
+                              </p>
+                            </div>
+                          ) : (
+                            <span className="text-[11px] text-amber-700">
+                              Chưa tải được thông tin sản phẩm
+                            </span>
+                          )}
                         </td>
                         <td className="p-4 font-semibold text-slate-600 dark:text-slate-400">
                           {b.quantity} sản phẩm
@@ -669,7 +732,7 @@ export function StockImportView() {
                             className="h-8 rounded-xl border-blue-200 text-xs font-bold text-blue-700 hover:bg-blue-50"
                           >
                             <SlidersHorizontal className="mr-1 h-3.5 w-3.5" />{" "}
-                            Adjust Tồn Kho
+                            Điều Chỉnh Tồn Kho
                           </Button>
                         </td>
                       </tr>
@@ -694,8 +757,7 @@ export function StockImportView() {
               Tạo Bản Nháp Phiếu Nhập Kho
             </DialogTitle>
             <DialogDescription className="text-xs text-slate-500">
-              Nhập mã UUID biến thể sản phẩm, số lượng, ngày sản xuất và mã lô
-              hàng.
+              Chọn sản phẩm, nhập số lượng, ngày sản xuất và mã lô hàng.
             </DialogDescription>
           </DialogHeader>
 
@@ -708,15 +770,12 @@ export function StockImportView() {
                 htmlFor="variantId"
                 className="text-xs font-bold text-slate-700 dark:text-slate-300"
               >
-                Product Variant ID (UUID) *:
+                Sản phẩm và biến thể *:
               </Label>
-              <Input
+              <ProductVariantSelect
                 id="variantId"
-                required
-                placeholder="Nhập UUID của biến thể sản phẩm..."
                 value={newVariantId}
-                onChange={(e) => setNewVariantId(e.target.value)}
-                className="rounded-xl border-slate-200 font-mono text-xs"
+                onChange={setNewVariantId}
               />
             </div>
 
@@ -751,6 +810,7 @@ export function StockImportView() {
                 <Input
                   id="mfgDate"
                   type="date"
+                  max={today}
                   required
                   value={newMfgDate}
                   onChange={(e) => setNewMfgDate(e.target.value)}
@@ -884,7 +944,7 @@ export function StockImportView() {
             <DialogHeader className="border-b border-slate-100 pb-4 dark:border-slate-800">
               <DialogTitle className="flex items-center gap-2 text-lg font-bold text-rose-600">
                 <XCircle className="h-5 w-5" />
-                Từ Chối Phiếu Nhập Kho (REJECT)
+                Từ Chối Phiếu Nhập Kho
               </DialogTitle>
               <DialogDescription className="text-xs text-slate-500">
                 Nhập lý do từ chối phiếu nhập kho #
@@ -971,15 +1031,12 @@ export function StockImportView() {
                 htmlFor="direct-vid"
                 className="text-xs font-bold text-slate-700 dark:text-slate-300"
               >
-                Product Variant ID (UUID) *:
+                Sản phẩm và biến thể *:
               </Label>
-              <Input
+              <ProductVariantSelect
                 id="direct-vid"
-                required
-                placeholder="Nhập UUID biến thể..."
                 value={directVariantId}
-                onChange={(e) => setDirectVariantId(e.target.value)}
-                className="font-mono text-xs"
+                onChange={setDirectVariantId}
               />
             </div>
 
@@ -1014,6 +1071,7 @@ export function StockImportView() {
                 <Input
                   id="direct-mfg"
                   type="date"
+                  max={today}
                   required
                   value={directMfgDate}
                   onChange={(e) => setDirectMfgDate(e.target.value)}
@@ -1088,12 +1146,12 @@ export function StockImportView() {
                 htmlFor="adj-bid"
                 className="text-xs font-bold text-slate-700 dark:text-slate-300"
               >
-                Batch ID (UUID) *:
+                Mã lô hệ thống *:
               </Label>
               <Input
                 id="adj-bid"
                 required
-                placeholder="Nhập Batch UUID..."
+                placeholder="Nhập mã lô hệ thống..."
                 value={adjustBatchId}
                 onChange={(e) => setAdjustBatchId(e.target.value)}
                 className="font-mono text-xs"
@@ -1105,7 +1163,7 @@ export function StockImportView() {
                 htmlFor="adj-qty"
                 className="text-xs font-bold text-slate-700 dark:text-slate-300"
               >
-                Số lượng tồn mới (Remaining Quantity) *:
+                Số lượng tồn mới *:
               </Label>
               <Input
                 id="adj-qty"
@@ -1154,7 +1212,7 @@ export function StockImportView() {
                 {adjustBatchMutation.isPending ? (
                   <Loader2 className="h-4 w-4 animate-spin" />
                 ) : (
-                  "Xác Nhận Adjust"
+                  "Xác Nhận Điều Chỉnh"
                 )}
               </Button>
             </DialogFooter>
@@ -1194,9 +1252,10 @@ export function StockImportView() {
 
               <div className="grid grid-cols-2 gap-4 rounded-2xl border border-slate-100 bg-slate-50 p-4 dark:border-slate-800 dark:bg-slate-900">
                 <div>
-                  <span className="text-slate-500">Mã Biến thể (UUID):</span>
-                  <p className="font-mono font-bold text-slate-800 dark:text-slate-200">
-                    {detailItem.productVariantId}
+                  <span className="text-slate-500">Sản phẩm:</span>
+                  <p className="font-bold text-slate-800 dark:text-slate-200">
+                    {variantOptionsById.get(detailItem.productVariantId)
+                      ?.label || "Chưa tải được thông tin sản phẩm"}
                   </p>
                 </div>
                 <div>

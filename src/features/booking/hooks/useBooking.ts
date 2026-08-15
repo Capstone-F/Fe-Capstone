@@ -3,6 +3,7 @@ import { queryKeys } from "@/lib/query/keys";
 import { bookingApi } from "../api/booking.api";
 import { mapBackendBookingToFrontend } from "../mapper/booking-mapper";
 import type { TimeSlot } from "../types/booking.types";
+import { ApiError } from "@/core/api/errors";
 
 const MIN_BOOKING_LEAD_TIME_MS = 2 * 60 * 60 * 1000; // 2 hours
 
@@ -57,7 +58,11 @@ export function useBookingDetail(id: string) {
       try {
         const response = await bookingApi.getBookingById(id);
         return mapBackendBookingToFrontend(response.data);
-      } catch {
+      } catch (error) {
+        if (!(error instanceof ApiError) || error.status !== 404) {
+          throw error;
+        }
+
         const response = await bookingApi.getBookings();
         const bookings = response.data.items.map(mapBackendBookingToFrontend);
         const bk = bookings.find((b) => b.id === id);

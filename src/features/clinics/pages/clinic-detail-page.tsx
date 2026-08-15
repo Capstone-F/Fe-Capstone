@@ -72,7 +72,7 @@ function ExpertRow({ expert }: { expert: BackendExpert }) {
       </div>
 
       <div className="flex items-center gap-2">
-        <Link href={`/booking?expertId=${expert.id}`}>
+        <Link href={`/booking/${expert.id}`}>
           <Button
             size="sm"
             className="h-8 rounded-xl bg-[#2C3E35] px-3.5 text-xs font-bold text-white hover:bg-[#3A5246]"

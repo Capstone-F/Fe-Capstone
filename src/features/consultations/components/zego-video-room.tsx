@@ -6,6 +6,7 @@ import type { ZegoUIKitPrebuilt as ZegoRoom } from "@zegocloud/zego-uikit-prebui
 
 import { Button } from "@/shared/components/ui/button";
 import { consultationApi } from "../api/consultation.api";
+import { getConsultationConnectionError } from "../utils/consultation-errors";
 
 interface ZegoVideoRoomProps {
   bookingId: string;
@@ -64,11 +65,7 @@ export function ZegoVideoRoom({ bookingId }: ZegoVideoRoomProps) {
         });
       } catch (reason) {
         if (disposed) return;
-        setError(
-          reason instanceof Error
-            ? reason.message
-            : "Không thể khởi tạo phòng video.",
-        );
+        setError(getConsultationConnectionError(reason, "video"));
         setState("error");
       }
     }
