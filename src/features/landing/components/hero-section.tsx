@@ -34,9 +34,9 @@ export function HeroSection() {
               cùng AI.
             </h1>
             <p className="text-muted-foreground max-w-xl text-base leading-relaxed sm:text-lg">
-              Không còn thử nghiệm sai lầm. GlowScan kết hợp khảo sát y khoa
-              Baumann và phân tích ảnh quét da AI để gợi ý hoạt chất cá nhân
-              hóa, đồng hành cùng đội ngũ chuyên gia da liễu hàng đầu.
+              GlowScan kết hợp khảo sát Baumann và phân tích ảnh quét da AI để
+              gợi ý hoạt chất cá nhân hóa, đồng hành cùng đội ngũ chuyên gia da
+              liễu hàng đầu.
             </p>
 
             <div className="flex flex-col gap-4 pt-2 sm:flex-row">

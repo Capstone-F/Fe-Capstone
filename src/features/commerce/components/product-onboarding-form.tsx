@@ -6,13 +6,7 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { useQuery } from "@tanstack/react-query";
 import { toast } from "sonner";
 import { AxiosError } from "axios";
-import {
-  Plus,
-  Trash2,
-  PackageCheck,
-  Image as ImageIcon,
-  Loader2,
-} from "lucide-react";
+import { Plus, Trash2, PackageCheck } from "lucide-react";
 import { Button } from "@/shared/components/ui/button";
 import {
   Card,
@@ -33,9 +27,6 @@ import {
 
 export function ProductOnboardingForm() {
   const [loading, setLoading] = useState(false);
-  const [patchVariantId, setPatchVariantId] = useState("");
-  const [patchImageUrl, setPatchImageUrl] = useState("");
-  const [patching, setPatching] = useState(false);
 
   // Fetch Categories helper (TC-STF-03)
   const { data: categories = [] } = useQuery({
@@ -149,14 +140,7 @@ export function ProductOnboardingForm() {
         }
       }
 
-      toast.success(
-        `Onboard sản phẩm thành công! (Mã biến thể variantId: ${variantId || "N/A"})`,
-      );
-
-      if (variantId) {
-        setPatchVariantId(variantId);
-        setPatchImageUrl(values.imageUrl.trim());
-      }
+      toast.success("Tạo sản phẩm thành công!");
 
       reset({
         name: "",
@@ -176,35 +160,11 @@ export function ProductOnboardingForm() {
     } catch (err: unknown) {
       const axiosErr = err as AxiosError<{ message?: string }>;
       toast.error(
-        "Onboard sản phẩm thất bại: " +
+        "Tạo sản phẩm thất bại: " +
           (axiosErr.response?.data?.message || axiosErr.message),
       );
     } finally {
       setLoading(false);
-    }
-  };
-
-  const handlePatchVariantImage = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!patchVariantId.trim() || !patchImageUrl.trim()) {
-      toast.error("Vui lòng nhập Variant ID và URL hình ảnh.");
-      return;
-    }
-
-    try {
-      setPatching(true);
-      await apiClient.patch(
-        API_ENDPOINTS.PRODUCTS.VARIANT_UPDATE(patchVariantId.trim()),
-        { imageUrl: patchImageUrl.trim() },
-      );
-      toast.success(`Cập nhật ảnh cho biến thể ${patchVariantId} thành công!`);
-    } catch (err: unknown) {
-      const msg =
-        (err as AxiosError<{ message?: string }>)?.response?.data?.message ||
-        "Không thể cập nhật ảnh cho biến thể";
-      toast.error(msg);
-    } finally {
-      setPatching(false);
     }
   };
 
@@ -214,7 +174,7 @@ export function ProductOnboardingForm() {
         <CardHeader>
           <CardTitle className="flex items-center gap-2 text-lg font-bold text-[#2C3E35] dark:text-emerald-400">
             <PackageCheck className="h-5 w-5 text-emerald-600" />
-            Khai Báo Sản Phẩm Mới (Catalog Onboarding)
+            Khai Báo Sản Phẩm Mới
           </CardTitle>
           <p className="mt-1 text-xs text-slate-500">
             Khai báo sản phẩm thương mại mới, liên kết thành phần mỹ phẩm và
@@ -264,7 +224,11 @@ export function ProductOnboardingForm() {
                 </div>
               </div>
 
-              <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
+              <div
+                className={`grid grid-cols-1 gap-4 ${
+                  categories.length > 0 ? "md:grid-cols-2" : "md:grid-cols-3"
+                }`}
+              >
                 <div className="grid gap-2">
                   <Label htmlFor="p-sku">Mã SKU *</Label>
                   <Input
@@ -280,9 +244,7 @@ export function ProductOnboardingForm() {
                 </div>
 
                 <div className="grid gap-2">
-                  <Label htmlFor="p-catcode">
-                    Danh mục sản phẩm (GET /products/categories) *
-                  </Label>
+                  <Label htmlFor="p-catcode">Danh mục sản phẩm *</Label>
                   {categories.length > 0 ? (
                     <select
                       id="p-catcode"
@@ -310,19 +272,21 @@ export function ProductOnboardingForm() {
                   )}
                 </div>
 
-                <div className="grid gap-2">
-                  <Label htmlFor="p-catname">Tên danh mục *</Label>
-                  <Input
-                    id="p-catname"
-                    placeholder="VD: Tinh chất dưỡng da..."
-                    {...register("categoryName")}
-                  />
-                  {errors.categoryName && (
-                    <p className="text-xs font-medium text-rose-500">
-                      {errors.categoryName.message}
-                    </p>
-                  )}
-                </div>
+                {categories.length === 0 ? (
+                  <div className="grid gap-2">
+                    <Label htmlFor="p-catname">Tên danh mục *</Label>
+                    <Input
+                      id="p-catname"
+                      placeholder="VD: Tinh chất dưỡng da..."
+                      {...register("categoryName")}
+                    />
+                    {errors.categoryName && (
+                      <p className="text-xs font-medium text-rose-500">
+                        {errors.categoryName.message}
+                      </p>
+                    )}
+                  </div>
+                ) : null}
               </div>
 
               <div className="grid gap-2">
@@ -419,7 +383,7 @@ export function ProductOnboardingForm() {
               </div>
 
               <div className="grid gap-2">
-                <Label>Hình ảnh sản phẩm (POST /uploads/images) *</Label>
+                <Label>Hình ảnh sản phẩm *</Label>
                 <Controller
                   name="imageUrl"
                   control={control}
@@ -443,7 +407,7 @@ export function ProductOnboardingForm() {
             <div className="space-y-4">
               <div className="flex items-center justify-between border-b pb-2 dark:border-slate-800">
                 <h4 className="text-sm font-semibold text-slate-800 dark:text-slate-200">
-                  3. Thành phần mỹ phẩm (GET /ingredients)
+                  3. Thành phần mỹ phẩm
                 </h4>
                 <Button
                   type="button"
@@ -495,16 +459,22 @@ export function ProductOnboardingForm() {
                       )}
                     </div>
 
-                    <div className="w-28">
+                    <div className="relative w-28">
                       <Input
                         type="number"
                         step={0.1}
-                        placeholder="Nồng độ %"
+                        placeholder="Nồng độ"
                         {...register(`ingredients.${index}.concentrationPct`, {
                           valueAsNumber: true,
                         })}
-                        className="h-9 text-xs"
+                        className="h-9 pr-8 text-xs"
                       />
+                      <span
+                        aria-hidden="true"
+                        className="pointer-events-none absolute top-1/2 right-3 -translate-y-1/2 text-xs font-semibold text-slate-500"
+                      >
+                        %
+                      </span>
                     </div>
 
                     <div className="flex items-center gap-1.5 text-xs text-slate-700 dark:text-slate-300">
@@ -544,74 +514,9 @@ export function ProductOnboardingForm() {
                 className="gap-2 bg-emerald-600 font-semibold text-white hover:bg-emerald-700"
               >
                 <PackageCheck className="h-5 w-5" />
-                {loading ? "Đang lưu sản phẩm..." : "Xác nhận Onboard Sản phẩm"}
+                {loading ? "Đang lưu sản phẩm..." : "Tạo sản phẩm"}
               </Button>
             </div>
-          </form>
-        </CardContent>
-      </Card>
-
-      {/* Quick Variant Image Update Card (PATCH /products/variants/:variantId) */}
-      <Card className="mx-auto max-w-4xl border-slate-200/80 shadow-sm dark:border-slate-800 dark:bg-slate-900">
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2 text-base font-bold text-[#2C3E35] dark:text-emerald-400">
-            <ImageIcon className="h-5 w-5 text-blue-600" />
-            Cập Nhật Ảnh Cho Biến Thể Variant (PATCH
-            /products/variants/:variantId)
-          </CardTitle>
-          <p className="text-xs text-slate-500">
-            Gán trực tiếp URL hình ảnh đã tải lên cho một biến thể sản phẩm cụ
-            thể.
-          </p>
-        </CardHeader>
-
-        <CardContent>
-          <form
-            onSubmit={handlePatchVariantImage}
-            className="flex flex-col gap-4 sm:flex-row sm:items-end"
-          >
-            <div className="flex-1 space-y-1.5">
-              <Label
-                htmlFor="patch-vid"
-                className="text-xs font-bold text-slate-700 dark:text-slate-300"
-              >
-                Variant ID (UUID) *:
-              </Label>
-              <Input
-                id="patch-vid"
-                placeholder="Nhập UUID của variant..."
-                value={patchVariantId}
-                onChange={(e) => setPatchVariantId(e.target.value)}
-                className="font-mono text-xs"
-              />
-            </div>
-
-            <div className="flex-1 space-y-1.5">
-              <Label
-                htmlFor="patch-img"
-                className="text-xs font-bold text-slate-700 dark:text-slate-300"
-              >
-                Image URL (Cloud Storage) *:
-              </Label>
-              <Input
-                id="patch-img"
-                placeholder="https://..."
-                value={patchImageUrl}
-                onChange={(e) => setPatchImageUrl(e.target.value)}
-                className="text-xs"
-              />
-            </div>
-
-            <Button
-              type="submit"
-              disabled={patching || !patchVariantId || !patchImageUrl}
-              className="rounded-xl bg-blue-600 text-xs font-bold text-white hover:bg-blue-700"
-            >
-              {patching ? (
-                <Loader2 className="mr-1.5 h-3.5 w-3.5 animate-spin" />
-              ) : null}
-              Cập Nhật Ảnh Variant
-            </Button>
           </form>
         </CardContent>
       </Card>
