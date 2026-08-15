@@ -34,6 +34,7 @@ interface CancellationDetailModalProps {
   isOpen: boolean;
   onClose: () => void;
   onOpenConfirmReturn?: () => void;
+  isAdmin?: boolean;
 }
 
 const statusLabels: Record<string, { label: string; class: string }> = {
@@ -61,6 +62,7 @@ export function CancellationDetailModal({
   isOpen,
   onClose,
   onOpenConfirmReturn,
+  isAdmin = false,
 }: CancellationDetailModalProps) {
   const advanceMutation = useAdvanceCancellation();
   const tickMutation = useTickCancellationBatch();
@@ -115,10 +117,10 @@ export function CancellationDetailModal({
   return (
     <>
       <Dialog open={isOpen} onOpenChange={(open) => !open && onClose()}>
-        <DialogContent className="max-w-2xl rounded-3xl p-6 shadow-2xl">
+        <DialogContent className="w-[calc(100%-2rem)] max-w-2xl rounded-3xl p-4 shadow-2xl sm:p-6">
           <DialogHeader className="space-y-2 border-b border-slate-100 pb-4 dark:border-slate-800">
-            <div className="flex items-center justify-between">
-              <DialogTitle className="flex items-center gap-2 text-xl font-bold text-[#2C3E35] dark:text-emerald-400">
+            <div className="flex min-w-0 flex-wrap items-start justify-between gap-2 pr-8">
+              <DialogTitle className="flex min-w-0 items-start gap-2 text-xl font-bold break-words text-[#2C3E35] dark:text-emerald-400">
                 <FileText className="h-6 w-6 text-[#2C3E35] dark:text-emerald-400" />
                 Chi tiết Yêu cầu Hủy đơn & Hoàn kho
               </DialogTitle>
@@ -201,12 +203,12 @@ export function CancellationDetailModal({
                 {cancellation.items.map((item) => (
                   <div
                     key={item.id}
-                    className="flex items-center justify-between rounded-xl border border-slate-100 bg-white p-3 text-xs shadow-2xs dark:border-slate-800 dark:bg-slate-900"
+                    className="flex min-w-0 flex-col gap-2 rounded-xl border border-slate-100 bg-white p-3 text-xs shadow-2xs sm:flex-row sm:items-center sm:justify-between dark:border-slate-800 dark:bg-slate-900"
                   >
-                    <div className="flex items-center gap-2.5">
+                    <div className="flex min-w-0 items-center gap-2.5">
                       <Package className="h-4 w-4 shrink-0 text-slate-400" />
-                      <div>
-                        <span className="font-bold text-slate-900 dark:text-white">
+                      <div className="min-w-0">
+                        <span className="font-bold break-words text-slate-900 dark:text-white">
                           {item.productName ||
                             `Sản phẩm #${item.orderItemId.slice(0, 8)}`}
                         </span>
@@ -236,94 +238,87 @@ export function CancellationDetailModal({
             </div>
 
             {/* Admin Ops Controls Banner */}
-            <div className="flex flex-col gap-3 rounded-2xl border border-blue-200/80 bg-blue-50/50 p-4 text-xs dark:border-blue-900/50 dark:bg-blue-950/30">
-              <div className="flex items-center justify-between">
-                <span className="font-bold text-blue-950 dark:text-blue-200">
-                  Công cụ Quản trị viên (Admin Operations & Dev Tools):
-                </span>
-                <Button
-                  type="button"
-                  variant="outline"
-                  size="sm"
-                  onClick={() => setWalletModalOpen(true)}
-                  className="h-7 rounded-xl border-blue-200 text-[11px] font-bold text-blue-900 hover:bg-blue-100"
-                >
-                  <Wallet className="mr-1 h-3.5 w-3.5" />
-                  Soi Ví khách hàng
-                </Button>
-              </div>
+            {isAdmin && (
+              <div className="flex flex-col gap-3 rounded-2xl border border-blue-200/80 bg-blue-50/50 p-4 text-xs dark:border-blue-900/50 dark:bg-blue-950/30">
+                <div className="flex items-center justify-between">
+                  <span className="font-bold text-blue-950 dark:text-blue-200">
+                    Công cụ Quản trị viên (Admin Operations & Dev Tools):
+                  </span>
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    onClick={() => setWalletModalOpen(true)}
+                    className="h-7 rounded-xl border-blue-200 text-[11px] font-bold text-blue-900 hover:bg-blue-100"
+                  >
+                    <Wallet className="mr-1 h-3.5 w-3.5" />
+                    Soi Ví khách hàng
+                  </Button>
+                </div>
 
-              <div className="flex flex-wrap gap-2 pt-1">
-                <Button
-                  type="button"
-                  size="sm"
-                  onClick={() => handleAdvance(10)}
-                  disabled={advanceMutation.isPending}
-                  className="rounded-xl bg-blue-700 text-xs font-bold text-white hover:bg-blue-800"
-                >
-                  {advanceMutation.isPending ? (
-                    <Loader2 className="mr-1.5 h-3.5 w-3.5 animate-spin" />
-                  ) : (
-                    <Play className="mr-1.5 h-3.5 w-3.5" />
-                  )}
-                  Đẩy tiến trình (Advance 10 bước ➔ AWAITING_RETURN)
-                </Button>
-
-                {cancellation.status === "RESTOCKED" && (
+                <div className="flex flex-wrap gap-2 pt-1">
                   <Button
                     type="button"
                     size="sm"
-                    onClick={() => handleAdvance(1)}
+                    onClick={() => handleAdvance(10)}
                     disabled={advanceMutation.isPending}
-                    className="rounded-xl bg-emerald-700 text-xs font-bold text-white hover:bg-emerald-800"
+                    className="rounded-xl bg-blue-700 text-xs font-bold text-white hover:bg-blue-800"
                   >
-                    <Play className="mr-1.5 h-3.5 w-3.5" />
-                    Advance 1 bước ➔ COMPLETED
+                    {advanceMutation.isPending ? (
+                      <Loader2 className="mr-1.5 h-3.5 w-3.5 animate-spin" />
+                    ) : (
+                      <Play className="mr-1.5 h-3.5 w-3.5" />
+                    )}
+                    Đẩy tiến trình (Advance 10 bước ➔ AWAITING_RETURN)
                   </Button>
-                )}
 
-                <Button
-                  type="button"
-                  variant="outline"
-                  size="sm"
-                  onClick={handleTick}
-                  disabled={tickMutation.isPending}
-                  className="rounded-xl border-blue-300 text-xs font-bold text-blue-900 hover:bg-blue-100"
-                >
-                  {tickMutation.isPending ? (
-                    <Loader2 className="mr-1.5 h-3.5 w-3.5 animate-spin" />
-                  ) : (
-                    <RotateCw className="mr-1.5 h-3.5 w-3.5" />
+                  {cancellation.status === "RESTOCKED" && (
+                    <Button
+                      type="button"
+                      size="sm"
+                      onClick={() => handleAdvance(1)}
+                      disabled={advanceMutation.isPending}
+                      className="rounded-xl bg-emerald-700 text-xs font-bold text-white hover:bg-emerald-800"
+                    >
+                      <Play className="mr-1.5 h-3.5 w-3.5" />
+                      Advance 1 bước ➔ COMPLETED
+                    </Button>
                   )}
-                  Kích hoạt Cron Tick
-                </Button>
+
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    onClick={handleTick}
+                    disabled={tickMutation.isPending}
+                    className="rounded-xl border-blue-300 text-xs font-bold text-blue-900 hover:bg-blue-100"
+                  >
+                    {tickMutation.isPending ? (
+                      <Loader2 className="mr-1.5 h-3.5 w-3.5 animate-spin" />
+                    ) : (
+                      <RotateCw className="mr-1.5 h-3.5 w-3.5" />
+                    )}
+                    Kích hoạt Cron Tick
+                  </Button>
+                </div>
               </div>
-            </div>
+            )}
           </div>
 
-          <DialogFooter className="gap-2 border-t border-slate-100 pt-2 sm:gap-0 dark:border-slate-800">
-            <Button
-              type="button"
-              variant="outline"
-              onClick={onClose}
-              className="rounded-xl text-xs font-semibold"
-            >
-              Đóng
-            </Button>
-            {cancellation.status === "AWAITING_RETURN" &&
-              onOpenConfirmReturn && (
-                <Button
-                  type="button"
-                  onClick={() => {
-                    onClose();
-                    onOpenConfirmReturn();
-                  }}
-                  className="rounded-xl bg-[#2C3E35] px-6 text-xs font-bold text-white shadow-md hover:bg-[#3A5246]"
-                >
-                  Mở Bàn Kiểm Kho Trả Hàng ➔
-                </Button>
-              )}
-          </DialogFooter>
+          {cancellation.status === "AWAITING_RETURN" && onOpenConfirmReturn && (
+            <DialogFooter className="gap-2 border-t border-slate-100 pt-2 sm:gap-0 dark:border-slate-800">
+              <Button
+                type="button"
+                onClick={() => {
+                  onClose();
+                  onOpenConfirmReturn();
+                }}
+                className="rounded-xl bg-[#2C3E35] px-6 text-xs font-bold text-white shadow-md hover:bg-[#3A5246]"
+              >
+                Mở Bàn Kiểm Kho Trả Hàng ➔
+              </Button>
+            </DialogFooter>
+          )}
         </DialogContent>
       </Dialog>
 

@@ -46,6 +46,8 @@ export type DeliveryStatus =
   | "SHIPPED"
   | "IN_TRANSIT"
   | "DELIVERED"
+  | "CANCELLED"
+  | "RETURNING"
   | "FAILED"
   | "RETURNED";
 

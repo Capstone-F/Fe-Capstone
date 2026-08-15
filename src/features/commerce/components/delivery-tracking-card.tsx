@@ -1,6 +1,6 @@
 "use client";
 
-import { Package, Truck } from "lucide-react";
+import { CircleOff, Package, Truck } from "lucide-react";
 import { Card, CardContent } from "@/shared/components/ui/card";
 import { Badge } from "@/shared/components/ui/badge";
 import { cn } from "@/lib/utils";
@@ -27,6 +27,8 @@ const STATUS_LABEL: Record<DeliveryStatus, string> = {
   SHIPPED: "Đã lấy hàng",
   IN_TRANSIT: "Đang vận chuyển",
   DELIVERED: "Đã giao",
+  CANCELLED: "Đã hủy giao",
+  RETURNING: "Đang chuyển hoàn",
   FAILED: "Giao thất bại",
   RETURNED: "Đã hoàn trả",
 };
@@ -37,6 +39,8 @@ const STATUS_CLASS: Record<DeliveryStatus, string> = {
   SHIPPED: "bg-primary-soft text-primary",
   IN_TRANSIT: "bg-primary-soft text-primary",
   DELIVERED: "bg-success-soft text-success",
+  CANCELLED: "bg-slate-100 text-slate-600",
+  RETURNING: "bg-warning-soft text-warning",
   FAILED: "bg-destructive/10 text-destructive",
   RETURNED: "bg-warning-soft text-warning",
 };
@@ -45,6 +49,27 @@ function formatDateTime(value: string | null): string | null {
   if (!value) return null;
   const date = new Date(value);
   return Number.isNaN(date.getTime()) ? null : date.toLocaleString("vi-VN");
+}
+
+export function DeliveryStoppedCard() {
+  return (
+    <Card className="border-slate-200 shadow-xs">
+      <CardContent className="flex items-start gap-3 p-4">
+        <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-slate-100 text-slate-500">
+          <CircleOff className="h-4 w-4" />
+        </span>
+        <div className="min-w-0">
+          <h3 className="text-sm font-bold text-slate-800">
+            Vận chuyển đã dừng
+          </h3>
+          <p className="text-muted-foreground mt-1 text-xs leading-relaxed">
+            Đơn vị vận chuyển đã được thông báo do đơn hàng được hủy hoặc hoàn
+            tiền.
+          </p>
+        </div>
+      </CardContent>
+    </Card>
+  );
 }
 
 /**

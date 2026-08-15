@@ -58,6 +58,10 @@ const deliveryStatusLabels: Record<string, { label: string; class: string }> = {
     label: "Đang vận chuyển",
     class: "bg-purple-100 text-purple-900 border border-purple-200 font-bold",
   },
+  IN_TRANSIT: {
+    label: "Đang vận chuyển",
+    class: "bg-purple-100 text-purple-900 border border-purple-200 font-bold",
+  },
   DELIVERED: {
     label: "Giao thành công",
     class: "bg-emerald-600 text-white font-bold shadow-xs",
@@ -69,6 +73,14 @@ const deliveryStatusLabels: Record<string, { label: string; class: string }> = {
   CANCELLED: {
     label: "Đã hủy giao",
     class: "bg-slate-100 text-slate-600 border border-slate-200",
+  },
+  RETURNING: {
+    label: "Đang chuyển hoàn",
+    class: "bg-amber-100 text-amber-900 border border-amber-200 font-bold",
+  },
+  RETURNED: {
+    label: "Đã chuyển hoàn",
+    class: "bg-orange-100 text-orange-900 border border-orange-200 font-bold",
   },
 };
 
@@ -86,7 +98,12 @@ const ghnStatusLabels: Record<string, string> = {
   delivery_fail: "Giao không thành công",
   waiting_to_return: "Chờ chuyển hoàn",
   return: "Đang chuyển hoàn kho",
+  return_transporting: "Đang vận chuyển hàng hoàn",
+  return_sorting: "Đang phân loại hàng hoàn",
+  returning: "Đang giao hàng về kho",
+  return_fail: "Chuyển hoàn thất bại",
   returned: "Đã chuyển hoàn kho",
+  cancel: "Đã hủy vận chuyển",
 };
 
 export interface OrderItemDetail {
@@ -608,10 +625,10 @@ function DeliveryDetailModal({
 
   return (
     <Dialog open={isOpen} onOpenChange={(open) => !open && onClose()}>
-      <DialogContent className="max-h-[90vh] overflow-y-auto rounded-3xl p-6 shadow-2xl sm:max-w-2xl">
+      <DialogContent className="w-[calc(100%-2rem)] rounded-3xl p-4 shadow-2xl sm:max-w-2xl sm:p-6">
         <DialogHeader className="border-b border-slate-100 pb-4 dark:border-slate-800">
-          <div className="flex items-center justify-between">
-            <DialogTitle className="flex items-center gap-2 text-lg font-bold text-[#2C3E35] dark:text-emerald-400">
+          <div className="flex min-w-0 flex-wrap items-start justify-between gap-2 pr-8">
+            <DialogTitle className="flex min-w-0 items-start gap-2 text-lg font-bold break-words text-[#2C3E35] dark:text-emerald-400">
               <Building2 className="h-5 w-5 text-[#2C3E35] dark:text-emerald-400" />
               Chi Tiết Vận Đơn Giao Hàng #
               {delivery.id.slice(0, 8).toUpperCase()}
@@ -718,9 +735,9 @@ function DeliveryDetailModal({
                 {orderData.items.map((item) => (
                   <div
                     key={item.id}
-                    className="flex items-center justify-between rounded-xl border border-slate-100 bg-white p-3 shadow-2xs dark:border-slate-800 dark:bg-slate-900"
+                    className="flex min-w-0 flex-col gap-3 rounded-xl border border-slate-100 bg-white p-3 shadow-2xs sm:flex-row sm:items-center sm:justify-between dark:border-slate-800 dark:bg-slate-900"
                   >
-                    <div className="flex items-center gap-3">
+                    <div className="flex min-w-0 items-center gap-3">
                       {item.imageUrl ? (
                         /* eslint-disable-next-line @next/next/no-img-element */
                         <img
@@ -733,8 +750,8 @@ function DeliveryDetailModal({
                           <Package className="h-6 w-6" />
                         </div>
                       )}
-                      <div>
-                        <p className="font-bold text-slate-900 dark:text-white">
+                      <div className="min-w-0">
+                        <p className="font-bold break-words text-slate-900 dark:text-white">
                           {item.productName ||
                             `Biến thể #${item.productVariantId?.slice(0, 8)}`}
                         </p>
@@ -857,17 +874,6 @@ function DeliveryDetailModal({
             )}
           </div>
         </div>
-
-        <DialogFooter className="border-t border-slate-100 pt-2 dark:border-slate-800">
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={onClose}
-            className="rounded-xl text-xs font-semibold"
-          >
-            Đóng
-          </Button>
-        </DialogFooter>
       </DialogContent>
     </Dialog>
   );
