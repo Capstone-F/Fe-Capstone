@@ -11,7 +11,10 @@ import { useOrderDelivery } from "@/features/commerce/hooks/useDelivery";
 import { OrderItemRow } from "@/features/commerce/components/order-item-row";
 import { OrderStatusBadge } from "@/features/commerce/components/order-status-badge";
 import { OrderCardSkeleton } from "@/features/commerce/components/order-card-skeleton";
-import { DeliveryTrackingCard } from "@/features/commerce/components/delivery-tracking-card";
+import {
+  DeliveryStoppedCard,
+  DeliveryTrackingCard,
+} from "@/features/commerce/components/delivery-tracking-card";
 import { PayOrderButton } from "@/features/commerce/components/pay-order-button";
 import { PayOrderWithWalletButton } from "@/features/commerce/components/pay-order-with-wallet-button";
 import { CancelOrderDialog } from "@/features/commerce/components/cancel-order-dialog";
@@ -68,7 +71,9 @@ export default function OrderDetailPage({
   const { order, items, isLoading, isNotFound } = useOrder(id);
   // Deferred until the order is known to exist and belong to this customer.
   // Orders placed before the GHN migration have no delivery row and 404 here.
-  const { delivery } = useOrderDelivery(order ? id : "");
+  const isTerminalOrder =
+    order?.status === "CANCELLED" || order?.status === "REFUNDED";
+  const { delivery } = useOrderDelivery(order && !isTerminalOrder ? id : "");
 
   const canCancel =
     order?.status === "PENDING" || order?.status === "PROCESSING";
@@ -184,7 +189,11 @@ export default function OrderDetailPage({
               </CardContent>
             </Card>
 
-            {delivery && <DeliveryTrackingCard delivery={delivery} />}
+            {isTerminalOrder ? (
+              <DeliveryStoppedCard />
+            ) : (
+              delivery && <DeliveryTrackingCard delivery={delivery} />
+            )}
 
             <CancelOrderDialog
               isOpen={cancelOpen}

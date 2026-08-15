@@ -384,6 +384,7 @@ export function RestockQueueTable({ isAdmin = false }: RestockQueueTableProps) {
         cancellation={detailModalItem}
         isOpen={Boolean(detailModalItem)}
         onClose={() => setDetailModalItem(null)}
+        isAdmin={isAdmin}
         onOpenConfirmReturn={() => {
           setConfirmModalItem(detailModalItem);
           setDetailModalItem(null);
