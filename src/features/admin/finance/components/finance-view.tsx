@@ -30,6 +30,7 @@ import {
 import type { FinanceTab } from "../types/finance.types";
 import { ClinicPayoutsTab } from "./clinic-payouts-tab";
 import { MoneyFlowSummary } from "./money-flow-summary";
+import { RefundOutflowTab } from "./refund-outflow-tab";
 
 const TAB_VALUES: FinanceTab[] = ["clinics", "refunds", "platform"];
 
@@ -142,9 +143,7 @@ export function FinanceView() {
               <ClinicPayoutsTab withdrawals={withdrawalsInRange} />
             </TabsContent>
             <TabsContent value="refunds" className="mt-4">
-              <p className="text-muted-foreground text-sm">
-                Sẽ bổ sung ở Task 8.
-              </p>
+              <RefundOutflowTab allCancellations={cancellationRows} />
             </TabsContent>
             <TabsContent value="platform" className="mt-4">
               <p className="text-muted-foreground text-sm">
