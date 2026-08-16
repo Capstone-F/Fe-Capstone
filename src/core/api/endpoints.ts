@@ -210,7 +210,6 @@ export const API_ENDPOINTS = {
     CONFIRM_RETURN: (id: string) =>
       `/admin/order-cancellations/${id}/confirm-return`,
     CANCEL: "/admin/order-cancellations",
-    ADVANCE: (id: string) => `/admin/order-cancellations/${id}/advance`,
     TICK: "/admin/order-cancellations/tick",
   },
   ADMIN_DELIVERIES: {
@@ -224,6 +223,8 @@ export const API_ENDPOINTS = {
   },
   ADMIN_ORDERS: {
     HANDOVER: (orderId: string) => `/admin/orders/${orderId}/handover`,
+    RETRY_FULFILLMENT: (orderId: string) =>
+      `/admin/orders/${orderId}/fulfillment/retry`,
   },
   ADMIN_CLINIC_WITHDRAWALS: {
     LIST: "/admin/clinic-withdrawals",
