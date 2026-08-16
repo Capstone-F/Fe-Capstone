@@ -14,7 +14,7 @@ import { Button } from "@/shared/components/ui/button";
 
 const t = {
   pay: "Thanh toán",
-  redirecting: "Đang chuyển tới VNPay...",
+  redirecting: "Đang chuyển tới PayOS...",
   failed: "Không thể thanh toán. Vui lòng thử lại.",
 };
 

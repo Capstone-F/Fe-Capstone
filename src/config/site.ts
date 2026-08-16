@@ -188,7 +188,7 @@ export const siteConfig = {
         icon: "Users",
       },
       {
-        title: "Onboard sản phẩm",
+        title: "Quản lý kho",
         url: "/staff/catalog",
         icon: "PackagePlus",
       },
@@ -196,6 +196,11 @@ export const siteConfig = {
         title: "Phiếu nhập kho",
         url: "/staff/stock-imports",
         icon: "Boxes",
+      },
+      {
+        title: "Bàn kiểm hàng trả",
+        url: "/staff/restock-desk",
+        icon: "PackageCheck",
       },
       {
         title: "Bàn giao hàng & GHN",
@@ -206,11 +211,6 @@ export const siteConfig = {
         title: "Hỗ trợ khách hàng",
         url: "/staff/support-chat",
         icon: "MessageSquare",
-      },
-      {
-        title: "Bàn kiểm hàng trả",
-        url: "/staff/restock-desk",
-        icon: "PackageCheck",
       },
       {
         title: "Hồ sơ cá nhân",

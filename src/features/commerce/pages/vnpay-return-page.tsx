@@ -33,10 +33,8 @@ const ck = {
     done: "Hoàn tất",
   },
   payment: {
-    vnpay: "VnPay",
-    vnpayHint: "Thanh toán qua thẻ/ngân hàng (sandbox).",
-    cod: "COD — Thanh toán khi nhận hàng",
-    codDisabledHint: "Backend chỉ hỗ trợ VNPay ở giai đoạn này.",
+    vnpay: "PayOS",
+    vnpayHint: "Thanh toán qua ngân hàng/thẻ",
   },
   back: "Quay lại",
   next: "Tiếp tục",
@@ -52,7 +50,7 @@ const ck = {
   loadingTitle: "Đang xác nhận thanh toán...",
   processingTitle: "Đang xử lý thanh toán...",
   processingHint:
-    "Vui lòng đợi trong giây lát, hệ thống đang xác nhận với VNPay.",
+    "Vui lòng đợi trong giây lát, hệ thống đang xác nhận với PayOS.",
   timeoutTitle: "Thanh toán đang được xử lý",
   timeoutHint:
     "Quá trình xác nhận đang mất nhiều thời gian hơn dự kiến. Vui lòng kiểm tra lại đơn hàng của bạn sau ít phút.",
