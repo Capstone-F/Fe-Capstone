@@ -28,6 +28,7 @@ import {
   useAllClinicWithdrawals,
 } from "../hooks/useAdminFinance";
 import type { FinanceTab } from "../types/finance.types";
+import { ClinicPayoutsTab } from "./clinic-payouts-tab";
 import { MoneyFlowSummary } from "./money-flow-summary";
 
 const TAB_VALUES: FinanceTab[] = ["clinics", "refunds", "platform"];
@@ -138,9 +139,7 @@ export function FinanceView() {
             </TabsList>
 
             <TabsContent value="clinics" className="mt-4">
-              <p className="text-muted-foreground text-sm">
-                Sẽ bổ sung ở Task 7.
-              </p>
+              <ClinicPayoutsTab withdrawals={withdrawalsInRange} />
             </TabsContent>
             <TabsContent value="refunds" className="mt-4">
               <p className="text-muted-foreground text-sm">
