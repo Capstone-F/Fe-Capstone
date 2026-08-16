@@ -688,19 +688,21 @@ describe("withdrawalDateFor", () => {
 
 describe("filterWithdrawalsByRange", () => {
   // Boundaries are interpreted in Asia/Ho_Chi_Minh (+07:00) to match the
-  // server-computed period the dashboard returns.
+  // server-computed period the dashboard returns. The first two instants are
+  // chosen to sit exactly ON and exactly one minute BEFORE that boundary — do
+  // not round them to tidier UTC values or the test stops proving anything.
   const items = [
     withdrawal({
       id: "before",
       status: "PAID",
       amountVnd: "1000",
-      processedAt: "2026-07-31T16:00:00.000Z", // 2026-08-01T00:00 +07 — inside
+      processedAt: "2026-07-31T17:00:00.000Z", // 2026-08-01T00:00 +07 — inside
     }),
     withdrawal({
       id: "outside",
       status: "PAID",
       amountVnd: "1000",
-      processedAt: "2026-07-31T15:59:00.000Z", // 2026-07-31T23:59 +07 — outside
+      processedAt: "2026-07-31T16:59:00.000Z", // 2026-07-31T23:59 +07 — outside
     }),
     withdrawal({
       id: "inside",
