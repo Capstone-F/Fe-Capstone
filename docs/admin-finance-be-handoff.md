@@ -164,6 +164,12 @@ client.
 - Đề xuất index: `(createdAt DESC)`, `(clinicId, createdAt DESC)`, `(type, createdAt DESC)`.
 - Bảng `transactions` đã có sẵn `orderId`, `consultationId`, `treatmentId`, `userId`,
   `externalRef`, `note` → **không cần đổi schema** cho endpoint này.
+- FE hiện đang ghép tạm bằng cách gọi `/admin/clinic-withdrawals` và
+  `/admin/order-cancellations`, kéo 5 trang đầu rồi chặn ở 500 dòng — cách này **ngầm giả
+  định** hai endpoint đó mặc định sắp theo `createdAt DESC`. Nhờ BE xác nhận giúp thứ tự
+  mặc định thật sự của hai endpoint này, và lý tưởng nhất là bổ sung một tham số `sort`
+  tường minh — vì nếu thứ tự mặc định là tăng dần, màn dòng tiền hiện đang hiển thị các
+  bản ghi **cũ nhất** thay vì mới nhất.
 
 ---
 
