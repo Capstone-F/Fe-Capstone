@@ -154,15 +154,26 @@ export function ClinicPayoutsTab({
           <TableBody>
             {rollups.map((row) => {
               const isOpen = expanded === row.clinicId;
-              const lineItems = filtered.filter(
-                (item) => item.clinicId === row.clinicId,
-              );
+              const lineItems = isOpen
+                ? filtered.filter((item) => item.clinicId === row.clinicId)
+                : [];
+              const toggle = () => setExpanded(isOpen ? null : row.clinicId);
 
               return (
                 <React.Fragment key={row.clinicId}>
                   <TableRow
                     className="cursor-pointer"
-                    onClick={() => setExpanded(isOpen ? null : row.clinicId)}
+                    onClick={toggle}
+                    onKeyDown={(event) => {
+                      if (event.key === "Enter" || event.key === " ") {
+                        event.preventDefault();
+                        toggle();
+                      }
+                    }}
+                    tabIndex={0}
+                    role="button"
+                    aria-expanded={isOpen}
+                    aria-label={`${row.clinicName} — xem chi tiết lệnh rút tiền`}
                   >
                     <TableCell className="font-medium">
                       <span className="flex items-center gap-1.5">
