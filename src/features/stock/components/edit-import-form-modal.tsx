@@ -16,6 +16,7 @@ import {
 } from "@/shared/components/ui/dialog";
 import { Input } from "@/shared/components/ui/input";
 import { Label } from "@/shared/components/ui/label";
+import { DatePicker } from "@/shared/components/form/date-picker";
 import { useUpdateStockImportForm } from "../hooks/useStock";
 import { StockImportFormResponseDto } from "../types/stock.types";
 import { ProductVariantSelect } from "./product-variant-select";
@@ -157,10 +158,17 @@ function EditImportFormContent({
 
               <div className="grid gap-2">
                 <Label htmlFor="edit-mfd">Ngày sản xuất</Label>
-                <Input
-                  id="edit-mfd"
-                  type="date"
-                  {...register("manufacturingDate")}
+                <Controller
+                  name="manufacturingDate"
+                  control={control}
+                  render={({ field }) => (
+                    <DatePicker
+                      id="edit-mfd"
+                      value={field.value}
+                      onChange={field.onChange}
+                      placeholder="Chọn ngày sản xuất"
+                    />
+                  )}
                 />
                 {errors.manufacturingDate && (
                   <p className="text-xs font-medium text-rose-500">

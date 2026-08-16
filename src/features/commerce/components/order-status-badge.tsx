@@ -9,8 +9,10 @@ const STATUS_STYLES: Record<OrderStatus, string> = {
   PROCESSING: "bg-primary-soft text-primary",
   SHIPPED: "bg-sky text-slate-700",
   DELIVERED: "bg-success-soft text-success",
-  CANCELLED: "bg-destructive-soft text-destructive",
-  REFUNDED: "bg-destructive-soft text-destructive",
+  CANCELLED:
+    "bg-rose-100 text-rose-700 border border-rose-200 dark:bg-rose-950/80 dark:text-rose-300 dark:border-rose-900 font-bold",
+  REFUNDED:
+    "bg-rose-100 text-rose-700 border border-rose-200 dark:bg-rose-950/80 dark:text-rose-300 dark:border-rose-900 font-bold",
 };
 
 const STATUS_TEXT: Record<OrderStatus, string> = {

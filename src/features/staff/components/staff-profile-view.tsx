@@ -183,7 +183,7 @@ export function StaffProfileView() {
                 {updating ? (
                   <Loader2 className="mr-1.5 h-3.5 w-3.5 animate-spin" />
                 ) : null}
-                Lưu Thay Đổi (PATCH /users/me)
+                Lưu Thay Đổi
               </Button>
             </div>
           </form>

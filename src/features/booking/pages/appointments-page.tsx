@@ -233,14 +233,9 @@ export function AppointmentsPage() {
                       </Link>
                     )}
                     {bk.status === "cancelled" && (
-                      <Button
-                        size="sm"
-                        variant="ghost"
-                        disabled
-                        className="text-xs"
-                      >
-                        Đã hủy
-                      </Button>
+                      <span className="rounded-md border border-rose-200 bg-rose-100 px-2.5 py-1 text-xs font-bold text-rose-700 dark:border-rose-900 dark:bg-rose-950/80 dark:text-rose-300">
+                        {t.status.cancelled}
+                      </span>
                     )}
                   </div>
                 </CardContent>

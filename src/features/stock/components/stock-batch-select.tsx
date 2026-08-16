@@ -4,6 +4,13 @@ import React, { useState } from "react";
 import { useStockImportForms } from "../hooks/useStock";
 import { useProducts } from "@/features/commerce/hooks/useProducts";
 import { Input } from "@/shared/components/ui/input";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/shared/components/ui/select";
 import { Layers, Hash } from "lucide-react";
 
 interface StockBatchSelectProps {
@@ -17,7 +24,6 @@ export function StockBatchSelect({
   value,
   onChange,
   id = "batchId",
-  required = true,
 }: StockBatchSelectProps) {
   const { data: formsData, isLoading: isFormsLoading } = useStockImportForms();
   const { data: productsData, isLoading: isProductsLoading } = useProducts({
@@ -65,6 +71,12 @@ export function StockBatchSelect({
 
   const isLoading = isFormsLoading || isProductsLoading;
 
+  const placeholderText = isLoading
+    ? "-- Đang tải danh sách lô kho --"
+    : options.length === 0
+      ? "-- Chưa có lô kho tồn --"
+      : "-- Chọn lô sản phẩm cần điều chỉnh --";
+
   if (isManualInput) {
     return (
       <div className="space-y-1.5">
@@ -85,7 +97,6 @@ export function StockBatchSelect({
           placeholder="Nhập Stock Batch UUID..."
           value={value}
           onChange={(e) => onChange(e.target.value)}
-          required={required}
         />
       </div>
     );
@@ -93,34 +104,38 @@ export function StockBatchSelect({
 
   return (
     <div className="space-y-1.5">
-      <select
-        id={id}
-        value={value}
-        onChange={(e) => {
-          if (e.target.value === "__MANUAL__") {
+      <Select
+        value={value || ""}
+        onValueChange={(val) => {
+          if (val === "__MANUAL__") {
             setIsManualInput(true);
             onChange("");
           } else {
-            onChange(e.target.value);
+            onChange(val ?? "");
           }
         }}
-        required={required}
-        className="flex h-10 w-full items-center justify-between rounded-md border border-slate-200 bg-white px-3 py-2 text-sm ring-offset-white placeholder:text-slate-500 focus:ring-2 focus:ring-slate-950 focus:ring-offset-2 focus:outline-none disabled:cursor-not-allowed disabled:opacity-50 dark:border-slate-800 dark:bg-slate-950 dark:ring-offset-slate-950 dark:placeholder:text-slate-400 dark:focus:ring-slate-300"
       >
-        <option value="">
-          {isLoading
-            ? "-- Đang tải danh sách lô kho --"
-            : options.length === 0
-              ? "-- Chưa có lô kho tồn --"
-              : "-- Chọn lô sản phẩm cần điều chỉnh --"}
-        </option>
-        {options.map((opt) => (
-          <option key={opt.batchId} value={opt.batchId}>
-            {opt.label}
-          </option>
-        ))}
-        <option value="__MANUAL__">✏️ Nhập Batch ID thủ công...</option>
-      </select>
+        <SelectTrigger id={id} className="h-10 text-xs sm:text-xs">
+          <SelectValue placeholder={placeholderText} />
+        </SelectTrigger>
+        <SelectContent className="max-h-72">
+          {options.map((opt) => (
+            <SelectItem
+              key={opt.batchId}
+              value={opt.batchId}
+              className="text-xs"
+            >
+              {opt.label}
+            </SelectItem>
+          ))}
+          <SelectItem
+            value="__MANUAL__"
+            className="text-xs font-semibold text-emerald-600 dark:text-emerald-400"
+          >
+            ✏️ Nhập Batch ID thủ công...
+          </SelectItem>
+        </SelectContent>
+      </Select>
 
       {options.length === 0 && !isLoading && (
         <p className="flex items-center gap-1 text-xs text-amber-600">

@@ -302,7 +302,7 @@ function UserDetailReadOnlyDialog({
             Chi Tiết Người Dùng
           </DialogTitle>
           <DialogDescription className="text-xs text-slate-500">
-            Thông tin chi tiết đọc từ hệ thống (GET /users/:id).
+            Thông tin chi tiết tài khoản người dùng.
           </DialogDescription>
         </DialogHeader>
 

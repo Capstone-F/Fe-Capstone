@@ -57,6 +57,7 @@ export function useCancelOrderStaff() {
       cancellationsApi.cancelOrder(body),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["order-cancellations"] });
+      queryClient.invalidateQueries({ queryKey: ["admin-deliveries"] });
     },
   });
 }
