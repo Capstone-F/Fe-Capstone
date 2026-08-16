@@ -17,6 +17,7 @@ import {
   Send,
   Package,
   MapPin,
+  XCircle,
 } from "lucide-react";
 import { apiClient } from "@/core/api/client";
 import { API_ENDPOINTS } from "@/core/api/endpoints";
@@ -35,6 +36,7 @@ import {
 } from "@/shared/components/ui/dialog";
 import { formatVnd } from "@/shared/utils/format";
 import { StaffPageHeader } from "@/features/staff/components/staff-page-header";
+import { CancelOrderStaffModal } from "@/features/admin/cancellations/components/cancel-order-staff-modal";
 import {
   useAdminDeliveries,
   useConfirmHandover,
@@ -134,7 +136,7 @@ export interface OrderDetailData {
 
 export function StaffDeliveriesView() {
   const [filterTab, setFilterTab] = useState<
-    "AWAITING" | "MISSING_GHN" | "ALL"
+    "AWAITING" | "MISSING_GHN" | "SHIPPED" | "ALL"
   >("AWAITING");
   const [detailDelivery, setDetailDelivery] = useState<DeliveryItem | null>(
     null,
@@ -145,9 +147,15 @@ export function StaffDeliveriesView() {
     useState<DeliveryItem | null>(null);
   const [handoverNote, setHandoverNote] = useState("Giao tại dock A");
 
+  // Staff order cancel modal state
+  const [cancelModalOrderId, setCancelModalOrderId] = useState<string | null>(
+    null,
+  );
+
   const queryParams = React.useMemo(() => {
     if (filterTab === "AWAITING") return { awaitingHandover: true };
     if (filterTab === "MISSING_GHN") return { missingProviderCode: true };
+    if (filterTab === "SHIPPED") return { status: "SHIPPED" };
     return {};
   }, [filterTab]);
 
@@ -252,6 +260,16 @@ export function StaffDeliveriesView() {
             <Button
               variant="outline"
               size="sm"
+              onClick={() => setCancelModalOrderId("")}
+              className="rounded-xl border-rose-200 bg-rose-50 text-xs font-bold text-rose-700 hover:bg-rose-100"
+            >
+              <XCircle className="mr-1.5 h-3.5 w-3.5 text-rose-600" />
+              Hủy Đơn Hàng
+            </Button>
+
+            <Button
+              variant="outline"
+              size="sm"
               onClick={() => {
                 tickMutation.mutate(true, {
                   onSuccess: (res) => {
@@ -296,7 +314,8 @@ export function StaffDeliveriesView() {
             label: "Thiếu Mã Vận Đơn GHN",
             icon: AlertTriangle,
           },
-          { key: "ALL", label: "Tất Cả Đơn Giao Hàng", icon: Truck },
+          { key: "SHIPPED", label: "Đang Vận Chuyển", icon: Truck },
+          { key: "ALL", label: "Tất Cả Đơn Giao Hàng", icon: RotateCw },
         ].map((tab) => {
           const isActive = filterTab === tab.key;
           const IconComp = tab.icon;
@@ -307,7 +326,9 @@ export function StaffDeliveriesView() {
               variant="ghost"
               size="sm"
               onClick={() =>
-                setFilterTab(tab.key as "AWAITING" | "MISSING_GHN" | "ALL")
+                setFilterTab(
+                  tab.key as "AWAITING" | "MISSING_GHN" | "SHIPPED" | "ALL",
+                )
               }
               className={`rounded-full px-4 py-1.5 text-xs font-bold transition-all ${
                 isActive
@@ -460,6 +481,22 @@ export function StaffDeliveriesView() {
                               </Button>
                             )}
 
+                            {item.status !== "DELIVERED" &&
+                              item.status !== "CANCELLED" &&
+                              item.status !== "RETURNED" && (
+                                <Button
+                                  size="sm"
+                                  variant="outline"
+                                  onClick={() =>
+                                    setCancelModalOrderId(item.orderId)
+                                  }
+                                  className="h-8 rounded-xl border-rose-200 text-xs font-bold text-rose-600 hover:bg-rose-50 hover:text-rose-700"
+                                >
+                                  <XCircle className="mr-1 h-3.5 w-3.5" /> Hủy
+                                  đơn
+                                </Button>
+                              )}
+
                             <Button
                               variant="ghost"
                               size="sm"
@@ -575,10 +612,30 @@ export function StaffDeliveriesView() {
             setHandoverModalDelivery(target);
           }}
           onAdvance={() => handleAdvanceDelivery(detailDelivery.id, 10)}
+          onCancelOrder={(orderId) => {
+            setDetailDelivery(null);
+            setCancelModalOrderId(orderId);
+          }}
         />
       )}
+
+      <CancelOrderStaffModal
+        isOpen={cancelModalOrderId !== null}
+        onClose={() => setCancelModalOrderId(null)}
+        orderId={cancelModalOrderId || ""}
+      />
     </div>
   );
+}
+
+interface DetailDeliveryModalProps {
+  delivery: DeliveryItem;
+  isOpen: boolean;
+  onClose: () => void;
+  onOpenHandover: () => void;
+  onCreateGhnOrder: () => void;
+  onAdvance: () => void;
+  onCancelOrder: (orderId: string) => void;
 }
 
 function DeliveryDetailModal({
@@ -588,14 +645,8 @@ function DeliveryDetailModal({
   onCreateGhnOrder,
   onOpenHandover,
   onAdvance,
-}: {
-  delivery: DeliveryItem;
-  isOpen: boolean;
-  onClose: () => void;
-  onCreateGhnOrder: () => void;
-  onOpenHandover: () => void;
-  onAdvance: () => void;
-}) {
+  onCancelOrder,
+}: DetailDeliveryModalProps) {
   // Query Order Detail (hàng hóa trong đơn hàng)
   const { data: orderData, isLoading: isOrderLoading } = useQuery({
     queryKey: ["order-detail", delivery.orderId],
@@ -872,6 +923,19 @@ function DeliveryDetailModal({
                 <Play className="mr-1.5 h-3.5 w-3.5" /> Mô Phỏng Đã Giao Hàng
               </Button>
             )}
+
+            {delivery.status !== "DELIVERED" &&
+              delivery.status !== "CANCELLED" &&
+              delivery.status !== "RETURNED" && (
+                <Button
+                  size="sm"
+                  variant="outline"
+                  onClick={() => onCancelOrder?.(delivery.orderId)}
+                  className="rounded-xl border-rose-200 text-xs font-bold text-rose-600 hover:bg-rose-50 hover:text-rose-700"
+                >
+                  <XCircle className="mr-1.5 h-3.5 w-3.5" /> Hủy Đơn Hàng
+                </Button>
+              )}
           </div>
         </div>
       </DialogContent>

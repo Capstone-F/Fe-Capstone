@@ -113,7 +113,12 @@ export function ExpertNetworkSection() {
                       {expert.title}
                     </span>
                     <h3 className="font-heading text-foreground mt-1 line-clamp-2 text-lg font-bold">
-                      {expert.name}
+                      <Link
+                        href={`/experts/${expert.id}`}
+                        className="hover:text-primary transition-colors hover:underline"
+                      >
+                        {expert.name}
+                      </Link>
                     </h3>
                   </div>
                   {expert.rating > 0 && (

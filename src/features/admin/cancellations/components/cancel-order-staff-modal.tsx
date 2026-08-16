@@ -20,15 +20,23 @@ import { useCancelOrderStaff } from "../hooks/useCancellations";
 interface CancelOrderStaffModalProps {
   isOpen: boolean;
   onClose: () => void;
+  orderId?: string;
 }
 
 export function CancelOrderStaffModal({
   isOpen,
   onClose,
+  orderId: initialOrderId = "",
 }: CancelOrderStaffModalProps) {
-  const [orderId, setOrderId] = useState("");
+  const [orderId, setOrderId] = useState(initialOrderId);
+  const [prevInitialOrderId, setPrevInitialOrderId] = useState(initialOrderId);
   const [reason, setReason] = useState("");
   const cancelMutation = useCancelOrderStaff();
+
+  if (initialOrderId !== prevInitialOrderId) {
+    setPrevInitialOrderId(initialOrderId);
+    setOrderId(initialOrderId);
+  }
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();

@@ -17,6 +17,13 @@ import {
 import { Input } from "@/shared/components/ui/input";
 import { Label } from "@/shared/components/ui/label";
 import { Textarea } from "@/shared/components/ui/textarea";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/shared/components/ui/select";
 import { apiClient } from "@/core/api/client";
 import { API_ENDPOINTS } from "@/core/api/endpoints";
 import { ImageUploader } from "@/shared/components/image-uploader";
@@ -25,7 +32,17 @@ import {
   type ProductOnboardingValues,
 } from "../schemas/product-onboarding.schema";
 
-export function ProductOnboardingForm() {
+interface ProductOnboardingFormProps {
+  onSuccess?: () => void;
+  onCancel?: () => void;
+  isModal?: boolean;
+}
+
+export function ProductOnboardingForm({
+  onSuccess,
+  onCancel,
+  isModal = false,
+}: ProductOnboardingFormProps = {}) {
   const [loading, setLoading] = useState(false);
 
   // Fetch Categories helper (TC-STF-03)
@@ -157,6 +174,8 @@ export function ProductOnboardingForm() {
         shelfLifeUnit: "DAY",
         ingredients: [],
       });
+
+      onSuccess?.();
     } catch (err: unknown) {
       const axiosErr = err as AxiosError<{ message?: string }>;
       toast.error(
@@ -246,18 +265,38 @@ export function ProductOnboardingForm() {
                 <div className="grid gap-2">
                   <Label htmlFor="p-catcode">Danh mục sản phẩm *</Label>
                   {categories.length > 0 ? (
-                    <select
-                      id="p-catcode"
-                      onChange={(e) => handleCategorySelect(e.target.value)}
-                      className="flex h-10 w-full items-center justify-between rounded-md border border-slate-200 bg-white px-3 py-2 text-xs focus:outline-none dark:border-slate-800 dark:bg-slate-950"
-                    >
-                      <option value="">-- Chọn danh mục --</option>
-                      {categories.map((cat) => (
-                        <option key={cat.code} value={cat.code}>
-                          {cat.name} ({cat.code})
-                        </option>
-                      ))}
-                    </select>
+                    <Controller
+                      name="categoryCode"
+                      control={control}
+                      render={({ field }) => (
+                        <Select
+                          value={field.value || ""}
+                          onValueChange={(val) => {
+                            const v = val ?? "";
+                            field.onChange(v);
+                            handleCategorySelect(v);
+                          }}
+                        >
+                          <SelectTrigger
+                            id="p-catcode"
+                            className="h-10 text-xs"
+                          >
+                            <SelectValue placeholder="-- Chọn danh mục --" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            {categories.map((cat) => (
+                              <SelectItem
+                                key={cat.code}
+                                value={cat.code}
+                                className="text-xs"
+                              >
+                                {cat.name} ({cat.code})
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                      )}
+                    />
                   ) : (
                     <Input
                       id="p-catcode"
@@ -365,14 +404,31 @@ export function ProductOnboardingForm() {
                       {...register("shelfLifeValue", { valueAsNumber: true })}
                       className="w-24"
                     />
-                    <select
-                      {...register("shelfLifeUnit")}
-                      className="flex h-10 w-full items-center justify-between rounded-md border border-slate-200 bg-white px-3 py-2 text-xs focus:outline-none dark:border-slate-800 dark:bg-slate-950"
-                    >
-                      <option value="DAY">Ngày</option>
-                      <option value="MONTH">Tháng</option>
-                      <option value="YEAR">Năm</option>
-                    </select>
+                    <Controller
+                      name="shelfLifeUnit"
+                      control={control}
+                      render={({ field }) => (
+                        <Select
+                          value={field.value || "DAY"}
+                          onValueChange={field.onChange}
+                        >
+                          <SelectTrigger className="h-10 w-28 text-xs">
+                            <SelectValue />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="DAY" className="text-xs">
+                              Ngày
+                            </SelectItem>
+                            <SelectItem value="MONTH" className="text-xs">
+                              Tháng
+                            </SelectItem>
+                            <SelectItem value="YEAR" className="text-xs">
+                              Năm
+                            </SelectItem>
+                          </SelectContent>
+                        </Select>
+                      )}
+                    />
                   </div>
                   {errors.shelfLifeValue && (
                     <p className="text-xs font-medium text-rose-500">
@@ -439,17 +495,31 @@ export function ProductOnboardingForm() {
                   >
                     <div className="flex-1">
                       {availableIngredients.length > 0 ? (
-                        <select
-                          className="h-9 w-full rounded-md border border-slate-200 bg-white px-3 text-xs dark:border-slate-800 dark:bg-slate-950"
-                          {...register(`ingredients.${index}.name`)}
-                        >
-                          <option value="">-- Chọn thành phần có sẵn --</option>
-                          {availableIngredients.map((ing) => (
-                            <option key={ing.id} value={ing.name}>
-                              {ing.name}
-                            </option>
-                          ))}
-                        </select>
+                        <Controller
+                          name={`ingredients.${index}.name`}
+                          control={control}
+                          render={({ field }) => (
+                            <Select
+                              value={field.value || ""}
+                              onValueChange={field.onChange}
+                            >
+                              <SelectTrigger className="h-9 text-xs">
+                                <SelectValue placeholder="-- Chọn thành phần có sẵn --" />
+                              </SelectTrigger>
+                              <SelectContent>
+                                {availableIngredients.map((ing) => (
+                                  <SelectItem
+                                    key={ing.id}
+                                    value={ing.name}
+                                    className="text-xs"
+                                  >
+                                    {ing.name}
+                                  </SelectItem>
+                                ))}
+                              </SelectContent>
+                            </Select>
+                          )}
+                        />
                       ) : (
                         <Input
                           placeholder="Tên thành phần (VD: Salicylic Acid, Niacinamide)..."
@@ -506,15 +576,26 @@ export function ProductOnboardingForm() {
               )}
             </div>
 
-            <div className="flex justify-end gap-3 border-t pt-4 dark:border-slate-800">
+            <div className="flex items-center justify-end gap-3 border-t pt-4 dark:border-slate-800">
+              {onCancel && (
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={onCancel}
+                  disabled={loading}
+                  className="rounded-xl px-5 text-xs font-bold"
+                >
+                  Hủy
+                </Button>
+              )}
               <Button
                 type="submit"
-                size="lg"
+                size={isModal ? "default" : "lg"}
                 disabled={loading}
                 className="gap-2 bg-emerald-600 font-semibold text-white hover:bg-emerald-700"
               >
-                <PackageCheck className="h-5 w-5" />
-                {loading ? "Đang lưu sản phẩm..." : "Tạo sản phẩm"}
+                <PackageCheck className="h-4 w-4 sm:h-5 sm:w-5" />
+                {loading ? "Đang lưu sản phẩm..." : "Xác Nhận Tạo Sản Phẩm"}
               </Button>
             </div>
           </form>

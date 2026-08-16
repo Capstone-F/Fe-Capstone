@@ -1,6 +1,9 @@
 "use client";
 
-import Link from "next/link";
+import type { BackendExpert } from "@/features/experts/types/expert.types";
+import { Button } from "@/shared/components/ui/button";
+import { Skeleton } from "@/shared/components/ui/skeleton";
+import { formatVnd } from "@/shared/utils/format";
 import {
   ArrowLeft,
   Building2,
@@ -13,13 +16,10 @@ import {
   Stethoscope,
   Users,
 } from "lucide-react";
-import { useClinicDetail, useClinicExperts } from "../hooks/useClinics";
-import { ClinicMapView } from "../components/clinic-map-view";
+import Link from "next/link";
 import { ClinicInitialBadge } from "../components/clinic-card";
-import { Button } from "@/shared/components/ui/button";
-import { Skeleton } from "@/shared/components/ui/skeleton";
-import { formatVnd } from "@/shared/utils/format";
-import type { BackendExpert } from "@/features/experts/types/expert.types";
+import { ClinicMapView } from "../components/clinic-map-view";
+import { useClinicDetail, useClinicExperts } from "../hooks/useClinics";
 
 const SPECIALTY_LABELS: Record<string, string> = {
   DERMATOLOGY: "Da liễu",
@@ -53,7 +53,12 @@ function ExpertRow({ expert }: { expert: BackendExpert }) {
         </div>
         <div className="min-w-0">
           <h4 className="truncate text-sm font-bold text-slate-900 dark:text-slate-100">
-            {expert.name ?? "Bác sĩ Da liễu"}
+            <Link
+              href={`/experts/${expert.id}`}
+              className="transition-colors hover:text-[#2C3E35] hover:underline dark:hover:text-emerald-400"
+            >
+              {expert.name ?? "Bác sĩ Da liễu"}
+            </Link>
           </h4>
           <p className="text-xs text-slate-500 dark:text-slate-400">
             {specialtyLabel}
@@ -246,7 +251,7 @@ export function ClinicDetailPage({ clinicId }: { clinicId: string }) {
                 <Users className="h-4 w-4" />
               </div>
               <h3 className="text-base font-bold text-slate-900 dark:text-slate-100">
-                Đội ngũ Bác sĩ / Chuyên gia
+                Đội ngũ Chuyên gia
               </h3>
             </div>
             {!isExpertsLoading && experts.length > 0 && (

@@ -293,7 +293,7 @@ export function ExpertsPage() {
 
   const formatDistance = (distance?: number) => {
     if (geolocation.status === "granted" && distance !== undefined) {
-      return `${distance} km`;
+      return `${Number(distance).toFixed(2).replace(".", ",")} km`;
     }
     if (geolocation.status === "loading") {
       return "Đang định vị...";
@@ -604,7 +604,12 @@ export function ExpertsPage() {
                                 Chuyên gia {idx + 1}
                               </span>
                               <CardTitle className="mt-2 truncate text-base font-bold">
-                                {exp.name}
+                                <Link
+                                  href={`/experts/${exp.id}`}
+                                  className="transition-colors hover:text-emerald-700 hover:underline dark:hover:text-emerald-400"
+                                >
+                                  {exp.name}
+                                </Link>
                               </CardTitle>
                             </div>
                             <div className="flex shrink-0 items-center gap-1 rounded-full bg-amber-50 px-2.5 py-1 text-xs font-bold text-amber-700">
