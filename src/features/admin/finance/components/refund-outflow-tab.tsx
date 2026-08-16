@@ -72,9 +72,18 @@ export function RefundOutflowTab({
     limit: PAGE_SIZE,
   });
 
-  const items = query.data?.items ?? [];
+  const items = React.useMemo(() => query.data?.items ?? [], [query.data]);
   const total = query.data?.total ?? 0;
   const totalPages = Math.ceil(total / PAGE_SIZE) || 1;
+
+  // The list polls every 10s; prefer the freshest copy of the selected record so
+  // a status flip (e.g. REFUNDING -> FAILED) shows while the modal is open.
+  // Fall back to the snapshot so the modal doesn't vanish if the record leaves
+  // the current page under a filter or pagination change.
+  const liveSelected = React.useMemo(() => {
+    if (!selected) return null;
+    return items.find((item) => item.id === selected.id) ?? selected;
+  }, [selected, items]);
 
   return (
     <div className="flex flex-col gap-4">
@@ -201,7 +210,7 @@ export function RefundOutflowTab({
 
       {/* Reused from the cancellations feature — do not rebuild. */}
       <CancellationDetailModal
-        cancellation={selected}
+        cancellation={liveSelected}
         isOpen={selected !== null}
         onClose={() => setSelected(null)}
         isAdmin
