@@ -5,7 +5,6 @@ import { toast } from "sonner";
 import {
   FileText,
   AlertTriangle,
-  Play,
   RotateCw,
   Wallet,
   Package,
@@ -22,10 +21,7 @@ import {
 import { Button } from "@/shared/components/ui/button";
 import { Label } from "@/shared/components/ui/label";
 import { formatVnd } from "@/shared/utils/format";
-import {
-  useAdvanceCancellation,
-  useTickCancellationBatch,
-} from "../hooks/useCancellations";
+import { useTickCancellationBatch } from "../hooks/useCancellations";
 import type { OrderCancellation } from "../types/cancellation.types";
 import { WalletInspectorModal } from "./wallet-inspector-modal";
 
@@ -64,7 +60,6 @@ export function CancellationDetailModal({
   onOpenConfirmReturn,
   isAdmin = false,
 }: CancellationDetailModalProps) {
-  const advanceMutation = useAdvanceCancellation();
   const tickMutation = useTickCancellationBatch();
   const [walletModalOpen, setWalletModalOpen] = useState(false);
 
@@ -73,27 +68,6 @@ export function CancellationDetailModal({
   const statusInfo = statusLabels[cancellation.status] || {
     label: cancellation.status,
     class: "bg-slate-100 text-slate-700",
-  };
-
-  const handleAdvance = (steps = 10) => {
-    advanceMutation.mutate(
-      { id: cancellation.id, body: { steps } },
-      {
-        onSuccess: () => {
-          toast.success(
-            `Đã đẩy tiến trình (Advance ${steps} bước) thành công!`,
-          );
-        },
-        onError: (err: unknown) => {
-          const msg =
-            (err as { response?: { data?: { message?: string } } })?.response
-              ?.data?.message ||
-            (err as Error)?.message ||
-            "Không thể đẩy tiến trình";
-          toast.error(msg);
-        },
-      },
-    );
   };
 
   const handleTick = () => {
@@ -259,34 +233,6 @@ export function CancellationDetailModal({
                 <div className="flex flex-wrap gap-2 pt-1">
                   <Button
                     type="button"
-                    size="sm"
-                    onClick={() => handleAdvance(10)}
-                    disabled={advanceMutation.isPending}
-                    className="rounded-xl bg-blue-700 text-xs font-bold text-white hover:bg-blue-800"
-                  >
-                    {advanceMutation.isPending ? (
-                      <Loader2 className="mr-1.5 h-3.5 w-3.5 animate-spin" />
-                    ) : (
-                      <Play className="mr-1.5 h-3.5 w-3.5" />
-                    )}
-                    Đẩy tiến trình (Advance 10 bước ➔ AWAITING_RETURN)
-                  </Button>
-
-                  {cancellation.status === "RESTOCKED" && (
-                    <Button
-                      type="button"
-                      size="sm"
-                      onClick={() => handleAdvance(1)}
-                      disabled={advanceMutation.isPending}
-                      className="rounded-xl bg-emerald-700 text-xs font-bold text-white hover:bg-emerald-800"
-                    >
-                      <Play className="mr-1.5 h-3.5 w-3.5" />
-                      Advance 1 bước ➔ COMPLETED
-                    </Button>
-                  )}
-
-                  <Button
-                    type="button"
                     variant="outline"
                     size="sm"
                     onClick={handleTick}
@@ -298,7 +244,7 @@ export function CancellationDetailModal({
                     ) : (
                       <RotateCw className="mr-1.5 h-3.5 w-3.5" />
                     )}
-                    Kích hoạt Cron Tick
+                    Kích hoạt Cron Tick Sweep
                   </Button>
                 </div>
               </div>

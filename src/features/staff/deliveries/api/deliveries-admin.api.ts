@@ -24,12 +24,14 @@ export interface DeliveryItem {
   statusEvents?: DeliveryStatusEvent[];
   createdAt: string;
   updatedAt: string;
+  stockShortfall?: boolean;
   order?: {
     id: string;
     code?: string;
     status: string;
     totalAmountVnd: number;
     shippingAddress?: Record<string, unknown>;
+    stockShortfall?: boolean;
   };
 }
 
@@ -74,6 +76,12 @@ export const deliveriesAdminApi = {
       {
         note,
       },
+    );
+  },
+
+  retryFulfillment: (orderId: string): Promise<AxiosResponse<unknown>> => {
+    return apiClient.post<unknown>(
+      API_ENDPOINTS.ADMIN_ORDERS.RETRY_FULFILLMENT(orderId),
     );
   },
 

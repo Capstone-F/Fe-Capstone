@@ -4,7 +4,6 @@ import type {
   ListCancellationsParams,
   ConfirmReturnDto,
   CancelOrderStaffDto,
-  AdvanceCancellationDto,
 } from "../types/cancellation.types";
 
 export function useOrderCancellations(
@@ -58,20 +57,6 @@ export function useCancelOrderStaff() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["order-cancellations"] });
       queryClient.invalidateQueries({ queryKey: ["admin-deliveries"] });
-    },
-  });
-}
-
-export function useAdvanceCancellation() {
-  const queryClient = useQueryClient();
-  return useMutation({
-    mutationFn: ({ id, body }: { id: string; body?: AdvanceCancellationDto }) =>
-      cancellationsApi.advanceCancellation(id, body),
-    onSuccess: (_, variables) => {
-      queryClient.invalidateQueries({ queryKey: ["order-cancellations"] });
-      queryClient.invalidateQueries({
-        queryKey: ["order-cancellation-detail", variables.id],
-      });
     },
   });
 }

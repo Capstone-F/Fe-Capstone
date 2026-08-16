@@ -7,7 +7,6 @@ import type {
   ListCancellationsParams,
   ConfirmReturnDto,
   CancelOrderStaffDto,
-  AdvanceCancellationDto,
 } from "../types/cancellation.types";
 
 export const cancellationsApi = {
@@ -54,16 +53,6 @@ export const cancellationsApi = {
     return apiClient.post<OrderCancellation>(
       API_ENDPOINTS.ADMIN_ORDER_CANCELLATIONS.CANCEL,
       body,
-    );
-  },
-
-  advanceCancellation: (
-    id: string,
-    body?: AdvanceCancellationDto,
-  ): Promise<AxiosResponse<OrderCancellation>> => {
-    return apiClient.post<OrderCancellation>(
-      API_ENDPOINTS.ADMIN_ORDER_CANCELLATIONS.ADVANCE(id),
-      body || { steps: 3 },
     );
   },
 
