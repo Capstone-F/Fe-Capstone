@@ -19,6 +19,9 @@ export interface ActivityMeta {
  * `type` vocabulary is not published. Unknown types degrade to a neutral row
  * rather than breaking the list.
  */
+// Order matters: RULES.find returns the first match, so more specific
+// patterns must stay above broader ones (e.g. a hypothetical "stock_order"
+// type must hit /stock|import/i before it reaches /order/i).
 const RULES: Array<{ match: RegExp; meta: ActivityMeta }> = [
   {
     match: /withdraw/i,
@@ -28,11 +31,11 @@ const RULES: Array<{ match: RegExp; meta: ActivityMeta }> = [
     match: /cancel|refund/i,
     meta: { icon: Boxes, href: "/dashboard/finance?tab=refunds" },
   },
-  { match: /order/i, meta: { icon: ShoppingBag, href: "/dashboard/commerce" } },
   {
     match: /stock|import/i,
     meta: { icon: PackagePlus, href: "/dashboard/stock-imports" },
   },
+  { match: /order/i, meta: { icon: ShoppingBag, href: "/dashboard/commerce" } },
   {
     match: /user|customer|signup/i,
     meta: { icon: UserPlus, href: "/dashboard/users" },

@@ -20,11 +20,27 @@ import {
   DashboardPageHeader,
   DashboardSectionCard,
   formatCurrency,
+  formatDate,
   formatDateTime,
 } from "@/features/dashboard/components/dashboard-shell";
 import { useAdminDashboard } from "@/features/dashboard/hooks/useDashboard";
 import type { DashboardRange } from "@/features/dashboard/types/dashboard.types";
 import { activityMetaFor } from "../lib/activity-meta";
+
+// `en-CA` yields YYYY-MM-DD, so this is an ISO-shaped day key in Vietnam time
+// rather than UTC. Grouping must agree with formatDateTime, which renders in
+// Asia/Ho_Chi_Minh — slicing the raw UTC string puts late-evening events under
+// the previous day's heading.
+const VN_DAY_KEY_FORMATTER = new Intl.DateTimeFormat("en-CA", {
+  timeZone: "Asia/Ho_Chi_Minh",
+  year: "numeric",
+  month: "2-digit",
+  day: "2-digit",
+});
+
+function vnDayKey(occurredAt: string): string {
+  return VN_DAY_KEY_FORMATTER.format(new Date(occurredAt));
+}
 
 export function ActivityLogView() {
   const [range, setRange] = React.useState<DashboardRange>("30d");
@@ -40,7 +56,11 @@ export function ActivityLogView() {
   const typeItems = React.useMemo(() => {
     const items: Record<string, string> = { ALL: "Tất cả loại" };
     for (const activity of activities) {
-      items[activity.type] = activity.title;
+      // First occurrence wins: overwriting per-activity made the label depend on
+      // iteration order and shift as new activity arrived.
+      if (!(activity.type in items)) {
+        items[activity.type] = activity.title;
+      }
     }
     return items;
   }, [activities]);
@@ -59,7 +79,7 @@ export function ActivityLogView() {
   const grouped = React.useMemo(() => {
     const groups = new Map<string, typeof filtered>();
     for (const activity of filtered) {
-      const day = activity.occurredAt.slice(0, 10);
+      const day = vnDayKey(activity.occurredAt);
       groups.set(day, [...(groups.get(day) ?? []), activity]);
     }
     return [...groups.entries()].sort((a, b) => b[0].localeCompare(a[0]));
@@ -123,7 +143,7 @@ export function ActivityLogView() {
               {grouped.map(([day, rows]) => (
                 <div key={day}>
                   <p className="text-muted-foreground mb-2 text-xs font-medium">
-                    {day}
+                    {formatDate(day)}
                   </p>
                   <div className="flex flex-col gap-2">
                     {rows.map((activity) => {
