@@ -1,4 +1,5 @@
 import type { ClinicWithdrawalItem } from "@/features/admin/api/admin-clinic-withdrawals.api";
+import type { OrderCancellation } from "@/features/admin/cancellations/types/cancellation.types";
 import type { ClinicPayoutRollup } from "../types/finance.types";
 import { parseVnd } from "./money";
 
@@ -26,6 +27,25 @@ export function filterWithdrawalsByRange(
 
   return items.filter((item) => {
     const at = new Date(withdrawalDateFor(item)).getTime();
+    return at >= start && at <= end;
+  });
+}
+
+/**
+ * Cancellations are dated by `createdAt` — the request date. Note this attributes
+ * a refund requested just before the window but settled inside it to the PRIOR
+ * period; the payload carries no settlement timestamp to do better.
+ */
+export function filterCancellationsByRange(
+  items: OrderCancellation[],
+  from: string,
+  to: string,
+): OrderCancellation[] {
+  const start = new Date(`${from}T00:00:00.000+07:00`).getTime();
+  const end = new Date(`${to}T23:59:59.999+07:00`).getTime();
+
+  return items.filter((item) => {
+    const at = new Date(item.createdAt).getTime();
     return at >= start && at <= end;
   });
 }

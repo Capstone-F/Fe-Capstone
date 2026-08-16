@@ -1,6 +1,8 @@
 import { describe, expect, it } from "vitest";
 import type { ClinicWithdrawalItem } from "@/features/admin/api/admin-clinic-withdrawals.api";
+import type { OrderCancellation } from "@/features/admin/cancellations/types/cancellation.types";
 import {
+  filterCancellationsByRange,
   filterWithdrawalsByRange,
   rollupByClinic,
   withdrawalDateFor,
@@ -89,6 +91,65 @@ describe("filterWithdrawalsByRange", () => {
 
   it("excludes rows falling before the from-boundary", () => {
     const result = filterWithdrawalsByRange(items, "2026-08-01", "2026-08-05");
+    expect(result.map((item) => item.id)).not.toContain("outside");
+  });
+});
+
+function cancellation(
+  overrides: Partial<OrderCancellation> &
+    Pick<OrderCancellation, "id" | "status" | "refundAmountVnd">,
+): OrderCancellation {
+  return {
+    orderId: "order-1",
+    requiresStockReturn: false,
+    items: [],
+    createdAt: "2026-08-01T03:00:00.000Z",
+    updatedAt: "2026-08-01T03:00:00.000Z",
+    ...overrides,
+  };
+}
+
+describe("filterCancellationsByRange", () => {
+  // Boundaries are interpreted in Asia/Ho_Chi_Minh (+07:00) to match the
+  // server-computed period the dashboard returns.
+  // The "before" and "outside" timestamps are chosen precisely to sit exactly
+  // on and exactly one minute before the +07:00 boundary at from="2026-08-01".
+  const items = [
+    cancellation({
+      id: "before",
+      status: "REFUNDED",
+      refundAmountVnd: 1000,
+      createdAt: "2026-07-31T17:00:00.000Z", // 2026-08-01T00:00 +07 — inside
+    }),
+    cancellation({
+      id: "outside",
+      status: "REFUNDED",
+      refundAmountVnd: 1000,
+      createdAt: "2026-07-31T16:59:00.000Z", // 2026-07-31T23:59 +07 — outside
+    }),
+    cancellation({
+      id: "inside",
+      status: "REFUNDED",
+      refundAmountVnd: 1000,
+      createdAt: "2026-08-03T03:00:00.000Z",
+    }),
+  ];
+
+  it("includes rows on the from-boundary in Vietnam time", () => {
+    const result = filterCancellationsByRange(
+      items,
+      "2026-08-01",
+      "2026-08-05",
+    );
+    expect(result.map((item) => item.id).sort()).toEqual(["before", "inside"]);
+  });
+
+  it("excludes rows falling before the from-boundary", () => {
+    const result = filterCancellationsByRange(
+      items,
+      "2026-08-01",
+      "2026-08-05",
+    );
     expect(result.map((item) => item.id)).not.toContain("outside");
   });
 });
