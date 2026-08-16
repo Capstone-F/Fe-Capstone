@@ -2,20 +2,12 @@
 
 import Link from "next/link";
 import { CircleDollarSign, Percent } from "lucide-react";
-import { Area, AreaChart, CartesianGrid, Legend, XAxis, YAxis } from "recharts";
 import { Button } from "@/shared/components/ui/button";
-import {
-  ChartContainer,
-  ChartLegendContent,
-  ChartTooltip,
-  ChartTooltipContent,
-  type ChartConfig,
-} from "@/shared/components/ui/chart";
+import { type ChartConfig } from "@/shared/components/ui/chart";
 import {
   DashboardMetricCard,
   DashboardSectionCard,
-  formatChartDate,
-  formatCompactCurrency,
+  MoneyChart,
   formatCurrency,
 } from "@/features/dashboard/components/dashboard-shell";
 import type { AdminDashboardResponse } from "@/features/dashboard/types/dashboard.types";
@@ -79,9 +71,12 @@ export function PlatformRevenueTab({ data }: { data: AdminDashboardResponse }) {
         </div>
       </DashboardSectionCard>
 
-      <DashboardSectionCard
+      <MoneyChart
         title="Hoa hồng theo ngày"
         description="Phần doanh thu thuộc về GlowScan"
+        config={commissionChartConfig}
+        data={data.trend}
+        keys={["platformCommissionRevenueVnd"]}
         action={
           <Button
             variant="outline"
@@ -92,52 +87,7 @@ export function PlatformRevenueTab({ data }: { data: AdminDashboardResponse }) {
             Đổi tỷ lệ
           </Button>
         }
-      >
-        <ChartContainer
-          config={commissionChartConfig}
-          className="h-[290px] w-full"
-        >
-          <AreaChart
-            data={data.trend.map((point) => ({
-              ...point,
-              label: formatChartDate(point.date),
-            }))}
-            margin={{ left: 4, right: 8 }}
-          >
-            <CartesianGrid vertical={false} />
-            <XAxis
-              dataKey="label"
-              axisLine={false}
-              tickLine={false}
-              minTickGap={20}
-            />
-            <YAxis
-              axisLine={false}
-              tickLine={false}
-              tickFormatter={formatCompactCurrency}
-              width={56}
-            />
-            <ChartTooltip
-              content={
-                <ChartTooltipContent
-                  formatter={(value) => (
-                    <span>{formatCurrency(Number(value))}</span>
-                  )}
-                />
-              }
-            />
-            <Legend content={<ChartLegendContent />} />
-            <Area
-              dataKey="platformCommissionRevenueVnd"
-              type="monotone"
-              stroke="var(--color-platformCommissionRevenueVnd)"
-              fill="var(--color-platformCommissionRevenueVnd)"
-              fillOpacity={0.08}
-              strokeWidth={2}
-            />
-          </AreaChart>
-        </ChartContainer>
-      </DashboardSectionCard>
+      />
     </div>
   );
 }
