@@ -53,9 +53,19 @@ export const siteConfig = {
         icon: "ShoppingBag",
       },
       {
+        title: "Dòng tiền & Đối soát",
+        url: "/dashboard/finance",
+        icon: "ReceiptText",
+      },
+      {
         title: "Duyệt rút tiền phòng khám",
         url: "/dashboard/clinic-withdrawals",
         icon: "Banknote",
+      },
+      {
+        title: "Nhật ký hoạt động",
+        url: "/dashboard/activity",
+        icon: "List",
       },
       {
         title: "QA Cheats",
