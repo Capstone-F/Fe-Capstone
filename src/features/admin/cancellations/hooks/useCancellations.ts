@@ -1,4 +1,5 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { queryKeys } from "@/lib/query/keys";
 import { cancellationsApi } from "../api/cancellations.api";
 import type {
   ListCancellationsParams,
@@ -12,7 +13,7 @@ export function useOrderCancellations(
   enabled: boolean = true,
 ) {
   return useQuery({
-    queryKey: ["order-cancellations", params],
+    queryKey: queryKeys.adminCancellations(params),
     queryFn: async () => {
       const res = await cancellationsApi.getCancellations(params);
       return res.data;
@@ -42,7 +43,9 @@ export function useConfirmReturn() {
     mutationFn: ({ id, body }: { id: string; body: ConfirmReturnDto }) =>
       cancellationsApi.confirmReturn(id, body),
     onSuccess: (_, variables) => {
-      queryClient.invalidateQueries({ queryKey: ["order-cancellations"] });
+      // Prefix match: covers both queryKeys.adminCancellations(params) and
+      // queryKeys.adminCancellationsAll, which both start with ["admin","cancellations"].
+      queryClient.invalidateQueries({ queryKey: ["admin", "cancellations"] });
       queryClient.invalidateQueries({
         queryKey: ["order-cancellation-detail", variables.id],
       });
@@ -56,7 +59,9 @@ export function useCancelOrderStaff() {
     mutationFn: (body: CancelOrderStaffDto) =>
       cancellationsApi.cancelOrder(body),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["order-cancellations"] });
+      // Prefix match: covers both queryKeys.adminCancellations(params) and
+      // queryKeys.adminCancellationsAll, which both start with ["admin","cancellations"].
+      queryClient.invalidateQueries({ queryKey: ["admin", "cancellations"] });
       queryClient.invalidateQueries({ queryKey: ["admin-deliveries"] });
     },
   });
@@ -68,7 +73,9 @@ export function useAdvanceCancellation() {
     mutationFn: ({ id, body }: { id: string; body?: AdvanceCancellationDto }) =>
       cancellationsApi.advanceCancellation(id, body),
     onSuccess: (_, variables) => {
-      queryClient.invalidateQueries({ queryKey: ["order-cancellations"] });
+      // Prefix match: covers both queryKeys.adminCancellations(params) and
+      // queryKeys.adminCancellationsAll, which both start with ["admin","cancellations"].
+      queryClient.invalidateQueries({ queryKey: ["admin", "cancellations"] });
       queryClient.invalidateQueries({
         queryKey: ["order-cancellation-detail", variables.id],
       });
@@ -81,7 +88,9 @@ export function useTickCancellationBatch() {
   return useMutation({
     mutationFn: () => cancellationsApi.tickBatch(),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["order-cancellations"] });
+      // Prefix match: covers both queryKeys.adminCancellations(params) and
+      // queryKeys.adminCancellationsAll, which both start with ["admin","cancellations"].
+      queryClient.invalidateQueries({ queryKey: ["admin", "cancellations"] });
     },
   });
 }
