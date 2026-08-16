@@ -81,4 +81,8 @@ export const queryKeys = {
   ] as const,
   adminClinicWithdrawals: (query?: unknown) =>
     ["admin", "clinic-withdrawals", query] as const,
+  adminClinicWithdrawalsAll: ["admin", "clinic-withdrawals", "all"] as const,
+  adminCancellations: (query?: unknown) =>
+    ["admin", "cancellations", query ?? {}] as const,
+  adminCancellationsAll: ["admin", "cancellations", "all"] as const,
 };
