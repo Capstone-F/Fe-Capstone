@@ -21,8 +21,8 @@ export function filterWithdrawalsByRange(
   from: string,
   to: string,
 ): ClinicWithdrawalItem[] {
-  const start = new Date(`${from}T00:00:00.000+08:00`).getTime();
-  const end = new Date(`${to}T23:59:59.999+08:00`).getTime();
+  const start = new Date(`${from}T00:00:00.000+07:00`).getTime();
+  const end = new Date(`${to}T23:59:59.999+07:00`).getTime();
 
   return items.filter((item) => {
     const at = new Date(withdrawalDateFor(item)).getTime();
