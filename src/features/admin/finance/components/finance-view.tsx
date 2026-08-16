@@ -22,8 +22,12 @@ import {
 import { useAdminDashboard } from "@/features/dashboard/hooks/useDashboard";
 import type { DashboardRange } from "@/features/dashboard/types/dashboard.types";
 import { buildMoneyFlow, reconcileRefunds } from "../lib/flow";
-import { filterWithdrawalsByRange } from "../lib/clinic-rollup";
 import {
+  filterCancellationsByRange,
+  filterWithdrawalsByRange,
+} from "../lib/clinic-rollup";
+import {
+  FINANCE_ROW_CAP,
   useAllCancellations,
   useAllClinicWithdrawals,
 } from "../hooks/useAdminFinance";
@@ -52,7 +56,9 @@ export function FinanceView() {
   const cancellations = useAllCancellations();
 
   const setTab = (next: string) => {
-    router.replace(`/dashboard/finance?tab=${next}`, { scroll: false });
+    const params = new URLSearchParams(searchParams);
+    params.set("tab", next);
+    router.replace(`?${params.toString()}`, { scroll: false });
   };
 
   const isPending =
@@ -79,6 +85,15 @@ export function FinanceView() {
     );
   }, [withdrawalRows, data]);
 
+  const cancellationsInRange = React.useMemo(() => {
+    if (!data) return [];
+    return filterCancellationsByRange(
+      cancellationRows,
+      data.period.from,
+      data.period.to,
+    );
+  }, [cancellationRows, data]);
+
   const flow = React.useMemo(() => {
     if (!data) return null;
     return buildMoneyFlow(data.metrics, withdrawalsInRange);
@@ -86,12 +101,22 @@ export function FinanceView() {
 
   const reconciliation = React.useMemo(() => {
     if (!data) return null;
-    return reconcileRefunds(data.metrics.productRefundsVnd, cancellationRows);
-  }, [data, cancellationRows]);
+    return reconcileRefunds(
+      data.metrics.productRefundsVnd,
+      cancellationsInRange,
+    );
+  }, [data, cancellationsInRange]);
 
-  const truncated =
-    (withdrawals.data?.truncated ?? false) ||
-    (cancellations.data?.truncated ?? false);
+  const withdrawalsTruncated = withdrawals.data?.truncated ?? false;
+  const cancellationsTruncated = cancellations.data?.truncated ?? false;
+  const truncated = withdrawalsTruncated || cancellationsTruncated;
+
+  const truncationMessage =
+    withdrawalsTruncated && cancellationsTruncated
+      ? `Đã đạt giới hạn ${FINANCE_ROW_CAP} bản ghi ở cả lệnh rút tiền và yêu cầu hoàn tiền. Các số tổng bên dưới chỉ phản ánh phần đã tải.`
+      : withdrawalsTruncated
+        ? `Đã đạt giới hạn ${FINANCE_ROW_CAP} bản ghi lệnh rút tiền. Các số liên quan chỉ phản ánh phần đã tải.`
+        : `Đã đạt giới hạn ${FINANCE_ROW_CAP} bản ghi yêu cầu hoàn tiền. Các số liên quan chỉ phản ánh phần đã tải.`;
 
   return (
     <main className="flex flex-col gap-6 p-4 sm:p-6">
@@ -119,11 +144,7 @@ export function FinanceView() {
             <Alert>
               <AlertTriangle />
               <AlertTitle>Dữ liệu bị giới hạn</AlertTitle>
-              <AlertDescription>
-                Chỉ tải được {withdrawals.data?.cap ?? 500} bản ghi gần nhất cho
-                mỗi nguồn. Các số tổng bên dưới phản ánh phần đã tải, không phải
-                toàn bộ kỳ.
-              </AlertDescription>
+              <AlertDescription>{truncationMessage}</AlertDescription>
             </Alert>
           ) : null}
 
@@ -144,7 +165,7 @@ export function FinanceView() {
               <ClinicPayoutsTab withdrawals={withdrawalsInRange} />
             </TabsContent>
             <TabsContent value="refunds" className="mt-4">
-              <RefundOutflowTab allCancellations={cancellationRows} />
+              <RefundOutflowTab allCancellations={cancellationsInRange} />
             </TabsContent>
             <TabsContent value="platform" className="mt-4">
               <PlatformRevenueTab data={data} />
