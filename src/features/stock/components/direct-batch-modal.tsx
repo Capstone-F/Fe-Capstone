@@ -16,6 +16,7 @@ import {
 } from "@/shared/components/ui/dialog";
 import { Input } from "@/shared/components/ui/input";
 import { Label } from "@/shared/components/ui/label";
+import { DatePicker } from "@/shared/components/form/date-picker";
 import {
   Tabs,
   TabsContent,
@@ -197,10 +198,17 @@ export function DirectBatchModal({
                 </div>
                 <div className="grid gap-2">
                   <Label htmlFor="dir-mfd">Ngày sản xuất *</Label>
-                  <Input
-                    id="dir-mfd"
-                    type="date"
-                    {...importForm.register("manufacturingDate")}
+                  <Controller
+                    name="manufacturingDate"
+                    control={importForm.control}
+                    render={({ field }) => (
+                      <DatePicker
+                        id="dir-mfd"
+                        value={field.value}
+                        onChange={field.onChange}
+                        placeholder="Chọn ngày sản xuất"
+                      />
+                    )}
                   />
                   {importForm.formState.errors.manufacturingDate && (
                     <p className="text-xs font-medium text-rose-500">

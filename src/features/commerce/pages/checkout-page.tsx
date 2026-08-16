@@ -6,12 +6,7 @@ import { useForm, useWatch } from "react-hook-form";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useQueryClient } from "@tanstack/react-query";
-import {
-  CreditCard,
-  ShoppingBag,
-  Truck,
-  Wallet as WalletIcon,
-} from "lucide-react";
+import { CreditCard, ShoppingBag, Wallet as WalletIcon } from "lucide-react";
 import { toast } from "sonner";
 import { PaymentMethod } from "@/types/domain";
 import { queryKeys } from "@/lib/query/keys";
@@ -80,13 +75,11 @@ const ck = {
       "Chưa tính được phí vận chuyển. Phí chính thức sẽ được xác nhận khi đặt hàng.",
   },
   payment: {
-    vnpay: "VnPay",
-    vnpayHint: "Thanh toán qua thẻ/ngân hàng (sandbox).",
+    vnpay: "PayOS",
+    vnpayHint: "Thanh toán qua ngân hàng/thẻ",
     wallet: "Ví GlowScan",
     walletLocked: "Ví đang tạm khoá. Vui lòng liên hệ hỗ trợ.",
     walletLoginRequired: "Đăng nhập để dùng số dư ví.",
-    cod: "COD — Thanh toán khi nhận hàng",
-    codDisabledHint: "Backend chỉ hỗ trợ VNPay ở giai đoạn này.",
     topUp: "Nạp tiền",
   },
   back: "Quay lại",
@@ -165,11 +158,20 @@ export function CheckoutPage() {
   const walletShortfall = Math.max(0, orderTotal - balanceVnd);
   const canPayWithWallet =
     Boolean(wallet) && !walletLocked && walletShortfall === 0;
-  const walletHint = walletLocked
-    ? ck.payment.walletLocked
-    : walletShortfall > 0
-      ? `Số dư ${formatVnd(balanceVnd)} · Còn thiếu ${formatVnd(walletShortfall)}`
-      : `Số dư ${formatVnd(balanceVnd)} · Đơn hàng ${formatVnd(orderTotal)}`;
+  const walletHint = walletLocked ? (
+    ck.payment.walletLocked
+  ) : (
+    <span>
+      Số dư{" "}
+      <span className="font-extrabold text-emerald-500 dark:text-emerald-400">
+        {formatVnd(balanceVnd)}
+      </span>
+      {" · "}
+      {walletShortfall > 0
+        ? `Còn thiếu ${formatVnd(walletShortfall)}`
+        : `Đơn hàng ${formatVnd(orderTotal)}`}
+    </span>
+  );
 
   // 1. Placing order / redirecting to VNPay state: Keep loading spinner, NEVER fallback to empty cart
   if (isPlacing || createOrder.isPending) {
@@ -184,7 +186,7 @@ export function CheckoutPage() {
           <p className="mt-6 font-bold text-slate-900 dark:text-slate-100">
             {payment === "wallet"
               ? "Đang thanh toán bằng Ví GlowScan..."
-              : "Đang chuyển hướng đến cổng thanh toán VNPay..."}
+              : "Đang chuyển hướng đến cổng thanh toán PayOS..."}
           </p>
           <p className="mt-1 text-xs text-slate-500">
             Vui lòng không tắt hoặc tải lại trang
@@ -423,13 +425,6 @@ export function CheckoutPage() {
                     </Button>
                   )}
                 </div>
-                <PaymentOption
-                  selected={false}
-                  disabled
-                  icon={<Truck className="h-5 w-5" />}
-                  title={ck.payment.cod}
-                  hint={ck.payment.codDisabledHint}
-                />
               </CardContent>
             </Card>
           )}
@@ -528,7 +523,7 @@ export function CheckoutPage() {
             <p className="mt-4 font-bold text-slate-900 dark:text-slate-100">
               {payment === "wallet"
                 ? "Đang thanh toán bằng Ví GlowScan..."
-                : "Đang chuyển hướng đến cổng thanh toán VNPay..."}
+                : "Đang chuyển hướng đến cổng thanh toán PayOS..."}
             </p>
             <p className="mt-1 text-xs text-slate-500">
               Vui lòng không tắt hoặc tải lại trang
@@ -561,7 +556,7 @@ function PaymentOption({
   disabled?: boolean;
   icon: React.ReactNode;
   title: string;
-  hint: string;
+  hint: React.ReactNode;
   onSelect?: () => void;
 }) {
   return (

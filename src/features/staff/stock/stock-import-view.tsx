@@ -35,6 +35,7 @@ import {
 import { StaffPageHeader } from "@/features/staff/components/staff-page-header";
 import { ProductVariantSelect } from "@/features/stock/components/product-variant-select";
 import { useProductVariantOptions } from "@/features/stock/hooks/use-product-variant-options";
+import { DatePicker } from "@/shared/components/form/date-picker";
 
 function toLocalDateInputValue(date: Date) {
   const year = date.getFullYear();
@@ -807,14 +808,12 @@ export function StockImportView() {
                 >
                   Ngày Sản Xuất *:
                 </Label>
-                <Input
+                <DatePicker
                   id="mfgDate"
-                  type="date"
-                  max={today}
-                  required
                   value={newMfgDate}
-                  onChange={(e) => setNewMfgDate(e.target.value)}
-                  className="rounded-xl border-slate-200 text-xs"
+                  onChange={setNewMfgDate}
+                  placeholder="Chọn ngày sản xuất"
+                  className="h-10 rounded-xl border-slate-200 text-xs"
                 />
               </div>
             </div>
@@ -1068,14 +1067,12 @@ export function StockImportView() {
                 >
                   Ngày sản xuất *:
                 </Label>
-                <Input
+                <DatePicker
                   id="direct-mfg"
-                  type="date"
-                  max={today}
-                  required
                   value={directMfgDate}
-                  onChange={(e) => setDirectMfgDate(e.target.value)}
-                  className="text-xs"
+                  onChange={setDirectMfgDate}
+                  placeholder="Chọn ngày sản xuất"
+                  className="h-10 text-xs"
                 />
               </div>
             </div>

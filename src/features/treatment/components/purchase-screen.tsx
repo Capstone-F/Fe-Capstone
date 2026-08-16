@@ -140,7 +140,7 @@ export function PurchaseScreen() {
             </h4>
             <p className="text-muted-foreground text-xs">
               Vui lòng không tắt hoặc tải lại trang trong khi hệ thống kết nối
-              với Cổng Thanh Toán VNPay.
+              với Cổng Thanh Toán PayOS.
             </p>
           </div>
         </div>

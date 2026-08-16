@@ -193,7 +193,7 @@ export function ExpertClinicMapLeaflet({
                   ? "Chưa cấp GPS nên chưa thể tính khoảng cách."
                   : selectedDistance === null
                     ? "Phòng khám chưa có tọa độ để tính khoảng cách."
-                    : `Cách bạn khoảng ${selectedDistance.toFixed(1)} km đường chim bay`}
+                    : `Cách bạn khoảng ${selectedDistance.toFixed(2).replace(".", ",")} km đường chim bay`}
               </p>
             </div>
             <button
