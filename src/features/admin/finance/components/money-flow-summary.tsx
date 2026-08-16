@@ -121,7 +121,7 @@ function FlowNode({
   onClick?: () => void;
 }) {
   const body = (
-    <div className="flex h-full flex-col rounded-xl border p-4 text-left">
+    <span className="flex h-full flex-col rounded-xl border p-4 text-left">
       <span className="text-muted-foreground flex items-center gap-1.5 text-xs font-medium">
         {Icon ? <Icon className="size-3.5" /> : null}
         {label}
@@ -137,7 +137,7 @@ function FlowNode({
           Chưa gồm doanh thu phác đồ điều trị
         </span>
       ) : null}
-    </div>
+    </span>
   );
 
   if (!onClick) return body;

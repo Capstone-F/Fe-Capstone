@@ -148,6 +148,7 @@ export function ClinicPayoutsTab({
               <TableHead>Phòng khám</TableHead>
               <TableHead className="text-right">Đã chi trả</TableHead>
               <TableHead className="text-right">Chờ duyệt</TableHead>
+              <TableHead className="text-right">Đã từ chối</TableHead>
               <TableHead className="text-right">Lần chi gần nhất</TableHead>
             </TableRow>
           </TableHeader>
@@ -194,6 +195,9 @@ export function ClinicPayoutsTab({
                     <TableCell className="text-right">
                       {formatCurrency(row.pendingVnd)}
                     </TableCell>
+                    <TableCell className="text-right">
+                      {formatCurrency(row.rejectedVnd)}
+                    </TableCell>
                     <TableCell className="text-muted-foreground text-right text-xs">
                       {row.lastPaidAt ? formatDateTime(row.lastPaidAt) : "—"}
                     </TableCell>
@@ -201,7 +205,7 @@ export function ClinicPayoutsTab({
 
                   {isOpen ? (
                     <TableRow>
-                      <TableCell colSpan={4} className="bg-muted/20 p-0">
+                      <TableCell colSpan={5} className="bg-muted/20 p-0">
                         <Table>
                           <TableHeader>
                             <TableRow>
