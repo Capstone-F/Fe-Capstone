@@ -43,6 +43,7 @@ import {
   useCreateGhnOrder,
   useAdvanceDelivery,
   useTickDeliverySimulation,
+  useRetryFulfillment,
 } from "../hooks/useAdminDeliveries";
 import type { DeliveryItem } from "../api/deliveries-admin.api";
 
@@ -165,8 +166,26 @@ export function StaffDeliveriesView() {
   const createGhnMutation = useCreateGhnOrder();
   const advanceMutation = useAdvanceDelivery();
   const tickMutation = useTickDeliverySimulation();
+  const retryMutation = useRetryFulfillment();
 
   const deliveries = data?.items || [];
+
+  const handleRetryFulfillment = (orderId: string) => {
+    retryMutation.mutate(orderId, {
+      onSuccess: () => {
+        toast.success(
+          "Khấu trừ kho thành công! Đã giải phóng cờ thiếu hàng cho đơn hàng.",
+        );
+      },
+      onError: (err: unknown) => {
+        const msg =
+          (err as { response?: { data?: { message?: string } } })?.response
+            ?.data?.message ||
+          "Không thể trừ kho. Kho có thể vẫn chưa đủ hàng.";
+        toast.error(msg);
+      },
+    });
+  };
 
   const handleHandoverSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -384,6 +403,10 @@ export function StaffDeliveriesView() {
                         item.providerStatus
                       : null;
 
+                    const hasStockShortfall = Boolean(
+                      item.stockShortfall || item.order?.stockShortfall,
+                    );
+
                     return (
                       <tr
                         key={item.id}
@@ -411,12 +434,20 @@ export function StaffDeliveriesView() {
                         </td>
 
                         <td className="p-4">
-                          <span
-                            className={`inline-block rounded-full px-2.5 py-0.5 text-[11px] ${statusInfo.class}`}
-                          >
-                            {statusInfo.label}
-                            {providerText ? ` (${providerText})` : ""}
-                          </span>
+                          <div className="flex flex-col gap-1">
+                            <span
+                              className={`inline-block rounded-full px-2.5 py-0.5 text-[11px] ${statusInfo.class}`}
+                            >
+                              {statusInfo.label}
+                              {providerText ? ` (${providerText})` : ""}
+                            </span>
+                            {hasStockShortfall && (
+                              <span className="inline-flex items-center gap-1 rounded-full border border-rose-300 bg-rose-50 px-2 py-0.5 text-[10px] font-bold text-rose-700">
+                                <AlertTriangle className="h-3.5 w-3.5" /> Thiếu
+                                Hàng Trong Kho
+                              </span>
+                            )}
+                          </div>
                         </td>
 
                         <td className="p-4">
@@ -439,13 +470,40 @@ export function StaffDeliveriesView() {
 
                         <td className="p-4 text-right">
                           <div className="flex items-center justify-end gap-1.5">
+                            {hasStockShortfall && (
+                              <Button
+                                size="sm"
+                                variant="outline"
+                                onClick={() =>
+                                  handleRetryFulfillment(item.orderId)
+                                }
+                                disabled={retryMutation.isPending}
+                                className="h-8 rounded-xl border-amber-300 bg-amber-50 text-xs font-bold text-amber-900 hover:bg-amber-100"
+                              >
+                                {retryMutation.isPending ? (
+                                  <Loader2 className="mr-1 h-3.5 w-3.5 animate-spin" />
+                                ) : (
+                                  <RotateCw className="mr-1 h-3.5 w-3.5 text-amber-700" />
+                                )}
+                                Thử Trừ Kho
+                              </Button>
+                            )}
+
                             {isMissingGhn && (
                               <Button
                                 size="sm"
                                 variant="outline"
                                 onClick={() => handleCreateGhnOrder(item.id)}
-                                disabled={createGhnMutation.isPending}
-                                className="h-8 rounded-xl border-rose-200 bg-rose-50 text-xs font-bold text-rose-700 hover:bg-rose-100"
+                                disabled={
+                                  createGhnMutation.isPending ||
+                                  hasStockShortfall
+                                }
+                                title={
+                                  hasStockShortfall
+                                    ? "Đơn hàng đang thiếu kho, vui lòng nhập bổ sung kho và Thử Trừ Kho trước khi tạo đơn GHN."
+                                    : undefined
+                                }
+                                className="h-8 rounded-xl border-rose-200 bg-rose-50 text-xs font-bold text-rose-700 hover:bg-rose-100 disabled:opacity-50"
                               >
                                 <Send className="mr-1 h-3.5 w-3.5" /> Tạo Đơn
                                 GHN
@@ -459,7 +517,8 @@ export function StaffDeliveriesView() {
                                   setHandoverModalDelivery(item);
                                   setHandoverNote("Giao tại dock A");
                                 }}
-                                className="h-8 rounded-xl bg-[#2C3E35] text-xs font-bold text-white hover:bg-[#3A5246]"
+                                disabled={hasStockShortfall}
+                                className="h-8 rounded-xl bg-[#2C3E35] text-xs font-bold text-white hover:bg-[#3A5246] disabled:opacity-50"
                               >
                                 <PackageCheck className="mr-1 h-3.5 w-3.5" />{" "}
                                 Bàn Giao GHN

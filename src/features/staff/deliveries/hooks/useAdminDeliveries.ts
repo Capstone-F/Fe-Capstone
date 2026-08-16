@@ -62,3 +62,14 @@ export function useTickDeliverySimulation() {
     },
   });
 }
+
+export function useRetryFulfillment() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (orderId: string) =>
+      deliveriesAdminApi.retryFulfillment(orderId),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["admin-deliveries"] });
+    },
+  });
+}
