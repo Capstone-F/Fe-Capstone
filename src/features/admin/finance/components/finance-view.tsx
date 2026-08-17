@@ -86,7 +86,7 @@ export function FinanceView() {
               <RefundOutflowTab flow={flow} />
             </TabsContent>
             <TabsContent value="platform" className="mt-4">
-              <PlatformRevenueTab data={data} />
+              <PlatformRevenueTab data={data} flow={flow} />
             </TabsContent>
           </Tabs>
         </>

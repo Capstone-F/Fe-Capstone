@@ -15,6 +15,7 @@ import {
   useAdminComboDiscount,
   useAdminPlatformCommission,
 } from "@/features/admin/hooks/useAdminCommerce";
+import type { MoneyFlow } from "../types/finance.types";
 
 const commissionChartConfig = {
   platformCommissionRevenueVnd: {
@@ -23,7 +24,13 @@ const commissionChartConfig = {
   },
 } satisfies ChartConfig;
 
-export function PlatformRevenueTab({ data }: { data: AdminDashboardResponse }) {
+export function PlatformRevenueTab({
+  data,
+  flow,
+}: {
+  data: AdminDashboardResponse;
+  flow: MoneyFlow;
+}) {
   const { data: commission } = useAdminPlatformCommission();
   const { data: combo } = useAdminComboDiscount();
 
@@ -49,6 +56,21 @@ export function PlatformRevenueTab({ data }: { data: AdminDashboardResponse }) {
           hint="Giảm giá khi mua trọn bộ"
         />
       </section>
+
+      <DashboardSectionCard
+        title="Doanh thu dịch vụ"
+        description="Tư vấn và phác đồ — phần sinh ra hoa hồng"
+      >
+        <div className="grid gap-3 sm:grid-cols-4">
+          <Figure label="Phí tư vấn đã thu" value={flow.consultationFeesVnd} />
+          <Figure label="Hoàn phí tư vấn" value={flow.consultationRefundsVnd} />
+          <Figure
+            label="Thanh toán phác đồ"
+            value={flow.treatmentPaymentsVnd}
+          />
+          <Figure label="Hoàn phí phác đồ" value={flow.treatmentRefundsVnd} />
+        </div>
+      </DashboardSectionCard>
 
       <DashboardSectionCard
         title="Cấu trúc tiền hàng"
