@@ -21,7 +21,7 @@ import {
 } from "@/features/dashboard/components/dashboard-shell";
 import { useAdminDashboard } from "@/features/dashboard/hooks/useDashboard";
 import type { DashboardRange } from "@/features/dashboard/types/dashboard.types";
-import { buildMoneyFlow, reconcileRefunds } from "../lib/flow";
+import { buildMoneyFlow } from "../lib/flow";
 import {
   filterCancellationsByRange,
   filterWithdrawalsByRange,
@@ -96,16 +96,8 @@ export function FinanceView() {
 
   const flow = React.useMemo(() => {
     if (!data) return null;
-    return buildMoneyFlow(data.metrics, withdrawalsInRange);
-  }, [data, withdrawalsInRange]);
-
-  const reconciliation = React.useMemo(() => {
-    if (!data) return null;
-    return reconcileRefunds(
-      data.metrics.productRefundsVnd,
-      cancellationsInRange,
-    );
-  }, [data, cancellationsInRange]);
+    return buildMoneyFlow(data.metrics);
+  }, [data]);
 
   const withdrawalsTruncated = withdrawals.data?.truncated ?? false;
   const cancellationsTruncated = cancellations.data?.truncated ?? false;
@@ -130,7 +122,7 @@ export function FinanceView() {
 
       {isPending ? (
         <DashboardLoading cards={4} />
-      ) : isError || !data || !flow || !reconciliation ? (
+      ) : isError || !data || !flow ? (
         <DashboardError
           retry={() => {
             void dashboard.refetch();
@@ -148,11 +140,7 @@ export function FinanceView() {
             </Alert>
           ) : null}
 
-          <MoneyFlowSummary
-            flow={flow}
-            reconciliation={reconciliation}
-            onNavigate={setTab}
-          />
+          <MoneyFlowSummary flow={flow} onNavigate={setTab} />
 
           <Tabs value={tab} onValueChange={setTab}>
             <TabsList>
