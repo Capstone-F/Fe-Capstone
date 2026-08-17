@@ -56,4 +56,16 @@ describe("transaction-meta", () => {
   it("falls back to outline for an unknown type", () => {
     expect(transactionTypeBadgeVariant("SOMETHING_NEW")).toBe("outline");
   });
+
+  it("treats commission as retained rather than outflow", () => {
+    expect(transactionTypeBadgeVariant("COMMISSION")).toBe("secondary");
+  });
+
+  it("does not treat escrow release as an outflow — it moves money into the clinic's in-platform wallet", () => {
+    expect(transactionTypeBadgeVariant("ESCROW_RELEASE")).toBe("default");
+  });
+
+  it("does not treat a withdrawal reversal as an outflow — money returns to the wallet", () => {
+    expect(transactionTypeBadgeVariant("WITHDRAWAL_REVERSAL")).toBe("default");
+  });
 });

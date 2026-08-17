@@ -26,7 +26,14 @@ export const TRANSACTION_STATUS_LABELS: Record<TransactionStatus, string> = {
   REFUNDED: "Đã hoàn",
 };
 
-/** Money leaving the platform reads destructive; everything else is neutral. */
+/**
+ * Only money genuinely leaving the platform reads destructive.
+ * ESCROW_RELEASE moves platform-held escrow into the clinic's in-platform
+ * wallet ("giải ngân về ví") — it makes funds withdrawable rather than
+ * withdrawing them, so it is NOT an outflow. WITHDRAWAL_REVERSAL returns
+ * money to the wallet after a rejected request, the opposite of an outflow.
+ * The actual exit is WITHDRAWAL ("rút tiền về ngân hàng").
+ */
 const OUTFLOW_TYPES = new Set<string>(["REFUND", "WITHDRAWAL"]);
 const RETAINED_TYPES = new Set<string>(["COMMISSION"]);
 
