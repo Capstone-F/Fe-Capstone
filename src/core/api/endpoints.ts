@@ -31,6 +31,14 @@ export const API_ENDPOINTS = {
     CREATE: "/admin/clinics",
     UPDATE: (id: string) => `/admin/clinics/${id}`,
     DEACTIVATE: (id: string) => `/admin/clinics/${id}`,
+    BALANCES: "/admin/clinics/balances",
+  },
+  ADMIN_TRANSACTIONS: {
+    LIST: "/admin/transactions",
+    EXPORT: "/admin/transactions/export",
+  },
+  ADMIN_ACTIVITY: {
+    LIST: "/admin/activity",
   },
   ADMIN_SURVEY_QUESTIONS: {
     LIST: "/admin/survey-questions",
