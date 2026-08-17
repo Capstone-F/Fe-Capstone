@@ -119,12 +119,20 @@ export function RefundOutflowTab({ flow }: { flow: MoneyFlow }) {
           <DashboardMetricCard
             icon={Clock}
             label="Đang hoàn tiền"
-            value={`${inFlight.data?.total ?? 0} yêu cầu`}
+            value={
+              inFlight.isPending || inFlight.isError
+                ? "—"
+                : `${inFlight.data.total} yêu cầu`
+            }
           />
           <DashboardMetricCard
             icon={AlertTriangle}
             label="Đang kẹt (lỗi)"
-            value={`${stuck.data?.total ?? 0} yêu cầu`}
+            value={
+              stuck.isPending || stuck.isError
+                ? "—"
+                : `${stuck.data.total} yêu cầu`
+            }
           />
         </div>
       </section>
