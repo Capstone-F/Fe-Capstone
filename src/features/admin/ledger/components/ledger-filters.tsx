@@ -37,6 +37,8 @@ export interface LedgerFilterState {
   clinicId: string;
   from: string;
   to: string;
+  minAmount: string;
+  maxAmount: string;
 }
 
 export const EMPTY_LEDGER_FILTERS: LedgerFilterState = {
@@ -46,6 +48,8 @@ export const EMPTY_LEDGER_FILTERS: LedgerFilterState = {
   clinicId: "ALL",
   from: "",
   to: "",
+  minAmount: "",
+  maxAmount: "",
 };
 
 /** Turns UI state into the query the endpoint expects, dropping "ALL"/empty. */
@@ -60,6 +64,8 @@ export function toLedgerQuery(
     clinicId: state.clinicId === "ALL" ? undefined : state.clinicId,
     from: state.from || undefined,
     to: state.to || undefined,
+    minAmountVnd: state.minAmount ? Number(state.minAmount) : undefined,
+    maxAmountVnd: state.maxAmount ? Number(state.maxAmount) : undefined,
   };
 }
 
@@ -70,7 +76,7 @@ export function LedgerFilters({
   value: LedgerFilterState;
   onChange: (next: LedgerFilterState) => void;
 }) {
-  const { data: clinicsRes } = useAdminClinics();
+  const { data: clinicsRes } = useAdminClinics({ limit: 100 });
 
   const clinicItems: Record<string, string> = {
     ALL: "Tất cả phòng khám",
@@ -180,6 +186,32 @@ export function LedgerFilters({
           type="date"
           value={value.to}
           onChange={(event) => set({ to: event.target.value })}
+        />
+      </div>
+
+      <div className="flex flex-col gap-1.5">
+        <Label htmlFor="ledger-min-amount" className="text-xs">
+          Số tiền từ
+        </Label>
+        <Input
+          id="ledger-min-amount"
+          type="number"
+          min={0}
+          value={value.minAmount}
+          onChange={(event) => set({ minAmount: event.target.value })}
+        />
+      </div>
+
+      <div className="flex flex-col gap-1.5">
+        <Label htmlFor="ledger-max-amount" className="text-xs">
+          Số tiền đến
+        </Label>
+        <Input
+          id="ledger-max-amount"
+          type="number"
+          min={0}
+          value={value.maxAmount}
+          onChange={(event) => set({ maxAmount: event.target.value })}
         />
       </div>
     </div>

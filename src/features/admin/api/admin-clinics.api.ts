@@ -23,6 +23,7 @@ export interface AdminClinicListResponse {
 export interface ListAdminClinicsQuery {
   q?: string;
   activeOnly?: boolean;
+  limit?: number;
 }
 
 export interface CreateAdminClinicDto {
@@ -42,6 +43,7 @@ export const adminClinicsApi = {
     const params: Record<string, string> = {};
     if (query?.q?.trim()) params.q = query.q.trim();
     if (query?.activeOnly) params.activeOnly = "true";
+    if (query?.limit) params.limit = String(query.limit);
 
     return apiClient.get<AdminClinicListResponse>(
       API_ENDPOINTS.ADMIN_CLINICS.LIST,
