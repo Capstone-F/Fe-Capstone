@@ -1,57 +1,26 @@
 /**
  * WHAT: Shared shapes for the admin finance page.
- * WHY: `MoneyFlow` deliberately has NO clinic-payable field — see
- *      docs/superpowers/specs/2026-08-16-admin-finance-visibility-design.md §5.4.
- *      Platform commission is charged on treatment plan payments, but no admin
- *      metric exposes treatment revenue, so "owed to clinics" is not derivable.
+ * WHY: `clinicAccruedVnd` is derivable as of phase 2 — the dashboard now reports
+ *      treatment revenue, so commission (charged on consultation AND treatment)
+ *      can be subtracted from a base that contains both. See
+ *      docs/superpowers/specs/2026-08-17-admin-finance-phase2-design.md §4.
  */
 
 export type FinanceTab = "clinics" | "refunds" | "platform";
 
 export interface MoneyFlow {
-  /** Products + consultations only. Excludes treatment plan revenue (§5.4). */
   inflowVnd: number;
   productPaymentsVnd: number;
   consultationFeesVnd: number;
+  treatmentPaymentsVnd: number;
 
   refundsOutVnd: number;
   productRefundsVnd: number;
   consultationRefundsVnd: number;
+  treatmentRefundsVnd: number;
 
   commissionRetainedVnd: number;
 
-  /** Measured independently — NOT a split of inflow. */
-  paidOutVnd: number;
-  pendingPayoutVnd: number;
-  rejectedVnd: number;
-}
-
-export interface RefundTotals {
-  refundedOutVnd: number;
-  inFlightVnd: number;
-  stuckVnd: number;
-}
-
-export interface RefundReconciliation {
-  dashboardRefundsVnd: number;
-  cancellationRefundsVnd: number;
-  differenceVnd: number;
-  agrees: boolean;
-}
-
-export interface ClinicPayoutRollup {
-  clinicId: string;
-  clinicName: string;
-  requestCount: number;
-  paidVnd: number;
-  pendingVnd: number;
-  rejectedVnd: number;
-  lastPaidAt: string | null;
-}
-
-export interface BoundedFetchResult<T> {
-  items: T[];
-  /** True when the server reported more rows than the cap allowed us to fetch. */
-  truncated: boolean;
-  cap: number;
+  /** Owed to clinics for the period. Derivable as of phase 2 — see §4. */
+  clinicAccruedVnd: number;
 }
