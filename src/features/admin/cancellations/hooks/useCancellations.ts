@@ -43,8 +43,10 @@ export function useConfirmReturn() {
     mutationFn: ({ id, body }: { id: string; body: ConfirmReturnDto }) =>
       cancellationsApi.confirmReturn(id, body),
     onSuccess: (_, variables) => {
-      // Prefix match: covers both queryKeys.adminCancellations(params) and
-      // queryKeys.adminCancellationsAll, which both start with ["admin","cancellations"].
+      // Prefix match on ["admin","cancellations"]: covers every
+      // queryKeys.adminCancellations(params) variant, including the refund
+      // tab's three queries (in-flight count, stuck count, and the paginated
+      // list) regardless of their filter params.
       queryClient.invalidateQueries({ queryKey: ["admin", "cancellations"] });
       queryClient.invalidateQueries({
         queryKey: ["order-cancellation-detail", variables.id],
@@ -59,8 +61,10 @@ export function useCancelOrderStaff() {
     mutationFn: (body: CancelOrderStaffDto) =>
       cancellationsApi.cancelOrder(body),
     onSuccess: () => {
-      // Prefix match: covers both queryKeys.adminCancellations(params) and
-      // queryKeys.adminCancellationsAll, which both start with ["admin","cancellations"].
+      // Prefix match on ["admin","cancellations"]: covers every
+      // queryKeys.adminCancellations(params) variant, including the refund
+      // tab's three queries (in-flight count, stuck count, and the paginated
+      // list) regardless of their filter params.
       queryClient.invalidateQueries({ queryKey: ["admin", "cancellations"] });
       queryClient.invalidateQueries({ queryKey: ["admin-deliveries"] });
     },
@@ -73,8 +77,10 @@ export function useAdvanceCancellation() {
     mutationFn: ({ id, body }: { id: string; body?: AdvanceCancellationDto }) =>
       cancellationsApi.advanceCancellation(id, body),
     onSuccess: (_, variables) => {
-      // Prefix match: covers both queryKeys.adminCancellations(params) and
-      // queryKeys.adminCancellationsAll, which both start with ["admin","cancellations"].
+      // Prefix match on ["admin","cancellations"]: covers every
+      // queryKeys.adminCancellations(params) variant, including the refund
+      // tab's three queries (in-flight count, stuck count, and the paginated
+      // list) regardless of their filter params.
       queryClient.invalidateQueries({ queryKey: ["admin", "cancellations"] });
       queryClient.invalidateQueries({
         queryKey: ["order-cancellation-detail", variables.id],
@@ -88,8 +94,10 @@ export function useTickCancellationBatch() {
   return useMutation({
     mutationFn: () => cancellationsApi.tickBatch(),
     onSuccess: () => {
-      // Prefix match: covers both queryKeys.adminCancellations(params) and
-      // queryKeys.adminCancellationsAll, which both start with ["admin","cancellations"].
+      // Prefix match on ["admin","cancellations"]: covers every
+      // queryKeys.adminCancellations(params) variant, including the refund
+      // tab's three queries (in-flight count, stuck count, and the paginated
+      // list) regardless of their filter params.
       queryClient.invalidateQueries({ queryKey: ["admin", "cancellations"] });
     },
   });
