@@ -14,16 +14,7 @@ import {
   UserCheck,
   Users,
 } from "lucide-react";
-import {
-  Area,
-  AreaChart,
-  Bar,
-  BarChart,
-  CartesianGrid,
-  Legend,
-  XAxis,
-  YAxis,
-} from "recharts";
+import { Bar, BarChart, CartesianGrid, Legend, XAxis, YAxis } from "recharts";
 import {
   Alert,
   AlertDescription,
@@ -55,10 +46,9 @@ import {
   DashboardMetricCard,
   DashboardPageHeader,
   DashboardSectionCard,
+  MoneyChart,
   formatChartDate,
-  formatCompactCurrency,
   formatCurrency,
-  formatDateTime,
 } from "./dashboard-shell";
 
 const ecommerceChartConfig = {
@@ -152,14 +142,14 @@ export function AdminDashboardView() {
                 label="Tổng tiền order đã thu"
                 value={formatCurrency(data.metrics.productPaymentsCollectedVnd)}
                 hint="Bao gồm vận chuyển, sau giảm giá"
-                href="/dashboard/commerce"
+                href="/dashboard/finance?tab=platform"
               />
               <DashboardMetricCard
                 icon={RefreshCw}
                 label="Hoàn tiền sản phẩm"
                 value={formatCurrency(data.metrics.productRefundsVnd)}
                 hint="Hiển thị riêng, không tạo net sales"
-                href="/dashboard/cancellations"
+                href="/dashboard/finance?tab=refunds"
               />
               <DashboardMetricCard
                 icon={ReceiptText}
@@ -206,6 +196,7 @@ export function AdminDashboardView() {
                   data.metrics.platformCommissionRevenueVnd,
                 )}
                 hint="COMMISSION → PLATFORM_REVENUE"
+                href="/dashboard/finance?tab=platform"
               />
             </section>
           </DashboardSectionCard>
@@ -319,10 +310,19 @@ export function AdminDashboardView() {
             </div>
           </DashboardSectionCard>
 
-          <section className="grid gap-6 xl:grid-cols-2">
-            <TopProducts products={data.topProducts} />
-            <RecentActivity activities={data.recentActivity} />
-          </section>
+          <TopProducts products={data.topProducts} />
+
+          <DashboardSectionCard
+            title="Nhật ký hoạt động"
+            description="Các thay đổi gần nhất trên toàn hệ thống"
+          >
+            <DashboardEmptyPanel
+              title="Xem nhật ký đầy đủ"
+              description="Hoạt động gần đây đã chuyển sang trang riêng, có bộ lọc theo loại và tìm kiếm."
+              href="/dashboard/activity"
+              action="Mở nhật ký hoạt động"
+            />
+          </DashboardSectionCard>
         </>
       )}
     </main>
@@ -335,69 +335,6 @@ function Breakdown({ label, value }: { label: string; value: number }) {
       <p className="text-muted-foreground text-xs">{label}</p>
       <p className="mt-1 font-semibold">{formatCurrency(value)}</p>
     </div>
-  );
-}
-
-function MoneyChart({
-  title,
-  description,
-  config,
-  data,
-  keys,
-}: {
-  title: string;
-  description: string;
-  config: ChartConfig;
-  data: Array<Record<string, string | number>>;
-  keys: string[];
-}) {
-  return (
-    <DashboardSectionCard title={title} description={description}>
-      <ChartContainer config={config} className="h-[290px] w-full">
-        <AreaChart
-          data={data.map((point) => ({
-            ...point,
-            label: formatChartDate(String(point.date)),
-          }))}
-          margin={{ left: 4, right: 8 }}
-        >
-          <CartesianGrid vertical={false} />
-          <XAxis
-            dataKey="label"
-            axisLine={false}
-            tickLine={false}
-            minTickGap={20}
-          />
-          <YAxis
-            axisLine={false}
-            tickLine={false}
-            tickFormatter={formatCompactCurrency}
-            width={56}
-          />
-          <ChartTooltip
-            content={
-              <ChartTooltipContent
-                formatter={(value) => (
-                  <span>{formatCurrency(Number(value))}</span>
-                )}
-              />
-            }
-          />
-          <Legend content={<ChartLegendContent />} />
-          {keys.map((key) => (
-            <Area
-              key={key}
-              dataKey={key}
-              type="monotone"
-              stroke={`var(--color-${key})`}
-              fill={`var(--color-${key})`}
-              fillOpacity={0.08}
-              strokeWidth={2}
-            />
-          ))}
-        </AreaChart>
-      </ChartContainer>
-    </DashboardSectionCard>
   );
 }
 
@@ -493,63 +430,6 @@ function TopProducts({
                 <TableCell>{product.unitsSold}</TableCell>
                 <TableCell className="text-right">
                   {formatCurrency(product.grossSalesVnd)}
-                </TableCell>
-              </TableRow>
-            ))}
-          </TableBody>
-        </Table>
-      )}
-    </DashboardSectionCard>
-  );
-}
-
-function RecentActivity({
-  activities,
-}: {
-  activities: Array<{
-    id: string;
-    type: string;
-    title: string;
-    description: string | null;
-    amountVnd: number | null;
-    occurredAt: string;
-  }>;
-}) {
-  return (
-    <DashboardSectionCard
-      title="Hoạt động gần đây"
-      description="Tối đa 10 thay đổi mới nhất trong kỳ"
-    >
-      {activities.length === 0 ? (
-        <DashboardEmptyPanel
-          title="Chưa có hoạt động"
-          description="Không có sự kiện hệ thống nào trong kỳ này."
-        />
-      ) : (
-        <Table>
-          <TableHeader>
-            <TableRow>
-              <TableHead>Sự kiện</TableHead>
-              <TableHead>Số tiền</TableHead>
-              <TableHead className="text-right">Thời gian</TableHead>
-            </TableRow>
-          </TableHeader>
-          <TableBody>
-            {activities.map((activity) => (
-              <TableRow key={`${activity.type}-${activity.id}`}>
-                <TableCell>
-                  <Badge variant="outline">{activity.title}</Badge>
-                  <p className="text-muted-foreground mt-1 max-w-48 truncate text-xs">
-                    {activity.description || "—"}
-                  </p>
-                </TableCell>
-                <TableCell>
-                  {activity.amountVnd == null
-                    ? "—"
-                    : formatCurrency(activity.amountVnd)}
-                </TableCell>
-                <TableCell className="text-right">
-                  {formatDateTime(activity.occurredAt)}
                 </TableCell>
               </TableRow>
             ))}

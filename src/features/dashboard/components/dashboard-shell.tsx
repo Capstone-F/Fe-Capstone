@@ -3,6 +3,7 @@
 import Link from "next/link";
 import type { LucideIcon } from "lucide-react";
 import { AlertCircle, ArrowRight, RefreshCw } from "lucide-react";
+import { Area, AreaChart, CartesianGrid, Legend, XAxis, YAxis } from "recharts";
 import { Button } from "@/shared/components/ui/button";
 import {
   Card,
@@ -19,6 +20,13 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/shared/components/ui/select";
+import {
+  ChartContainer,
+  ChartLegendContent,
+  ChartTooltip,
+  ChartTooltipContent,
+  type ChartConfig,
+} from "@/shared/components/ui/chart";
 import type { DashboardPeriod, DashboardRange } from "../types/dashboard.types";
 
 const RANGE_LABELS: Record<DashboardRange, string> = {
@@ -230,6 +238,75 @@ export function DashboardSectionCard({
       </CardHeader>
       <CardContent>{children}</CardContent>
     </Card>
+  );
+}
+
+export function MoneyChart({
+  title,
+  description,
+  config,
+  data,
+  keys,
+  action,
+}: {
+  title: string;
+  description: string;
+  config: ChartConfig;
+  data: Array<Record<string, string | number>>;
+  keys: string[];
+  action?: React.ReactNode;
+}) {
+  return (
+    <DashboardSectionCard
+      title={title}
+      description={description}
+      action={action}
+    >
+      <ChartContainer config={config} className="h-[290px] w-full">
+        <AreaChart
+          data={data.map((point) => ({
+            ...point,
+            label: formatChartDate(String(point.date)),
+          }))}
+          margin={{ left: 4, right: 8 }}
+        >
+          <CartesianGrid vertical={false} />
+          <XAxis
+            dataKey="label"
+            axisLine={false}
+            tickLine={false}
+            minTickGap={20}
+          />
+          <YAxis
+            axisLine={false}
+            tickLine={false}
+            tickFormatter={formatCompactCurrency}
+            width={56}
+          />
+          <ChartTooltip
+            content={
+              <ChartTooltipContent
+                formatter={(value) => (
+                  <span>{formatCurrency(Number(value))}</span>
+                )}
+              />
+            }
+          />
+          <Legend content={<ChartLegendContent />} />
+          {keys.map((key) => (
+            <Area
+              key={key}
+              dataKey={key}
+              type="monotone"
+              stroke={`var(--color-${key})`}
+              fill={`var(--color-${key})`}
+              fillOpacity={0.08}
+              strokeWidth={2}
+            />
+          ))}
+        </AreaChart>
+      </ChartContainer>
+    </DashboardSectionCard>
   );
 }
 

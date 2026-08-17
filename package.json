@@ -11,13 +11,14 @@
     "lint": "eslint . --max-warnings=0",
     "lint:fix": "eslint . --fix",
     "typecheck": "tsc --noEmit",
+    "test:unit": "vitest run",
     "test:e2e": "playwright test",
     "test:e2e:ui": "playwright test --ui",
     "test:admin-api": "playwright test --config=playwright.admin-api.config.ts",
     "format": "prettier . --write",
     "format:check": "prettier . --check",
     "check": "pnpm lint && pnpm typecheck && pnpm build",
-    "ci:verify": "pnpm format:check && pnpm lint && pnpm typecheck && pnpm build",
+    "ci:verify": "pnpm format:check && pnpm lint && pnpm typecheck && pnpm test:unit && pnpm build",
     "commitlint": "commitlint --from=HEAD~1 --to=HEAD",
     "prepare": "husky"
   },
@@ -80,6 +81,7 @@
     "prettier": "^3.8.3",
     "prettier-plugin-tailwindcss": "^0.7.2",
     "tailwindcss": "^4",
-    "typescript": "^5"
+    "typescript": "^5",
+    "vitest": "^4.1.10"
   }
 }
