@@ -19,6 +19,7 @@ import { DataTablePagination } from "@/shared/components/ui/data-table-paginatio
 import {
   DashboardEmptyPanel,
   DashboardError,
+  DashboardLoading,
   DashboardSectionCard,
   formatCurrency,
   formatDateTime,
@@ -104,9 +105,11 @@ export function ClinicPayoutsTab({ from, to }: { from: string; to: string }) {
           />
         </div>
 
-        {balances.isError ? (
+        {balances.isPending ? (
+          <DashboardLoading />
+        ) : balances.isError ? (
           <DashboardError retry={() => void balances.refetch()} />
-        ) : items.length === 0 && !balances.isPending ? (
+        ) : items.length === 0 ? (
           <DashboardEmptyPanel
             title="Không có phòng khám"
             description="Chưa có phòng khám nào có số dư để hiển thị."
@@ -204,14 +207,14 @@ export function ClinicPayoutsTab({ from, to }: { from: string; to: string }) {
               render={<Link href="/dashboard/ledger" />}
               nativeButton={false}
             >
-              Xem trong sổ cái <ArrowUpRight />
+              Mở sổ cái <ArrowUpRight />
             </Button>
           ) : undefined
         }
       >
         {selectedClinicId ? (
           <ClinicActivityPanel
-            key={selectedClinicId}
+            key={`${selectedClinicId}-${from}-${to}`}
             clinicId={selectedClinicId}
             from={from}
             to={to}
@@ -250,11 +253,15 @@ function ClinicActivityPanel({
   const total = transactions.data?.total ?? 0;
   const totalPages = Math.ceil(total / ACTIVITY_PAGE_SIZE) || 1;
 
+  if (transactions.isPending) {
+    return <DashboardLoading />;
+  }
+
   if (transactions.isError) {
     return <DashboardError retry={() => void transactions.refetch()} />;
   }
 
-  if (items.length === 0 && !transactions.isPending) {
+  if (items.length === 0) {
     return (
       <DashboardEmptyPanel
         title="Không có giao dịch"

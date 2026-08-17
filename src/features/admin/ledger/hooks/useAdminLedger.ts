@@ -1,4 +1,4 @@
-import { useMutation, useQuery } from "@tanstack/react-query";
+import { keepPreviousData, useMutation, useQuery } from "@tanstack/react-query";
 import { toast } from "sonner";
 import { queryKeys } from "@/lib/query/keys";
 import { adminLedgerApi } from "../api/admin-ledger.api";
@@ -8,6 +8,9 @@ export function useAdminTransactions(query: ListAdminTransactionsQuery) {
   return useQuery({
     queryKey: queryKeys.adminTransactions(query),
     queryFn: () => adminLedgerApi.list(query).then((res) => res.data),
+    // Keeps the previous page on screen while the next one fetches, so paging
+    // doesn't blank the table or momentarily render "Trang 2 / 1".
+    placeholderData: keepPreviousData,
   });
 }
 

@@ -16,6 +16,7 @@ import { DataTablePagination } from "@/shared/components/ui/data-table-paginatio
 import {
   DashboardEmptyPanel,
   DashboardError,
+  DashboardLoading,
   DashboardSectionCard,
   formatCurrency,
   formatDateTime,
@@ -110,15 +111,21 @@ export function LedgerView() {
 
       <DashboardSectionCard
         title="Giao dịch"
-        description={`${total.toLocaleString("vi-VN")} giao dịch khớp bộ lọc`}
+        description={
+          transactions.isPending
+            ? undefined
+            : `${total.toLocaleString("vi-VN")} giao dịch khớp bộ lọc`
+        }
       >
         <div className="mb-4">
           <LedgerFilters value={filters} onChange={setFilters} />
         </div>
 
-        {transactions.isError ? (
+        {transactions.isPending ? (
+          <DashboardLoading />
+        ) : transactions.isError ? (
           <DashboardError retry={() => void transactions.refetch()} />
-        ) : items.length === 0 && !transactions.isPending ? (
+        ) : items.length === 0 ? (
           <DashboardEmptyPanel
             title="Không có giao dịch"
             description="Không có giao dịch nào khớp bộ lọc hiện tại."
