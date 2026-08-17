@@ -32,7 +32,7 @@ import type {
   OrderCancellation,
   OrderCancellationStatus,
 } from "@/features/admin/cancellations/types/cancellation.types";
-import { buildRefundTotals } from "../lib/flow";
+import type { MoneyFlow } from "../types/finance.types";
 
 const PAGE_SIZE = 20;
 
@@ -47,23 +47,24 @@ const STATUS_ITEMS: Record<string, string> = {
   FAILED: "Lỗi",
 };
 
-export function RefundOutflowTab({
-  allCancellations,
-}: {
-  allCancellations: OrderCancellation[];
-}) {
+export function RefundOutflowTab({ flow }: { flow: MoneyFlow }) {
   const [page, setPage] = React.useState(1);
   const [status, setStatus] = React.useState<string>("ALL");
   const [selected, setSelected] = React.useState<OrderCancellation | null>(
     null,
   );
 
-  // Totals come from the bounded whole-set fetch, NOT from `items` — so they
-  // describe the period rather than the visible page. See spec §5.2.
-  const totals = React.useMemo(
-    () => buildRefundTotals(allCancellations),
-    [allCancellations],
-  );
+  // Counts, not amounts — summing đồng amounts here would mean paging the
+  // filtered set client-side, the exact bounded-fetch pattern this phase
+  // exists to delete. `total` comes free and exact from the response, and a
+  // count is the more actionable number for "how many need intervention."
+  // limit: 1 because only `total` is read — no reason to transfer rows.
+  const inFlight = useOrderCancellations({
+    status: "REFUNDING",
+    page: 1,
+    limit: 1,
+  });
+  const stuck = useOrderCancellations({ status: "FAILED", page: 1, limit: 1 });
 
   // Returns unwrapped `{ items, total, page, limit }` and polls every 10s.
   const query = useOrderCancellations({
@@ -87,25 +88,45 @@ export function RefundOutflowTab({
 
   return (
     <div className="flex flex-col gap-4">
-      <section className="grid gap-4 sm:grid-cols-3">
-        <DashboardMetricCard
-          icon={RefreshCw}
-          label="Đã hoàn cho khách"
-          value={formatCurrency(totals.refundedOutVnd)}
-          hint="Tiền đã rời khỏi nền tảng"
-        />
-        <DashboardMetricCard
-          icon={Clock}
-          label="Đang xử lý"
-          value={formatCurrency(totals.inFlightVnd)}
-          hint="Chưa hoàn xong"
-        />
-        <DashboardMetricCard
-          icon={AlertTriangle}
-          label="Đang kẹt (lỗi)"
-          value={formatCurrency(totals.stuckVnd)}
-          hint="Cần can thiệp thủ công"
-        />
+      <section className="flex flex-col gap-2">
+        <p className="text-muted-foreground text-xs font-medium">
+          Trong kỳ đang chọn
+        </p>
+        <div className="grid gap-4 sm:grid-cols-3">
+          <DashboardMetricCard
+            icon={RefreshCw}
+            label="Hoàn tiền sản phẩm"
+            value={formatCurrency(flow.productRefundsVnd)}
+          />
+          <DashboardMetricCard
+            icon={RefreshCw}
+            label="Hoàn phí tư vấn"
+            value={formatCurrency(flow.consultationRefundsVnd)}
+          />
+          <DashboardMetricCard
+            icon={RefreshCw}
+            label="Hoàn phí phác đồ"
+            value={formatCurrency(flow.treatmentRefundsVnd)}
+          />
+        </div>
+      </section>
+
+      <section className="flex flex-col gap-2">
+        <p className="text-muted-foreground text-xs font-medium">
+          Trạng thái hiện tại, không phụ thuộc kỳ
+        </p>
+        <div className="grid gap-4 sm:grid-cols-2">
+          <DashboardMetricCard
+            icon={Clock}
+            label="Đang hoàn tiền"
+            value={`${inFlight.data?.total ?? 0} yêu cầu`}
+          />
+          <DashboardMetricCard
+            icon={AlertTriangle}
+            label="Đang kẹt (lỗi)"
+            value={`${stuck.data?.total ?? 0} yêu cầu`}
+          />
+        </div>
       </section>
 
       <DashboardSectionCard
