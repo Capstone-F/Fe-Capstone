@@ -2,10 +2,9 @@
 
 import * as React from "react";
 import Link from "next/link";
-import { Info } from "lucide-react";
-import { Alert, AlertDescription } from "@/shared/components/ui/alert";
 import { Badge } from "@/shared/components/ui/badge";
 import { Input } from "@/shared/components/ui/input";
+import { Label } from "@/shared/components/ui/label";
 import {
   Select,
   SelectContent,
@@ -13,19 +12,34 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/shared/components/ui/select";
+import { DataTablePagination } from "@/shared/components/ui/data-table-pagination";
 import {
   DashboardEmptyPanel,
   DashboardError,
   DashboardLoading,
-  DashboardPageHeader,
   DashboardSectionCard,
   formatCurrency,
   formatDate,
   formatDateTime,
 } from "@/features/dashboard/components/dashboard-shell";
-import { useAdminDashboard } from "@/features/dashboard/hooks/useDashboard";
-import type { DashboardRange } from "@/features/dashboard/types/dashboard.types";
-import { activityMetaFor } from "../lib/activity-meta";
+import { useAdminActivity } from "../hooks/useAdminActivity";
+import {
+  ACTIVITY_TYPE_LABELS,
+  activityMetaFor,
+  activityTypeLabel,
+} from "../lib/activity-meta";
+import type {
+  AdminActivityItem,
+  AdminActivityType,
+  ListAdminActivityQuery,
+} from "../types/activity.types";
+
+const PAGE_SIZE = 20;
+
+const TYPE_ITEMS: Record<string, string> = {
+  ALL: "Tất cả loại",
+  ...ACTIVITY_TYPE_LABELS,
+};
 
 // `en-CA` yields YYYY-MM-DD, so this is an ISO-shaped day key in Vietnam time
 // rather than UTC. Grouping must agree with formatDateTime, which renders in
@@ -43,102 +57,119 @@ function vnDayKey(occurredAt: string): string {
 }
 
 export function ActivityLogView() {
-  const [range, setRange] = React.useState<DashboardRange>("30d");
   const [type, setType] = React.useState<string>("ALL");
-  const [search, setSearch] = React.useState("");
+  const [from, setFrom] = React.useState("");
+  const [to, setTo] = React.useState("");
+  const [page, setPage] = React.useState(1);
 
-  const query = useAdminDashboard(range);
-  const data = query.data;
-  const activities = React.useMemo(() => data?.recentActivity ?? [], [data]);
+  const query = React.useMemo<ListAdminActivityQuery>(
+    () => ({
+      type: type === "ALL" ? undefined : [type as AdminActivityType],
+      from: from || undefined,
+      to: to || undefined,
+    }),
+    [type, from, to],
+  );
 
-  // Options come from the data actually present, so the filter never offers
-  // a choice that yields nothing.
-  const typeItems = React.useMemo(() => {
-    const items: Record<string, string> = { ALL: "Tất cả loại" };
-    for (const activity of activities) {
-      // First occurrence wins: overwriting per-activity made the label depend on
-      // iteration order and shift as new activity arrived.
-      if (!(activity.type in items)) {
-        items[activity.type] = activity.title;
-      }
-    }
-    return items;
-  }, [activities]);
+  // Any filter change invalidates the current page number. `query` is
+  // memoized above, so its reference only changes when the filters actually
+  // do — adjusting state during render here avoids the extra effect-driven
+  // render pass that `setPage` inside a `useEffect` would cause.
+  const [prevQuery, setPrevQuery] = React.useState(query);
+  if (prevQuery !== query) {
+    setPrevQuery(query);
+    setPage(1);
+  }
 
-  const filtered = React.useMemo(() => {
-    const term = search.trim().toLowerCase();
-    return activities.filter((activity) => {
-      if (type !== "ALL" && activity.type !== type) return false;
-      if (!term) return true;
-      return `${activity.title} ${activity.description ?? ""}`
-        .toLowerCase()
-        .includes(term);
-    });
-  }, [activities, type, search]);
+  const activity = useAdminActivity({ ...query, page, limit: PAGE_SIZE });
+  const data = activity.data;
+  const total = data?.total ?? 0;
+  const totalPages = Math.ceil(total / PAGE_SIZE) || 1;
 
   const grouped = React.useMemo(() => {
-    const groups = new Map<string, typeof filtered>();
-    for (const activity of filtered) {
-      const day = vnDayKey(activity.occurredAt);
-      groups.set(day, [...(groups.get(day) ?? []), activity]);
+    const groups = new Map<string, AdminActivityItem[]>();
+    for (const item of data?.items ?? []) {
+      const day = vnDayKey(item.occurredAt);
+      groups.set(day, [...(groups.get(day) ?? []), item]);
     }
     return [...groups.entries()].sort((a, b) => b[0].localeCompare(a[0]));
-  }, [filtered]);
+  }, [data]);
 
   return (
     <main className="flex flex-col gap-6 p-4 sm:p-6">
-      <DashboardPageHeader
-        title="Nhật ký hoạt động"
-        description="Các thay đổi gần nhất trên toàn hệ thống."
-        range={range}
-        period={data?.period}
-        onRangeChange={setRange}
-      />
+      <header>
+        <p className="text-muted-foreground text-xs font-medium tracking-[0.18em] uppercase">
+          GlowScan Operations
+        </p>
+        <h1 className="mt-1 text-2xl font-semibold tracking-tight sm:text-3xl">
+          Nhật ký hoạt động
+        </h1>
+        <p className="text-muted-foreground mt-1 max-w-2xl text-sm">
+          Các thay đổi gần nhất trên toàn hệ thống.
+        </p>
+      </header>
 
-      <Alert>
-        <Info />
-        <AlertDescription>
-          Hiển thị 10 hoạt động gần nhất trong kỳ. Nhật ký đầy đủ cần endpoint
-          phân trang (chưa có).
-        </AlertDescription>
-      </Alert>
-
-      {query.isPending ? (
-        <DashboardLoading cards={3} />
-      ) : query.isError || !data ? (
-        <DashboardError retry={() => void query.refetch()} />
-      ) : (
-        <DashboardSectionCard title="Sự kiện" description="Nhóm theo ngày">
-          <div className="mb-4 grid gap-3 sm:grid-cols-2">
+      <DashboardSectionCard
+        title="Sự kiện"
+        description={`${total.toLocaleString("vi-VN")} sự kiện khớp bộ lọc`}
+      >
+        <div className="mb-4 grid gap-3 sm:grid-cols-3">
+          <div className="flex flex-col gap-1.5">
+            <Label className="text-xs">Loại hoạt động</Label>
             <Select
               value={type}
-              items={typeItems}
+              items={TYPE_ITEMS}
               onValueChange={(value) => setType(value || "ALL")}
             >
               <SelectTrigger aria-label="Lọc theo loại hoạt động">
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
-                {Object.entries(typeItems).map(([value, label]) => (
+                {Object.entries(TYPE_ITEMS).map(([value, label]) => (
                   <SelectItem key={value} value={value}>
                     {label}
                   </SelectItem>
                 ))}
               </SelectContent>
             </Select>
+          </div>
+
+          <div className="flex flex-col gap-1.5">
+            <Label htmlFor="activity-from" className="text-xs">
+              Từ ngày
+            </Label>
             <Input
-              placeholder="Tìm trong tiêu đề, mô tả..."
-              value={search}
-              onChange={(event) => setSearch(event.target.value)}
+              id="activity-from"
+              type="date"
+              value={from}
+              onChange={(event) => setFrom(event.target.value)}
             />
           </div>
 
-          {grouped.length === 0 ? (
-            <DashboardEmptyPanel
-              title="Không có hoạt động"
-              description="Không có sự kiện nào khớp bộ lọc trong kỳ này."
+          <div className="flex flex-col gap-1.5">
+            <Label htmlFor="activity-to" className="text-xs">
+              Đến ngày
+            </Label>
+            <Input
+              id="activity-to"
+              type="date"
+              value={to}
+              onChange={(event) => setTo(event.target.value)}
             />
-          ) : (
+          </div>
+        </div>
+
+        {activity.isPending ? (
+          <DashboardLoading cards={3} />
+        ) : activity.isError || !data ? (
+          <DashboardError retry={() => void activity.refetch()} />
+        ) : grouped.length === 0 ? (
+          <DashboardEmptyPanel
+            title="Không có hoạt động"
+            description="Không có sự kiện nào khớp bộ lọc hiện tại."
+          />
+        ) : (
+          <>
             <div className="flex flex-col gap-5">
               {grouped.map(([day, rows]) => (
                 <div key={day}>
@@ -146,8 +177,8 @@ export function ActivityLogView() {
                     {formatDate(day)}
                   </p>
                   <div className="flex flex-col gap-2">
-                    {rows.map((activity) => {
-                      const meta = activityMetaFor(activity.type);
+                    {rows.map((item) => {
+                      const meta = activityMetaFor(item.type);
                       const Icon = meta.icon;
 
                       const row = (
@@ -157,42 +188,57 @@ export function ActivityLogView() {
                           </span>
                           <div className="min-w-0 flex-1">
                             <div className="flex flex-wrap items-center gap-2">
-                              <Badge variant="outline">{activity.title}</Badge>
-                              {activity.amountVnd == null ? null : (
+                              <Badge variant="outline">
+                                {activityTypeLabel(item.type)}
+                              </Badge>
+                              {item.amountVnd == null ? null : (
                                 <span className="text-sm font-semibold">
-                                  {formatCurrency(activity.amountVnd)}
+                                  {formatCurrency(item.amountVnd)}
                                 </span>
                               )}
                             </div>
-                            <p className="text-muted-foreground mt-1 text-xs">
-                              {activity.description || "—"}
-                            </p>
+                            <p className="mt-1 text-sm">{item.title}</p>
+                            {item.description ? (
+                              <p className="text-muted-foreground mt-0.5 text-xs">
+                                {item.description}
+                              </p>
+                            ) : null}
+                            {item.actorName ? (
+                              <p className="text-muted-foreground mt-0.5 text-xs">
+                                bởi {item.actorName}
+                              </p>
+                            ) : null}
                           </div>
                           <span className="text-muted-foreground shrink-0 text-xs">
-                            {formatDateTime(activity.occurredAt)}
+                            {formatDateTime(item.occurredAt)}
                           </span>
                         </div>
                       );
 
                       return meta.href ? (
-                        <Link
-                          key={`${activity.type}-${activity.id}`}
-                          href={meta.href}
-                          className="block"
-                        >
+                        <Link key={item.id} href={meta.href} className="block">
                           {row}
                         </Link>
                       ) : (
-                        <div key={`${activity.type}-${activity.id}`}>{row}</div>
+                        <div key={item.id}>{row}</div>
                       );
                     })}
                   </div>
                 </div>
               ))}
             </div>
-          )}
-        </DashboardSectionCard>
-      )}
+
+            <DataTablePagination
+              page={page}
+              totalPages={totalPages}
+              totalItems={total}
+              pageSize={PAGE_SIZE}
+              onPageChange={setPage}
+              className="mt-4"
+            />
+          </>
+        )}
+      </DashboardSectionCard>
     </main>
   );
 }

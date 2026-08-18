@@ -22,6 +22,8 @@ export interface AdminDashboardResponse {
     averageOrderValueVnd: number;
     consultationFeesCollectedVnd: number;
     consultationRefundsVnd: number;
+    treatmentPaymentsCollectedVnd: number;
+    treatmentRefundsVnd: number;
     platformCommissionRevenueVnd: number;
   };
   attention: {
@@ -41,6 +43,8 @@ export interface AdminDashboardResponse {
     productRefundsVnd: number;
     consultationFeesCollectedVnd: number;
     consultationRefundsVnd: number;
+    treatmentPaymentsCollectedVnd: number;
+    treatmentRefundsVnd: number;
     platformCommissionRevenueVnd: number;
   }>;
   funnel: {

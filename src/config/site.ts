@@ -58,6 +58,11 @@ export const siteConfig = {
         icon: "ReceiptText",
       },
       {
+        title: "Sổ cái giao dịch",
+        url: "/dashboard/ledger",
+        icon: "ReceiptText",
+      },
+      {
         title: "Duyệt rút tiền phòng khám",
         url: "/dashboard/clinic-withdrawals",
         icon: "Banknote",
