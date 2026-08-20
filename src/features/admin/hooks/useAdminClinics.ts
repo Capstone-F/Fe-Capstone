@@ -76,3 +76,26 @@ export function useDeactivateAdminClinic() {
     },
   });
 }
+
+export function useUpdateClinicCommission() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: ({ id, percent }: { id: string; percent: number }) =>
+      adminClinicsApi.updateCommission(id, percent),
+    onSuccess: () => {
+      toast.success("Đã cập nhật tỷ lệ hoa hồng của phòng khám");
+      queryClient.invalidateQueries({ queryKey: ["admin-clinics"] });
+    },
+    onError: (err: unknown) => {
+      const message = (
+        err as { response?: { data?: { message?: string | string[] } } }
+      )?.response?.data?.message;
+      toast.error(
+        Array.isArray(message)
+          ? message.join(". ")
+          : message || "Không thể cập nhật tỷ lệ hoa hồng",
+      );
+    },
+  });
+}

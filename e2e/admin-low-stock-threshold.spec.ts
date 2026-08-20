@@ -47,13 +47,11 @@ test("admin updates the low-stock threshold with an integer value", async ({
         body: JSON.stringify({ percent: 10, minSubtotalVnd: 0 }),
       }),
   );
-  await page.route(
-    "**/api/be/admin/commerce-settings/platform-commission",
-    (route) =>
-      route.fulfill({
-        contentType: "application/json",
-        body: JSON.stringify({ percent: 10 }),
-      }),
+  await page.route("**/api/be/admin/clinics**", (route) =>
+    route.fulfill({
+      contentType: "application/json",
+      body: JSON.stringify({ items: [], total: 0, page: 1, limit: 8 }),
+    }),
   );
 
   await page.goto("/dashboard/commerce");

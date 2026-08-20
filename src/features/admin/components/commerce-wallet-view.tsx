@@ -10,8 +10,6 @@ import {
   Search,
   PlusCircle,
   Loader2,
-  AlertTriangle,
-  Info,
 } from "lucide-react";
 import { apiClient } from "@/core/api/client";
 import { API_ENDPOINTS } from "@/core/api/endpoints";
@@ -26,22 +24,13 @@ import {
   CardTitle,
   CardContent,
 } from "@/shared/components/ui/card";
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-  DialogDescription,
-  DialogFooter,
-} from "@/shared/components/ui/dialog";
 import { formatVnd } from "@/shared/utils/format";
 import { LowStockThresholdCard } from "./low-stock-threshold-card";
+import { ClinicCommissionSettingsCard } from "./clinic-commission-settings-card";
 
 import {
   useAdminComboDiscount,
   useUpdateComboDiscount,
-  useAdminPlatformCommission,
-  useUpdatePlatformCommission,
 } from "../hooks/useAdminCommerce";
 
 interface CommerceWalletViewProps {
@@ -63,46 +52,6 @@ export function CommerceWalletView({
     percent: 10,
     minSubtotalVnd: 0,
   });
-
-  // Platform Commission Setting State
-  const { data: commissionSetting, isLoading: isCommissionLoading } =
-    useAdminPlatformCommission();
-
-  const [commissionPercentInput, setCommissionPercentInput] =
-    useState<string>("10");
-  const [commissionConfirmOpen, setCommissionConfirmOpen] = useState(false);
-  const [commissionError, setCommissionError] = useState<string | null>(null);
-
-  React.useEffect(() => {
-    if (commissionSetting) {
-      const timer = setTimeout(() => {
-        setCommissionPercentInput(String(commissionSetting.percent ?? 10));
-      }, 0);
-      return () => clearTimeout(timer);
-    }
-  }, [commissionSetting]);
-
-  const updateCommissionMutation = useUpdatePlatformCommission();
-
-  const handleCommissionSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-    const val = Number(commissionPercentInput);
-    if (
-      isNaN(val) ||
-      !Number.isInteger(val) ||
-      val < 0 ||
-      val > 100 ||
-      commissionPercentInput.includes(".") ||
-      commissionPercentInput.includes(",")
-    ) {
-      setCommissionError(
-        "Tỷ lệ hoa hồng phải là số nguyên từ 0 đến 100% (không dùng số thập phân)",
-      );
-      return;
-    }
-    setCommissionError(null);
-    setCommissionConfirmOpen(true);
-  };
 
   React.useEffect(() => {
     if (comboSettings) {
@@ -494,148 +443,8 @@ export function CommerceWalletView({
             )}
           </CardContent>
         </Card>
-        {/* Card 3: Platform Commission Fee Setting */}
-        <Card className="rounded-3xl border border-slate-200/90 bg-white shadow-sm lg:col-span-2 dark:border-slate-800 dark:bg-slate-900">
-          <CardHeader className="border-b border-slate-100 pb-4 dark:border-slate-800">
-            <CardTitle className="flex items-center gap-2 text-base font-bold text-[#2C3E35] dark:text-emerald-400">
-              <Percent className="h-5 w-5 text-[#2C3E35] dark:text-emerald-400" />
-              Tỷ Lệ Hoa Hồng Nền Tảng (Platform Commission Fee)
-            </CardTitle>
-          </CardHeader>
-          <CardContent className="pt-6">
-            {isCommissionLoading ? (
-              <div className="flex h-32 items-center justify-center">
-                <Loader2 className="h-6 w-6 animate-spin text-slate-400" />
-              </div>
-            ) : (
-              <form
-                onSubmit={handleCommissionSubmit}
-                className="flex max-w-lg flex-col gap-4"
-              >
-                <div className="flex items-center gap-2 rounded-2xl border border-indigo-100 bg-indigo-50/60 p-3.5 text-xs text-indigo-900 dark:border-indigo-950/50 dark:bg-indigo-950/30 dark:text-indigo-200">
-                  <Info className="h-4 w-4 shrink-0 text-indigo-600 dark:text-indigo-400" />
-                  <span>
-                    <strong>Chú ý:</strong> Thay đổi chỉ áp dụng cho lần thanh
-                    toán mới. Tiền đang giữ trong escrow giữ nguyên tỷ lệ cũ khi
-                    được tạo. Tỷ lệ mặc định hệ thống là 10%.
-                  </span>
-                </div>
-
-                <div className="flex flex-col gap-1.5">
-                  <Label
-                    htmlFor="platformCommission"
-                    className="text-xs font-bold text-slate-700 dark:text-slate-300"
-                  >
-                    Phần trăm hoa hồng nền tảng (%):
-                  </Label>
-                  <div className="relative">
-                    <Input
-                      id="platformCommission"
-                      type="number"
-                      step="1"
-                      min={0}
-                      max={100}
-                      required
-                      placeholder="VD: 10"
-                      value={commissionPercentInput}
-                      onKeyDown={(e) => {
-                        if (["e", "E", "+", "-", ".", ","].includes(e.key)) {
-                          e.preventDefault();
-                        }
-                      }}
-                      onChange={(e) => {
-                        const cleanVal = e.target.value.replace(/[^0-9]/g, "");
-                        setCommissionPercentInput(cleanVal);
-                        setCommissionError(null);
-                      }}
-                      className="rounded-xl border-slate-200 pr-10 font-mono text-xs"
-                    />
-                    <div className="absolute top-2.5 right-3 text-xs font-bold text-slate-400">
-                      %
-                    </div>
-                  </div>
-                </div>
-
-                {commissionError && (
-                  <div className="flex items-center gap-2 rounded-xl bg-rose-50 p-3 text-xs font-medium text-rose-700 dark:bg-rose-950/40 dark:text-rose-300">
-                    <AlertTriangle className="h-4 w-4 shrink-0" />
-                    <span>{commissionError}</span>
-                  </div>
-                )}
-
-                <div className="pt-2">
-                  <Button
-                    type="submit"
-                    disabled={
-                      updateCommissionMutation.isPending ||
-                      String(commissionSetting?.percent) ===
-                        commissionPercentInput
-                    }
-                    className="rounded-xl bg-[#2C3E35] px-6 text-xs font-bold text-white hover:bg-[#3A5246]"
-                  >
-                    Lưu Tỷ Lệ Hoa Hồng
-                  </Button>
-                </div>
-              </form>
-            )}
-          </CardContent>
-        </Card>
+        <ClinicCommissionSettingsCard />
       </div>
-
-      {/* Confirm Modal before updating platform commission */}
-      <Dialog
-        open={commissionConfirmOpen}
-        onOpenChange={setCommissionConfirmOpen}
-      >
-        <DialogContent className="w-full max-w-md rounded-3xl p-6">
-          <DialogHeader className="border-b border-slate-100 pb-3 dark:border-slate-800">
-            <DialogTitle className="flex items-center gap-2 text-base font-bold text-slate-900 dark:text-slate-100">
-              <AlertTriangle className="h-5 w-5 text-amber-500" />
-              Xác nhận Cập nhật Tỷ lệ Hoa hồng
-            </DialogTitle>
-            <DialogDescription className="text-xs text-slate-500">
-              Cấu hình này ảnh hưởng trực tiếp đến doanh thu sàn trên mọi phòng
-              khám
-            </DialogDescription>
-          </DialogHeader>
-
-          <div className="py-3 text-xs leading-relaxed text-slate-700 dark:text-slate-300">
-            Bạn có chắc chắn muốn thay đổi tỷ lệ hoa hồng nền tảng từ{" "}
-            <strong>{commissionSetting?.percent ?? 10}%</strong> thành{" "}
-            <strong className="font-mono text-sm text-emerald-600 dark:text-emerald-400">
-              {commissionPercentInput}%
-            </strong>
-            ?
-            <p className="mt-2 text-slate-500 italic">
-              Lưu ý: Tỷ lệ mới chỉ áp dụng cho các giao dịch thanh toán phát
-              sinh từ thời điểm này trở đi.
-            </p>
-          </div>
-
-          <DialogFooter className="border-t border-slate-100 pt-3 dark:border-slate-800">
-            <Button
-              variant="outline"
-              onClick={() => setCommissionConfirmOpen(false)}
-              className="rounded-xl text-xs"
-            >
-              Hủy
-            </Button>
-            <Button
-              onClick={() =>
-                updateCommissionMutation.mutate(Number(commissionPercentInput))
-              }
-              disabled={updateCommissionMutation.isPending}
-              className="rounded-xl bg-emerald-700 text-xs font-bold text-white hover:bg-emerald-800"
-            >
-              {updateCommissionMutation.isPending ? (
-                <Loader2 className="h-4 w-4 animate-spin" />
-              ) : (
-                "Xác nhận Lưu"
-              )}
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
     </div>
   );
 }

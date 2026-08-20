@@ -11,6 +11,7 @@ export interface AdminClinic {
   latitude: number | null;
   longitude: number | null;
   isActive: boolean;
+  commissionPercent: number;
   createdAt: string;
   updatedAt: string;
 }
@@ -18,11 +19,14 @@ export interface AdminClinic {
 export interface AdminClinicListResponse {
   items: AdminClinic[];
   total: number;
+  page: number;
+  limit: number;
 }
 
 export interface ListAdminClinicsQuery {
   q?: string;
   activeOnly?: boolean;
+  page?: number;
   limit?: number;
 }
 
@@ -43,6 +47,7 @@ export const adminClinicsApi = {
     const params: Record<string, string> = {};
     if (query?.q?.trim()) params.q = query.q.trim();
     if (query?.activeOnly) params.activeOnly = "true";
+    if (query?.page) params.page = String(query.page);
     if (query?.limit) params.limit = String(query.limit);
 
     return apiClient.get<AdminClinicListResponse>(
@@ -73,6 +78,16 @@ export const adminClinicsApi = {
   deactivateClinic: (id: string): Promise<AxiosResponse<AdminClinic>> => {
     return apiClient.delete<AdminClinic>(
       API_ENDPOINTS.ADMIN_CLINICS.DEACTIVATE(id),
+    );
+  },
+
+  updateCommission: (
+    id: string,
+    percent: number,
+  ): Promise<AxiosResponse<AdminClinic>> => {
+    return apiClient.patch<AdminClinic>(
+      API_ENDPOINTS.ADMIN_CLINICS.COMMISSION(id),
+      { percent },
     );
   },
 };
