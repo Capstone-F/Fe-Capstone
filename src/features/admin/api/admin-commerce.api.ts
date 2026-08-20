@@ -7,10 +7,6 @@ export interface ComboDiscountSettings {
   minSubtotalVnd: number;
 }
 
-export interface PlatformCommissionSettings {
-  percent: number;
-}
-
 export interface WalletInspectionResponse {
   balance: number;
   heldBalance: number;
@@ -37,23 +33,6 @@ export const adminCommerceApi = {
     return apiClient.put<ComboDiscountSettings>(
       API_ENDPOINTS.ADMIN_COMMERCE.COMBO_DISCOUNT,
       data,
-    );
-  },
-
-  getPlatformCommission: (): Promise<
-    AxiosResponse<PlatformCommissionSettings>
-  > => {
-    return apiClient.get<PlatformCommissionSettings>(
-      API_ENDPOINTS.ADMIN_PLATFORM_COMMISSION.GET,
-    );
-  },
-
-  updatePlatformCommission: (
-    percent: number,
-  ): Promise<AxiosResponse<PlatformCommissionSettings>> => {
-    return apiClient.patch<PlatformCommissionSettings>(
-      API_ENDPOINTS.ADMIN_PLATFORM_COMMISSION.UPDATE,
-      { percent },
     );
   },
 

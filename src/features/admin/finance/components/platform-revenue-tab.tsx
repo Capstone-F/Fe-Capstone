@@ -11,10 +11,7 @@ import {
   formatCurrency,
 } from "@/features/dashboard/components/dashboard-shell";
 import type { AdminDashboardResponse } from "@/features/dashboard/types/dashboard.types";
-import {
-  useAdminComboDiscount,
-  useAdminPlatformCommission,
-} from "@/features/admin/hooks/useAdminCommerce";
+import { useAdminComboDiscount } from "@/features/admin/hooks/useAdminCommerce";
 import type { MoneyFlow } from "../types/finance.types";
 
 const commissionChartConfig = {
@@ -31,7 +28,6 @@ export function PlatformRevenueTab({
   data: AdminDashboardResponse;
   flow: MoneyFlow;
 }) {
-  const { data: commission } = useAdminPlatformCommission();
   const { data: combo } = useAdminComboDiscount();
 
   return (
@@ -45,9 +41,9 @@ export function PlatformRevenueTab({
         />
         <DashboardMetricCard
           icon={Percent}
-          label="Tỷ lệ hoa hồng hiện tại"
-          value={`${commission?.percent ?? "—"}%`}
-          hint="Áp dụng cho thanh toán mới"
+          label="Cấu hình hoa hồng"
+          value="Theo phòng khám"
+          hint="Escrow giữ tỷ lệ tại thời điểm tạo"
         />
         <DashboardMetricCard
           icon={Percent}

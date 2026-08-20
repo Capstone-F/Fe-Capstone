@@ -31,6 +31,7 @@ export const API_ENDPOINTS = {
     CREATE: "/admin/clinics",
     UPDATE: (id: string) => `/admin/clinics/${id}`,
     DEACTIVATE: (id: string) => `/admin/clinics/${id}`,
+    COMMISSION: (id: string) => `/admin/clinics/${id}/commission`,
     BALANCES: "/admin/clinics/balances",
   },
   ADMIN_TRANSACTIONS: {
@@ -237,10 +238,6 @@ export const API_ENDPOINTS = {
     LIST: "/admin/clinic-withdrawals",
     MARK_PAID: (id: string) => `/admin/clinic-withdrawals/${id}/mark-paid`,
     REJECT: (id: string) => `/admin/clinic-withdrawals/${id}/reject`,
-  },
-  ADMIN_PLATFORM_COMMISSION: {
-    GET: "/admin/commerce-settings/platform-commission",
-    UPDATE: "/admin/commerce-settings/platform-commission",
   },
   CLINIC: {
     WALLET: "/clinic/wallet",

@@ -87,12 +87,14 @@ export function Navbar() {
     {
       label: "Chuyên gia",
       href: "/experts",
+      requiresAuth: true,
       active:
         pathname.startsWith("/experts") || pathname.startsWith("/booking"),
     },
     {
       label: "Phòng khám",
       href: "/clinics",
+      requiresAuth: true,
       active: pathname.startsWith("/clinics"),
     },
   ];
@@ -228,7 +230,11 @@ export function Navbar() {
           {navLinks.map((link) => (
             <Link
               key={link.label}
-              href={link.href}
+              href={
+                link.requiresAuth && !session.isLoading && !user
+                  ? `/login?redirectTo=${encodeURIComponent(link.href)}`
+                  : link.href
+              }
               className={`text-sm font-semibold transition-colors duration-200 ${
                 link.active
                   ? "text-[#2C3E35] underline decoration-[#2C3E35] decoration-2 underline-offset-8"
