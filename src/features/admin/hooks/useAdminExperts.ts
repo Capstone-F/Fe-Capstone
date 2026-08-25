@@ -100,6 +100,21 @@ export function useUpdateExpertClinic() {
   });
 }
 
+export function useUpdateExpertStatus() {
+  const invalidateRoster = useExpertRosterInvalidator();
+  return useMutation({
+    mutationFn: async ({
+      expertProfileId,
+      isActive,
+    }: {
+      expertProfileId: string;
+      isActive: boolean;
+    }) =>
+      (await adminExpertsApi.updateExpert(expertProfileId, { isActive })).data,
+    onSuccess: invalidateRoster,
+  });
+}
+
 function useAvailabilityInvalidator() {
   const queryClient = useQueryClient();
   return (expertProfileId: string) =>

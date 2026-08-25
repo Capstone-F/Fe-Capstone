@@ -33,6 +33,11 @@ export const siteConfig = {
         icon: "UserCheck",
       },
       {
+        title: "Cảnh báo hủy lịch",
+        url: "/dashboard/experts/cancellations",
+        icon: "ShieldAlert",
+      },
+      {
         title: "Duyệt phiếu nhập kho",
         url: "/dashboard/stock-imports",
         icon: "PackagePlus",
