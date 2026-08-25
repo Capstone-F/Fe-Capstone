@@ -1,6 +1,6 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { queryKeys } from "@/lib/query/keys";
-import type { CartItem, CartSummary } from "@/types/domain";
+import type { CartItem, CartSummary, OrderSource } from "@/types/domain";
 import { useSession } from "@/features/auth/hooks/useSession";
 import { cartApi } from "../api/cart.api";
 import type { CartConflict } from "../types/cart.types";
@@ -57,7 +57,8 @@ async function getAllProducts() {
 
 export function useCart(): {
   data: CartSummary | undefined;
-  source: "CATALOG" | "SURVEY";
+  source: OrderSource;
+  treatmentPhaseId: string | null;
   /** Soft ingredient conflicts from the BE — informational, never blocking. */
   conflicts: CartConflict[];
   isLoading: boolean;
@@ -71,7 +72,8 @@ export function useCart(): {
     queryFn: async (): Promise<{
       items: CartItem[];
       conflicts: CartConflict[];
-      source: "CATALOG" | "SURVEY";
+      source: OrderSource;
+      treatmentPhaseId: string | null;
     }> => {
       if (isAuthed) {
         await ensureProvisionedOnce();
@@ -80,10 +82,16 @@ export function useCart(): {
           items: response.data.items,
           conflicts: response.data.conflicts ?? [],
           source: response.data.source ?? "CATALOG",
+          treatmentPhaseId: response.data.treatmentPhaseId ?? null,
         };
       }
       // Guest carts live in localStorage — the BE never sees them, so no conflicts.
-      return { items: readGuestCart(), conflicts: [], source: "CATALOG" };
+      return {
+        items: readGuestCart(),
+        conflicts: [],
+        source: "CATALOG",
+        treatmentPhaseId: null,
+      };
     },
     enabled: !session.isLoading,
   });
@@ -102,6 +110,7 @@ export function useCart(): {
   return {
     data,
     source: itemsQuery.data?.source ?? "CATALOG",
+    treatmentPhaseId: itemsQuery.data?.treatmentPhaseId ?? null,
     conflicts: itemsQuery.data?.conflicts ?? [],
     isLoading: session.isLoading || itemsQuery.isLoading || poolQuery.isLoading,
     error: itemsQuery.error ?? poolQuery.error,
@@ -122,10 +131,13 @@ export function useAddToCart() {
     }) => {
       if (isAuthed) {
         await ensureProvisionedOnce();
+        const currentCart = (await cartApi.getCart()).data;
         const res = await cartApi.addToCart(
           productVariantId,
           quantity ?? 1,
-          "CATALOG",
+          currentCart.source ?? "CATALOG",
+          currentCart.surveyRecommendationId ?? undefined,
+          currentCart.treatmentPhaseId ?? undefined,
         );
         return res.data.items;
       } else {
@@ -148,11 +160,13 @@ export function useUpdateQuantity() {
       quantity,
       source,
       surveyRecommendationId,
+      treatmentPhaseId,
     }: {
       productVariantId: string;
       quantity: number;
-      source?: "CATALOG" | "SURVEY";
+      source?: OrderSource;
       surveyRecommendationId?: string;
+      treatmentPhaseId?: string;
     }) => {
       if (quantity <= 0) {
         if (isAuthed) {
@@ -168,12 +182,14 @@ export function useUpdateQuantity() {
         await ensureProvisionedOnce();
         let finalSource = source;
         let finalRecId = surveyRecommendationId;
+        let finalTreatmentPhaseId = treatmentPhaseId;
 
         if (!finalSource) {
           try {
             const response = await cartApi.getCart();
             finalSource = response.data.source || "CATALOG";
             finalRecId = response.data.surveyRecommendationId || undefined;
+            finalTreatmentPhaseId = response.data.treatmentPhaseId || undefined;
           } catch {
             finalSource = "CATALOG";
           }
@@ -184,6 +200,7 @@ export function useUpdateQuantity() {
           quantity,
           finalSource,
           finalRecId,
+          finalTreatmentPhaseId,
         );
         return res.data.items;
       } else {
@@ -212,6 +229,49 @@ export function useRemoveFromCart() {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: queryKeys.cart });
+    },
+  });
+}
+
+export function useClearCart() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async () => {
+      await cartApi.clearCart();
+    },
+    onSuccess: () => {
+      void queryClient.invalidateQueries({ queryKey: queryKeys.cart });
+    },
+  });
+}
+
+/** Adds phase products sequentially so the first request can lock the cart. */
+export function useAddTreatmentPhaseProducts() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async ({
+      treatmentPhaseId,
+      productVariantIds,
+    }: {
+      treatmentPhaseId: string;
+      productVariantIds: string[];
+    }) => {
+      await ensureProvisionedOnce();
+      let addedCount = 0;
+      for (const productVariantId of productVariantIds) {
+        await cartApi.addToCart(
+          productVariantId,
+          1,
+          "TREATMENT",
+          undefined,
+          treatmentPhaseId,
+        );
+        addedCount += 1;
+      }
+      return { addedCount };
+    },
+    onSettled: () => {
+      void queryClient.invalidateQueries({ queryKey: queryKeys.cart });
     },
   });
 }

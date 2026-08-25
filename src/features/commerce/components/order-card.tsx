@@ -8,6 +8,7 @@ import { Button } from "@/shared/components/ui/button";
 import { HydratedOrder, useReorder } from "../hooks/useOrders";
 import { formatVnd } from "@/shared/utils/format";
 import { OrderStatusBadge } from "./order-status-badge";
+import { OrderSourceBadge } from "./order-source-badge";
 import { OrderItemRow } from "./order-item-row";
 import { CancelOrderDialog } from "./cancel-order-dialog";
 
@@ -69,6 +70,7 @@ export function OrderCard({ entry }: { entry: HydratedOrder }) {
             {new Date(order.createdAt).toLocaleDateString("vi-VN")}
           </span>
           <div className="flex items-center gap-3">
+            <OrderSourceBadge source={order.source} />
             <span className="text-muted-foreground text-[10px]">
               {t.placedAt}{" "}
               {new Date(order.createdAt).toLocaleTimeString("vi-VN")}

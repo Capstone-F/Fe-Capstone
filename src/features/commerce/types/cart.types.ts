@@ -1,4 +1,5 @@
 import type { Product, ProductVariant } from "./product.types";
+import type { OrderSource } from "@/types/domain";
 
 export interface CartItem {
   productVariantId: string;
@@ -42,8 +43,9 @@ export interface CartConflict {
 }
 
 export interface CartResponse {
-  source: "SURVEY" | "CATALOG" | null;
+  source: OrderSource | null;
   surveyRecommendationId: string | null;
+  treatmentPhaseId: string | null;
   items: CartItem[];
   conflicts: CartConflict[];
 }

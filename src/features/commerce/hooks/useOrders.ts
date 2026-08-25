@@ -22,6 +22,7 @@ function toOrder(response: OrderResponse): Order {
     id: response.id,
     status: response.status as Order["status"],
     source: response.source as Order["source"],
+    treatmentPhaseId: response.treatmentPhaseId,
     subtotalVnd: response.subtotalVnd,
     discountVnd: response.discountVnd,
     discountType: response.discountType,

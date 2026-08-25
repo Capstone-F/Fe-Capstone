@@ -13,12 +13,20 @@ import {
   FileHeart,
   ImagePlus,
   Loader2,
+  PackageOpen,
   RefreshCw,
   RotateCcw,
+  ShoppingBag,
   WalletCards,
   XCircle,
 } from "lucide-react";
 import { toast } from "sonner";
+import { cartApi } from "@/features/commerce/api/cart.api";
+import {
+  useAddTreatmentPhaseProducts,
+  useClearCart,
+} from "@/features/commerce/hooks/useCart";
+import { showAddToCartError } from "@/features/commerce/lib/cart-errors";
 
 import {
   useCancelTreatment,
@@ -58,8 +66,12 @@ import {
 export function CustomerTreatmentView() {
   const router = useRouter();
   const plansQuery = useTreatmentPlans("customer");
+  const addPhaseProducts = useAddTreatmentPhaseProducts();
+  const clearCart = useClearCart();
   const [selectedId, setSelectedId] = useState("");
   const [cancelOpen, setCancelOpen] = useState(false);
+  const [replaceCartPhase, setReplaceCartPhase] =
+    useState<TreatmentPhase | null>(null);
 
   const effectiveSelectedId =
     selectedId ||
@@ -72,6 +84,38 @@ export function CustomerTreatmentView() {
   const chartQuery = useTreatmentChart(
     selectedPlan && selectedPlan.status !== "DRAFT" ? selectedPlan.id : "",
   );
+
+  async function addProductsToCart(phase: TreatmentPhase, replaceCart = false) {
+    try {
+      if (replaceCart) {
+        await clearCart.mutateAsync();
+      }
+      const result = await addPhaseProducts.mutateAsync({
+        treatmentPhaseId: phase.id,
+        productVariantIds: phase.products.map(
+          (product) => product.productVariantId,
+        ),
+      });
+      setReplaceCartPhase(null);
+      toast.success(`Đã thêm ${result.addedCount} sản phẩm theo liệu trình.`);
+      router.push("/cart");
+    } catch (error) {
+      showAddToCartError(error);
+    }
+  }
+
+  async function purchasePhaseProducts(phase: TreatmentPhase) {
+    try {
+      const cart = (await cartApi.getCart()).data;
+      if (cart.items.length > 0 && cart.source !== "TREATMENT") {
+        setReplaceCartPhase(phase);
+        return;
+      }
+      await addProductsToCart(phase);
+    } catch (error) {
+      showAddToCartError(error);
+    }
+  }
 
   if (plansQuery.isLoading) {
     return (
@@ -145,7 +189,19 @@ export function CustomerTreatmentView() {
         </div>
         <div className="divide-y">
           {selectedPlan.phases.map((phase) => (
-            <PhaseRecord key={phase.id} phase={phase} />
+            <PhaseRecord
+              key={phase.id}
+              phase={phase}
+              canPurchase={
+                Boolean(selectedPlan.paidAt) &&
+                selectedPlan.status !== "CANCELLED"
+              }
+              isAdding={
+                addPhaseProducts.isPending &&
+                addPhaseProducts.variables?.treatmentPhaseId === phase.id
+              }
+              onPurchase={() => void purchasePhaseProducts(phase)}
+            />
           ))}
         </div>
       </section>
@@ -174,6 +230,44 @@ export function CustomerTreatmentView() {
           void chartQuery.refetch();
         }}
       />
+
+      <Dialog
+        open={Boolean(replaceCartPhase)}
+        onOpenChange={(open) => !open && setReplaceCartPhase(null)}
+      >
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>Thay giỏ hàng hiện tại?</DialogTitle>
+            <DialogDescription>
+              Giỏ hàng đang chứa sản phẩm từ một nguồn khác. Bạn cần xóa giỏ
+              hiện tại trước khi mua sản phẩm theo liệu trình.
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter>
+            <Button
+              type="button"
+              variant="outline"
+              onClick={() => setReplaceCartPhase(null)}
+            >
+              Giữ giỏ hiện tại
+            </Button>
+            <Button
+              type="button"
+              disabled={clearCart.isPending || addPhaseProducts.isPending}
+              onClick={() => {
+                if (replaceCartPhase) {
+                  void addProductsToCart(replaceCartPhase, true);
+                }
+              }}
+            >
+              {(clearCart.isPending || addPhaseProducts.isPending) && (
+                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+              )}
+              Xóa giỏ và tiếp tục
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
@@ -275,7 +369,17 @@ function TreatmentHeader({
   );
 }
 
-function PhaseRecord({ phase }: { phase: TreatmentPhase }) {
+function PhaseRecord({
+  phase,
+  canPurchase,
+  isAdding,
+  onPurchase,
+}: {
+  phase: TreatmentPhase;
+  canPurchase: boolean;
+  isAdding: boolean;
+  onPurchase: () => void;
+}) {
   return (
     <article className="grid gap-3 p-5 md:grid-cols-[120px_1fr_auto]">
       <div>
@@ -303,6 +407,53 @@ function PhaseRecord({ phase }: { phase: TreatmentPhase }) {
           <p className="mt-1 text-sm whitespace-pre-wrap text-slate-800">
             {phase.noteByExpert || "Chưa có ghi chú."}
           </p>
+        </div>
+        <div className="mt-4 space-y-2">
+          <p className="flex items-center gap-2 text-xs font-semibold text-slate-700">
+            <PackageOpen className="h-4 w-4 text-emerald-700" /> Sản phẩm được
+            chuyên gia chọn
+          </p>
+          {phase.products.length > 0 ? (
+            <div className="grid gap-2 sm:grid-cols-2">
+              {phase.products.map((product) => (
+                <div
+                  key={product.id}
+                  className="rounded-lg border border-slate-200 bg-slate-50 p-3"
+                >
+                  <p className="text-sm font-semibold text-slate-900">
+                    {product.productName || "Sản phẩm điều trị"}
+                  </p>
+                  <div className="mt-1 flex flex-wrap items-center justify-between gap-2 text-xs text-slate-500">
+                    <span>{product.sku || "Chưa có SKU"}</span>
+                    <span className="font-semibold text-slate-800">
+                      {product.priceVnd == null
+                        ? "Chưa có giá"
+                        : formatVnd(product.priceVnd)}
+                    </span>
+                  </div>
+                </div>
+              ))}
+            </div>
+          ) : (
+            <p className="text-xs text-slate-500">
+              Chuyên gia chưa chọn sản phẩm cho giai đoạn này.
+            </p>
+          )}
+          {canPurchase && phase.products.length > 0 ? (
+            <Button
+              type="button"
+              size="sm"
+              disabled={isAdding}
+              onClick={onPurchase}
+            >
+              {isAdding ? (
+                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+              ) : (
+                <ShoppingBag className="mr-2 h-4 w-4" />
+              )}
+              Mua sản phẩm của giai đoạn này
+            </Button>
+          ) : null}
         </div>
       </div>
       <div className="text-left md:text-right">
