@@ -10,6 +10,7 @@ import { useOrder } from "@/features/commerce/hooks/useOrders";
 import { useOrderDelivery } from "@/features/commerce/hooks/useDelivery";
 import { OrderItemRow } from "@/features/commerce/components/order-item-row";
 import { OrderStatusBadge } from "@/features/commerce/components/order-status-badge";
+import { OrderSourceBadge } from "@/features/commerce/components/order-source-badge";
 import { OrderCardSkeleton } from "@/features/commerce/components/order-card-skeleton";
 import {
   DeliveryStoppedCard,
@@ -115,6 +116,7 @@ export default function OrderDetailPage({
                 </p>
               </div>
               <div className="flex items-center gap-2">
+                <OrderSourceBadge source={order.source} />
                 <OrderStatusBadge status={order.status} />
                 {canCancel && (
                   <Button

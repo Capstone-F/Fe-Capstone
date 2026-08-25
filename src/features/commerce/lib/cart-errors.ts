@@ -4,7 +4,8 @@ import { ApiError } from "@/core/api/errors";
 export function showAddToCartError(error: unknown): void {
   if (
     error instanceof ApiError &&
-    /cannot mix .* and .* items/i.test(error.message)
+    (/cannot mix .* and .* items/i.test(error.message) ||
+      /không thể trộn lẫn sản phẩm/i.test(error.message))
   ) {
     toast.error(
       "Giỏ hàng đang chứa sản phẩm từ kết quả khảo sát. Hãy hoàn tất hoặc xóa giỏ hiện tại trước khi mua sản phẩm khác.",
@@ -23,6 +24,11 @@ export function showAddToCartError(error: unknown): void {
     /product variant .* not found/i.test(error.message)
   ) {
     toast.error("Sản phẩm này hiện không còn khả dụng.");
+    return;
+  }
+
+  if (error instanceof ApiError) {
+    toast.error(error.message);
     return;
   }
 

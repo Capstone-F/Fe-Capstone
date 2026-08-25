@@ -51,7 +51,8 @@ export async function mergeGuestCartIntoServer(
   }
 
   const serverCartResponse = await cartApi.getCart();
-  const serverItems = serverCartResponse.data.items;
+  const serverCart = serverCartResponse.data;
+  const serverItems = serverCart.items;
   const serverQtyByVariant = new Map<string, number>(
     serverItems.map((item: CartItem) => [item.productVariantId, item.quantity]),
   );
@@ -59,7 +60,13 @@ export async function mergeGuestCartIntoServer(
   for (const item of mergeableItems) {
     const serverQty = serverQtyByVariant.get(item.productVariantId) ?? 0;
     const mergedQty = Math.max(item.quantity, serverQty);
-    await cartApi.addToCart(item.productVariantId, mergedQty, "CATALOG");
+    await cartApi.addToCart(
+      item.productVariantId,
+      mergedQty,
+      serverCart.source ?? "CATALOG",
+      serverCart.surveyRecommendationId ?? undefined,
+      serverCart.treatmentPhaseId ?? undefined,
+    );
   }
 
   return { droppedVariantIds: staleVariantIds };

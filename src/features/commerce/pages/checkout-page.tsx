@@ -270,10 +270,14 @@ export function CheckoutPage() {
 
     setIsPlacing(true);
     try {
-      trackCommerceEvent({
-        eventType: "CHECKOUT_STARTED",
-        source: cartSource,
-      });
+      // The analytics ingestion contract only accepts CATALOG and SURVEY.
+      // TREATMENT provenance is stored on the order itself.
+      if (cartSource !== "TREATMENT") {
+        trackCommerceEvent({
+          eventType: "CHECKOUT_STARTED",
+          source: cartSource,
+        });
+      }
       // POST /orders locks the GHN fee and creates the Delivery the payment needs.
       const orderId =
         pendingOrderId ?? (await createOrder.mutateAsync(address)).id;

@@ -18,8 +18,12 @@ export interface OrderItem {
 export interface Order {
   id: string;
   status: OrderStatus;
+  source: "SURVEY" | "CATALOG" | "TREATMENT";
+  treatmentPhaseId: string | null;
   subtotalVnd: number;
   discountVnd: number;
+  discountType: string | null;
+  shippingFeeVnd: number;
   totalVnd: number;
   items: OrderItem[];
   createdAt: string;

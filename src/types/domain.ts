@@ -162,7 +162,7 @@ export type OrderStatus =
   | "CANCELLED"
   | "REFUNDED";
 
-export type OrderSource = "SURVEY" | "CATALOG";
+export type OrderSource = "SURVEY" | "CATALOG" | "TREATMENT";
 
 export interface OrderItem {
   id: string;
@@ -176,6 +176,7 @@ export interface Order {
   id: string;
   status: OrderStatus;
   source: OrderSource;
+  treatmentPhaseId: string | null;
   subtotalVnd: number;
   discountVnd: number;
   discountType: string | null;

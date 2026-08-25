@@ -18,6 +18,7 @@ export interface OrderResponse {
   source: string;
   customerSurveyId: string | null;
   surveyRecommendationId: string | null;
+  treatmentPhaseId: string | null;
   subtotalVnd: number;
   discountVnd: number;
   discountType: string | null;
