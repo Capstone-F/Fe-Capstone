@@ -108,6 +108,11 @@ export const siteConfig = {
         icon: "Calendar",
       },
       {
+        title: "Cảnh báo hủy lịch",
+        url: "/clinic/expert-cancellations",
+        icon: "ShieldAlert",
+      },
+      {
         title: "Phác đồ Điều trị",
         url: "/clinic/treatments",
         icon: "FileText",
