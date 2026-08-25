@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useState } from "react";
+import { usePathname, useRouter } from "next/navigation";
 import {
   Calendar,
   Loader2,
@@ -64,11 +65,17 @@ const statusFilterItems: Record<string, string> = {
   CANCELLED: "Đã hủy",
 };
 
-export function ClinicBookingsView() {
+export function ClinicBookingsView({
+  initialExpertId = "",
+}: {
+  initialExpertId?: string;
+}) {
+  const router = useRouter();
+  const pathname = usePathname();
   const [search, setSearch] = useState("");
   const debouncedSearch = useDebounce(search.trim(), 350);
   const [statusFilter, setStatusFilter] = useState<string>("ALL");
-  const [expertIdFilter, setExpertIdFilter] = useState<string>("");
+  const [expertIdFilter, setExpertIdFilter] = useState<string>(initialExpertId);
   const [fromDate, setFromDate] = useState<string>("");
   const [toDate, setToDate] = useState<string>("");
   const [page, setPage] = useState(1);
@@ -83,16 +90,39 @@ export function ClinicBookingsView() {
   );
 
   const expertFilterItems = React.useMemo(() => {
+    const entries = Object.fromEntries(
+      expertsList.map((c) => [
+        c.id,
+        c.name || c.user?.name || `BS. #${c.id.slice(0, 6)}`,
+      ]),
+    );
+    if (initialExpertId && !entries[initialExpertId]) {
+      entries[initialExpertId] = "Expert được chọn từ báo cáo";
+    }
     return {
       ALL: "Tất cả chuyên gia",
-      ...Object.fromEntries(
-        expertsList.map((c) => [
-          c.id,
-          c.name || c.user?.name || `BS. #${c.id.slice(0, 6)}`,
-        ]),
-      ),
+      ...entries,
     };
-  }, [expertsList]);
+  }, [expertsList, initialExpertId]);
+
+  const updateExpertFilter = (value: string) => {
+    setExpertIdFilter(value);
+    setPage(1);
+    router.replace(
+      value ? `${pathname}?expertId=${encodeURIComponent(value)}` : pathname,
+      { scroll: false },
+    );
+  };
+
+  const clearFilters = () => {
+    setSearch("");
+    setStatusFilter("ALL");
+    setExpertIdFilter("");
+    setFromDate("");
+    setToDate("");
+    setPage(1);
+    router.replace(pathname, { scroll: false });
+  };
 
   const activeQuery = {
     search: debouncedSearch || undefined,
@@ -285,11 +315,13 @@ export function ClinicBookingsView() {
                 value={expertIdFilter || "ALL"}
                 items={expertFilterItems}
                 onValueChange={(val) => {
-                  setExpertIdFilter(!val || val === "ALL" ? "" : val);
-                  setPage(1);
+                  updateExpertFilter(!val || val === "ALL" ? "" : val);
                 }}
               >
-                <SelectTrigger className="h-9 rounded-xl text-xs">
+                <SelectTrigger
+                  aria-label="Chuyên gia phụ trách"
+                  className="h-9 rounded-xl text-xs"
+                >
                   <SelectValue placeholder="Tất cả chuyên gia" />
                 </SelectTrigger>
                 <SelectContent>
@@ -371,12 +403,7 @@ export function ClinicBookingsView() {
                     variant="secondary"
                     size="sm"
                     onClick={() => {
-                      setSearch("");
-                      setStatusFilter("ALL");
-                      setExpertIdFilter("");
-                      setFromDate("");
-                      setToDate("");
-                      setPage(1);
+                      clearFilters();
                     }}
                     className="rounded-xl text-xs"
                   >
@@ -410,12 +437,7 @@ export function ClinicBookingsView() {
                   variant="outline"
                   size="sm"
                   onClick={() => {
-                    setSearch("");
-                    setStatusFilter("ALL");
-                    setExpertIdFilter("");
-                    setFromDate("");
-                    setToDate("");
-                    setPage(1);
+                    clearFilters();
                   }}
                   className="mt-2 rounded-xl text-xs"
                 >
