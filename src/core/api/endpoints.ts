@@ -34,6 +34,9 @@ export const API_ENDPOINTS = {
     COMMISSION: (id: string) => `/admin/clinics/${id}/commission`,
     BALANCES: "/admin/clinics/balances",
   },
+  ADMIN_EXPERT_CANCELLATIONS: {
+    STATS: "/admin/experts/cancellation-stats",
+  },
   ADMIN_TRANSACTIONS: {
     LIST: "/admin/transactions",
     EXPORT: "/admin/transactions/export",
@@ -244,6 +247,7 @@ export const API_ENDPOINTS = {
     BANK_ACCOUNT: "/clinic/bank-account",
     WITHDRAWALS: "/clinic/withdrawals",
     EXPERTS: "/clinic/experts",
+    EXPERT_CANCELLATION_STATS: "/clinic/experts/cancellation-stats",
     BOOKINGS: "/clinic/bookings",
     BOOKING_DETAIL: (id: string) => `/clinic/bookings/${id}`,
     TREATMENTS: "/clinic/treatments",

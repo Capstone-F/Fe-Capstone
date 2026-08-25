@@ -43,6 +43,7 @@ import {
   Wallet,
   ReceiptText,
   Percent,
+  ShieldAlert,
 } from "lucide-react";
 import { useProfile } from "@/features/profile/hooks/useProfile";
 import { useSession } from "@/features/auth/hooks/useSession";
@@ -75,6 +76,7 @@ const IconMap: Record<string, LucideIcon> = {
   Wallet: Wallet,
   ReceiptText: ReceiptText,
   Percent: Percent,
+  ShieldAlert: ShieldAlert,
 };
 
 interface AppSidebarProps extends React.ComponentProps<typeof Sidebar> {

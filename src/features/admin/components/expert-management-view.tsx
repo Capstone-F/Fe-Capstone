@@ -24,6 +24,8 @@ import {
   Pencil,
   DollarSign,
   Hospital,
+  ShieldCheck,
+  ShieldOff,
 } from "lucide-react";
 import { toast } from "sonner";
 
@@ -67,6 +69,7 @@ import {
   useExpertProfilesByEmail,
   useUpdateConsultationFee,
   useUpdateExpertClinic,
+  useUpdateExpertStatus,
 } from "@/features/admin/hooks/useAdminExperts";
 import { ExpertAvailabilityDialog } from "@/features/admin/components/expert-availability-dialog";
 import { FormController } from "@/shared/components/form/form-controller";
@@ -108,7 +111,11 @@ interface ExpertUser {
   roles?: string[];
 }
 
-export function ExpertManagementView() {
+export function ExpertManagementView({
+  focusedExpertId,
+}: {
+  focusedExpertId?: string;
+}) {
   const [isCreateExpertOpen, setIsCreateExpertOpen] = useState(false);
   const [isQuickBookOpen, setIsQuickBookOpen] = useState(false);
 
@@ -127,6 +134,7 @@ export function ExpertManagementView() {
   );
   const [editClinicValue, setEditClinicValue] = useState("");
   const [scheduleExpert, setScheduleExpert] = useState<ExpertUser | null>(null);
+  const [statusExpert, setStatusExpert] = useState<ExpertUser | null>(null);
 
   const createExpertForm = useForm<CreateExpertValues>({
     resolver: zodResolver(createExpertSchema),
@@ -173,6 +181,7 @@ export function ExpertManagementView() {
   const quickBookMutation = useAdminQuickBook();
   const updateFeeMutation = useUpdateConsultationFee();
   const updateClinicMutation = useUpdateExpertClinic();
+  const updateStatusMutation = useUpdateExpertStatus();
 
   // Doctor options for Quick Booking dropdown
   const doctorOptions =
@@ -306,6 +315,19 @@ export function ExpertManagementView() {
       (u.email ?? "").toLowerCase().includes(q)
     );
   });
+  if (focusedExpertId) {
+    filteredUsers.sort((left, right) => {
+      const leftId = left.email
+        ? expertProfilesByEmail?.get(left.email.toLowerCase())?.id
+        : null;
+      const rightId = right.email
+        ? expertProfilesByEmail?.get(right.email.toLowerCase())?.id
+        : null;
+      return (
+        Number(rightId === focusedExpertId) - Number(leftId === focusedExpertId)
+      );
+    });
+  }
 
   const totalPages = Math.max(1, Math.ceil(filteredUsers.length / PAGE_SIZE));
   const paginatedUsers = filteredUsers.slice(
@@ -325,6 +347,10 @@ export function ExpertManagementView() {
   const editFeeProfileId = resolveExpertProfileId(editFeeExpert);
   const editClinicProfileId = resolveExpertProfileId(editClinicExpert);
   const scheduleProfileId = resolveExpertProfileId(scheduleExpert);
+  const statusProfileId = resolveExpertProfileId(statusExpert);
+  const statusProfile = statusExpert?.email
+    ? expertProfilesByEmail?.get(statusExpert.email.toLowerCase())
+    : null;
 
   // Handlers: edit fee
   const handleOpenEditFee = (u: ExpertUser) => {
@@ -365,6 +391,27 @@ export function ExpertManagementView() {
           setEditClinicExpert(null);
         },
         onError: () => toast.error("Không thể cập nhật phòng khám."),
+      },
+    );
+  };
+
+  const handleConfirmStatus = () => {
+    if (!statusProfileId || !statusProfile) return;
+    updateStatusMutation.mutate(
+      {
+        expertProfileId: statusProfileId,
+        isActive: !statusProfile.isActive,
+      },
+      {
+        onSuccess: () => {
+          toast.success(
+            statusProfile.isActive
+              ? "Đã tạm khóa chuyên gia."
+              : "Đã kích hoạt lại chuyên gia.",
+          );
+          setStatusExpert(null);
+        },
+        onError: () => toast.error("Không thể cập nhật trạng thái chuyên gia."),
       },
     );
   };
@@ -459,6 +506,25 @@ export function ExpertManagementView() {
         </div>
       </div>
 
+      {focusedExpertId ? (
+        <div className="flex flex-col gap-3 rounded-2xl border border-rose-200 bg-rose-50/70 p-4 text-sm sm:flex-row sm:items-center sm:justify-between">
+          <div>
+            <p className="font-semibold text-rose-900">
+              Đang focus Expert từ báo cáo hủy lịch
+            </p>
+            <p className="text-xs text-rose-700">
+              Hàng tương ứng được đưa lên đầu và tô nổi bật để Admin kiểm tra
+              trước khi thay đổi trạng thái.
+            </p>
+          </div>
+          <Link href="/dashboard/experts">
+            <Button variant="outline" size="sm">
+              Bỏ focus
+            </Button>
+          </Link>
+        </div>
+      ) : null}
+
       {/* ── Main Area: Table inside Card (standard pattern) ── */}
       <div className="overflow-hidden rounded-3xl border border-slate-200/90 bg-white shadow-sm dark:border-slate-800 dark:bg-slate-900">
         {/* Embedded Search bar */}
@@ -513,6 +579,9 @@ export function ExpertManagementView() {
                   <th className="px-4 py-3 font-bold text-slate-700">
                     Phòng Khám Phân Công
                   </th>
+                  <th className="px-4 py-3 font-bold text-slate-700">
+                    Trạng thái
+                  </th>
                   <th className="px-4 py-3 text-right font-bold text-slate-700">
                     Thao Tác
                   </th>
@@ -523,11 +592,21 @@ export function ExpertManagementView() {
                   const assignedClinic = clinics.find(
                     (c: { id: string; name: string }) => c.id === u.clinicId,
                   );
+                  const expertProfile = u.email
+                    ? expertProfilesByEmail?.get(u.email.toLowerCase())
+                    : null;
+                  const isFocused = expertProfile?.id === focusedExpertId;
+                  const isActive =
+                    expertProfile?.isActive ?? u.isActive !== false;
 
                   return (
                     <tr
                       key={u.id}
-                      className="transition-colors hover:bg-slate-50/60"
+                      className={
+                        isFocused
+                          ? "bg-rose-50 ring-2 ring-rose-300 ring-inset"
+                          : "transition-colors hover:bg-slate-50/60"
+                      }
                     >
                       <td className="px-4 py-3">
                         <span className="font-semibold text-slate-900">
@@ -556,6 +635,18 @@ export function ExpertManagementView() {
                           </span>
                         )}
                       </td>
+                      <td className="px-4 py-3">
+                        <Badge
+                          variant={isActive ? "outline" : "secondary"}
+                          className={
+                            isActive
+                              ? "border-emerald-200 bg-emerald-50 text-emerald-700"
+                              : "border-slate-200 bg-slate-100 text-slate-600"
+                          }
+                        >
+                          {isActive ? "Đang hoạt động" : "Đã tạm khóa"}
+                        </Badge>
+                      </td>
                       <td className="px-4 py-3 text-right">
                         <DropdownMenu>
                           <DropdownMenuTrigger
@@ -579,6 +670,20 @@ export function ExpertManagementView() {
                               </DropdownMenuLabel>
                             </DropdownMenuGroup>
                             <DropdownMenuSeparator />
+                            <DropdownMenuItem
+                              className="cursor-pointer gap-2 rounded-lg text-xs"
+                              onClick={() => setStatusExpert(u)}
+                              disabled={!expertProfile}
+                            >
+                              {isActive ? (
+                                <ShieldOff className="h-3.5 w-3.5 text-rose-500" />
+                              ) : (
+                                <ShieldCheck className="h-3.5 w-3.5 text-emerald-600" />
+                              )}
+                              {isActive
+                                ? "Tạm khóa Expert"
+                                : "Kích hoạt Expert"}
+                            </DropdownMenuItem>
                             <DropdownMenuItem
                               className="cursor-pointer gap-2 rounded-lg text-xs"
                               onClick={() =>
@@ -1121,6 +1226,49 @@ export function ExpertManagementView() {
         expertName={scheduleExpert?.name ?? ""}
         expertProfileId={scheduleProfileId}
       />
+
+      <Dialog
+        open={Boolean(statusExpert)}
+        onOpenChange={(open) => !open && setStatusExpert(null)}
+      >
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>
+              {statusProfile?.isActive
+                ? "Xác nhận tạm khóa Expert"
+                : "Xác nhận kích hoạt Expert"}
+            </DialogTitle>
+            <DialogDescription>
+              {statusProfile?.isActive
+                ? `${statusExpert?.name || "Expert"} sẽ không thể nhận lịch đặt mới. Các số liệu báo cáo vẫn được giữ nguyên.`
+                : `${statusExpert?.name || "Expert"} sẽ có thể được khách hàng đặt lịch trở lại.`}
+            </DialogDescription>
+          </DialogHeader>
+          {!statusProfileId ? (
+            <p className="text-sm text-amber-700">
+              Không tìm thấy hồ sơ Expert tương ứng với tài khoản này.
+            </p>
+          ) : null}
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setStatusExpert(null)}>
+              Hủy
+            </Button>
+            <Button
+              variant={statusProfile?.isActive ? "destructive" : "default"}
+              disabled={!statusProfileId || updateStatusMutation.isPending}
+              onClick={handleConfirmStatus}
+            >
+              {updateStatusMutation.isPending ? (
+                <Loader2 className="h-4 w-4 animate-spin" />
+              ) : statusProfile?.isActive ? (
+                "Tạm khóa Expert"
+              ) : (
+                "Kích hoạt Expert"
+              )}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

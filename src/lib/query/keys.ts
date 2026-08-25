@@ -84,4 +84,6 @@ export const queryKeys = {
     ["admin", "clinic-balances", query ?? {}] as const,
   adminActivity: (query?: unknown) =>
     ["admin", "activity", query ?? {}] as const,
+  expertCancellationStats: (scope: "admin" | "clinic", query?: unknown) =>
+    [scope, "experts", "cancellation-stats", query ?? {}] as const,
 };
