@@ -350,11 +350,11 @@ export function BookSlotPage() {
                                 variant={
                                   isSlotSelected
                                     ? "default"
-                                    : slot.isBooked
+                                    : !slot.available
                                       ? "ghost"
                                       : "outline"
                                 }
-                                disabled={slot.isBooked}
+                                disabled={!slot.available}
                                 onClick={() =>
                                   form.setValue("slotId", slot.id, {
                                     shouldDirty: true,
@@ -362,7 +362,7 @@ export function BookSlotPage() {
                                   })
                                 }
                                 className={`h-11 rounded-xl px-3 text-xs font-bold transition-all ${
-                                  slot.isBooked
+                                  !slot.available
                                     ? "cursor-not-allowed border-dashed bg-slate-100 text-slate-400 line-through"
                                     : isSlotSelected
                                       ? "bg-emerald-600 text-white shadow-md shadow-emerald-600/20 hover:bg-emerald-700"

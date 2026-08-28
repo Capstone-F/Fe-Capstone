@@ -27,3 +27,13 @@ export interface ExpertCancellationStatsQuery {
   days?: number;
   clinicId?: string;
 }
+
+export interface ExpertCancellationPolicyDto {
+  cancelLimit: number;
+  windowDays: number;
+  noShowWeight: number;
+  lateCancelThresholdMin: number;
+}
+
+export type UpdateExpertCancellationPolicyDto =
+  Partial<ExpertCancellationPolicyDto>;

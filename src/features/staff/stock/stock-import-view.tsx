@@ -34,8 +34,15 @@ import {
 } from "@/shared/components/ui/dialog";
 import { StaffPageHeader } from "@/features/staff/components/staff-page-header";
 import { ProductVariantSelect } from "@/features/stock/components/product-variant-select";
+import { SalesLogPanel } from "@/features/stock/components/sales-log-panel";
 import { useProductVariantOptions } from "@/features/stock/hooks/use-product-variant-options";
 import { DatePicker } from "@/shared/components/form/date-picker";
+import {
+  Tabs,
+  TabsContent,
+  TabsList,
+  TabsTrigger,
+} from "@/shared/components/ui/tabs";
 
 function toLocalDateInputValue(date: Date) {
   const year = date.getFullYear();
@@ -1223,7 +1230,7 @@ export function StockImportView() {
           open={Boolean(detailItem)}
           onOpenChange={(open) => !open && setDetailItem(null)}
         >
-          <DialogContent className="max-w-xl rounded-3xl p-6 shadow-2xl">
+          <DialogContent className="max-h-[85vh] w-[calc(100%-2rem)] overflow-y-auto rounded-3xl p-6 shadow-2xl sm:max-w-4xl">
             <DialogHeader className="space-y-2 border-b border-slate-100 pb-4 dark:border-slate-800">
               <div className="flex items-center justify-between">
                 <DialogTitle className="flex items-center gap-2 text-lg font-bold text-[#2C3E35] dark:text-emerald-400">
@@ -1239,89 +1246,111 @@ export function StockImportView() {
               </div>
             </DialogHeader>
 
-            <div className="flex flex-col gap-4 py-2 text-xs">
-              {detailItem.stockBatchId && (
-                <div className="flex items-center gap-2 rounded-2xl border border-emerald-200 bg-emerald-50 p-3 font-bold text-emerald-900 dark:border-emerald-900/50 dark:bg-emerald-950/40 dark:text-emerald-300">
-                  <CheckCircle2 className="h-4 w-4 shrink-0 text-emerald-600" />
-                  <span>Đã tạo Lô hàng Kho: #{detailItem.stockBatchId}</span>
-                </div>
-              )}
+            <Tabs defaultValue="info" className="py-2">
+              <TabsList className="grid grid-cols-2">
+                <TabsTrigger value="info">Thông tin</TabsTrigger>
+                <TabsTrigger value="sales-log">Log bán hàng</TabsTrigger>
+              </TabsList>
 
-              <div className="grid grid-cols-2 gap-4 rounded-2xl border border-slate-100 bg-slate-50 p-4 dark:border-slate-800 dark:bg-slate-900">
-                <div>
-                  <span className="text-slate-500">Sản phẩm:</span>
-                  <p className="font-bold text-slate-800 dark:text-slate-200">
-                    {variantOptionsById.get(detailItem.productVariantId)
-                      ?.label || "Chưa tải được thông tin sản phẩm"}
-                  </p>
-                </div>
-                <div>
-                  <span className="text-slate-500">Số lượng nhập:</span>
-                  <p className="font-bold text-[#2C3E35] dark:text-emerald-400">
-                    {detailItem.quantity} sản phẩm
-                  </p>
-                </div>
-                <div>
-                  <span className="text-slate-500">Mã Lô (Batch Code):</span>
-                  <p className="font-mono font-semibold text-slate-700 dark:text-slate-300">
-                    {detailItem.batchCode || "Chưa tạo mã lô"}
-                  </p>
-                </div>
-                <div>
-                  <span className="text-slate-500">Ngày sản xuất:</span>
-                  <p className="font-semibold text-slate-700 dark:text-slate-300">
-                    {detailItem.manufacturingDate || "Chưa nhập ngày"}
-                  </p>
-                </div>
-              </div>
+              <TabsContent value="info">
+                <div className="flex flex-col gap-4 pt-3 text-xs">
+                  {detailItem.stockBatchId && (
+                    <div className="flex items-center gap-2 rounded-2xl border border-emerald-200 bg-emerald-50 p-3 font-bold text-emerald-900 dark:border-emerald-900/50 dark:bg-emerald-950/40 dark:text-emerald-300">
+                      <CheckCircle2 className="h-4 w-4 shrink-0 text-emerald-600" />
+                      <span>
+                        Đã tạo Lô hàng Kho: #{detailItem.stockBatchId}
+                      </span>
+                    </div>
+                  )}
 
-              {/* State Machine Action Controls */}
-              <div className="flex flex-wrap gap-2 border-t border-slate-100 pt-4 dark:border-slate-800">
-                {detailItem.status === "DRAFT" && (
-                  <>
-                    <Button
-                      type="button"
-                      onClick={() => submitMutation.mutate(detailItem.id)}
-                      disabled={submitMutation.isPending}
-                      className="rounded-xl bg-blue-600 text-xs font-bold text-white hover:bg-blue-700"
-                    >
-                      <Send className="mr-1.5 h-3.5 w-3.5" /> Trình Duyệt Phiếu
-                    </Button>
-                    <Button
-                      type="button"
-                      variant="outline"
-                      onClick={() => cancelMutation.mutate(detailItem.id)}
-                      disabled={cancelMutation.isPending}
-                      className="rounded-xl border-gray-300 text-xs font-bold text-gray-700 dark:text-slate-300"
-                    >
-                      <Ban className="mr-1.5 h-3.5 w-3.5" /> Hủy Phiếu Nháp
-                    </Button>
-                  </>
-                )}
+                  <div className="grid grid-cols-2 gap-4 rounded-2xl border border-slate-100 bg-slate-50 p-4 dark:border-slate-800 dark:bg-slate-900">
+                    <div>
+                      <span className="text-slate-500">Sản phẩm:</span>
+                      <p className="font-bold text-slate-800 dark:text-slate-200">
+                        {variantOptionsById.get(detailItem.productVariantId)
+                          ?.label || "Chưa tải được thông tin sản phẩm"}
+                      </p>
+                    </div>
+                    <div>
+                      <span className="text-slate-500">Số lượng nhập:</span>
+                      <p className="font-bold text-[#2C3E35] dark:text-emerald-400">
+                        {detailItem.quantity} sản phẩm
+                      </p>
+                    </div>
+                    <div>
+                      <span className="text-slate-500">
+                        Mã Lô (Batch Code):
+                      </span>
+                      <p className="font-mono font-semibold text-slate-700 dark:text-slate-300">
+                        {detailItem.batchCode || "Chưa tạo mã lô"}
+                      </p>
+                    </div>
+                    <div>
+                      <span className="text-slate-500">Ngày sản xuất:</span>
+                      <p className="font-semibold text-slate-700 dark:text-slate-300">
+                        {detailItem.manufacturingDate || "Chưa nhập ngày"}
+                      </p>
+                    </div>
+                  </div>
 
-                {detailItem.status === "SUBMITTED" && (
-                  <>
-                    <Button
-                      type="button"
-                      onClick={() => confirmMutation.mutate(detailItem.id)}
-                      disabled={confirmMutation.isPending}
-                      className="rounded-xl bg-emerald-700 text-xs font-bold text-white hover:bg-emerald-800"
-                    >
-                      <PackageCheck className="mr-1.5 h-3.5 w-3.5" /> Xác Nhận
-                      Nhập Kho (Cộng Kho)
-                    </Button>
-                    <Button
-                      type="button"
-                      variant="outline"
-                      onClick={() => setRejectModalItem(detailItem)}
-                      className="rounded-xl border-rose-200 bg-rose-50 text-xs font-bold text-rose-700 hover:bg-rose-100 dark:bg-rose-950/30 dark:text-rose-400"
-                    >
-                      <XCircle className="mr-1.5 h-3.5 w-3.5" /> Từ Chối Phiếu
-                    </Button>
-                  </>
-                )}
-              </div>
-            </div>
+                  {/* State Machine Action Controls */}
+                  <div className="flex flex-wrap gap-2 border-t border-slate-100 pt-4 dark:border-slate-800">
+                    {detailItem.status === "DRAFT" && (
+                      <>
+                        <Button
+                          type="button"
+                          onClick={() => submitMutation.mutate(detailItem.id)}
+                          disabled={submitMutation.isPending}
+                          className="rounded-xl bg-blue-600 text-xs font-bold text-white hover:bg-blue-700"
+                        >
+                          <Send className="mr-1.5 h-3.5 w-3.5" /> Trình Duyệt
+                          Phiếu
+                        </Button>
+                        <Button
+                          type="button"
+                          variant="outline"
+                          onClick={() => cancelMutation.mutate(detailItem.id)}
+                          disabled={cancelMutation.isPending}
+                          className="rounded-xl border-gray-300 text-xs font-bold text-gray-700 dark:text-slate-300"
+                        >
+                          <Ban className="mr-1.5 h-3.5 w-3.5" /> Hủy Phiếu Nháp
+                        </Button>
+                      </>
+                    )}
+
+                    {detailItem.status === "SUBMITTED" && (
+                      <>
+                        <Button
+                          type="button"
+                          onClick={() => confirmMutation.mutate(detailItem.id)}
+                          disabled={confirmMutation.isPending}
+                          className="rounded-xl bg-emerald-700 text-xs font-bold text-white hover:bg-emerald-800"
+                        >
+                          <PackageCheck className="mr-1.5 h-3.5 w-3.5" /> Xác
+                          Nhận Nhập Kho (Cộng Kho)
+                        </Button>
+                        <Button
+                          type="button"
+                          variant="outline"
+                          onClick={() => setRejectModalItem(detailItem)}
+                          className="rounded-xl border-rose-200 bg-rose-50 text-xs font-bold text-rose-700 hover:bg-rose-100 dark:bg-rose-950/30 dark:text-rose-400"
+                        >
+                          <XCircle className="mr-1.5 h-3.5 w-3.5" /> Từ Chối
+                          Phiếu
+                        </Button>
+                      </>
+                    )}
+                  </div>
+                </div>
+              </TabsContent>
+
+              <TabsContent value="sales-log" className="pt-3">
+                <SalesLogPanel
+                  formId={detailItem.id}
+                  formStatus={detailItem.status}
+                />
+              </TabsContent>
+            </Tabs>
           </DialogContent>
         </Dialog>
       )}

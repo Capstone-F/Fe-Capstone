@@ -5,14 +5,6 @@ import { mapBackendBookingToFrontend } from "../mapper/booking-mapper";
 import type { TimeSlot } from "../types/booking.types";
 import { ApiError } from "@/core/api/errors";
 
-const MIN_BOOKING_LEAD_TIME_MS = 2 * 60 * 60 * 1000; // 2 hours
-
-export function isSlotBookable(slotDateTimeISO: string): boolean {
-  const slotTime = new Date(slotDateTimeISO).getTime();
-  const minValidTime = Date.now() + MIN_BOOKING_LEAD_TIME_MS;
-  return slotTime >= minValidTime;
-}
-
 export function useSlots(expertId: string, anchorDate?: string) {
   const targetDate = anchorDate || new Date().toISOString().split("T")[0];
 
@@ -24,14 +16,12 @@ export function useSlots(expertId: string, anchorDate?: string) {
 
       response.data.days.forEach((day) => {
         day.slots.forEach((s) => {
-          if (isSlotBookable(s.startAt)) {
-            slots.push({
-              id: `${expertId}_${s.startAt}`,
-              expertId,
-              dateTime: s.startAt,
-              isBooked: !s.available,
-            });
-          }
+          slots.push({
+            id: `${expertId}_${s.startAt}`,
+            expertId,
+            dateTime: s.startAt,
+            available: s.available,
+          });
         });
       });
 
@@ -97,6 +87,13 @@ export function useCreateBooking() {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: queryKeys.bookings });
+    },
+    onError: (_err, variables) => {
+      // The slot may have just crossed the minimum lead-time window (race
+      // condition between page load and submit) — refresh so it reflects reality.
+      queryClient.invalidateQueries({
+        queryKey: ["slots", variables.expertId],
+      });
     },
   });
 }

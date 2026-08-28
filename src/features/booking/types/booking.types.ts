@@ -2,7 +2,7 @@ export interface TimeSlot {
   id: string;
   expertId: string;
   dateTime: string;
-  isBooked: boolean;
+  available: boolean;
 }
 
 export interface ConsultationBooking {

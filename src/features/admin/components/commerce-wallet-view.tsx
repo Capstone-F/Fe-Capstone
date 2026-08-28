@@ -26,6 +26,7 @@ import {
 } from "@/shared/components/ui/card";
 import { formatVnd } from "@/shared/utils/format";
 import { LowStockThresholdCard } from "./low-stock-threshold-card";
+import { BookingSettingsCard } from "./booking-settings-card";
 import { ClinicCommissionSettingsCard } from "./clinic-commission-settings-card";
 
 import {
@@ -274,6 +275,8 @@ export function CommerceWalletView({
         </Card>
 
         <LowStockThresholdCard />
+
+        <BookingSettingsCard />
 
         {/* Card 2: Wallet Top-Up & Inspector */}
         <Card className="rounded-3xl border border-slate-200/90 bg-white shadow-sm dark:border-slate-800 dark:bg-slate-900">

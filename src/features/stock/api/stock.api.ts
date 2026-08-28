@@ -11,6 +11,8 @@ import {
   UpdateStockImportFormDto,
   InventoryItemDto,
   LowStockThresholdDto,
+  SalesLogQueryDto,
+  StockImportFormSalesLogDto,
 } from "../types/stock.types";
 
 export const stockApi = {
@@ -70,6 +72,14 @@ export const stockApi = {
     const response = await apiClient.post<StockImportFormResponseDto>(
       API_ENDPOINTS.STOCK.REJECT_IMPORT_FORM(id),
       data,
+    );
+    return response.data;
+  },
+
+  getSalesLog: async (id: string, params?: SalesLogQueryDto) => {
+    const response = await apiClient.get<StockImportFormSalesLogDto>(
+      API_ENDPOINTS.STOCK.SALES_LOG(id),
+      { params },
     );
     return response.data;
   },

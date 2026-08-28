@@ -1,3 +1,5 @@
+import { OrderStatus } from "@/types/domain";
+
 export enum StockImportFormStatus {
   DRAFT = "DRAFT",
   SUBMITTED = "SUBMITTED",
@@ -71,6 +73,63 @@ export interface ImportBatchDto {
 export interface AdjustStockDto {
   quantity: number;
   note?: string;
+}
+
+export enum StockMovementType {
+  SALE = "SALE",
+  RETURN = "RETURN",
+}
+
+export interface SalesLogBatchDto {
+  id: string;
+  batchCode: string;
+  initialQuantity: number;
+  remainingQuantity: number;
+  soldQuantity: number;
+  returnedQuantity: number;
+  damagedQuantity: number;
+  expirationDate: string | null;
+}
+
+export interface SalesLogMovementDto {
+  id: string;
+  type: StockMovementType;
+  quantity: number;
+  note: string | null;
+  createdAt: string;
+}
+
+export interface SalesLogEntryDto {
+  orderItemId: string;
+  orderId: string;
+  orderStatus: OrderStatus;
+  orderCreatedAt: string;
+  customerId: string | null;
+  customerName: string | null;
+  customerEmail: string | null;
+  orderedQuantity: number;
+  quantityFromBatch: number;
+  soldQuantity: number;
+  returnedQuantity: number;
+  unitPriceVnd: number;
+  stockDeductedAt: string | null;
+}
+
+export interface StockImportFormSalesLogDto {
+  formId: string;
+  formStatus: StockImportFormStatus;
+  stockBatchId: string | null;
+  batch: SalesLogBatchDto | null;
+  movements: SalesLogMovementDto[];
+  entries: SalesLogEntryDto[];
+  total: number;
+  page: number;
+  limit: number;
+}
+
+export interface SalesLogQueryDto {
+  page?: number;
+  limit?: number;
 }
 
 export interface InventoryItemDto {

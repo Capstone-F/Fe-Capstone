@@ -238,6 +238,11 @@ export const siteConfig = {
         icon: "MessageSquare",
       },
       {
+        title: "Cài đặt lịch hẹn",
+        url: "/staff/booking-settings",
+        icon: "Settings2",
+      },
+      {
         title: "Hồ sơ cá nhân",
         url: "/staff/profile",
         icon: "UserCheck",

@@ -59,6 +59,8 @@ export const queryKeys = {
   stockImportForms: (query: unknown) =>
     ["stock", "import-forms", query] as const,
   stockImportForm: (id: string) => ["stock", "import-form", id] as const,
+  stockImportFormSalesLog: (id: string, query?: unknown) =>
+    ["stock", "import-form", id, "sales-log", query ?? {}] as const,
   stockInventory: ["stock", "inventory"] as const,
   lowStockThreshold: ["stock", "low-stock-threshold"] as const,
   supportSessions: (query: unknown) => ["support", "sessions", query] as const,
@@ -86,4 +88,10 @@ export const queryKeys = {
     ["admin", "activity", query ?? {}] as const,
   expertCancellationStats: (scope: "admin" | "clinic", query?: unknown) =>
     [scope, "experts", "cancellation-stats", query ?? {}] as const,
+  expertCancellationPolicy: [
+    "admin",
+    "experts",
+    "cancellation-policy",
+  ] as const,
+  bookingSettings: ["admin", "booking-settings"] as const,
 };

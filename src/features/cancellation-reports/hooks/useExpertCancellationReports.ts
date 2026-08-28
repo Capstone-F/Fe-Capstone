@@ -1,10 +1,14 @@
 "use client";
 
-import { useQuery } from "@tanstack/react-query";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { toast } from "sonner";
 
 import { queryKeys } from "@/lib/query/keys";
 import { expertCancellationReportsApi } from "../api/expert-cancellation-reports.api";
-import type { ExpertCancellationStatsQuery } from "../types/expert-cancellation-report.types";
+import type {
+  ExpertCancellationStatsQuery,
+  UpdateExpertCancellationPolicyDto,
+} from "../types/expert-cancellation-report.types";
 
 export function useAdminExpertCancellationStats(
   query: ExpertCancellationStatsQuery,
@@ -23,5 +27,41 @@ export function useClinicExpertCancellationStats(
     queryKey: queryKeys.expertCancellationStats("clinic", query),
     queryFn: async () =>
       (await expertCancellationReportsApi.getClinicStats(query)).data,
+  });
+}
+
+export function useExpertCancellationPolicy() {
+  return useQuery({
+    queryKey: queryKeys.expertCancellationPolicy,
+    queryFn: async () => (await expertCancellationReportsApi.getPolicy()).data,
+    staleTime: 60 * 1000,
+  });
+}
+
+export function useUpdateExpertCancellationPolicy() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: (data: UpdateExpertCancellationPolicyDto) =>
+      expertCancellationReportsApi.updatePolicy(data).then((res) => res.data),
+    onSuccess: () => {
+      toast.success("Đã cập nhật chính sách hủy lịch thành công!");
+      queryClient.invalidateQueries({
+        queryKey: queryKeys.expertCancellationPolicy,
+      });
+      queryClient.invalidateQueries({
+        queryKey: queryKeys.expertCancellationStats("admin"),
+      });
+      queryClient.invalidateQueries({
+        queryKey: queryKeys.expertCancellationStats("clinic"),
+      });
+    },
+    onError: (err: unknown) => {
+      const message =
+        err instanceof Error
+          ? err.message
+          : "Không thể cập nhật chính sách hủy lịch.";
+      toast.error(message);
+    },
   });
 }
