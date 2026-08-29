@@ -3,6 +3,8 @@
 import { useState } from "react";
 import { Wallet as WalletIcon, Loader2, PlusCircle } from "lucide-react";
 import { Button } from "@/shared/components/ui/button";
+import { Input } from "@/shared/components/ui/input";
+import { Label } from "@/shared/components/ui/label";
 import {
   Dialog,
   DialogContent,
@@ -29,19 +31,31 @@ const MIN_TOP_UP_VND = 10000;
 
 const PRESET_AMOUNTS = [100000, 200000, 500000, 1000000, 2000000];
 
+function initialTopUpAmount(requiredAmountVnd?: number) {
+  return requiredAmountVnd && requiredAmountVnd > 0
+    ? Math.max(Math.ceil(requiredAmountVnd), MIN_TOP_UP_VND)
+    : 500000;
+}
+
 export function WalletTopUpModal({
   isOpen,
   onClose,
   requiredAmountVnd,
   returnTo,
 }: WalletTopUpModalProps) {
-  const [selectedAmount, setSelectedAmount] = useState<number>(
-    requiredAmountVnd && requiredAmountVnd > 0 ? requiredAmountVnd : 500000,
+  const [amountInput, setAmountInput] = useState(() =>
+    String(initialTopUpAmount(requiredAmountVnd)),
   );
 
   const topUpMutation = useTopUpWallet();
+  const selectedAmount = Number(amountInput);
 
   const handleTopUp = () => {
+    if (!Number.isInteger(selectedAmount)) {
+      toast.error("Vui lòng nhập số tiền nạp hợp lệ");
+      return;
+    }
+
     if (selectedAmount < MIN_TOP_UP_VND) {
       toast.error(`Số tiền nạp tối thiểu là ${formatVnd(MIN_TOP_UP_VND)}`);
       return;
@@ -106,7 +120,7 @@ export function WalletTopUpModal({
               <button
                 key={amt}
                 type="button"
-                onClick={() => setSelectedAmount(amt)}
+                onClick={() => setAmountInput(String(amt))}
                 className={`rounded-xl border p-2.5 text-center text-xs font-bold transition-all ${
                   selectedAmount === amt
                     ? "border-emerald-600 bg-emerald-50 text-emerald-800 shadow-xs"
@@ -116,6 +130,37 @@ export function WalletTopUpModal({
                 {formatVnd(amt)}
               </button>
             ))}
+          </div>
+          <div className="space-y-1.5">
+            <Label
+              htmlFor="wallet-top-up-amount"
+              className="text-xs font-bold text-slate-700"
+            >
+              Hoặc nhập số tiền khác:
+            </Label>
+            <div className="relative">
+              <Input
+                id="wallet-top-up-amount"
+                type="number"
+                inputMode="numeric"
+                min={MIN_TOP_UP_VND}
+                step={1}
+                value={amountInput}
+                onChange={(event) => setAmountInput(event.target.value)}
+                placeholder={`Tối thiểu ${formatVnd(MIN_TOP_UP_VND)}`}
+                aria-describedby="wallet-top-up-amount-hint"
+                className="h-11 rounded-xl pr-12 text-sm font-semibold"
+              />
+              <span className="pointer-events-none absolute inset-y-0 right-4 flex items-center text-sm font-semibold text-slate-500">
+                đ
+              </span>
+            </div>
+            <p
+              id="wallet-top-up-amount-hint"
+              className="text-[11px] text-slate-500"
+            >
+              Nhập số nguyên từ {formatVnd(MIN_TOP_UP_VND)} trở lên.
+            </p>
           </div>
           <p className="text-[11px] text-slate-500">
             Bạn sẽ được chuyển sang cổng thanh toán để hoàn tất. Số dư cập nhật
@@ -134,7 +179,11 @@ export function WalletTopUpModal({
           </Button>
           <Button
             type="button"
-            disabled={topUpMutation.isPending}
+            disabled={
+              topUpMutation.isPending ||
+              !Number.isInteger(selectedAmount) ||
+              selectedAmount < MIN_TOP_UP_VND
+            }
             onClick={handleTopUp}
             className="rounded-xl bg-emerald-600 text-xs font-bold text-white shadow-xs hover:bg-emerald-700"
           >
