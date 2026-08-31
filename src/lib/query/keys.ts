@@ -75,7 +75,8 @@ export const queryKeys = {
   clinic: (id: string | null | undefined) => ["clinic", id] as const,
   clinicExperts: (id: string | null | undefined) =>
     ["clinic-experts", id] as const,
-  adminComboDiscount: ["admin", "commerce", "combo-discount"] as const,
+  adminComboDiscount: (kind: "survey" | "treatment") =>
+    ["admin", "commerce", "combo-discount", kind] as const,
   adminClinicWithdrawals: (query?: unknown) =>
     ["admin", "clinic-withdrawals", query] as const,
   adminCancellations: (query?: unknown) =>
