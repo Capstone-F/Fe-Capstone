@@ -12,6 +12,7 @@ import {
   ImportBatchDto,
   ListStockImportFormsQueryDto,
   RejectStockImportFormDto,
+  SalesLogQueryDto,
   UpdateStockImportFormDto,
 } from "../types/stock.types";
 
@@ -28,6 +29,18 @@ export function useStockImportFormDetail(id: string) {
     queryKey: queryKeys.stockImportForm(id),
     queryFn: () => stockApi.getImportForm(id),
     enabled: Boolean(id),
+  });
+}
+
+export function useStockImportFormSalesLog(
+  id: string,
+  query?: SalesLogQueryDto,
+) {
+  return useQuery({
+    queryKey: queryKeys.stockImportFormSalesLog(id, query),
+    queryFn: () => stockApi.getSalesLog(id, query),
+    enabled: Boolean(id),
+    placeholderData: keepPreviousData,
   });
 }
 

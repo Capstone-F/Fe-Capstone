@@ -8,6 +8,7 @@ import {
   CheckCircle2,
   FileCheck2,
   FilePenLine,
+  FileSearch,
   Plus,
   RotateCcw,
   SlidersHorizontal,
@@ -21,6 +22,12 @@ import {
   CardHeader,
   CardTitle,
 } from "@/shared/components/ui/card";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+} from "@/shared/components/ui/dialog";
 import { Skeleton } from "@/shared/components/ui/skeleton";
 import {
   Table,
@@ -45,6 +52,7 @@ import { CreateImportFormModal } from "./create-import-form-modal";
 import { DirectBatchModal } from "./direct-batch-modal";
 import { EditImportFormModal } from "./edit-import-form-modal";
 import { RejectImportModal } from "./reject-import-modal";
+import { SalesLogPanel } from "./sales-log-panel";
 
 import { getStockStatusLabel } from "../utils/stock-mappers";
 
@@ -61,6 +69,8 @@ export function ImportFormsTable() {
   const [confirmForm, setConfirmForm] =
     useState<StockImportFormResponseDto | null>(null);
   const [rejectForm, setRejectForm] =
+    useState<StockImportFormResponseDto | null>(null);
+  const [salesLogForm, setSalesLogForm] =
     useState<StockImportFormResponseDto | null>(null);
 
   const statusQuery =
@@ -305,6 +315,16 @@ export function ImportFormsTable() {
 
                     <TableCell className="text-right">
                       <div className="flex items-center justify-end gap-1">
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          className="h-8 w-8 text-slate-500 hover:bg-slate-100 hover:text-slate-700"
+                          title="Log bán hàng"
+                          onClick={() => setSalesLogForm(form)}
+                        >
+                          <FileSearch className="h-4 w-4" />
+                        </Button>
+
                         {/* DRAFT state actions */}
                         {form.status === StockImportFormStatus.DRAFT && (
                           <>
@@ -413,6 +433,25 @@ export function ImportFormsTable() {
         open={Boolean(rejectForm)}
         onOpenChange={(open) => !open && setRejectForm(null)}
       />
+
+      <Dialog
+        open={Boolean(salesLogForm)}
+        onOpenChange={(open) => !open && setSalesLogForm(null)}
+      >
+        <DialogContent className="max-h-[85vh] w-[calc(100%-2rem)] overflow-y-auto rounded-3xl p-6 shadow-2xl sm:max-w-4xl">
+          <DialogHeader>
+            <DialogTitle>
+              Log Bán Hàng — Phiếu #{salesLogForm?.id.slice(0, 8).toUpperCase()}
+            </DialogTitle>
+          </DialogHeader>
+          {salesLogForm && (
+            <SalesLogPanel
+              formId={salesLogForm.id}
+              formStatus={salesLogForm.status}
+            />
+          )}
+        </DialogContent>
+      </Dialog>
     </Card>
   );
 }

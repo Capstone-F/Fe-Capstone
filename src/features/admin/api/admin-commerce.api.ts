@@ -2,10 +2,17 @@ import { apiClient } from "@/core/api/client";
 import { API_ENDPOINTS } from "@/core/api/endpoints";
 import type { AxiosResponse } from "axios";
 
+export type ComboDiscountKind = "survey" | "treatment";
+
 export interface ComboDiscountSettings {
   percent: number;
   minSubtotalVnd: number;
 }
+
+const COMBO_DISCOUNT_ENDPOINTS: Record<ComboDiscountKind, string> = {
+  survey: API_ENDPOINTS.ADMIN_COMMERCE.SURVEY_COMBO_DISCOUNT,
+  treatment: API_ENDPOINTS.ADMIN_COMMERCE.TREATMENT_COMBO_DISCOUNT,
+};
 
 export interface WalletInspectionResponse {
   balance: number;
@@ -21,17 +28,18 @@ export interface WalletInspectionResponse {
 }
 
 export const adminCommerceApi = {
-  getComboDiscount: (): Promise<AxiosResponse<ComboDiscountSettings>> => {
-    return apiClient.get<ComboDiscountSettings>(
-      API_ENDPOINTS.ADMIN_COMMERCE.COMBO_DISCOUNT,
-    );
+  getComboDiscount: (
+    kind: ComboDiscountKind,
+  ): Promise<AxiosResponse<ComboDiscountSettings>> => {
+    return apiClient.get<ComboDiscountSettings>(COMBO_DISCOUNT_ENDPOINTS[kind]);
   },
 
   updateComboDiscount: (
+    kind: ComboDiscountKind,
     data: ComboDiscountSettings,
   ): Promise<AxiosResponse<ComboDiscountSettings>> => {
     return apiClient.put<ComboDiscountSettings>(
-      API_ENDPOINTS.ADMIN_COMMERCE.COMBO_DISCOUNT,
+      COMBO_DISCOUNT_ENDPOINTS[kind],
       data,
     );
   },

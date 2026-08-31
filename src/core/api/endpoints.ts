@@ -36,6 +36,10 @@ export const API_ENDPOINTS = {
   },
   ADMIN_EXPERT_CANCELLATIONS: {
     STATS: "/admin/experts/cancellation-stats",
+    POLICY: "/admin/experts/cancellation-policy",
+  },
+  ADMIN_BOOKING_SETTINGS: {
+    GET: "/admin/bookings/settings",
   },
   ADMIN_TRANSACTIONS: {
     LIST: "/admin/transactions",
@@ -53,7 +57,9 @@ export const API_ENDPOINTS = {
     OPTIONS: (id: string) => `/admin/survey-questions/${id}/options`,
   },
   ADMIN_COMMERCE: {
-    COMBO_DISCOUNT: "/admin/commerce-settings/survey-combo-discount",
+    SURVEY_COMBO_DISCOUNT: "/admin/commerce-settings/survey-combo-discount",
+    TREATMENT_COMBO_DISCOUNT:
+      "/admin/commerce-settings/treatment-combo-discount",
   },
   ADMIN_QA_CHEATS: {
     CUSTOMER_PROFILE: (id: string) => `/admin/customers/${id}/profile`,
@@ -86,6 +92,7 @@ export const API_ENDPOINTS = {
     CONFIRM_IMPORT_FORM: (id: string) => `/stock/import-forms/${id}/confirm`,
     CANCEL_IMPORT_FORM: (id: string) => `/stock/import-forms/${id}/cancel`,
     REJECT_IMPORT_FORM: (id: string) => `/stock/import-forms/${id}/reject`,
+    SALES_LOG: (id: string) => `/stock/import-forms/${id}/sales-log`,
     BATCHES: "/stock/batches",
     ADJUST_BATCH: (id: string) => `/stock/batches/${id}/adjust`,
     INVENTORY: "/stock/inventory",

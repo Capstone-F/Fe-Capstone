@@ -3,14 +3,7 @@
 import React, { useState } from "react";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { toast } from "sonner";
-import {
-  ShoppingBag,
-  Wallet,
-  Percent,
-  Search,
-  PlusCircle,
-  Loader2,
-} from "lucide-react";
+import { ShoppingBag, Wallet, Search, PlusCircle, Loader2 } from "lucide-react";
 import { apiClient } from "@/core/api/client";
 import { API_ENDPOINTS } from "@/core/api/endpoints";
 import { Button } from "@/shared/components/ui/button";
@@ -26,12 +19,9 @@ import {
 } from "@/shared/components/ui/card";
 import { formatVnd } from "@/shared/utils/format";
 import { LowStockThresholdCard } from "./low-stock-threshold-card";
+import { BookingSettingsCard } from "./booking-settings-card";
 import { ClinicCommissionSettingsCard } from "./clinic-commission-settings-card";
-
-import {
-  useAdminComboDiscount,
-  useUpdateComboDiscount,
-} from "../hooks/useAdminCommerce";
+import { ComboDiscountCard } from "./combo-discount-card";
 
 interface CommerceWalletViewProps {
   initialCustomer?: {
@@ -44,29 +34,6 @@ interface CommerceWalletViewProps {
 export function CommerceWalletView({
   initialCustomer,
 }: CommerceWalletViewProps) {
-  // Combo Discount Settings State
-  const { data: comboSettings, isLoading: isComboLoading } =
-    useAdminComboDiscount();
-
-  const [comboForm, setComboForm] = useState({
-    percent: 10,
-    minSubtotalVnd: 0,
-  });
-
-  React.useEffect(() => {
-    if (comboSettings) {
-      const timer = setTimeout(() => {
-        setComboForm({
-          percent: comboSettings.percent ?? 10,
-          minSubtotalVnd: comboSettings.minSubtotalVnd ?? 0,
-        });
-      }, 0);
-      return () => clearTimeout(timer);
-    }
-  }, [comboSettings]);
-
-  const updateComboMutation = useUpdateComboDiscount();
-
   // Wallet Top-up & Inspector State
   const [customerQuery, setCustomerQuery] = useState("");
   const [selectedCustomer, setSelectedCustomer] = useState<{
@@ -175,105 +142,23 @@ export function CommerceWalletView({
       </div>
 
       <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
-        {/* Card 1: Combo Discount Settings */}
-        <Card className="rounded-3xl border border-slate-200/90 bg-white shadow-sm dark:border-slate-800 dark:bg-slate-900">
-          <CardHeader className="border-b border-slate-100 pb-4 dark:border-slate-800">
-            <CardTitle className="flex items-center gap-2 text-base font-bold text-[#2C3E35] dark:text-emerald-400">
-              <Percent className="h-5 w-5 text-[#2C3E35] dark:text-emerald-400" />
-              Cấu Hình Ưu Đãi Combo AI Khảo Sát
-            </CardTitle>
-          </CardHeader>
-          <CardContent className="pt-6">
-            {isComboLoading ? (
-              <div className="flex items-center justify-center p-8 text-xs text-slate-500">
-                <Loader2 className="mr-2 h-5 w-5 animate-spin text-[#2C3E35]" />{" "}
-                Đang tải cấu hình...
-              </div>
-            ) : (
-              <form
-                onSubmit={(e) => {
-                  e.preventDefault();
-                  updateComboMutation.mutate(comboForm);
-                }}
-                className="flex flex-col gap-4"
-              >
-                <div className="flex flex-col gap-1.5">
-                  <Label
-                    htmlFor="percent"
-                    className="text-xs font-bold text-slate-700 dark:text-slate-300"
-                  >
-                    Phần trăm giảm giá (%):
-                  </Label>
-                  <Input
-                    id="percent"
-                    type="number"
-                    min={0}
-                    max={100}
-                    value={comboForm.percent}
-                    onChange={(e) =>
-                      setComboForm({
-                        ...comboForm,
-                        percent: Math.min(
-                          100,
-                          Math.max(0, parseInt(e.target.value, 10) || 0),
-                        ),
-                      })
-                    }
-                    className="rounded-xl border-slate-200 text-xs"
-                  />
-                  <span className="text-[11px] text-slate-400">
-                    Áp dụng tự động khi khách mua trọn bộ Combo từ gợi ý Routine
-                    AI.
-                  </span>
-                </div>
-
-                <div className="flex flex-col gap-1.5">
-                  <Label
-                    htmlFor="minSubtotalVnd"
-                    className="text-xs font-bold text-slate-700 dark:text-slate-300"
-                  >
-                    Giá trị đơn tối thiểu (VNĐ):
-                  </Label>
-                  <Input
-                    id="minSubtotalVnd"
-                    type="number"
-                    min={0}
-                    value={comboForm.minSubtotalVnd}
-                    onChange={(e) =>
-                      setComboForm({
-                        ...comboForm,
-                        minSubtotalVnd: Math.max(
-                          0,
-                          parseInt(e.target.value, 10) || 0,
-                        ),
-                      })
-                    }
-                    className="rounded-xl border-slate-200 text-xs"
-                  />
-                  <span className="text-[11px] font-semibold text-slate-500">
-                    Xem trước: {formatVnd(comboForm.minSubtotalVnd)}
-                  </span>
-                </div>
-
-                <div className="pt-2">
-                  <Button
-                    type="submit"
-                    disabled={updateComboMutation.isPending}
-                    className="w-full rounded-xl bg-[#2C3E35] text-xs font-bold text-white hover:bg-[#3A5246]"
-                  >
-                    {updateComboMutation.isPending ? (
-                      <Loader2 className="h-4 w-4 animate-spin" />
-                    ) : (
-                      "Lưu Cấu Hình Combo AI"
-                    )}
-                  </Button>
-                </div>
-              </form>
-            )}
-          </CardContent>
-        </Card>
+        {/* Card 1: Combo Discount Settings (Survey + Treatment) */}
+        <div className="flex flex-col gap-6">
+          <ComboDiscountCard
+            kind="survey"
+            title="Cấu Hình Ưu Đãi Combo AI Khảo Sát"
+            description="Áp dụng tự động khi khách mua trọn bộ Combo từ gợi ý Routine AI."
+          />
+          <ComboDiscountCard
+            kind="treatment"
+            title="Cấu Hình Ưu Đãi Combo Treatment"
+            description="Áp dụng tự động khi khách mua trọn bộ Combo liệu trình Treatment."
+          />
+        </div>
 
         <LowStockThresholdCard />
+
+        <BookingSettingsCard />
 
         {/* Card 2: Wallet Top-Up & Inspector */}
         <Card className="rounded-3xl border border-slate-200/90 bg-white shadow-sm dark:border-slate-800 dark:bg-slate-900">

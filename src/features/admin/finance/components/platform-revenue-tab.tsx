@@ -28,7 +28,7 @@ export function PlatformRevenueTab({
   data: AdminDashboardResponse;
   flow: MoneyFlow;
 }) {
-  const { data: combo } = useAdminComboDiscount();
+  const { data: combo } = useAdminComboDiscount("survey");
 
   return (
     <div className="flex flex-col gap-4">

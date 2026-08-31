@@ -7,6 +7,7 @@ import { useAdminClinics } from "@/features/admin/hooks/useAdminClinics";
 import { ExpertCancellationReport } from "@/features/cancellation-reports/components/expert-cancellation-report";
 import { useAdminExpertCancellationStats } from "@/features/cancellation-reports/hooks/useExpertCancellationReports";
 import { normalizeApiError } from "@/core/api/errors";
+import { ExpertCancellationPolicyCard } from "./expert-cancellation-policy-card";
 
 export function AdminExpertCancellationReport() {
   const router = useRouter();
@@ -20,23 +21,27 @@ export function AdminExpertCancellationReport() {
   const clinicsQuery = useAdminClinics({ limit: 100 });
 
   return (
-    <ExpertCancellationReport
-      scope="admin"
-      data={query.data}
-      isLoading={query.isLoading}
-      isFetching={query.isFetching}
-      error={query.error ? normalizeApiError(query.error) : null}
-      onRetry={() => void query.refetch()}
-      windowValue={windowValue}
-      onWindowChange={setWindowValue}
-      clinics={clinicsQuery.data?.items ?? []}
-      clinicId={clinicId}
-      onClinicChange={setClinicId}
-      onExpertSelect={(expertId) =>
-        router.push(
-          `/dashboard/experts?expertId=${encodeURIComponent(expertId)}`,
-        )
-      }
-    />
+    <div className="flex flex-col gap-6 p-4 sm:p-6">
+      <ExpertCancellationPolicyCard />
+
+      <ExpertCancellationReport
+        scope="admin"
+        data={query.data}
+        isLoading={query.isLoading}
+        isFetching={query.isFetching}
+        error={query.error ? normalizeApiError(query.error) : null}
+        onRetry={() => void query.refetch()}
+        windowValue={windowValue}
+        onWindowChange={setWindowValue}
+        clinics={clinicsQuery.data?.items ?? []}
+        clinicId={clinicId}
+        onClinicChange={setClinicId}
+        onExpertSelect={(expertId) =>
+          router.push(
+            `/dashboard/experts?expertId=${encodeURIComponent(expertId)}`,
+          )
+        }
+      />
+    </div>
   );
 }
