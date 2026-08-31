@@ -3,10 +3,10 @@
 import { useState } from "react";
 import { AlertTriangle, Loader2, RefreshCw, ShieldAlert } from "lucide-react";
 
-import { Alert, AlertDescription } from "@/shared/components/ui/alert";
 import { Button } from "@/shared/components/ui/button";
 import {
   Card,
+  CardAction,
   CardContent,
   CardHeader,
   CardTitle,
@@ -18,9 +18,11 @@ import {
   useUpdateExpertCancellationPolicy,
 } from "@/features/cancellation-reports/hooks/useExpertCancellationReports";
 import type { ExpertCancellationPolicyDto } from "@/features/cancellation-reports/types/expert-cancellation-report.types";
+import { LimitAndWeightFields } from "./limit-and-weight-fields";
+import { SettingsInfoDialog } from "./settings-info-dialog";
 
 interface PolicyFieldConfig {
-  key: keyof ExpertCancellationPolicyDto;
+  key: Exclude<keyof ExpertCancellationPolicyDto, "warnings">;
   label: string;
   description: string;
   unit: string;
@@ -30,14 +32,6 @@ interface PolicyFieldConfig {
 
 const FIELDS: PolicyFieldConfig[] = [
   {
-    key: "cancelLimit",
-    label: "Ngưỡng điểm vi phạm",
-    description: "Expert đạt số điểm này trong cửa sổ trượt sẽ bị gắn cờ.",
-    unit: "điểm",
-    min: 1,
-    max: 100,
-  },
-  {
     key: "windowDays",
     label: "Cửa sổ trượt",
     description: "Số ngày report nhìn lại để tính điểm vi phạm.",
@@ -45,14 +39,30 @@ const FIELDS: PolicyFieldConfig[] = [
     min: 1,
     max: 365,
   },
+];
+
+const FORMULA_VARIABLES: { symbol: string; description: string }[] = [
   {
-    key: "noShowWeight",
-    label: "Trọng số no-show / hủy sát giờ",
+    symbol: "T",
     description:
-      "Điểm nhân thêm cho mỗi lần no-show hoặc hủy sát giờ (hủy thường luôn tính 1 điểm).",
-    unit: "lần",
-    min: 1,
-    max: 10,
+      "Tổng điểm vi phạm — so với Ngưỡng điểm vi phạm để quyết định gắn cờ.",
+  },
+  {
+    symbol: "C",
+    description: "Số lần hủy thường trong cửa sổ trượt (luôn tính 1 điểm/lần).",
+  },
+  {
+    symbol: "L",
+    description: "Số lần hủy sát giờ (trong khoảng Ngưỡng hủy sát giờ).",
+  },
+  {
+    symbol: "N",
+    description: "Số lần Expert no-show.",
+  },
+  {
+    symbol: "W",
+    description:
+      "Trọng số no-show / hủy sát giờ đang cấu hình — nhân thêm cho L và N.",
   },
 ];
 
@@ -92,8 +102,10 @@ function PolicyField({
     setValidationError(null);
     try {
       await updatePolicy.mutateAsync({ [field.key]: value });
-    } catch {
-      // toast already shown by the mutation's onError handler
+    } catch (error) {
+      setValidationError(
+        error instanceof Error ? error.message : "Không thể cập nhật.",
+      );
     }
   }
 
@@ -161,8 +173,10 @@ function LateCancelThresholdField({ currentValue }: { currentValue: number }) {
     setValidationError(null);
     try {
       await updatePolicy.mutateAsync({ lateCancelThresholdMin: value });
-    } catch {
-      // toast already shown by the mutation's onError handler
+    } catch (error) {
+      setValidationError(
+        error instanceof Error ? error.message : "Không thể cập nhật.",
+      );
     }
   }
 
@@ -256,6 +270,48 @@ export function ExpertCancellationPolicyCard() {
         <CardTitle className="flex items-center gap-2 text-base font-bold text-[#2C3E35] dark:text-emerald-400">
           <ShieldAlert className="h-5 w-5" /> Chính Sách Hủy Lịch Của Expert
         </CardTitle>
+        <CardAction>
+          <SettingsInfoDialog
+            title="Công Thức Tính Điểm Vi Phạm"
+            warnings={policy.data?.warnings}
+          >
+            <div className="flex flex-col gap-3">
+              <p className="text-[11px] font-bold tracking-wider text-slate-400 uppercase dark:text-slate-500">
+                Công thức
+              </p>
+
+              <div className="rounded-xl border border-slate-200 bg-slate-50 px-4 py-3 text-center dark:border-slate-700 dark:bg-slate-800">
+                <span className="font-mono text-base tracking-wide text-slate-900 dark:text-slate-50">
+                  T&nbsp;=&nbsp;C&nbsp;×&nbsp;1&nbsp;+&nbsp;(L&nbsp;+&nbsp;N)&nbsp;×&nbsp;W
+                </span>
+              </div>
+
+              <dl className="flex flex-col divide-y divide-slate-100 dark:divide-slate-800">
+                {FORMULA_VARIABLES.map((variable) => (
+                  <div
+                    key={variable.symbol}
+                    className="flex items-start gap-3 py-2 first:pt-0 last:pb-0"
+                  >
+                    <dt className="mt-0.5 flex h-6 w-6 shrink-0 items-center justify-center rounded-md bg-[#2C3E35]/10 font-mono text-xs font-bold text-[#2C3E35] dark:bg-emerald-400/10 dark:text-emerald-400">
+                      {variable.symbol}
+                    </dt>
+                    <dd className="text-slate-600 dark:text-slate-400">
+                      {variable.description}
+                    </dd>
+                  </div>
+                ))}
+              </dl>
+
+              <p>
+                Expert đạt/vượt{" "}
+                <span className="font-semibold text-slate-800 dark:text-slate-200">
+                  T ≥ Ngưỡng điểm vi phạm
+                </span>{" "}
+                trong cửa sổ trượt sẽ bị gắn cờ.
+              </p>
+            </div>
+          </SettingsInfoDialog>
+        </CardAction>
       </CardHeader>
       <CardContent className="flex flex-col gap-3 pt-6">
         {policy.isLoading ? (
@@ -280,16 +336,12 @@ export function ExpertCancellationPolicyCard() {
           </div>
         ) : (
           <>
-            <Alert className="border-amber-200 bg-amber-50/70 text-amber-900">
-              <AlertTriangle />
-              <AlertDescription className="text-xs text-amber-800">
-                Công thức tính điểm: điểm = hủy thường × 1 + (hủy sát giờ +
-                no-show) × trọng số. Expert đạt/vượt ngưỡng điểm vi phạm trong
-                cửa sổ trượt sẽ bị gắn cờ.
-              </AlertDescription>
-            </Alert>
-
             <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
+              <LimitAndWeightFields
+                key={`limit-weight-${policy.data.cancelLimit}-${policy.data.noShowWeight}`}
+                cancelLimit={policy.data.cancelLimit}
+                noShowWeight={policy.data.noShowWeight}
+              />
               {FIELDS.map((field) => (
                 <PolicyField
                   key={`${field.key}-${policy.data[field.key]}`}

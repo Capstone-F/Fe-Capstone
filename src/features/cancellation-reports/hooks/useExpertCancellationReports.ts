@@ -44,11 +44,9 @@ export function useUpdateExpertCancellationPolicy() {
   return useMutation({
     mutationFn: (data: UpdateExpertCancellationPolicyDto) =>
       expertCancellationReportsApi.updatePolicy(data).then((res) => res.data),
-    onSuccess: () => {
+    onSuccess: (data) => {
       toast.success("Đã cập nhật chính sách hủy lịch thành công!");
-      queryClient.invalidateQueries({
-        queryKey: queryKeys.expertCancellationPolicy,
-      });
+      queryClient.setQueryData(queryKeys.expertCancellationPolicy, data);
       queryClient.invalidateQueries({
         queryKey: queryKeys.expertCancellationStats("admin"),
       });

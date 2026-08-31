@@ -33,6 +33,7 @@ export interface ExpertCancellationPolicyDto {
   windowDays: number;
   noShowWeight: number;
   lateCancelThresholdMin: number;
+  warnings?: string[];
 }
 
 export type UpdateExpertCancellationPolicyDto =

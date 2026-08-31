@@ -21,9 +21,9 @@ export function useUpdateBookingSettings() {
   return useMutation({
     mutationFn: (data: UpdateBookingSettingsDto) =>
       adminBookingSettingsApi.update(data).then((res) => res.data),
-    onSuccess: () => {
+    onSuccess: (data) => {
       toast.success("Đã cập nhật cài đặt lịch hẹn thành công!");
-      queryClient.invalidateQueries({ queryKey: queryKeys.bookingSettings });
+      queryClient.setQueryData(queryKeys.bookingSettings, data);
     },
     onError: (err: unknown) => {
       const message =

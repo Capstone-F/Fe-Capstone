@@ -6,6 +6,7 @@ import { AlertTriangle, CalendarClock, Loader2, RefreshCw } from "lucide-react";
 import { Button } from "@/shared/components/ui/button";
 import {
   Card,
+  CardAction,
   CardContent,
   CardHeader,
   CardTitle,
@@ -19,6 +20,7 @@ import {
   useUpdateBookingSettings,
 } from "../hooks/useAdminBookingSettings";
 import type { BookingSettingsDto } from "../types/admin-booking-settings.types";
+import { SettingsInfoDialog } from "./settings-info-dialog";
 
 function formatHours(minutes: number): string {
   if (minutes % 60 === 0) return `${minutes / 60} giờ`;
@@ -26,7 +28,7 @@ function formatHours(minutes: number): string {
 }
 
 interface SettingFieldConfig {
-  key: keyof BookingSettingsDto;
+  key: Exclude<keyof BookingSettingsDto, "warnings">;
   label: string;
   description: string;
   min: number;
@@ -91,8 +93,12 @@ function SettingRow({
     setValidationError(null);
     try {
       await updateSettings.mutateAsync({ [field.key]: value });
-    } catch {
-      // toast is already shown by the mutation's onError handler
+    } catch (error) {
+      // toast is already shown by the mutation's onError handler; also
+      // surface the raw BE message inline (e.g. a race-condition 400)
+      setValidationError(
+        error instanceof Error ? error.message : "Không thể cập nhật.",
+      );
     }
   }
 
@@ -165,6 +171,18 @@ export function BookingSettingsCard() {
         <CardTitle className="flex items-center gap-2 text-base font-bold text-[#2C3E35] dark:text-emerald-400">
           <CalendarClock className="h-5 w-5" /> Cài Đặt Lịch Hẹn
         </CardTitle>
+        <CardAction>
+          <SettingsInfoDialog
+            title="Thông Tin Cài Đặt Lịch Hẹn"
+            warnings={settings.data?.warnings}
+          >
+            <p>
+              Các thông số dưới đây kiểm soát vòng đời tự động của booking: hủy
+              do hết thời gian chờ Expert xác nhận, hủy do Expert no-show, và
+              khoảng cách đặt trước tối thiểu khi khách đặt lịch.
+            </p>
+          </SettingsInfoDialog>
+        </CardAction>
         {!canEdit && (
           <p className="text-xs text-slate-500 dark:text-slate-400">
             Chỉ Admin mới có thể chỉnh sửa các giá trị này.
