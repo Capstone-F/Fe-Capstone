@@ -249,17 +249,14 @@ export function ShopHomePage() {
           <div className="flex items-start justify-between gap-4">
             <div className="space-y-2">
               <span className="rounded bg-yellow-500/10 px-2 py-0.5 text-[10px] font-bold text-yellow-700">
-                ƯU ĐÃI THÀNH VIÊN
+                GỢI Ý CÁ NHÂN HÓA
               </span>
               <h3 className="font-heading text-base font-bold text-slate-800">
-                Giảm 10% đơn hàng đầu tiên
+                Chọn sản phẩm phù hợp với làn da của bạn
               </h3>
               <p className="text-muted-foreground text-xs leading-normal">
-                Nhập mã{" "}
-                <span className="font-mono font-bold text-[#2C3E35]">
-                  GLOWNEW
-                </span>{" "}
-                tại trang thanh toán.
+                Hoàn tất khảo sát hoặc quét da AI để nhận gợi ý theo hồ sơ da,
+                dị ứng và nhu cầu chăm sóc của bạn.
               </p>
             </div>
             <div className="flex h-12 w-12 items-center justify-center rounded-full bg-yellow-500/10 text-yellow-600">

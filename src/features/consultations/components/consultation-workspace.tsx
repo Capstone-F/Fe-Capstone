@@ -6,6 +6,7 @@ import {
   ArrowLeft,
   CheckCircle2,
   ClipboardPlus,
+  Clock3,
   FileClock,
   History,
   Loader2,
@@ -112,7 +113,7 @@ export function ConsultationWorkspace({
   const backPath =
     perspective === "expert"
       ? "/expert/consultations"
-      : "/profile?tab=appointments";
+      : `/appointments/${bookingId}`;
   const customerId = booking.customerId;
   const customerName = booking.customerName || "Khách hàng";
   const consultationId = booking.id;
@@ -293,6 +294,23 @@ export function ConsultationWorkspace({
         {!canCommunicate ? (
           <div className="border bg-white p-8 text-center text-sm text-slate-600">
             Ca tư vấn đã bị hủy nên phòng liên lạc không còn khả dụng.
+          </div>
+        ) : perspective === "customer" && booking.status !== "in_progress" ? (
+          <div className="mx-auto flex min-h-[360px] max-w-2xl flex-col items-center justify-center gap-4 rounded-3xl border border-slate-200 bg-white p-8 text-center shadow-xs">
+            <Clock3 className="h-10 w-10 text-violet-600" />
+            <div>
+              <h2 className="text-lg font-semibold text-slate-950">
+                Phòng tư vấn chưa mở
+              </h2>
+              <p className="mt-2 text-sm leading-6 text-slate-600">
+                {booking.status === "completed"
+                  ? "Ca tư vấn đã hoàn thành. Bạn có thể xem phác đồ điều trị và lịch sử chăm sóc từ chi tiết lịch hẹn."
+                  : "Bạn sẽ có thể vào phòng tư vấn khi chuyên gia bắt đầu ca. Hãy quay lại chi tiết lịch hẹn để theo dõi trạng thái."}
+              </p>
+            </div>
+            <Button variant="outline" onClick={() => router.push(backPath)}>
+              Về chi tiết lịch hẹn
+            </Button>
           </div>
         ) : (
           <Tabs defaultValue="video">
