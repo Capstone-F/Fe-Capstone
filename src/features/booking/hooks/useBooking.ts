@@ -41,7 +41,10 @@ export function useBookings() {
   });
 }
 
-export function useBookingDetail(id: string) {
+export function useBookingDetail(
+  id: string,
+  options?: { refetchInterval?: number | ((data: unknown) => number | false) },
+) {
   return useQuery({
     queryKey: queryKeys.booking(id),
     queryFn: async () => {
@@ -63,6 +66,7 @@ export function useBookingDetail(id: string) {
       }
     },
     enabled: !!id,
+    refetchInterval: options?.refetchInterval,
   });
 }
 

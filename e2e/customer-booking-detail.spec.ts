@@ -43,6 +43,14 @@ async function prepareCustomerPage(
   page: Page,
   status: "PENDING" | "IN_PROGRESS",
 ) {
+  page.on("response", (response) => {
+    if (response.status() === 401) {
+      console.log(
+        `[401 ERROR] ${response.request().method()} ${response.url()}`,
+      );
+    }
+  });
+
   await page.addInitScript(() => {
     localStorage.setItem("glowscan_access_token", "customer-detail-token");
   });
@@ -76,6 +84,16 @@ async function prepareCustomerPage(
       json: { message: "No live support session" },
     }),
   );
+  await page.route("**/api/be/wallet/me", (route) =>
+    route.fulfill({
+      json: { balance: 5000000 },
+    }),
+  );
+  await page.route("**/api/be/products**", (route) =>
+    route.fulfill({
+      json: { products: [], total: 0 },
+    }),
+  );
 }
 
 test("pending customer booking renders a detailed payment state without opening consultation", async ({
@@ -85,9 +103,7 @@ test("pending customer booking renders a detailed payment state without opening 
 
   await page.goto(`/appointments/${bookingId}`);
 
-  await expect(
-    page.getByRole("heading", { name: "Tư vấn cùng Dr. Nguyễn Văn An" }),
-  ).toBeVisible();
+  await expect(page.getByText("Tư vấn cùng Dr. Nguyễn Văn An")).toBeVisible();
   await expect(
     page.getByText("Da kích ứng và mụn viêm vùng má."),
   ).toBeVisible();

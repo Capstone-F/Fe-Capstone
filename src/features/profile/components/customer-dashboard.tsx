@@ -22,6 +22,7 @@ import {
 
 import { FeedbackModal } from "@/features/booking/components/feedback-modal";
 import { WalletCard } from "@/features/wallet/components/wallet-card";
+import { useWallet } from "@/features/wallet/hooks/useWallet";
 import { Button } from "@/shared/components/ui/button";
 import { Input } from "@/shared/components/ui/input";
 import { Label } from "@/shared/components/ui/label";
@@ -188,21 +189,22 @@ function ProfileForm({ profile, updateProfileMutation }: ProfileFormProps) {
   );
 }
 
-type TabType = "profile" | "orders" | "appointments" | "wallet";
+type TabType = "overview" | "profile" | "orders" | "appointments" | "wallet";
 
 export function CustomerDashboard() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const requestedTab = searchParams.get("tab");
   const activeTab: TabType =
+    requestedTab === "profile" ||
     requestedTab === "orders" ||
     requestedTab === "appointments" ||
     requestedTab === "wallet"
       ? requestedTab
-      : "profile";
+      : "overview";
 
   const selectTab = (tab: TabType) => {
-    router.replace(tab === "profile" ? "/profile" : `/profile?tab=${tab}`, {
+    router.replace(tab === "overview" ? "/profile" : `/profile?tab=${tab}`, {
       scroll: false,
     });
   };
@@ -232,6 +234,9 @@ export function CustomerDashboard() {
     setSelectedDoctorName(doctorName || "Bác sĩ");
     setFeedbackModalOpen(true);
   };
+
+  // Wallet data
+  const { data: wallet } = useWallet({ enabled: !!profile });
 
   // Update profile mutation
   const updateProfileMutation = useUpdateProfile();
@@ -295,6 +300,18 @@ export function CustomerDashboard() {
         <div className="flex w-full shrink-0 flex-col gap-1.5 rounded-2xl border border-slate-200 bg-white p-3 shadow-2xs md:w-64">
           <button
             type="button"
+            onClick={() => selectTab("overview")}
+            className={`flex w-full items-center gap-3 rounded-xl px-4 py-3 text-xs font-bold transition-all ${
+              activeTab === "overview"
+                ? "bg-[#2C3E35] text-white"
+                : "text-slate-600 hover:bg-slate-50 hover:text-slate-900"
+            }`}
+          >
+            <Star className="h-4.5 w-4.5" />
+            Dashboard Tổng Quan
+          </button>
+          <button
+            type="button"
             onClick={() => selectTab("profile")}
             className={`flex w-full items-center gap-3 rounded-xl px-4 py-3 text-xs font-bold transition-all ${
               activeTab === "profile"
@@ -345,6 +362,102 @@ export function CustomerDashboard() {
 
         {/* Right Column Content Panel */}
         <div className="min-h-[480px] w-full flex-1">
+          {/* Tab 0: Overview Dashboard */}
+          {activeTab === "overview" && (
+            <div className="space-y-6">
+              <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
+                <Card className="border-emerald-200 bg-emerald-50 shadow-2xs">
+                  <CardHeader className="p-4 pb-2">
+                    <CardTitle className="text-sm font-bold text-emerald-800">
+                      Số Dư Ví GlowScan
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent className="p-4 pt-0">
+                    <div className="text-2xl font-extrabold text-emerald-900">
+                      {wallet ? formatVnd(wallet.balance) : "..."}
+                    </div>
+                    <Button
+                      variant="link"
+                      className="mt-2 h-auto p-0 text-[11px] font-bold text-emerald-700"
+                      onClick={() => selectTab("wallet")}
+                    >
+                      Nạp tiền ngay <ChevronRight className="ml-1 h-3 w-3" />
+                    </Button>
+                  </CardContent>
+                </Card>
+                <Card className="border-indigo-200 bg-indigo-50 shadow-2xs">
+                  <CardHeader className="p-4 pb-2">
+                    <CardTitle className="text-sm font-bold text-indigo-800">
+                      Lịch Hẹn Tư Vấn
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent className="p-4 pt-0">
+                    <div className="text-2xl font-extrabold text-indigo-900">
+                      {bookings?.filter(
+                        (b) =>
+                          b.status === "PENDING" || b.status === "CONFIRMED",
+                      ).length || 0}{" "}
+                      ca
+                    </div>
+                    <Button
+                      variant="link"
+                      className="mt-2 h-auto p-0 text-[11px] font-bold text-indigo-700"
+                      onClick={() => selectTab("appointments")}
+                    >
+                      Xem chi tiết <ChevronRight className="ml-1 h-3 w-3" />
+                    </Button>
+                  </CardContent>
+                </Card>
+                <Card className="border-amber-200 bg-amber-50 shadow-2xs">
+                  <CardHeader className="p-4 pb-2">
+                    <CardTitle className="text-sm font-bold text-amber-800">
+                      Phác Đồ & Chăm Sóc
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent className="p-4 pt-0">
+                    <div className="text-2xl font-extrabold text-amber-900">
+                      Care Hub
+                    </div>
+                    <Button
+                      variant="link"
+                      className="mt-2 h-auto p-0 text-[11px] font-bold text-amber-700"
+                      onClick={() => router.push("/care")}
+                    >
+                      Đi tới nhật ký <ChevronRight className="ml-1 h-3 w-3" />
+                    </Button>
+                  </CardContent>
+                </Card>
+              </div>
+
+              {/* Quick action banners */}
+              <div className="flex flex-col gap-4">
+                {(!profile?.phone || !profile?.dateOfBirth) && (
+                  <div className="flex items-center justify-between rounded-xl border border-amber-200 bg-amber-50 p-4">
+                    <div className="flex items-center gap-3">
+                      <AlertCircle className="h-5 w-5 text-amber-600" />
+                      <div>
+                        <h4 className="text-sm font-bold text-amber-900">
+                          Hoàn thiện hồ sơ
+                        </h4>
+                        <p className="text-xs text-amber-700">
+                          Cập nhật số điện thoại và ngày sinh để bác sĩ dễ dàng
+                          hỗ trợ bạn.
+                        </p>
+                      </div>
+                    </div>
+                    <Button
+                      size="sm"
+                      onClick={() => selectTab("profile")}
+                      className="rounded-lg bg-amber-600 text-xs font-bold text-white hover:bg-amber-700"
+                    >
+                      Cập nhật
+                    </Button>
+                  </div>
+                )}
+              </div>
+            </div>
+          )}
+
           {/* Tab 1: Profile Information */}
           {activeTab === "profile" && (
             <div className="space-y-6">

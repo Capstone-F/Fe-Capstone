@@ -22,6 +22,8 @@ import {
 } from "@/features/booking/hooks/useBooking";
 import { useExpertDetail } from "@/features/experts/hooks/useExperts";
 import { useSession } from "@/features/auth/hooks/useSession";
+import { useWallet } from "@/features/wallet/hooks/useWallet";
+import { formatVnd } from "@/shared/utils/format";
 import { Button } from "@/shared/components/ui/button";
 import {
   Card,
@@ -71,6 +73,7 @@ export function BookSlotPage() {
     anchorDateStr,
   );
   const createBookingMutation = useCreateBooking();
+  const { data: wallet } = useWallet({ enabled: !!session.data });
 
   const [selectedDateStr, setSelectedDateStr] = useState<string>("");
   const form = useForm<BookingFormValues>({
@@ -423,14 +426,49 @@ export function BookSlotPage() {
               </FormController>
             </div>
 
-            {/* Notification reminder */}
-            <div className="flex gap-2.5 rounded-xl border border-amber-200/80 bg-amber-50/60 p-3.5 text-amber-900">
-              <AlertCircle className="mt-0.5 h-4 w-4 shrink-0 text-amber-600" />
-              <p className="text-[11px] leading-relaxed text-amber-800">
-                Sau khi bấm tiếp tục, ca hẹn của bạn sẽ tạm thời được giữ chỗ
-                trong 10 phút để thực hiện thủ tục thanh toán. Lịch hẹn sẽ chính
-                thức được kích hoạt sau khi hoàn tất thanh toán.
-              </p>
+            {/* Booking Policy & Wallet Info */}
+            <div className="flex flex-col gap-3 rounded-xl border border-slate-200/80 bg-slate-50/60 p-4">
+              <h4 className="flex items-center gap-1.5 text-xs font-bold text-slate-800">
+                <AlertCircle className="h-4 w-4 text-emerald-600" />
+                Chính sách Đặt lịch & Thanh toán
+              </h4>
+
+              <ul className="list-inside list-disc space-y-1.5 text-[11px] text-slate-600">
+                <li>
+                  <strong className="text-slate-700">Phí tư vấn:</strong>{" "}
+                  <span className="font-semibold text-emerald-700">
+                    {formatVnd(expert.fee)}
+                  </span>{" "}
+                  (Miễn phí nếu nằm trong diện tái khám của phác đồ).
+                </li>
+                <li>
+                  <strong className="text-slate-700">
+                    Thanh toán qua ví GlowScan:
+                  </strong>{" "}
+                  Số dư hiện tại là{" "}
+                  <strong className="text-emerald-700">
+                    {formatVnd(wallet?.balance || 0)}
+                  </strong>
+                  .
+                  {(wallet?.balance ?? 0) < expert.fee && (
+                    <span className="ml-1 text-amber-600">
+                      (Cần nạp thêm{" "}
+                      {formatVnd(expert.fee - (wallet?.balance ?? 0))} để đủ
+                      thanh toán).
+                    </span>
+                  )}
+                </li>
+                <li>
+                  <strong className="text-slate-700">Giữ chỗ:</strong> Ca hẹn
+                  được tạm giữ 10 phút. Nếu không thanh toán kịp, lịch sẽ tự
+                  động bị hủy.
+                </li>
+                <li>
+                  <strong className="text-slate-700">Hoàn tiền:</strong> Bạn sẽ
+                  được hoàn 100% vào ví nếu hủy lịch hoặc nếu chuyên gia không
+                  tham gia.
+                </li>
+              </ul>
             </div>
           </CardContent>
 

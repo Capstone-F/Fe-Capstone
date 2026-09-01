@@ -2,11 +2,13 @@
 
 import { use, useState } from "react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { ArrowLeft, PackageX, XCircle } from "lucide-react";
+import { toast } from "sonner";
 import { Card, CardContent } from "@/shared/components/ui/card";
 import { Button } from "@/shared/components/ui/button";
 import { EmptyState } from "@/shared/components/ui/empty-state";
-import { useOrder } from "@/features/commerce/hooks/useOrders";
+import { useOrder, useReorder } from "@/features/commerce/hooks/useOrders";
 import { useOrderDelivery } from "@/features/commerce/hooks/useDelivery";
 import { OrderItemRow } from "@/features/commerce/components/order-item-row";
 import { OrderStatusBadge } from "@/features/commerce/components/order-status-badge";
@@ -69,6 +71,8 @@ export default function OrderDetailPage({
     total: "Tổng cộng",
   };
   const [cancelOpen, setCancelOpen] = useState(false);
+  const router = useRouter();
+  const reorder = useReorder();
   const { order, items, isLoading, isNotFound } = useOrder(id);
   // Deferred until the order is known to exist and belong to this customer.
   // Orders placed before the GHN migration have no delivery row and 404 here.
@@ -128,6 +132,29 @@ export default function OrderDetailPage({
                   >
                     <XCircle className="mr-1 h-3.5 w-3.5" />
                     Hủy đơn
+                  </Button>
+                )}
+                {isTerminalOrder && (
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    onClick={() => {
+                      reorder.mutate(order.id, {
+                        onSuccess: () => {
+                          toast.success("Đã thêm các sản phẩm vào giỏ hàng");
+                          router.push("/cart");
+                        },
+                        onError: () => {
+                          toast.error("Không thể mua lại đơn hàng này");
+                        },
+                      });
+                    }}
+                    disabled={reorder.isPending}
+                    className="h-8 rounded-xl border-emerald-200 text-xs text-emerald-600 hover:bg-emerald-50 hover:text-emerald-700"
+                  >
+                    <PackageX className="mr-1 h-3.5 w-3.5" />
+                    Mua lại
                   </Button>
                 )}
                 {order.status === "PENDING" && (
