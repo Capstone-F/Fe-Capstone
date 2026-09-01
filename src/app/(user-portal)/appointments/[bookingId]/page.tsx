@@ -1,10 +1,10 @@
-import { ConsultationWorkspace } from "@/features/consultations/components/consultation-workspace";
+import { CustomerBookingDetailPage } from "@/features/booking/pages/customer-booking-detail-page";
 
-export default async function CustomerConsultationPage({
+export default async function CustomerBookingDetailRoute({
   params,
 }: {
   params: Promise<{ bookingId: string }>;
 }) {
   const { bookingId } = await params;
-  return <ConsultationWorkspace bookingId={bookingId} perspective="customer" />;
+  return <CustomerBookingDetailPage bookingId={bookingId} />;
 }

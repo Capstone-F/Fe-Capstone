@@ -79,6 +79,13 @@ export function BookSlotPage() {
   });
   const selectedSlotId = useWatch({ control: form.control, name: "slotId" });
 
+  const clearSelectedSlot = () => {
+    form.setValue("slotId", "", {
+      shouldDirty: false,
+      shouldValidate: false,
+    });
+  };
+
   // Group slots by date
   const slotsByDate: Record<string, TimeSlot[]> = {};
   slots?.forEach((slot) => {
@@ -235,6 +242,7 @@ export function BookSlotPage() {
                   onClick={() => {
                     setWeekOffset((prev) => Math.max(0, prev - 1));
                     setSelectedDateStr("");
+                    clearSelectedSlot();
                   }}
                   className="rounded-lg text-xs font-semibold text-slate-700 hover:bg-white disabled:opacity-30"
                 >
@@ -255,6 +263,7 @@ export function BookSlotPage() {
                   onClick={() => {
                     setWeekOffset((prev) => prev + 1);
                     setSelectedDateStr("");
+                    clearSelectedSlot();
                   }}
                   className="rounded-lg text-xs font-bold text-emerald-700 hover:bg-emerald-100/60 hover:text-emerald-800"
                 >
@@ -283,7 +292,10 @@ export function BookSlotPage() {
                         <button
                           key={dateStr}
                           type="button"
-                          onClick={() => setSelectedDateStr(dateStr)}
+                          onClick={() => {
+                            setSelectedDateStr(dateStr);
+                            clearSelectedSlot();
+                          }}
                           className={`flex min-w-[105px] flex-col items-center justify-center rounded-xl border p-3 text-center transition-all duration-200 select-none ${
                             isDateSelected
                               ? "border-emerald-600 bg-emerald-50/80 shadow-sm ring-2 ring-emerald-500/20"

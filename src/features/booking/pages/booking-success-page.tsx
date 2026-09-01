@@ -126,7 +126,7 @@ function SuccessPageContent() {
         </CardContent>
 
         <CardFooter className="flex flex-col gap-2 border-t border-slate-100 bg-slate-50/50 p-6 sm:flex-row">
-          <Link href="/profile?tab=appointments" className="w-full">
+          <Link href="/appointments" className="w-full">
             <Button className="w-full rounded-xl text-xs font-semibold">
               Quản lý cuộc hẹn của tôi
               <ArrowRight className="ml-1.5 h-3.5 w-3.5" />

@@ -39,7 +39,10 @@ export function BottomNav() {
       label: "Hồ sơ",
       href: "/profile",
       icon: User,
-      active: pathname.startsWith("/profile") || pathname.startsWith("/orders"),
+      active:
+        pathname.startsWith("/profile") ||
+        pathname.startsWith("/orders") ||
+        pathname.startsWith("/appointments"),
     },
   ];
 

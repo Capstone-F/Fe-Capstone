@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useMemo, useState } from "react";
 import Link from "next/link";
 import {
   Calendar,
@@ -8,7 +8,9 @@ import {
   CreditCard,
   MessageSquare,
   CalendarX,
+  AlertCircle,
   Info,
+  RefreshCw,
   XCircle,
 } from "lucide-react";
 import { useBookings } from "@/features/booking/hooks/useBooking";
@@ -20,8 +22,11 @@ import { AppointmentCardSkeleton } from "@/features/booking/components/appointme
 import { CancelBookingDialog } from "@/features/booking/components/cancel-booking-dialog";
 
 export function AppointmentsPage() {
-  const { data: bookings, isLoading } = useBookings();
+  const { data: bookings, isLoading, isError, error, refetch } = useBookings();
   const [cancelBookingId, setCancelBookingId] = useState<string | null>(null);
+  const [activeFilter, setActiveFilter] = useState<
+    "all" | "upcoming" | "completed" | "cancelled"
+  >("all");
 
   const t = {
     title: "Lịch hẹn tư vấn của tôi",
@@ -116,6 +121,30 @@ export function AppointmentsPage() {
     }
   };
 
+  const visibleBookings = useMemo(() => {
+    if (!bookings) return [];
+    if (activeFilter === "all") return bookings;
+    if (activeFilter === "upcoming") {
+      return bookings.filter(
+        (booking) =>
+          booking.status === "pending" ||
+          booking.status === "confirmed" ||
+          booking.status === "in_progress",
+      );
+    }
+    return bookings.filter((booking) => booking.status === activeFilter);
+  }, [activeFilter, bookings]);
+
+  const filters: Array<{
+    id: typeof activeFilter;
+    label: string;
+  }> = [
+    { id: "all", label: "Tất cả" },
+    { id: "upcoming", label: "Sắp tới" },
+    { id: "completed", label: "Đã hoàn thành" },
+    { id: "cancelled", label: "Đã hủy" },
+  ];
+
   return (
     <div className="mx-auto flex w-full max-w-4xl flex-col gap-6">
       <div className="flex flex-col gap-1">
@@ -125,15 +154,62 @@ export function AppointmentsPage() {
         <p className="text-muted-foreground text-sm">{t.subtitle}</p>
       </div>
 
+      <div className="flex flex-col justify-between gap-3 rounded-2xl border border-slate-200 bg-white p-3 sm:flex-row sm:items-center">
+        <div
+          className="flex flex-wrap gap-2"
+          role="tablist"
+          aria-label="Lọc lịch tư vấn"
+        >
+          {filters.map((filter) => (
+            <Button
+              key={filter.id}
+              type="button"
+              size="sm"
+              variant={activeFilter === filter.id ? "default" : "outline"}
+              onClick={() => setActiveFilter(filter.id)}
+              className="rounded-full"
+              role="tab"
+              aria-selected={activeFilter === filter.id}
+            >
+              {filter.label}
+            </Button>
+          ))}
+        </div>
+        <Button
+          type="button"
+          size="sm"
+          variant="ghost"
+          className="self-start sm:self-auto"
+          disabled={isLoading}
+          onClick={() => void refetch()}
+        >
+          <RefreshCw
+            className={`mr-2 h-4 w-4 ${isLoading ? "animate-spin" : ""}`}
+          />
+          Làm mới
+        </Button>
+      </div>
+
       {isLoading ? (
         <div className="flex flex-col gap-4">
           {Array.from({ length: 3 }).map((_, index) => (
             <AppointmentCardSkeleton key={index} />
           ))}
         </div>
-      ) : bookings && bookings.length > 0 ? (
+      ) : isError ? (
+        <EmptyState
+          icon={AlertCircle}
+          title="Không thể tải lịch tư vấn"
+          description={
+            error instanceof Error
+              ? error.message
+              : "Vui lòng kiểm tra kết nối và thử lại."
+          }
+          action={{ label: "Thử lại", onClick: () => void refetch() }}
+        />
+      ) : visibleBookings.length > 0 ? (
         <div className="flex flex-col gap-4">
-          {bookings.map((bk) => {
+          {visibleBookings.map((bk) => {
             const canCancel =
               bk.status === "pending" || bk.status === "confirmed";
             return (
@@ -257,8 +333,14 @@ export function AppointmentsPage() {
       ) : (
         <EmptyState
           icon={CalendarX}
-          title={t.emptyTitle}
-          description={t.emptyHint}
+          title={
+            activeFilter === "all" ? t.emptyTitle : "Không có lịch phù hợp"
+          }
+          description={
+            activeFilter === "all"
+              ? t.emptyHint
+              : "Thử chọn một trạng thái khác hoặc đặt lịch tư vấn mới."
+          }
           action={{ label: t.emptyAction, href: "/experts" }}
         />
       )}

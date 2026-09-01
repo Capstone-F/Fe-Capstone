@@ -134,6 +134,12 @@ export function Navbar() {
     if (path.startsWith("/orders/")) {
       return { title: "Chi tiết đơn hàng", backHref: "/orders" };
     }
+    if (path === "/appointments") {
+      return { title: "Lịch tư vấn của tôi", backHref: "/profile" };
+    }
+    if (path.startsWith("/appointments/")) {
+      return { title: "Chi tiết lịch tư vấn", backHref: "/appointments" };
+    }
     if (path === "/survey") {
       return { title: "Khảo sát da AI", backHref: "/" };
     }
@@ -318,9 +324,7 @@ export function Navbar() {
                   <Wallet className="mr-2 h-4 w-4" />
                   Ví GlowScan
                 </DropdownMenuItem>
-                <DropdownMenuItem
-                  render={<Link href="/profile?tab=appointments" />}
-                >
+                <DropdownMenuItem render={<Link href="/appointments" />}>
                   <CalendarDays className="mr-2 h-4 w-4" />
                   Lịch hẹn của tôi
                 </DropdownMenuItem>

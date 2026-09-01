@@ -154,7 +154,7 @@ export const siteConfig = {
       },
       {
         title: "Lịch hẹn của tôi",
-        url: "/profile?tab=appointments",
+        url: "/appointments",
         icon: "Calendar",
       },
       {

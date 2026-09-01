@@ -612,27 +612,28 @@ export function CustomerDashboard() {
                                 <Button
                                   size="sm"
                                   variant={
-                                    statusNorm === "CONFIRMED" ||
                                     statusNorm === "IN_PROGRESS"
                                       ? "default"
                                       : "outline"
                                   }
                                   onClick={() =>
-                                    router.push(`/appointments/${booking.id}`)
+                                    router.push(
+                                      statusNorm === "IN_PROGRESS"
+                                        ? `/appointments/${booking.id}/consultation`
+                                        : `/appointments/${booking.id}`,
+                                    )
                                   }
                                   className="rounded-xl text-xs font-bold"
                                 >
-                                  {statusNorm === "CONFIRMED" ||
-                                  statusNorm === "IN_PROGRESS" ? (
+                                  {statusNorm === "IN_PROGRESS" ? (
                                     <Video className="mr-1.5 h-3.5 w-3.5" />
                                   ) : (
                                     <Info className="mr-1.5 h-3.5 w-3.5" />
                                   )}
-                                  {statusNorm === "CONFIRMED" ||
-                                  statusNorm === "IN_PROGRESS"
+                                  {statusNorm === "IN_PROGRESS"
                                     ? "Vào phòng tư vấn"
                                     : statusNorm === "COMPLETED"
-                                      ? "Xem lại ca tư vấn"
+                                      ? "Xem chi tiết ca tư vấn"
                                       : "Chi tiết"}
                                 </Button>
                               )}
