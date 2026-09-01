@@ -45,6 +45,7 @@ import {
 import { useProfile, useUpdateProfile } from "../hooks/useProfile";
 import { useOrders } from "@/features/commerce/hooks/useOrders";
 import { useBookings } from "@/features/booking/hooks/useBooking";
+import { walletBalance } from "@/features/wallet/lib/wallet-ledger";
 import { formatVnd } from "@/shared/utils/format";
 import type { UserProfile } from "../types/profile.types";
 import {
@@ -374,7 +375,7 @@ export function CustomerDashboard() {
                   </CardHeader>
                   <CardContent className="p-4 pt-0">
                     <div className="text-2xl font-extrabold text-emerald-900">
-                      {wallet ? formatVnd(wallet.balance) : "..."}
+                      {wallet ? formatVnd(walletBalance(wallet)) : "..."}
                     </div>
                     <Button
                       variant="link"
@@ -395,7 +396,7 @@ export function CustomerDashboard() {
                     <div className="text-2xl font-extrabold text-indigo-900">
                       {bookings?.filter(
                         (b) =>
-                          b.status === "PENDING" || b.status === "CONFIRMED",
+                          b.status === "pending" || b.status === "confirmed",
                       ).length || 0}{" "}
                       ca
                     </div>

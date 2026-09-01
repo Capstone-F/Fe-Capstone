@@ -23,6 +23,7 @@ import {
 import { useExpertDetail } from "@/features/experts/hooks/useExperts";
 import { useSession } from "@/features/auth/hooks/useSession";
 import { useWallet } from "@/features/wallet/hooks/useWallet";
+import { walletBalance } from "@/features/wallet/lib/wallet-ledger";
 import { formatVnd } from "@/shared/utils/format";
 import { Button } from "@/shared/components/ui/button";
 import {
@@ -447,13 +448,13 @@ export function BookSlotPage() {
                   </strong>{" "}
                   Số dư hiện tại là{" "}
                   <strong className="text-emerald-700">
-                    {formatVnd(wallet?.balance || 0)}
+                    {formatVnd(walletBalance(wallet))}
                   </strong>
                   .
-                  {(wallet?.balance ?? 0) < expert.fee && (
+                  {walletBalance(wallet) < expert.fee && (
                     <span className="ml-1 text-amber-600">
                       (Cần nạp thêm{" "}
-                      {formatVnd(expert.fee - (wallet?.balance ?? 0))} để đủ
+                      {formatVnd(expert.fee - walletBalance(wallet))} để đủ
                       thanh toán).
                     </span>
                   )}
