@@ -11,6 +11,7 @@ import {
   ArrowLeft,
   CalendarDays,
   Wallet,
+  Headphones,
 } from "lucide-react";
 import { useSession } from "@/features/auth/hooks/useSession";
 import { useCart } from "@/features/commerce/hooks/useCart";
@@ -331,6 +332,11 @@ export function Navbar() {
                 <DropdownMenuItem render={<Link href="/orders" />}>
                   <ShoppingBag className="mr-2 h-4 w-4" />
                   Đơn hàng của tôi
+                </DropdownMenuItem>
+                <DropdownMenuSeparator />
+                <DropdownMenuItem render={<Link href="/support" />}>
+                  <Headphones className="mr-2 h-4 w-4" />
+                  Hỗ trợ trực tuyến
                 </DropdownMenuItem>
                 <DropdownMenuSeparator />
                 <DropdownMenuItem

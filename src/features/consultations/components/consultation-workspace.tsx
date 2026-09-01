@@ -68,7 +68,16 @@ export function ConsultationWorkspace({
     isError,
     error: bookingError,
     refetch,
-  } = useBookingDetail(bookingId);
+  } = useBookingDetail(bookingId, {
+    refetchInterval: (data: unknown) => {
+      // Auto refresh if not started yet
+      const typedData = data as Record<string, unknown>;
+      return typedData?.status === "confirmed" ||
+        typedData?.status === "pending"
+        ? 5000
+        : false;
+    },
+  });
   const startMutation = useStartBooking();
   const completeMutation = useCompleteBooking();
   const context = useCustomerConsultationContext(
