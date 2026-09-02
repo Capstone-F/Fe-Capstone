@@ -24,11 +24,16 @@ export function NavMain({
 }) {
   const pathname = usePathname();
 
-  // Load active sessions for ping badge
-  const { data: supportSessions } = useSupportSessions({
-    status: SupportSessionStatus.ACTIVE,
-    assigned: "me",
-  });
+  const isStaffSection = pathname.startsWith("/staff");
+
+  // Load active sessions for ping badge (Staff only)
+  const { data: supportSessions } = useSupportSessions(
+    {
+      status: SupportSessionStatus.ACTIVE,
+      assigned: "me",
+    },
+    { enabled: isStaffSection },
+  );
 
   const unreadCount =
     supportSessions?.items?.filter((s) => s.messageCount > s.staffLastReadSeq)

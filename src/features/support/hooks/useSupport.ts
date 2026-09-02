@@ -40,11 +40,15 @@ export function useCreateSupportSession() {
   });
 }
 
-export function useSupportSessions(query?: ListSupportSessionsQueryDto) {
+export function useSupportSessions(
+  query?: ListSupportSessionsQueryDto,
+  options?: { enabled?: boolean },
+) {
   return useQuery({
     queryKey: queryKeys.supportSessions(query),
     queryFn: () => supportApi.listSessions(query),
-    refetchInterval: 5000,
+    refetchInterval: options?.enabled === false ? false : 5000,
+    enabled: options?.enabled ?? true,
   });
 }
 
