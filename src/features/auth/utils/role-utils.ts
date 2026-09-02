@@ -40,7 +40,7 @@ export function getRoleBasedRedirectPath(
     return "/staff";
   }
   if (hasRole(roles, "app_admin")) {
-    return "/dashboard/experts";
+    return "/dashboard";
   }
   if (isExpertRole(roles)) {
     return "/expert";

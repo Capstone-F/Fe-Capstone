@@ -29,7 +29,7 @@ export function AppShell({ children, showFooter = true }: AppShellProps) {
       } else if (roles.includes("staff")) {
         router.replace("/staff");
       } else if (roles.includes("app_admin")) {
-        router.replace("/dashboard/experts");
+        router.replace("/dashboard");
       } else if (roles.includes("expert")) {
         router.replace("/expert");
       }
