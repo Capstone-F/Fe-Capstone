@@ -10,9 +10,11 @@ export function getBookingWorkspaceError(reason: unknown): string {
     }
   }
 
-  return reason instanceof Error
-    ? reason.message
-    : "Không thể tải thông tin ca tư vấn.";
+  // Don't leak raw error messages to the UI — log for debugging only.
+  if (reason instanceof Error) {
+    console.warn("[BookingWorkspace]", reason);
+  }
+  return "Không thể tải thông tin ca tư vấn.";
 }
 
 export function getConsultationConnectionError(
@@ -36,6 +38,9 @@ export function getConsultationConnectionError(
     }
   }
 
-  if (reason instanceof Error && reason.message) return reason.message;
-  return `Không thể mở ${channelLabel}.`;
+  // Don't leak raw error messages to the UI — log for debugging only.
+  if (reason) {
+    console.warn(`[ConsultationConnection:${channel}]`, reason);
+  }
+  return `Không thể mở ${channelLabel}. Vui lòng thử lại.`;
 }

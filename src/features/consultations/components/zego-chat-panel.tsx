@@ -61,14 +61,11 @@ function toChatMessage(message: ZIMMessage): ChatMessage | null {
 }
 
 function getZimErrorMessage(reason: unknown, fallback: string): string {
-  if (reason instanceof Error && reason.message) return reason.message;
-  if (reason && typeof reason === "object") {
-    const zimError = reason as { code?: unknown; message?: unknown };
-    if (typeof zimError.message === "string" && zimError.message) {
-      return typeof zimError.code === "number"
-        ? `${zimError.message} (ZIM ${zimError.code})`
-        : zimError.message;
-    }
+  // Always return the user-friendly fallback instead of leaking raw ZIM SDK
+  // error codes (e.g. "code: 100021, unsupport command for this package").
+  // The raw details are only useful for debugging — log them to console instead.
+  if (reason) {
+    console.warn("[ZIM Chat]", reason);
   }
   return fallback;
 }
