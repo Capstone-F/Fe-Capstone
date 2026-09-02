@@ -10,7 +10,6 @@ import {
   FileClock,
   History,
   Loader2,
-  MessageSquare,
   Play,
   ShieldAlert,
   Stethoscope,
@@ -40,7 +39,6 @@ import {
 import { TreatmentPlanBuilder } from "@/features/treatments/components/treatment-plan-builder";
 import { useCustomerConsultationContext } from "../hooks/useConsultation";
 import { getBookingWorkspaceError } from "../utils/consultation-errors";
-import { ZegoChatPanel } from "./zego-chat-panel";
 import { ZegoVideoRoom } from "./zego-video-room";
 
 interface ConsultationWorkspaceProps {
@@ -327,9 +325,6 @@ export function ConsultationWorkspace({
               <TabsTrigger value="video" className="text-xs font-semibold">
                 <Video className="h-4 w-4" /> Video Call
               </TabsTrigger>
-              <TabsTrigger value="chat" className="text-xs font-semibold">
-                <MessageSquare className="h-4 w-4" /> Tin nhắn
-              </TabsTrigger>
               {perspective === "expert" && (
                 <TabsTrigger value="record" className="text-xs font-semibold">
                   <FileClock className="h-4 w-4" /> Hồ sơ khách hàng
@@ -343,13 +338,6 @@ export function ConsultationWorkspace({
               className="overflow-hidden rounded-3xl bg-slate-950 shadow-sm"
             >
               <ZegoVideoRoom bookingId={bookingId} />
-            </TabsContent>
-            <TabsContent
-              value="chat"
-              keepMounted
-              className="h-[calc(100vh-210px)] min-h-[520px] overflow-hidden rounded-3xl border border-slate-200 bg-white shadow-xs"
-            >
-              <ZegoChatPanel bookingId={bookingId} />
             </TabsContent>
             {perspective === "expert" && (
               <TabsContent
