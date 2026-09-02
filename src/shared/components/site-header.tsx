@@ -30,7 +30,7 @@ export function SiteHeader() {
   } else if (pathname === "/dashboard/surveys") {
     pageTitle = "Ngân Hàng Câu Hỏi Khảo Sát";
   } else if (pathname === "/dashboard/commerce") {
-    pageTitle = "Cấu Hình Thương Mại & Ví";
+    pageTitle = "Cấu Hình";
   } else if (pathname === "/dashboard/qa-cheats") {
     pageTitle = "Bảng Công Cụ QA Cheats";
   } else if (pathname === "/dashboard/products") {

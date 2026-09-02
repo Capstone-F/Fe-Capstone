@@ -920,7 +920,7 @@ function DeliveryDetailModal({
                 onClick={onAdvance}
                 className="rounded-xl bg-blue-600 text-xs font-bold text-white hover:bg-blue-700"
               >
-                <Play className="mr-1.5 h-3.5 w-3.5" /> Mô Phỏng Đã Giao Hàng
+                <Play className="mr-1.5 h-3.5 w-3.5" /> Đã vận chuyển
               </Button>
             )}
 

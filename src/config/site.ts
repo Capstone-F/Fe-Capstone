@@ -53,7 +53,7 @@ export const siteConfig = {
         icon: "FileText",
       },
       {
-        title: "Thương mại & Ví",
+        title: "Cấu hình",
         url: "/dashboard/commerce",
         icon: "ShoppingBag",
       },
