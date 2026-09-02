@@ -1945,30 +1945,7 @@ function PhaseConfiguration({
               lưu
             </Button>
           )}
-          <Button
-            disabled={!canActivate}
-            onClick={() => void activate()}
-            className={
-              canActivate
-                ? "bg-emerald-600 font-semibold text-white hover:bg-emerald-700"
-                : ""
-            }
-          >
-            <Check className="mr-2 h-4 w-4" /> Kích hoạt giai đoạn
-          </Button>
         </div>
-
-        {phase.status !== "ACTIVE" && !hasSavedRoutine && (
-          <p className="text-xs text-amber-600">
-            * Cần tạo và lưu Routine điều trị trước khi kích hoạt giai đoạn.
-          </p>
-        )}
-        {phase.status !== "ACTIVE" && hasUnsavedRoutineChanges && (
-          <p className="text-xs text-amber-600">
-            * Bạn có thay đổi trong Routine chưa được lưu. Vui lòng bấm
-            &quot;Lưu routine&quot; trước khi kích hoạt.
-          </p>
-        )}
       </div>
     </div>
   );
