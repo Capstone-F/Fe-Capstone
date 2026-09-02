@@ -62,7 +62,6 @@ import { FormController } from "@/shared/components/form/form-controller";
 import { CurrencyInput } from "@/shared/components/form/currency-input";
 import { cn } from "@/lib/utils";
 import {
-  useActivatePhase,
   useAddPhase,
   useCreateTreatmentPlan,
   useDeletePhase,
@@ -1514,7 +1513,6 @@ function PhaseConfiguration({
   const generateMutation = useGenerateRoutine();
   const saveRoutineMutation = useSaveRoutine();
   const updateRoutineMutation = useUpdateRoutine();
-  const activateMutation = useActivatePhase();
   const [ingredientIds, setIngredientIds] = useState<string[]>(
     phase.ingredients.map((item) => item.ingredientId),
   );
@@ -1533,8 +1531,7 @@ function PhaseConfiguration({
     setProductsMutation.isPending ||
     generateMutation.isPending ||
     saveRoutineMutation.isPending ||
-    updateRoutineMutation.isPending ||
-    activateMutation.isPending;
+    updateRoutineMutation.isPending;
   const selectedProducts = useMemo(() => new Set(productIds), [productIds]);
   const savedPhaseProducts = useMemo(() => {
     return phase.products.map((p) => {
@@ -1574,17 +1571,6 @@ function PhaseConfiguration({
   const hasDraftRoutine =
     routine?.status === "DRAFT" ||
     phase.routines.some((item) => item.status === "DRAFT");
-
-  const hasUnsavedRoutineChanges =
-    routine !== null &&
-    (routine.status === "DRAFT" ||
-      JSON.stringify(routine) !== JSON.stringify(persistedRoutine));
-
-  const canActivate =
-    phase.status !== "ACTIVE" &&
-    hasSavedRoutine &&
-    !hasUnsavedRoutineChanges &&
-    !busy;
 
   async function saveIngredients() {
     try {
@@ -1789,20 +1775,6 @@ function PhaseConfiguration({
       setRoutine(persistedRoutine);
       toast.error(
         reason instanceof Error ? reason.message : "Không thể lưu routine.",
-      );
-    }
-  }
-
-  async function activate() {
-    try {
-      await activateMutation.mutateAsync(phase.id);
-      toast.success("Giai đoạn đã được kích hoạt.");
-      onRefresh();
-    } catch (reason) {
-      toast.error(
-        reason instanceof Error
-          ? reason.message
-          : "Không thể kích hoạt giai đoạn.",
       );
     }
   }
