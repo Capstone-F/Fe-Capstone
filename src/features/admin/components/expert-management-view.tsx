@@ -63,13 +63,13 @@ import {
   useAdminUsers,
   useCreateExpert,
   useAdminQuickBook,
+  useUpdateAdminUserStatus,
 } from "@/features/admin/hooks/useAdminUsers";
 import { useExperts } from "@/features/experts/hooks/useExperts";
 import {
   useExpertProfilesByEmail,
   useUpdateConsultationFee,
   useUpdateExpertClinic,
-  useUpdateExpertStatus,
 } from "@/features/admin/hooks/useAdminExperts";
 import { ExpertAvailabilityDialog } from "@/features/admin/components/expert-availability-dialog";
 import { FormController } from "@/shared/components/form/form-controller";
@@ -181,7 +181,7 @@ export function ExpertManagementView({
   const quickBookMutation = useAdminQuickBook();
   const updateFeeMutation = useUpdateConsultationFee();
   const updateClinicMutation = useUpdateExpertClinic();
-  const updateStatusMutation = useUpdateExpertStatus();
+  const updateStatusMutation = useUpdateAdminUserStatus();
 
   // Doctor options for Quick Booking dropdown
   const doctorOptions =
@@ -347,10 +347,6 @@ export function ExpertManagementView({
   const editFeeProfileId = resolveExpertProfileId(editFeeExpert);
   const editClinicProfileId = resolveExpertProfileId(editClinicExpert);
   const scheduleProfileId = resolveExpertProfileId(scheduleExpert);
-  const statusProfileId = resolveExpertProfileId(statusExpert);
-  const statusProfile = statusExpert?.email
-    ? expertProfilesByEmail?.get(statusExpert.email.toLowerCase())
-    : null;
 
   // Handlers: edit fee
   const handleOpenEditFee = (u: ExpertUser) => {
@@ -396,22 +392,28 @@ export function ExpertManagementView({
   };
 
   const handleConfirmStatus = () => {
-    if (!statusProfileId || !statusProfile) return;
+    if (!statusExpert) return;
     updateStatusMutation.mutate(
       {
-        expertProfileId: statusProfileId,
-        isActive: !statusProfile.isActive,
+        id: statusExpert.id,
+        isActive: !statusExpert.isActive,
       },
       {
         onSuccess: () => {
           toast.success(
-            statusProfile.isActive
+            statusExpert.isActive
               ? "Đã tạm khóa chuyên gia."
               : "Đã kích hoạt lại chuyên gia.",
           );
           setStatusExpert(null);
         },
-        onError: () => toast.error("Không thể cập nhật trạng thái chuyên gia."),
+        onError: (reason) => {
+          toast.error(
+            reason instanceof Error
+              ? reason.message
+              : "Không thể cập nhật trạng thái chuyên gia.",
+          );
+        },
       },
     );
   };
@@ -673,14 +675,13 @@ export function ExpertManagementView({
                             <DropdownMenuItem
                               className="cursor-pointer gap-2 rounded-lg text-xs"
                               onClick={() => setStatusExpert(u)}
-                              disabled={!expertProfile}
                             >
-                              {isActive ? (
+                              {u.isActive ? (
                                 <ShieldOff className="h-3.5 w-3.5 text-rose-500" />
                               ) : (
                                 <ShieldCheck className="h-3.5 w-3.5 text-emerald-600" />
                               )}
-                              {isActive
+                              {u.isActive
                                 ? "Tạm khóa Expert"
                                 : "Kích hoạt Expert"}
                             </DropdownMenuItem>
@@ -1234,33 +1235,28 @@ export function ExpertManagementView({
         <DialogContent className="sm:max-w-md">
           <DialogHeader>
             <DialogTitle>
-              {statusProfile?.isActive
+              {statusExpert?.isActive
                 ? "Xác nhận tạm khóa Expert"
                 : "Xác nhận kích hoạt Expert"}
             </DialogTitle>
             <DialogDescription>
-              {statusProfile?.isActive
-                ? `${statusExpert?.name || "Expert"} sẽ không thể nhận lịch đặt mới. Các số liệu báo cáo vẫn được giữ nguyên.`
-                : `${statusExpert?.name || "Expert"} sẽ có thể được khách hàng đặt lịch trở lại.`}
+              {statusExpert?.isActive
+                ? `${statusExpert?.name || "Expert"} sẽ không thể đăng nhập hoặc nhận lịch đặt mới. Các số liệu báo cáo vẫn được giữ nguyên.`
+                : `${statusExpert?.name || "Expert"} sẽ có thể đăng nhập và được khách hàng đặt lịch trở lại.`}
             </DialogDescription>
           </DialogHeader>
-          {!statusProfileId ? (
-            <p className="text-sm text-amber-700">
-              Không tìm thấy hồ sơ Expert tương ứng với tài khoản này.
-            </p>
-          ) : null}
           <DialogFooter>
             <Button variant="outline" onClick={() => setStatusExpert(null)}>
               Hủy
             </Button>
             <Button
-              variant={statusProfile?.isActive ? "destructive" : "default"}
-              disabled={!statusProfileId || updateStatusMutation.isPending}
+              variant={statusExpert?.isActive ? "destructive" : "default"}
+              disabled={updateStatusMutation.isPending}
               onClick={handleConfirmStatus}
             >
               {updateStatusMutation.isPending ? (
                 <Loader2 className="h-4 w-4 animate-spin" />
-              ) : statusProfile?.isActive ? (
+              ) : statusExpert?.isActive ? (
                 "Tạm khóa Expert"
               ) : (
                 "Kích hoạt Expert"
