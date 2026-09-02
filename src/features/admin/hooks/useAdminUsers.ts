@@ -86,6 +86,16 @@ export function useUpdateAdminUserStatus() {
         queryKey: ["admin-user-directory"],
       });
       void queryClient.invalidateQueries({ queryKey: ["admin-users"] });
+      void queryClient.invalidateQueries({ queryKey: ["experts"] });
+      void queryClient.invalidateQueries({
+        queryKey: ["expert-profiles-by-email"],
+      });
+      void queryClient.invalidateQueries({
+        queryKey: ["expert-cancellation-stats"],
+      });
+      void queryClient.invalidateQueries({
+        queryKey: ["expert-cancellation-reports"],
+      });
     },
   });
 }

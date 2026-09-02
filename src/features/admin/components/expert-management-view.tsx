@@ -598,8 +598,7 @@ export function ExpertManagementView({
                     ? expertProfilesByEmail?.get(u.email.toLowerCase())
                     : null;
                   const isFocused = expertProfile?.id === focusedExpertId;
-                  const isActive =
-                    expertProfile?.isActive ?? u.isActive !== false;
+                  const isActive = u.isActive !== false;
 
                   return (
                     <tr
