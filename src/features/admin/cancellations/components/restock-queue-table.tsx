@@ -1,14 +1,7 @@
 "use client";
 
 import React, { useState } from "react";
-import {
-  PackageCheck,
-  RefreshCw,
-  Eye,
-  Filter,
-  XCircle,
-  Wallet,
-} from "lucide-react";
+import { PackageCheck, RefreshCw, Eye, Filter, Wallet } from "lucide-react";
 import { Button } from "@/shared/components/ui/button";
 import { Card, CardContent } from "@/shared/components/ui/card";
 import { formatVnd } from "@/shared/utils/format";
@@ -19,8 +12,6 @@ import type {
 } from "../types/cancellation.types";
 import { ConfirmReturnModal } from "./confirm-return-modal";
 import { CancellationDetailModal } from "./cancellation-detail-modal";
-import { CancelOrderStaffModal } from "./cancel-order-staff-modal";
-import { WalletInspectorModal } from "./wallet-inspector-modal";
 import { DataTablePagination } from "@/shared/components/ui/data-table-pagination";
 
 const statusBadges: Record<
@@ -79,8 +70,6 @@ export function RestockQueueTable({ isAdmin = false }: RestockQueueTableProps) {
     useState<OrderCancellation | null>(null);
   const [detailModalItem, setDetailModalItem] =
     useState<OrderCancellation | null>(null);
-  const [cancelModalOpen, setCancelModalOpen] = useState(false);
-  const [walletModalOpen, setWalletModalOpen] = useState(false);
 
   const { data, isLoading, refetch, isRefetching } = useOrderCancellations({
     status: selectedStatus,
@@ -109,29 +98,7 @@ export function RestockQueueTable({ isAdmin = false }: RestockQueueTableProps) {
           </div>
         </div>
 
-        <div className="flex flex-wrap items-center gap-2">
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={() => setCancelModalOpen(true)}
-            className="rounded-xl border-rose-200 text-xs font-bold text-rose-700 hover:bg-rose-50"
-          >
-            <XCircle className="mr-1.5 h-3.5 w-3.5" />
-            Hủy đơn hàng mới
-          </Button>
-
-          {isAdmin && (
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => setWalletModalOpen(true)}
-              className="rounded-xl border-blue-200 text-xs font-bold text-blue-900 hover:bg-blue-50"
-            >
-              <Wallet className="mr-1.5 h-3.5 w-3.5" />
-              Soi Ví khách hàng
-            </Button>
-          )}
-
+        <div className="flex items-center gap-2">
           <Button
             variant="ghost"
             size="sm"
@@ -389,16 +356,6 @@ export function RestockQueueTable({ isAdmin = false }: RestockQueueTableProps) {
           setConfirmModalItem(detailModalItem);
           setDetailModalItem(null);
         }}
-      />
-
-      <CancelOrderStaffModal
-        isOpen={cancelModalOpen}
-        onClose={() => setCancelModalOpen(false)}
-      />
-
-      <WalletInspectorModal
-        isOpen={walletModalOpen}
-        onClose={() => setWalletModalOpen(false)}
       />
     </div>
   );
