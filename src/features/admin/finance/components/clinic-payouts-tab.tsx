@@ -15,6 +15,7 @@ import {
   TableHeader,
   TableRow,
 } from "@/shared/components/ui/table";
+import { FocusIndicatorDot } from "@/shared/components/ui/focus-indicator-dot";
 import { DataTablePagination } from "@/shared/components/ui/data-table-pagination";
 import {
   DashboardEmptyPanel,
@@ -137,7 +138,11 @@ export function ClinicPayoutsTab({ from, to }: { from: string; to: string }) {
                   return (
                     <TableRow
                       key={clinic.clinicId}
-                      className={`cursor-pointer ${isSelected ? "bg-muted/40" : ""}`}
+                      className={`cursor-pointer transition-colors ${
+                        isSelected
+                          ? "bg-emerald-50/60 hover:bg-emerald-50/80 dark:bg-emerald-950/20 dark:hover:bg-emerald-950/30"
+                          : "hover:bg-muted/50"
+                      }`}
                       onClick={select}
                       onKeyDown={(event) => {
                         if (event.key === "Enter" || event.key === " ") {
@@ -151,7 +156,18 @@ export function ClinicPayoutsTab({ from, to }: { from: string; to: string }) {
                       aria-label={`${clinic.clinicName} — xem hoạt động trong kỳ`}
                     >
                       <TableCell className="font-medium">
-                        {clinic.clinicName}
+                        <div className="flex items-center gap-2.5">
+                          <FocusIndicatorDot active={isSelected} />
+                          <span
+                            className={
+                              isSelected
+                                ? "font-semibold text-emerald-950 dark:text-emerald-300"
+                                : "text-slate-800 dark:text-slate-200"
+                            }
+                          >
+                            {clinic.clinicName}
+                          </span>
+                        </div>
                       </TableCell>
                       <TableCell className="text-right">
                         {formatCurrency(parseVnd(clinic.balanceVnd))}
