@@ -21,7 +21,6 @@ import {
   MessageSquare,
   UserCheck,
   MoreHorizontal,
-  Pencil,
   DollarSign,
   Hospital,
   ShieldCheck,
@@ -720,14 +719,6 @@ export function ExpertManagementView({
                             >
                               <Calendar className="h-3.5 w-3.5 text-indigo-500" />
                               Khung giờ tư vấn
-                            </DropdownMenuItem>
-                            <DropdownMenuSeparator />
-                            <DropdownMenuItem
-                              className="cursor-pointer gap-2 rounded-lg text-xs text-slate-500"
-                              onClick={() => window.open("/expert", "_blank")}
-                            >
-                              <Pencil className="h-3.5 w-3.5" />
-                              Xem tại cổng chuyên gia
                             </DropdownMenuItem>
                           </DropdownMenuContent>
                         </DropdownMenu>

@@ -302,7 +302,6 @@ function CancellationTable({
         <TableRow>
           <TableHead>Expert</TableHead>
           {showClinic ? <TableHead>Phòng khám</TableHead> : null}
-          <TableHead>Trạng thái</TableHead>
           <TableHead className="text-right">Ca được giao</TableHead>
           <TableHead className="text-right">Expert hủy</TableHead>
           <TableHead className="text-right">Hủy sát giờ</TableHead>
@@ -338,11 +337,6 @@ function CancellationTable({
             {showClinic ? (
               <TableCell>{item.clinicName || "Chưa gắn"}</TableCell>
             ) : null}
-            <TableCell>
-              <Badge variant={item.isActive ? "outline" : "secondary"}>
-                {item.isActive ? "Đang hoạt động" : "Đã tạm khóa"}
-              </Badge>
-            </TableCell>
             <NumberCell value={item.assignedCount} />
             <NumberCell value={item.expertCancelCount} />
             <NumberCell value={item.lateCancelCount} />
