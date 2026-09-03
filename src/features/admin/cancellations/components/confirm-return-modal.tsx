@@ -128,7 +128,7 @@ export function ConfirmReturnModal({
 
   return (
     <Dialog open={isOpen} onOpenChange={(open) => !open && onClose()}>
-      <DialogContent className="max-w-2xl rounded-3xl p-6 shadow-2xl">
+      <DialogContent className="max-h-[90vh] w-[calc(100%-2rem)] overflow-y-auto rounded-3xl p-6 shadow-2xl sm:max-w-2xl">
         <DialogHeader className="space-y-2 border-b border-slate-100 pb-4 dark:border-slate-800">
           <DialogTitle className="flex items-center gap-2 text-xl font-bold text-[#2C3E35] dark:text-emerald-400">
             <PackageCheck className="h-6 w-6 text-[#2C3E35] dark:text-emerald-400" />

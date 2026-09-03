@@ -117,7 +117,7 @@ export function CancellationDetailModal({
   return (
     <>
       <Dialog open={isOpen} onOpenChange={(open) => !open && onClose()}>
-        <DialogContent className="w-[calc(100%-2rem)] max-w-2xl rounded-3xl p-4 shadow-2xl sm:p-6">
+        <DialogContent className="max-h-[90vh] w-[calc(100%-2rem)] overflow-y-auto rounded-3xl p-4 shadow-2xl sm:max-w-2xl sm:p-6">
           <DialogHeader className="space-y-2 border-b border-slate-100 pb-4 dark:border-slate-800">
             <div className="flex min-w-0 flex-wrap items-start justify-between gap-2 pr-8">
               <DialogTitle className="flex min-w-0 items-start gap-2 text-xl font-bold break-words text-[#2C3E35] dark:text-emerald-400">

@@ -43,7 +43,7 @@ export function WalletInspectorModal({
 
   return (
     <Dialog open={isOpen} onOpenChange={(open) => !open && onClose()}>
-      <DialogContent className="max-w-md rounded-3xl p-6 shadow-2xl">
+      <DialogContent className="w-[calc(100%-2rem)] rounded-3xl p-6 shadow-2xl sm:max-w-md">
         <DialogHeader className="space-y-2 border-b border-slate-100 pb-4 dark:border-slate-800">
           <DialogTitle className="flex items-center gap-2 text-lg font-bold text-[#2C3E35] dark:text-emerald-400">
             <Wallet className="h-5 w-5 text-[#2C3E35] dark:text-emerald-400" />
