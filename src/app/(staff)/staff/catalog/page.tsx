@@ -40,7 +40,7 @@ export default function CatalogOnboardingPage() {
 
       {/* Product Onboarding Popup Modal */}
       <Dialog open={isModalOpen} onOpenChange={setIsModalOpen}>
-        <DialogContent className="max-h-[90vh] max-w-4xl overflow-y-auto rounded-3xl p-6 shadow-2xl">
+        <DialogContent className="max-h-[90vh] w-[calc(100%-2rem)] overflow-y-auto rounded-3xl p-6 shadow-2xl sm:max-w-4xl">
           <DialogHeader className="border-b border-slate-100 pb-4 dark:border-slate-800">
             <DialogTitle className="flex items-center gap-2 text-lg font-bold text-[#2C3E35] dark:text-emerald-400">
               <PackagePlus className="h-5 w-5 text-emerald-600" />
