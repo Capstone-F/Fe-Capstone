@@ -1,5 +1,10 @@
 import type { Metadata } from "next";
-import { JetBrains_Mono, Manrope, Space_Grotesk } from "next/font/google";
+import {
+  JetBrains_Mono,
+  Manrope,
+  Playfair_Display,
+  Space_Grotesk,
+} from "next/font/google";
 
 import { AppProviders } from "@/shared/components/providers/app-providers";
 import { appConfig } from "@/lib/env";
@@ -7,17 +12,22 @@ import { appConfig } from "@/lib/env";
 import "./globals.css";
 
 const fontSans = Manrope({
-  subsets: ["latin"],
+  subsets: ["latin", "vietnamese"],
   variable: "--font-sans",
 });
 
+const fontSerif = Playfair_Display({
+  subsets: ["latin", "vietnamese"],
+  variable: "--font-serif",
+});
+
 const fontHeading = Space_Grotesk({
-  subsets: ["latin"],
+  subsets: ["latin", "vietnamese"],
   variable: "--font-heading",
 });
 
 const fontMono = JetBrains_Mono({
-  subsets: ["latin"],
+  subsets: ["latin", "vietnamese"],
   variable: "--font-mono",
 });
 
@@ -28,7 +38,7 @@ export const metadata: Metadata = {
     template: "%s | GlowScan",
   },
   description:
-    "GlowScan ket hop phan tich da AI, routine ca nhan hoa, cua hang skincare va mang luoi chuyen gia da lieu.",
+    "GlowScan kết hợp phân tích da AI, routine cá nhân hóa, cửa hàng skincare và mạng lưới chuyên gia da liễu.",
   icons: {
     icon: "/icon.png",
     apple: "/icon.png",
@@ -42,9 +52,9 @@ export default function RootLayout({
 }>) {
   return (
     <html
-      lang="en"
+      lang="vi"
       data-scroll-behavior="smooth"
-      className={`${fontSans.variable} ${fontHeading.variable} ${fontMono.variable}`}
+      className={`${fontSans.variable} ${fontSerif.variable} ${fontHeading.variable} ${fontMono.variable}`}
       suppressHydrationWarning
     >
       <body
