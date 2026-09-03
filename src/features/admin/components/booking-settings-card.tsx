@@ -1,8 +1,10 @@
 "use client";
 
-import { useState } from "react";
 import { AlertTriangle, CalendarClock, Loader2, RefreshCw } from "lucide-react";
+import { useState } from "react";
 
+import { useSession } from "@/features/auth/hooks/useSession";
+import { hasRole } from "@/features/auth/utils/role-utils";
 import { Button } from "@/shared/components/ui/button";
 import {
   Card,
@@ -13,8 +15,6 @@ import {
 } from "@/shared/components/ui/card";
 import { Input } from "@/shared/components/ui/input";
 import { Label } from "@/shared/components/ui/label";
-import { useSession } from "@/features/auth/hooks/useSession";
-import { hasRole } from "@/features/auth/utils/role-utils";
 import {
   useBookingSettings,
   useUpdateBookingSettings,
@@ -105,57 +105,64 @@ function SettingRow({
   return (
     <form
       onSubmit={(event) => void handleSubmit(event)}
-      className="flex flex-col gap-1.5 rounded-2xl border border-slate-100 bg-slate-50 p-4 dark:border-slate-800 dark:bg-slate-900"
+      className="flex h-full flex-col justify-between gap-4 rounded-2xl border border-slate-100 bg-slate-50 p-4 dark:border-slate-800 dark:bg-slate-900"
     >
-      <Label htmlFor={field.key} className="text-xs font-bold">
-        {field.label}
-      </Label>
-      <p className="text-xs text-slate-500 dark:text-slate-400">
-        {field.description}
-      </p>
-      <div className="relative mt-1">
-        <Input
-          id={field.key}
-          inputMode="numeric"
-          disabled={!canEdit}
-          value={input}
-          aria-invalid={Boolean(validationError)}
-          onKeyDown={(event) => {
-            if (["e", "E", "+", "-", ".", ","].includes(event.key)) {
-              event.preventDefault();
-            }
-          }}
-          onChange={(event) => {
-            setInput(event.target.value.replace(/[^0-9]/g, ""));
-            setValidationError(null);
-          }}
-          className="rounded-xl pr-14 font-mono"
-        />
-        <span className="pointer-events-none absolute top-1/2 right-3 -translate-y-1/2 text-xs text-slate-500">
-          phút
-        </span>
-      </div>
-      {canEdit && (
-        <Button
-          type="submit"
-          size="sm"
-          disabled={updateSettings.isPending || input === String(currentValue)}
-          className="w-full rounded-xl bg-[#2C3E35] text-xs font-bold text-white hover:bg-[#3A5246]"
-        >
-          {updateSettings.isPending ? (
-            <Loader2 className="h-4 w-4 animate-spin" />
-          ) : (
-            "Lưu"
-          )}
-        </Button>
-      )}
-      {validationError ? (
-        <p className="text-xs font-medium text-red-600">{validationError}</p>
-      ) : (
-        <p className="text-xs text-slate-400">
-          Hiện tại: {currentValue} phút ({formatHours(currentValue)}).
+      <div className="flex flex-col gap-1.5">
+        <Label htmlFor={field.key} className="text-xs font-bold">
+          {field.label}
+        </Label>
+        <p className="text-xs leading-relaxed text-slate-500 dark:text-slate-400">
+          {field.description}
         </p>
-      )}
+      </div>
+
+      <div className="flex flex-col gap-2">
+        <div className="relative">
+          <Input
+            id={field.key}
+            inputMode="numeric"
+            disabled={!canEdit}
+            value={input}
+            aria-invalid={Boolean(validationError)}
+            onKeyDown={(event) => {
+              if (["e", "E", "+", "-", ".", ","].includes(event.key)) {
+                event.preventDefault();
+              }
+            }}
+            onChange={(event) => {
+              setInput(event.target.value.replace(/[^0-9]/g, ""));
+              setValidationError(null);
+            }}
+            className="rounded-xl pr-14 font-mono"
+          />
+          <span className="pointer-events-none absolute top-1/2 right-3 -translate-y-1/2 text-xs text-slate-500">
+            phút
+          </span>
+        </div>
+        {canEdit && (
+          <Button
+            type="submit"
+            size="sm"
+            disabled={
+              updateSettings.isPending || input === String(currentValue)
+            }
+            className="w-full rounded-xl bg-[#2C3E35] text-xs font-bold text-white hover:bg-[#3A5246]"
+          >
+            {updateSettings.isPending ? (
+              <Loader2 className="h-4 w-4 animate-spin" />
+            ) : (
+              "Lưu"
+            )}
+          </Button>
+        )}
+        {validationError ? (
+          <p className="text-xs font-medium text-red-600">{validationError}</p>
+        ) : (
+          <p className="text-xs text-slate-400">
+            Hiện tại: {currentValue} phút ({formatHours(currentValue)}).
+          </p>
+        )}
+      </div>
     </form>
   );
 }
