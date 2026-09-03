@@ -24,6 +24,12 @@ export function useUpdateBookingSettings() {
     onSuccess: (data) => {
       toast.success("Đã cập nhật cài đặt lịch hẹn thành công!");
       queryClient.setQueryData(queryKeys.bookingSettings, data);
+      void queryClient.invalidateQueries({
+        queryKey: queryKeys.bookingSettings,
+      });
+      void queryClient.invalidateQueries({
+        queryKey: queryKeys.expertCancellationPolicy,
+      });
     },
     onError: (err: unknown) => {
       const message =

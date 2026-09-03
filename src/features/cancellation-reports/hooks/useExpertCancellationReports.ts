@@ -47,10 +47,16 @@ export function useUpdateExpertCancellationPolicy() {
     onSuccess: (data) => {
       toast.success("Đã cập nhật chính sách hủy lịch thành công!");
       queryClient.setQueryData(queryKeys.expertCancellationPolicy, data);
-      queryClient.invalidateQueries({
+      void queryClient.invalidateQueries({
+        queryKey: queryKeys.expertCancellationPolicy,
+      });
+      void queryClient.invalidateQueries({
+        queryKey: queryKeys.bookingSettings,
+      });
+      void queryClient.invalidateQueries({
         queryKey: queryKeys.expertCancellationStats("admin"),
       });
-      queryClient.invalidateQueries({
+      void queryClient.invalidateQueries({
         queryKey: queryKeys.expertCancellationStats("clinic"),
       });
     },
