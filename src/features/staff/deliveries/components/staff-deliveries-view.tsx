@@ -42,7 +42,6 @@ import {
   useConfirmHandover,
   useCreateGhnOrder,
   useAdvanceDelivery,
-  useTickDeliverySimulation,
 } from "../hooks/useAdminDeliveries";
 import type { DeliveryItem } from "../api/deliveries-admin.api";
 
@@ -135,9 +134,9 @@ export interface OrderDetailData {
 }
 
 export function StaffDeliveriesView() {
-  const [filterTab, setFilterTab] = useState<
-    "AWAITING" | "MISSING_GHN" | "SHIPPED" | "ALL"
-  >("AWAITING");
+  const [filterTab, setFilterTab] = useState<"AWAITING" | "SHIPPED" | "ALL">(
+    "AWAITING",
+  );
   const [detailDelivery, setDetailDelivery] = useState<DeliveryItem | null>(
     null,
   );
@@ -152,21 +151,66 @@ export function StaffDeliveriesView() {
     null,
   );
 
-  const queryParams = React.useMemo(() => {
-    if (filterTab === "AWAITING") return { awaitingHandover: true };
-    if (filterTab === "MISSING_GHN") return { missingProviderCode: true };
-    if (filterTab === "SHIPPED") return { status: "SHIPPED" };
-    return {};
-  }, [filterTab]);
-
-  const { data, isLoading, refetch, isRefetching } =
-    useAdminDeliveries(queryParams);
+  const { data, isLoading, refetch, isRefetching } = useAdminDeliveries();
   const handoverMutation = useConfirmHandover();
   const createGhnMutation = useCreateGhnOrder();
   const advanceMutation = useAdvanceDelivery();
-  const tickMutation = useTickDeliverySimulation();
 
-  const deliveries = data?.items || [];
+  const allDeliveries = React.useMemo(() => data?.items || [], [data]);
+
+  // Compute item counts for each tab filter
+  const tabCounts = React.useMemo(() => {
+    const awaiting = allDeliveries.filter(
+      (item) =>
+        !item.handedOverAt &&
+        item.status !== "CANCELLED" &&
+        item.status !== "RETURNED" &&
+        item.status !== "DELIVERED",
+    ).length;
+
+    const shipped = allDeliveries.filter(
+      (item) =>
+        item.status === "SHIPPED" ||
+        item.status === "IN_TRANSIT" ||
+        (Boolean(item.handedOverAt) &&
+          item.status !== "DELIVERED" &&
+          item.status !== "CANCELLED" &&
+          item.status !== "RETURNED"),
+    ).length;
+
+    return {
+      AWAITING: awaiting,
+      SHIPPED: shipped,
+      ALL: allDeliveries.length,
+    };
+  }, [allDeliveries]);
+
+  // Filter deliveries reactively based on active tab
+  const deliveries = React.useMemo(() => {
+    switch (filterTab) {
+      case "AWAITING":
+        return allDeliveries.filter(
+          (item) =>
+            !item.handedOverAt &&
+            item.status !== "CANCELLED" &&
+            item.status !== "RETURNED" &&
+            item.status !== "DELIVERED",
+        );
+      case "SHIPPED":
+        return allDeliveries.filter(
+          (item) =>
+            item.status === "SHIPPED" ||
+            item.status === "IN_TRANSIT" ||
+            (Boolean(item.handedOverAt) &&
+              item.status !== "DELIVERED" &&
+              item.status !== "CANCELLED" &&
+              item.status !== "RETURNED"),
+        );
+      case "ALL":
+      default:
+        return allDeliveries;
+    }
+  }, [allDeliveries, filterTab]);
 
   const handleHandoverSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -260,46 +304,14 @@ export function StaffDeliveriesView() {
             <Button
               variant="outline"
               size="sm"
-              onClick={() => setCancelModalOrderId("")}
-              className="rounded-xl border-rose-200 bg-rose-50 text-xs font-bold text-rose-700 hover:bg-rose-100"
-            >
-              <XCircle className="mr-1.5 h-3.5 w-3.5 text-rose-600" />
-              Hủy Đơn Hàng
-            </Button>
-
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => {
-                tickMutation.mutate(true, {
-                  onSuccess: (res) => {
-                    toast.success(
-                      `Kích hoạt mô phỏng GHN thành công! (Đã xử lý: ${res.data.processed} đơn)`,
-                    );
-                  },
-                });
-              }}
-              disabled={tickMutation.isPending}
-              className="rounded-xl border-blue-200 text-xs font-bold text-blue-900 hover:bg-blue-50"
-            >
-              {tickMutation.isPending ? (
-                <Loader2 className="mr-1.5 h-3.5 w-3.5 animate-spin" />
-              ) : (
-                <RotateCw className="mr-1.5 h-3.5 w-3.5" />
-              )}
-              Chạy Tiến Trình Simulator
-            </Button>
-
-            <Button
-              variant="ghost"
-              size="sm"
               onClick={() => refetch()}
               disabled={isRefetching}
-              className="rounded-xl text-xs font-semibold text-slate-600 hover:bg-slate-100"
+              className="rounded-xl border-slate-200 text-xs font-semibold text-slate-700 hover:bg-slate-100 dark:border-slate-800 dark:text-slate-300"
             >
               <RefreshCw
-                className={`h-3.5 w-3.5 ${isRefetching ? "animate-spin" : ""}`}
+                className={`mr-1.5 h-3.5 w-3.5 ${isRefetching ? "animate-spin" : ""}`}
               />
+              Làm Mới
             </Button>
           </div>
         }
@@ -308,14 +320,24 @@ export function StaffDeliveriesView() {
       {/* Filter Tabs */}
       <div className="flex items-center gap-2 overflow-x-auto border-b border-slate-200 pb-2 dark:border-slate-800">
         {[
-          { key: "AWAITING", label: "Chờ Bàn Giao GHN", icon: PackageCheck },
           {
-            key: "MISSING_GHN",
-            label: "Thiếu Mã Vận Đơn GHN",
-            icon: AlertTriangle,
+            key: "AWAITING",
+            label: "Chờ Bàn Giao GHN",
+            icon: PackageCheck,
+            count: tabCounts.AWAITING,
           },
-          { key: "SHIPPED", label: "Đang Vận Chuyển", icon: Truck },
-          { key: "ALL", label: "Tất Cả Đơn Giao Hàng", icon: RotateCw },
+          {
+            key: "SHIPPED",
+            label: "Đang Vận Chuyển",
+            icon: Truck,
+            count: tabCounts.SHIPPED,
+          },
+          {
+            key: "ALL",
+            label: "Tất Cả Đơn Giao Hàng",
+            icon: RotateCw,
+            count: tabCounts.ALL,
+          },
         ].map((tab) => {
           const isActive = filterTab === tab.key;
           const IconComp = tab.icon;
@@ -326,9 +348,7 @@ export function StaffDeliveriesView() {
               variant="ghost"
               size="sm"
               onClick={() =>
-                setFilterTab(
-                  tab.key as "AWAITING" | "MISSING_GHN" | "SHIPPED" | "ALL",
-                )
+                setFilterTab(tab.key as "AWAITING" | "SHIPPED" | "ALL")
               }
               className={`rounded-full px-4 py-1.5 text-xs font-bold transition-all ${
                 isActive
@@ -338,6 +358,15 @@ export function StaffDeliveriesView() {
             >
               <IconComp className="mr-1.5 h-3.5 w-3.5" />
               {tab.label}
+              <span
+                className={`ml-1.5 rounded-full px-2 py-0.5 text-[10px] ${
+                  isActive
+                    ? "bg-white/20 text-white"
+                    : "bg-slate-200 text-slate-700 dark:bg-slate-700 dark:text-slate-300"
+                }`}
+              >
+                {tab.count}
+              </span>
             </Button>
           );
         })}
