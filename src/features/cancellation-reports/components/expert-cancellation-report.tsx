@@ -102,11 +102,12 @@ export function ExpertCancellationReport({
             <ShieldAlert /> Giám sát chất lượng dịch vụ
           </Badge>
           <h1 className="text-2xl font-bold tracking-tight text-slate-950 sm:text-3xl">
-            Cảnh báo Expert hủy lịch
+            Cảnh báo chuyên gia hủy lịch
           </h1>
           <p className="mt-1 max-w-3xl text-sm text-slate-500">
             Theo dõi ca hủy, hủy sát giờ và vắng mặt để hỗ trợ quyết định vận
-            hành. Việc khóa Expert luôn cần Admin hoặc Clinic Manager xác nhận.
+            hành. Việc khóa Chuyên gia luôn cần Admin hoặc Clinic Manager xác
+            nhận.
           </p>
         </div>
 
@@ -188,7 +189,7 @@ export function ExpertCancellationReport({
         <>
           <div className="grid gap-4 md:grid-cols-3">
             <MetricCard
-              label="Expert bị gắn cờ"
+              label="Chuyên gia bị gắn cờ"
               value={`${data.flaggedCount}/${data.totalExperts}`}
               description={`Trong ${data.windowDays} ngày gần nhất`}
               danger={data.flaggedCount > 0}
@@ -210,13 +211,15 @@ export function ExpertCancellationReport({
             <AlertTitle>Công thức điểm vi phạm</AlertTitle>
             <AlertDescription>
               Hủy thường × 1; hủy sát giờ và vắng mặt × {data.noShowWeight}.
-              Expert bị gắn cờ khi tổng điểm đạt {data.cancelLimit}.
+              Chuyên gia bị gắn cờ khi tổng điểm đạt {data.cancelLimit}.
             </AlertDescription>
           </Alert>
 
           <Card className="overflow-hidden rounded-3xl border-slate-200 shadow-sm">
             <CardHeader className="flex-row items-center justify-between border-b bg-slate-50/60">
-              <CardTitle className="text-base">Chi tiết theo Expert</CardTitle>
+              <CardTitle className="text-base">
+                Chi tiết theo Chuyên gia
+              </CardTitle>
               {isFetching ? (
                 <RefreshCw className="h-4 w-4 animate-spin text-slate-400" />
               ) : null}
@@ -226,7 +229,7 @@ export function ExpertCancellationReport({
                 <div className="flex min-h-64 flex-col items-center justify-center gap-2 p-6 text-center">
                   <UserRoundX className="h-9 w-9 text-slate-300" />
                   <p className="font-semibold text-slate-800">
-                    Chưa có dữ liệu Expert trong kỳ này
+                    Chưa có dữ liệu Chuyên gia trong kỳ này
                   </p>
                   <p className="text-sm text-slate-500">
                     Hãy đổi khoảng thời gian hoặc bộ lọc phòng khám.
@@ -303,7 +306,7 @@ function CancellationTable({
           <TableHead>Expert</TableHead>
           {showClinic ? <TableHead>Phòng khám</TableHead> : null}
           <TableHead className="text-right">Ca được giao</TableHead>
-          <TableHead className="text-right">Expert hủy</TableHead>
+          <TableHead className="text-right">Chuyên gia hủy</TableHead>
           <TableHead className="text-right">Hủy sát giờ</TableHead>
           <TableHead className="text-right">Vắng mặt</TableHead>
           <TableHead className="text-right">Điểm</TableHead>
@@ -391,8 +394,8 @@ function CancelRate({ value }: { value: number | null }) {
         {label} <AlertTriangle className="h-3.5 w-3.5" />
       </TooltipTrigger>
       <TooltipContent className="max-w-72 text-center">
-        Tỷ lệ có thể vượt 100% vì số ca Expert hủy trong kỳ được so với số ca
-        được giao mới trong cùng kỳ.
+        Tỷ lệ có thể vượt 100% vì số ca Chuyên gia hủy trong kỳ được so với số
+        ca được giao mới trong cùng kỳ.
       </TooltipContent>
     </Tooltip>
   );
@@ -437,7 +440,7 @@ function CancellationMobileCard({
       </div>
       <dl className="mt-4 grid grid-cols-2 gap-3 text-xs">
         <MobileMetric label="Ca được giao" value={item.assignedCount} />
-        <MobileMetric label="Expert hủy" value={item.expertCancelCount} />
+        <MobileMetric label="Chuyên gia hủy" value={item.expertCancelCount} />
         <MobileMetric label="Hủy sát giờ" value={item.lateCancelCount} />
         <MobileMetric label="Vắng mặt" value={item.noShowCount} />
         <MobileMetric label="Điểm vi phạm" value={item.violationScore} />

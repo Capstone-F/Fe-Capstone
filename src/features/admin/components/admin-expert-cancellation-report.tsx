@@ -22,8 +22,6 @@ export function AdminExpertCancellationReport() {
 
   return (
     <div className="flex flex-col gap-6 p-4 sm:p-6">
-      <ExpertCancellationPolicyCard />
-
       <ExpertCancellationReport
         scope="admin"
         data={query.data}
@@ -42,6 +40,7 @@ export function AdminExpertCancellationReport() {
           )
         }
       />
+      <ExpertCancellationPolicyCard />
     </div>
   );
 }

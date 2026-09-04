@@ -33,7 +33,7 @@ interface PolicyFieldConfig {
 const FIELDS: PolicyFieldConfig[] = [
   {
     key: "windowDays",
-    label: "Cửa sổ trượt",
+    label: "Khoảng ngày tính vi phạm",
     description: "Số ngày report nhìn lại để tính điểm vi phạm.",
     unit: "ngày",
     min: 1,
@@ -273,7 +273,7 @@ export function ExpertCancellationPolicyCard() {
     <Card className="max-w-3xl rounded-3xl border border-slate-200/90 bg-white shadow-sm dark:border-slate-800 dark:bg-slate-900">
       <CardHeader className="border-b border-slate-100 pb-4 dark:border-slate-800">
         <CardTitle className="flex items-center gap-2 text-base font-bold text-[#2C3E35] dark:text-emerald-400">
-          <ShieldAlert className="h-5 w-5" /> Chính Sách Hủy Lịch Của Expert
+          <ShieldAlert className="h-5 w-5" /> Chính Sách Hủy Lịch Của Chuyên gia
         </CardTitle>
         <CardAction>
           <SettingsInfoDialog
@@ -308,11 +308,11 @@ export function ExpertCancellationPolicyCard() {
               </dl>
 
               <p>
-                Expert đạt/vượt{" "}
+                Chuyên gia có{" "}
                 <span className="font-semibold text-slate-800 dark:text-slate-200">
                   T ≥ Ngưỡng điểm vi phạm
                 </span>{" "}
-                trong cửa sổ trượt sẽ bị gắn cờ.
+                trong khoảng thời gian được cấu hình sẽ bị gắn cờ.
               </p>
             </div>
           </SettingsInfoDialog>
